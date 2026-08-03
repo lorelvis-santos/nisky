@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sure - Registro Rápido</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-container": "#d5e0f8",
+                      "on-secondary-fixed-variant": "#3c475a",
+                      "inverse-primary": "#b9c7df",
+                      "tertiary-fixed-dim": "#dfc29a",
+                      "on-error": "#ffffff",
+                      "on-tertiary-container": "#e2c59d",
+                      "on-error-container": "#93000a",
+                      "tertiary": "#4d3a1c",
+                      "primary-fixed": "#d5e3fc",
+                      "on-tertiary-fixed-variant": "#574325",
+                      "surface-container-high": "#eae7e9",
+                      "secondary": "#545f73",
+                      "secondary-fixed-dim": "#bcc7de",
+                      "background": "#fbf9fa",
+                      "surface-container-low": "#f5f3f5",
+                      "error-container": "#ffdad6",
+                      "inverse-on-surface": "#f2f0f2",
+                      "on-surface-variant": "#44474c",
+                      "on-secondary-fixed": "#111c2d",
+                      "on-primary-fixed-variant": "#3a485b",
+                      "surface-variant": "#e4e2e3",
+                      "on-tertiary": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "surface-dim": "#dbd9db",
+                      "on-primary-container": "#bbcae1",
+                      "outline-variant": "#c4c6cd",
+                      "surface": "#fbf9fa",
+                      "secondary-fixed": "#d8e3fb",
+                      "on-tertiary-fixed": "#281901",
+                      "on-primary-fixed": "#0d1c2e",
+                      "on-secondary-container": "#586377",
+                      "on-secondary": "#ffffff",
+                      "surface-tint": "#515f74",
+                      "inverse-surface": "#303032",
+                      "tertiary-container": "#665131",
+                      "surface-container-highest": "#e4e2e3",
+                      "primary-fixed-dim": "#b9c7df",
+                      "primary-container": "#475569",
+                      "primary": "#303e51",
+                      "surface-bright": "#fbf9fa",
+                      "surface-container": "#efedef",
+                      "error": "#ba1a1a",
+                      "on-surface": "#1b1b1d",
+                      "on-background": "#1b1b1d",
+                      "tertiary-fixed": "#fcdeb4",
+                      "surface-container-lowest": "#ffffff",
+                      "outline": "#75777d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "section-gap": "24px",
+                      "element-gap-sm": "8px",
+                      "element-gap-md": "12px",
+                      "container-padding": "16px",
+                      "unit": "4px",
+                      "element-gap-xs": "4px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-xs": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-sm": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "data-mono": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-xs": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Utilitarian input resets */
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            box-shadow: none !important;
+            border-color: #94a3b8 !important; /* Slate 400 */
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-full font-body-md text-body-md overflow-hidden flex">
+<!-- SideNavBar -->
+<nav class="bg-surface text-primary font-body-md text-body-md h-screen w-64 border-r border-outline-variant flex flex-col h-full overflow-y-auto hidden md:flex shrink-0">
+<div class="p-container-padding border-b border-outline-variant flex items-center gap-element-gap-md">
+<div class="w-8 h-8 rounded bg-primary-container text-on-primary-container flex items-center justify-center font-headline-sm text-headline-sm font-bold">
+                O
+            </div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">System Core</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">v1.2.4-stable</p>
+</div>
+</div>
+<div class="p-container-padding flex-1 flex flex-col gap-unit">
+<!-- Active Tab: Financials (Intent matches recording a transaction) -->
+<a class="flex items-center gap-element-gap-md px-3 py-2 rounded-DEFAULT text-on-surface-variant font-normal hover:bg-surface-container-low transition-colors duration-100 cursor-pointer active:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Productivity
+            </a>
+<a class="flex items-center gap-element-gap-md px-3 py-2 rounded-DEFAULT text-on-surface-variant font-normal hover:bg-surface-container-low transition-colors duration-100 cursor-pointer active:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+                CRM &amp; Billing
+            </a>
+<a class="flex items-center gap-element-gap-md px-3 py-2 border-l-2 border-primary text-primary font-semibold bg-secondary-container/30 hover:bg-surface-container-low transition-colors duration-100 cursor-pointer active:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance" data-weight="fill">account_balance</span>
+                Financials
+            </a>
+</div>
+<div class="p-container-padding border-t border-outline-variant flex flex-col gap-unit">
+<button class="w-full bg-primary-container text-on-primary-container font-headline-xs text-headline-xs py-2 rounded-DEFAULT hover:bg-surface-tint transition-colors mb-element-gap-md">
+                Quick Action
+            </button>
+<a class="flex items-center gap-element-gap-md px-3 py-2 rounded-DEFAULT text-on-surface-variant font-normal hover:bg-surface-container-low transition-colors duration-100 cursor-pointer active:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-element-gap-md px-3 py-2 rounded-DEFAULT text-on-surface-variant font-normal hover:bg-surface-container-low transition-colors duration-100 cursor-pointer active:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+                Support
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-background">
+<!-- TopAppBar -->
+<header class="bg-surface text-primary font-body-md text-body-md w-full h-14 border-b border-outline-variant flex items-center justify-between px-container-padding sticky top-0 z-50 shrink-0">
+<div class="flex items-center gap-element-gap-md">
+<!-- Mobile Menu Button -->
+<button class="md:hidden text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<span class="font-headline-sm text-headline-sm font-bold text-primary">Orchestrator</span>
+<div class="hidden md:flex items-center ml-element-gap-md bg-surface-container-low border border-outline-variant rounded-DEFAULT px-2 py-1">
+<span class="material-symbols-outlined text-outline text-[18px] mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none p-0 focus:ring-0 text-body-sm text-body-sm w-48 placeholder-outline text-on-surface" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-element-gap-sm">
+<button class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded transition-all duration-100">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded transition-all duration-100">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+</button>
+<button class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded transition-all duration-100">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Canvas Area - Fast Entry Form -->
+<div class="flex-1 overflow-y-auto p-container-padding md:p-section-gap flex justify-center items-start pt-section-gap">
+<div class="w-full max-w-[480px] bg-surface border border-outline-variant rounded-DEFAULT p-section-gap">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-element-gap-md">Registro Rápido</h2>
+<div class="h-px bg-outline-variant w-full mb-section-gap"></div>
+<form class="flex flex-col gap-section-gap">
+<!-- Segmented Control: Type -->
+<div class="flex border border-outline-variant rounded-DEFAULT p-1 bg-surface-container-low">
+<button class="flex-1 py-2 font-headline-xs text-headline-xs rounded-DEFAULT bg-surface text-primary border border-outline-variant cursor-pointer transition-colors" id="btn-ingreso" type="button">
+                            Ingreso
+                        </button>
+<button class="flex-1 py-2 font-headline-xs text-headline-xs rounded-DEFAULT text-on-surface-variant hover:bg-surface-container border border-transparent cursor-pointer transition-colors" id="btn-gasto" type="button">
+                            Gasto
+                        </button>
+</div>
+<!-- Amount Input -->
+<div class="flex flex-col items-center">
+<label class="font-label-caps text-label-caps text-on-surface-variant mb-element-gap-xs uppercase" for="monto">Monto</label>
+<div class="relative w-full max-w-[240px]">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 font-data-mono text-data-mono text-xl text-on-surface-variant">$</span>
+<input autofocus="" class="w-full bg-surface border-b-2 border-t-0 border-l-0 border-r-0 border-outline-variant focus:border-primary-container text-center font-data-mono text-[32px] leading-none py-2 text-primary focus:ring-0 bg-transparent transition-colors" id="monto" placeholder="0.00" tabindex="1" type="text"/>
+</div>
+</div>
+<!-- Secondary Fields Stack -->
+<div class="flex flex-col gap-element-gap-md">
+<!-- Account Dropdown -->
+<div class="flex flex-col gap-element-gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase" for="cuenta">Cuenta</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface border border-outline-variant rounded-DEFAULT py-2 pl-3 pr-10 font-body-md text-body-md text-on-surface focus:ring-0 focus:border-outline transition-colors cursor-pointer" id="cuenta" tabindex="2">
+<option value="principal">Cuenta Principal</option>
+<option value="efectivo">Efectivo</option>
+<option value="ahorros">Ahorros</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">expand_more</span>
+</div>
+</div>
+<!-- Category Dropdown -->
+<div class="flex flex-col gap-element-gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase" for="categoria">Categoría</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface border border-outline-variant rounded-DEFAULT py-2 pl-3 pr-10 font-body-md text-body-md text-on-surface focus:ring-0 focus:border-outline transition-colors cursor-pointer" id="categoria" tabindex="3">
+<option value="ventas">Ventas</option>
+<option value="servicios">Servicios</option>
+<option value="honorarios">Honorarios</option>
+<option value="otros">Otros Ingresos</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">expand_more</span>
+</div>
+</div>
+<!-- Concept Text Input -->
+<div class="flex flex-col gap-element-gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase" for="concepto">Concepto (Opcional)</label>
+<input class="w-full bg-surface border border-outline-variant rounded-DEFAULT py-2 px-3 font-body-md text-body-md text-on-surface focus:ring-0 focus:border-outline transition-colors placeholder-outline-variant" id="concepto" placeholder="Ej. Venta de producto A" tabindex="4" type="text"/>
+</div>
+<!-- Date Picker (Utilitarian) -->
+<div class="flex flex-col gap-element-gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase" for="fecha">Fecha</label>
+<div class="relative">
+<input class="w-full bg-surface border border-outline-variant rounded-DEFAULT py-2 px-3 font-body-md text-body-md text-on-surface focus:ring-0 focus:border-outline transition-colors cursor-pointer" id="fecha" tabindex="5" type="date"/>
+</div>
+</div>
+</div>
+<!-- Primary Action -->
+<div class="pt-element-gap-md">
+<button class="w-full bg-primary-container text-on-primary-container font-headline-xs text-headline-xs py-3 rounded-DEFAULT hover:bg-surface-tint transition-colors flex items-center justify-center gap-2 cursor-pointer" tabindex="6" type="submit">
+<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span>
+                            Registrar en Sure
+                        </button>
+</div>
+</form>
+</div>
+</div>
+</main>
+<script>
+        // Micro-interaction for Segmented Control
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnIngreso = document.getElementById('btn-ingreso');
+            const btnGasto = document.getElementById('btn-gasto');
+            const categoriaSelect = document.getElementById('categoria');
+            const montoInput = document.getElementById('monto');
+
+            // Set today's date by default
+            document.getElementById('fecha').valueAsDate = new Date();
+
+            const categoriasIngreso = [
+                { value: 'ventas', text: 'Ventas' },
+                { value: 'servicios', text: 'Servicios' },
+                { value: 'honorarios', text: 'Honorarios' },
+                { value: 'otros', text: 'Otros Ingresos' }
+            ];
+
+            const categoriasGasto = [
+                { value: 'operacion', text: 'Gastos de Operación' },
+                { value: 'nomina', text: 'Nómina' },
+                { value: 'impuestos', text: 'Impuestos' },
+                { value: 'suministros', text: 'Suministros' }
+            ];
+
+            function updateCategorias(options) {
+                categoriaSelect.innerHTML = '';
+                options.forEach(opt => {
+                    const el = document.createElement('option');
+                    el.value = opt.value;
+                    el.textContent = opt.text;
+                    categoriaSelect.appendChild(el);
+                });
+            }
+
+            function setActiveButton(activeBtn, inactiveBtn, type) {
+                activeBtn.classList.remove('text-on-surface-variant', 'border-transparent', 'hover:bg-surface-container');
+                activeBtn.classList.add('bg-surface', 'text-primary', 'border-outline-variant');
+                
+                inactiveBtn.classList.add('text-on-surface-variant', 'border-transparent', 'hover:bg-surface-container');
+                inactiveBtn.classList.remove('bg-surface', 'text-primary', 'border-outline-variant');
+
+                if(type === 'ingreso') {
+                    updateCategorias(categoriasIngreso);
+                    montoInput.classList.remove('text-error');
+                    montoInput.classList.add('text-primary');
+                } else {
+                    updateCategorias(categoriasGasto);
+                    montoInput.classList.remove('text-primary');
+                    montoInput.classList.add('text-error');
+                }
+            }
+
+            btnIngreso.addEventListener('click', () => setActiveButton(btnIngreso, btnGasto, 'ingreso'));
+            btnGasto.addEventListener('click', () => setActiveButton(btnGasto, btnIngreso, 'gasto'));
+        });
+    </script>
+</body></html>

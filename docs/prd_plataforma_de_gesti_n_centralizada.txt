@@ -1,0 +1,33 @@
+# Documento de Requerimientos de Software (PRD)
+
+**Proyecto:** Plataforma Centralizada de Gestión Operativa, Comercial y Financiera.
+**Objetivo:** Unificar la planificación diaria de actividades, el control de facturación de proyectos de desarrollo y la consulta financiera, minimizando la carga cognitiva y optimizando la administración independiente.
+
+## 1. Especificaciones de Módulos (Alcance Funcional)
+
+### Módulo 1: Gestión Diaria (Productividad, Planificación y Enfoque)
+* **Planificación de tiempo:** Herramientas para estructurar el día a día y establecer metas semanales.
+* **Control de tareas y hábitos:** Seguimiento de actividades pendientes y registro de rutinas recurrentes.
+* **Gestión de conocimiento rápido:** Sistema integrado para captura de anotaciones ligeras y configuración de recordatorios.
+* **Diario de Reflexión:** Sección privada (con soporte para formato enriquecido/Markdown) para documentar análisis de desempeño, seguimiento de objetivos y reflexiones, orientada a mantener la responsabilidad personal. Se contempla el cifrado de datos en reposo para salvaguardar la privacidad.
+* **Motor de Enfoque (Pomodoro):** Temporizador integrado, enlazable directamente a tareas específicas para ejecutar bloques de trabajo profundo y cuantificar el tiempo real invertido.
+
+### Módulo 2: Gestión de Clientes y Proyectos (CRM Comercial)
+* **Directorio de clientes:** Registro centralizado de información de contacto e historial.
+* **Panel de estado de proyectos:** Gestión del ciclo financiero de proyectos de desarrollo de software, abarcando control de cuotas, deudas pendientes y estado de pagos por mantenimiento.
+* **Motor de facturación:** Herramienta orientada a la generación de facturas de forma incremental asociadas a cada proyecto y cliente.
+
+### Módulo 3: Gestión Financiera (Integración Externa)
+* **Sincronización API:** Integración directa con la plataforma de finanzas Sure.
+* **Panel de visualización:** Interfaz de solo lectura para consultar rápidamente el estado y saldo de las cuentas sin abandonar la plataforma central.
+* **Registro rápido:** Formulario de ingreso ágil para asentar gastos e ingresos diarios, transmitiendo los datos a Sure como fuente de verdad única.
+
+## 2. Fases de Implementación Sugeridas
+1. **Fase 1 - Control Operativo (Módulo 1):** Despliegue de la interfaz de tareas, Pomodoro y diario para volcado inmediato de pendientes.
+2. **Fase 2 - Control Comercial (Módulo 2):** Estructuración relacional para clientes, proyectos y la lógica de facturación incremental.
+3. **Fase 3 - Integración Financiera (Módulo 3):** Desarrollo de la capa de comunicación y autenticación con la API de Sure.
+
+## 3. Directrices de Arquitectura e Infraestructura (Agentes Baremetal/Diseño)
+* **Diseño de Base de Datos:** Se requiere un esquema relacional estricto (ej. PostgreSQL) utilizando un ORM (ej. Prisma) para garantizar la integridad referencial entre clientes, facturas y registros de tiempo de Pomodoro.
+* **Infraestructura y Despliegue:** La aplicación debe diseñarse con una arquitectura modular orientada a contenedores (Docker), preparada para ser orquestada y desplegada en entornos de nube VPS autoalojados (ej. Coolify).
+* **Enrutamiento:** La configuración de red debe prever la asignación a identificadores de subdominio compactos para uso personal e interno (ej. pm.lorelvissantos.com).

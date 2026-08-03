@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pantalla de Enfoque - Operations Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-container": "#d5e0f8",
+                      "on-secondary-container": "#586377",
+                      "secondary-fixed": "#d8e3fb",
+                      "on-surface": "#1b1b1d",
+                      "surface": "#fbf9fa",
+                      "secondary-fixed-dim": "#bcc7de",
+                      "outline": "#75777d",
+                      "primary-fixed-dim": "#b9c7df",
+                      "surface-variant": "#e4e2e3",
+                      "tertiary": "#4d3a1c",
+                      "surface-tint": "#515f74",
+                      "on-tertiary-fixed": "#281901",
+                      "surface-container-highest": "#e4e2e3",
+                      "on-primary-fixed-variant": "#3a485b",
+                      "surface-bright": "#fbf9fa",
+                      "error-container": "#ffdad6",
+                      "primary-fixed": "#d5e3fc",
+                      "background": "#fbf9fa",
+                      "on-background": "#1b1b1d",
+                      "on-secondary": "#ffffff",
+                      "on-secondary-fixed-variant": "#3c475a",
+                      "on-surface-variant": "#44474c",
+                      "on-primary-container": "#bbcae1",
+                      "inverse-on-surface": "#f2f0f2",
+                      "primary-container": "#475569",
+                      "tertiary-fixed-dim": "#dfc29a",
+                      "on-error": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed-variant": "#574325",
+                      "surface-container-lowest": "#ffffff",
+                      "primary": "#303e51",
+                      "on-tertiary-container": "#e2c59d",
+                      "surface-container-high": "#eae7e9",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "surface-dim": "#dbd9db",
+                      "surface-container": "#efedef",
+                      "inverse-surface": "#303032",
+                      "surface-container-low": "#f5f3f5",
+                      "on-primary-fixed": "#0d1c2e",
+                      "inverse-primary": "#b9c7df",
+                      "tertiary-container": "#665131",
+                      "tertiary-fixed": "#fcdeb4",
+                      "outline-variant": "#c4c6cd",
+                      "on-secondary-fixed": "#111c2d",
+                      "secondary": "#545f73"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "container-padding": "16px",
+                      "unit": "4px",
+                      "element-gap-sm": "8px",
+                      "element-gap-md": "12px",
+                      "element-gap-xs": "4px",
+                      "section-gap": "24px"
+              },
+              "fontFamily": {
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "headline-xs": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-xs": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "data-mono": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .timer-text {
+            font-size: 8rem;
+            line-height: 1;
+            letter-spacing: -0.05em;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen w-screen flex items-center justify-center overflow-hidden font-body-md">
+<!-- Intent: Task-Focused. Nav shell is completely suppressed as per semantic shell mandate (zero distractions mode) -->
+<main class="w-full max-w-2xl px-8 flex flex-col items-center">
+<!-- Context Card -->
+<div class="w-full bg-surface-container-lowest border border-outline-variant p-6 mb-12 flex flex-col items-center text-center rounded">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-2">Enfoque Actual</span>
+<h1 class="font-headline-sm text-headline-sm text-primary mb-4">Refactorizar lógica de autenticación</h1>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center justify-center bg-secondary-container text-on-secondary-container px-3 py-1 font-data-mono text-data-mono rounded">
+                    Ciclo 2 de 4
+                </span>
+</div>
+</div>
+<!-- Timer -->
+<div class="mb-16">
+<div class="font-data-mono text-primary timer-text font-medium select-none" id="pomodoro-timer">
+                24:59
+            </div>
+</div>
+<!-- Controls -->
+<div class="flex items-center gap-element-gap-md w-full max-w-md">
+<button class="flex-1 bg-surface-container-lowest border border-outline-variant text-on-surface-variant font-body-md text-body-md py-4 px-6 rounded hover:bg-surface-container-high hover:border-outline transition-colors duration-100 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">pause</span>
+                Pausar
+            </button>
+<button class="flex-1 bg-surface-container-lowest border border-outline-variant text-on-surface-variant font-body-md text-body-md py-4 px-6 rounded hover:bg-surface-container-high hover:border-outline transition-colors duration-100 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">stop</span>
+                Detener
+            </button>
+</div>
+<div class="mt-4 w-full max-w-md">
+<button class="w-full bg-primary-container text-on-primary font-headline-xs text-headline-xs py-4 px-6 rounded hover:bg-primary transition-colors duration-100 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Marcar como Completada
+            </button>
+</div>
+</main>
+<!-- Exit Focus Mode -->
+<button class="absolute top-6 left-6 text-on-surface-variant hover:text-primary transition-colors duration-100 flex items-center gap-2 font-body-sm text-body-sm bg-surface-container-lowest border border-outline-variant px-3 py-2 rounded">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        Salir del modo
+    </button>
+<script>
+        // Simple visual timer logic for demonstration
+        const timerElement = document.getElementById('pomodoro-timer');
+        let seconds = 24 * 60 + 59;
+        
+        setInterval(() => {
+            if (seconds > 0) {
+                seconds--;
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                timerElement.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+        }, 1000);
+    </script>
+</body></html>

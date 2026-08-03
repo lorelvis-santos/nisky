@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Builds and generated output
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+apps/backend/src/infra/prisma/generated/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Tooling and logs
+.DS_Store
+*.pem
+.vscode/
+.idea/
+*.log
+.codebase-memory/

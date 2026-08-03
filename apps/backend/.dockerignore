@@ -1,0 +1,5 @@
+node_modules
+.env*
+src/infra/prisma/generated
+src/infra/prisma/migrations
+.git

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Configuración de Integración - Orchestrator</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#d5e0f8",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "inverse-primary": "#b9c7df",
+                        "tertiary-fixed-dim": "#dfc29a",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#e2c59d",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#4d3a1c",
+                        "primary-fixed": "#d5e3fc",
+                        "on-tertiary-fixed-variant": "#574325",
+                        "surface-container-high": "#eae7e9",
+                        "secondary": "#545f73",
+                        "secondary-fixed-dim": "#bcc7de",
+                        "background": "#fbf9fa",
+                        "surface-container-low": "#f5f3f5",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#f2f0f2",
+                        "on-surface-variant": "#44474c",
+                        "on-secondary-fixed": "#111c2d",
+                        "on-primary-fixed-variant": "#3a485b",
+                        "surface-variant": "#e4e2e3",
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#dbd9db",
+                        "on-primary-container": "#bbcae1",
+                        "outline-variant": "#c4c6cd",
+                        "surface": "#fbf9fa",
+                        "secondary-fixed": "#d8e3fb",
+                        "on-tertiary-fixed": "#281901",
+                        "on-primary-fixed": "#0d1c2e",
+                        "on-secondary-container": "#586377",
+                        "on-secondary": "#ffffff",
+                        "surface-tint": "#515f74",
+                        "inverse-surface": "#303032",
+                        "tertiary-container": "#665131",
+                        "surface-container-highest": "#e4e2e3",
+                        "primary-fixed-dim": "#b9c7df",
+                        "primary-container": "#475569",
+                        "primary": "#303e51",
+                        "surface-bright": "#fbf9fa",
+                        "surface-container": "#efedef",
+                        "error": "#ba1a1a",
+                        "on-surface": "#1b1b1d",
+                        "on-background": "#1b1b1d",
+                        "tertiary-fixed": "#fcdeb4",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#75777d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "section-gap": "24px",
+                        "element-gap-sm": "8px",
+                        "element-gap-md": "12px",
+                        "container-padding": "16px",
+                        "unit": "4px",
+                        "element-gap-xs": "4px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "data-mono": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "headline-xs": ["Inter"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "data-mono": ["13px", { "lineHeight": "16px", "letterSpacing": "-0.02em", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "headline-xs": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "600" }],
+                        "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for data tables and logs to maintain strict flat look */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #fbf9fa; }
+        ::-webkit-scrollbar-thumb { background: #c4c6cd; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #75777d; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased h-screen flex overflow-hidden selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- JSON SideNavBar -->
+<aside class="hidden md:flex bg-surface dark:bg-surface font-body-md text-body-md h-screen w-64 border-r border-outline-variant flex-col h-full overflow-y-auto shrink-0 z-40">
+<!-- Header -->
+<div class="p-container-padding border-b border-outline-variant flex items-center gap-element-gap-md">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">dns</span>
+</div>
+<div class="flex-1 min-w-0">
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed truncate">System Core</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant truncate">v1.2.4-stable</p>
+</div>
+</div>
+<!-- Main Nav -->
+<nav class="flex-1 py-element-gap-md px-element-gap-sm space-y-unit">
+<a class="flex items-center gap-element-gap-md px-element-gap-md py-element-gap-sm rounded-DEFAULT text-on-surface-variant font-normal hover:bg-surface-container-low transition-colors duration-100 cursor-pointer active:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Productivity</span>
+</a>
+<a class="flex items-center gap-element-gap-md px-element-gap-md py-element-gap-sm rounded-DEFAULT text-on-surface-variant font-normal hover:bg-surface-container-low transition-colors duration-100 cursor-pointer active:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span>CRM &amp; Billing</span>
+</a>
+<a class="flex items-center gap-element-gap-md px-element-gap-md py-element-gap-sm rounded-DEFAULT text-on-surface-variant font-normal hover:bg-surface-container-low transition-colors duration-100 cursor-pointer active:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span>Financials</span>
+</a>
+</nav>
+<!-- Footer Nav -->
+<div class="p-element-gap-sm border-t border-outline-variant space-y-unit">
+<a class="flex items-center gap-element-gap-md px-element-gap-md py-element-gap-sm rounded-DEFAULT border-l-2 border-primary text-primary font-semibold bg-secondary-container/30 hover:bg-surface-container-low transition-colors duration-100 cursor-pointer active:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" data-icon="settings" data-weight="fill" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-element-gap-md px-element-gap-md py-element-gap-sm rounded-DEFAULT text-on-surface-variant font-normal hover:bg-surface-container-low transition-colors duration-100 cursor-pointer active:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span>Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-background relative">
+<!-- JSON TopAppBar -->
+<header class="bg-surface dark:bg-surface font-body-md text-body-md w-full h-14 border-b border-outline-variant flex items-center justify-between px-container-padding sticky top-0 z-50 shrink-0">
+<div class="flex items-center gap-element-gap-md">
+<!-- Mobile Menu Trigger -->
+<button class="md:hidden text-on-surface-variant hover:text-primary transition-all duration-100">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed">Orchestrator</span>
+</div>
+<div class="flex items-center gap-element-gap-sm">
+<div class="hidden md:flex items-center bg-surface-container-low border border-outline-variant rounded-DEFAULT px-element-gap-sm py-unit h-8 focus-within:border-primary transition-all duration-100">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm px-2 w-48 text-on-surface placeholder:text-outline outline-none" placeholder="Search resources..." type="text"/>
+</div>
+<button class="w-8 h-8 flex items-center justify-center rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all duration-100">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all duration-100">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all duration-100">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="flex-1 overflow-y-auto p-container-padding md:p-section-gap">
+<div class="max-w-6xl mx-auto space-y-section-gap">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-element-gap-md">
+<div>
+<div class="flex items-center gap-element-gap-sm mb-unit">
+<span class="material-symbols-outlined text-outline text-[18px]">cable</span>
+<span class="font-label-caps text-label-caps text-outline uppercase">Módulo III</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Configuración de Integración</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-unit">Administre las credenciales de la API de Sure y supervise el estado del flujo de datos.</p>
+</div>
+<div class="flex items-center gap-element-gap-sm">
+<!-- Status Badge -->
+<div class="flex items-center gap-2 px-3 py-1.5 bg-surface border border-outline-variant rounded-DEFAULT">
+<div class="w-2 h-2 rounded-full bg-[#10b981] animate-pulse"></div> <!-- Functional override for standard status indicator, mimicking technical green without breaking general theme -->
+<span class="font-label-caps text-label-caps text-on-surface uppercase">En línea</span>
+</div>
+<button class="h-9 px-4 bg-surface border border-outline-variant hover:bg-surface-container-low text-on-surface font-headline-xs text-headline-xs rounded-DEFAULT transition-colors">
+                            Reiniciar Servicio
+                        </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-element-gap-md">
+<!-- Panel de Credenciales (Left Col, top) -->
+<div class="lg:col-span-4 bg-surface border border-outline-variant rounded-DEFAULT p-container-padding flex flex-col">
+<div class="flex items-center gap-element-gap-sm mb-element-gap-md border-b border-outline-variant pb-element-gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">vpn_key</span>
+<h3 class="font-headline-xs text-headline-xs text-on-surface">Credenciales de Autenticación</h3>
+</div>
+<form class="space-y-element-gap-md flex-1">
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-unit">Sure API Key</label>
+<div class="relative flex items-center">
+<input class="w-full h-9 bg-surface-container-low border border-outline-variant text-on-surface font-data-mono text-data-mono px-3 py-1 focus:outline-none focus:border-outline rounded-none" readonly="" type="password" value="sk_prod_9f8d7c6b5a41234567890"/>
+<button class="absolute right-2 text-outline hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility_off</span>
+</button>
+</div>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-unit">Token de Acceso</label>
+<div class="relative flex items-center">
+<input class="w-full h-9 bg-surface-container-low border border-outline-variant text-on-surface font-data-mono text-data-mono px-3 py-1 focus:outline-none focus:border-outline rounded-none" readonly="" type="password" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."/>
+<button class="absolute right-2 text-outline hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+</div>
+</form>
+<div class="mt-element-gap-md pt-element-gap-md border-t border-outline-variant">
+<button class="w-full h-9 bg-primary-container text-surface-container-lowest font-headline-xs text-headline-xs hover:bg-primary transition-colors rounded-DEFAULT">
+                                Rotar Credenciales
+                            </button>
+</div>
+</div>
+<!-- Métricas y Estado (Left Col, bottom) -->
+<div class="lg:col-span-4 bg-surface border border-outline-variant rounded-DEFAULT p-container-padding flex flex-col">
+<div class="flex items-center gap-element-gap-sm mb-element-gap-md border-b border-outline-variant pb-element-gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">monitoring</span>
+<h3 class="font-headline-xs text-headline-xs text-on-surface">Métricas de Conexión</h3>
+</div>
+<div class="grid grid-cols-2 gap-element-gap-md flex-1">
+<div class="border border-outline-variant bg-surface-container-low p-element-gap-sm">
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-unit">Latencia (Ping)</span>
+<span class="font-data-mono text-data-mono text-on-surface text-lg">42ms</span>
+</div>
+<div class="border border-outline-variant bg-surface-container-low p-element-gap-sm">
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-unit">Tasa de Éxito (1h)</span>
+<span class="font-data-mono text-data-mono text-on-surface text-lg">99.8%</span>
+</div>
+<div class="col-span-2 border border-outline-variant bg-surface-container-low p-element-gap-sm">
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-unit">Última Sincronización Exitosa</span>
+<span class="font-data-mono text-data-mono text-on-surface">2023-10-27 14:32:05 UTC</span>
+</div>
+</div>
+</div>
+<!-- Registro de Sincronización (Right Col, wide) -->
+<div class="lg:col-span-8 lg:row-span-2 bg-surface border border-outline-variant rounded-DEFAULT flex flex-col h-[500px] lg:h-auto">
+<div class="flex items-center justify-between p-element-gap-md border-b border-outline-variant bg-surface-container-low">
+<div class="flex items-center gap-element-gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">terminal</span>
+<h3 class="font-headline-xs text-headline-xs text-on-surface">Registro de Sincronización (I/O)</h3>
+</div>
+<div class="flex gap-2">
+<button class="p-1 hover:bg-surface border border-transparent hover:border-outline-variant rounded text-on-surface-variant" title="Limpiar Logs">
+<span class="material-symbols-outlined text-[16px]">delete_sweep</span>
+</button>
+<button class="p-1 hover:bg-surface border border-transparent hover:border-outline-variant rounded text-on-surface-variant" title="Pausar Stream">
+<span class="material-symbols-outlined text-[16px]">pause</span>
+</button>
+</div>
+</div>
+<!-- Console Log Area -->
+<div class="flex-1 bg-surface-container-low p-element-gap-md overflow-y-auto font-data-mono text-data-mono text-xs text-on-surface space-y-1">
+<div class="flex gap-4 opacity-70 hover:opacity-100">
+<span class="text-outline shrink-0">14:31:55.102</span>
+<span class="text-secondary shrink-0">[INFO]</span>
+<span class="truncate">Iniciando ciclo de sincronización (Batch ID: 89a2f)...</span>
+</div>
+<div class="flex gap-4 hover:bg-surface-variant px-1 -mx-1">
+<span class="text-outline shrink-0">14:31:55.150</span>
+<span class="text-[#0284c7] shrink-0 font-bold">[REQ]</span>
+<span class="truncate">GET /v1/customers?status=active&amp;limit=100</span>
+</div>
+<div class="flex gap-4 hover:bg-surface-variant px-1 -mx-1">
+<span class="text-outline shrink-0">14:31:55.321</span>
+<span class="text-[#10b981] shrink-0 font-bold">[RES]</span>
+<span class="truncate">200 OK (171ms) - Recibidos 100 registros.</span>
+</div>
+<div class="flex gap-4 hover:bg-surface-variant px-1 -mx-1">
+<span class="text-outline shrink-0">14:31:55.405</span>
+<span class="text-[#0284c7] shrink-0 font-bold">[REQ]</span>
+<span class="truncate">POST /v1/transactions/sync</span>
+</div>
+<div class="flex gap-4 hover:bg-surface-variant px-1 -mx-1">
+<span class="text-outline shrink-0">14:31:56.102</span>
+<span class="text-[#10b981] shrink-0 font-bold">[RES]</span>
+<span class="truncate">201 Created (697ms) - Payload procesado.</span>
+</div>
+<div class="flex gap-4 hover:bg-surface-variant px-1 -mx-1">
+<span class="text-outline shrink-0">14:31:56.110</span>
+<span class="text-[#0284c7] shrink-0 font-bold">[REQ]</span>
+<span class="truncate">PUT /v1/webhooks/status</span>
+</div>
+<div class="flex gap-4 hover:bg-surface-variant px-1 -mx-1">
+<span class="text-outline shrink-0">14:31:56.250</span>
+<span class="text-[#ef4444] shrink-0 font-bold">[ERR]</span>
+<span class="truncate">429 Too Many Requests - Rate limit exceeded. Retry after 2s.</span>
+</div>
+<div class="flex gap-4 opacity-70 hover:opacity-100">
+<span class="text-outline shrink-0">14:31:56.255</span>
+<span class="text-secondary shrink-0">[WARN]</span>
+<span class="truncate">Aplicando backoff exponencial. Esperando 2000ms...</span>
+</div>
+<div class="flex gap-4 hover:bg-surface-variant px-1 -mx-1">
+<span class="text-outline shrink-0">14:31:58.260</span>
+<span class="text-[#0284c7] shrink-0 font-bold">[REQ]</span>
+<span class="truncate">PUT /v1/webhooks/status (Retry 1)</span>
+</div>
+<div class="flex gap-4 hover:bg-surface-variant px-1 -mx-1">
+<span class="text-outline shrink-0">14:31:58.350</span>
+<span class="text-[#10b981] shrink-0 font-bold">[RES]</span>
+<span class="truncate">200 OK (90ms) - Estado actualizado.</span>
+</div>
+<div class="flex gap-4 opacity-70 hover:opacity-100">
+<span class="text-outline shrink-0">14:31:58.355</span>
+<span class="text-secondary shrink-0">[INFO]</span>
+<span class="truncate">Ciclo de sincronización completado.</span>
+</div>
+<div class="flex gap-4 animate-pulse pt-2">
+<span class="text-outline shrink-0">14:32:05...</span>
+<span class="text-on-surface-variant shrink-0">Escuchando eventos entrantes_</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

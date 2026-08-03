@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Operations Hub - Planning</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#d5e0f8",
+                        "on-secondary-container": "#586377",
+                        "secondary-fixed": "#d8e3fb",
+                        "on-surface": "#1b1b1d",
+                        "surface": "#fbf9fa",
+                        "secondary-fixed-dim": "#bcc7de",
+                        "outline": "#75777d",
+                        "primary-fixed-dim": "#b9c7df",
+                        "surface-variant": "#e4e2e3",
+                        "tertiary": "#4d3a1c",
+                        "surface-tint": "#515f74",
+                        "on-tertiary-fixed": "#281901",
+                        "surface-container-highest": "#e4e2e3",
+                        "on-primary-fixed-variant": "#3a485b",
+                        "surface-bright": "#fbf9fa",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#d5e3fc",
+                        "background": "#fbf9fa",
+                        "on-background": "#1b1b1d",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "on-surface-variant": "#44474c",
+                        "on-primary-container": "#bbcae1",
+                        "inverse-on-surface": "#f2f0f2",
+                        "primary-container": "#475569",
+                        "tertiary-fixed-dim": "#dfc29a",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#574325",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#303e51",
+                        "on-tertiary-container": "#e2c59d",
+                        "surface-container-high": "#eae7e9",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-dim": "#dbd9db",
+                        "surface-container": "#efedef",
+                        "inverse-surface": "#303032",
+                        "surface-container-low": "#f5f3f5",
+                        "on-primary-fixed": "#0d1c2e",
+                        "inverse-primary": "#b9c7df",
+                        "tertiary-container": "#665131",
+                        "tertiary-fixed": "#fcdeb4",
+                        "outline-variant": "#c4c6cd",
+                        "on-secondary-fixed": "#111c2d",
+                        "secondary": "#545f73"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-padding": "16px",
+                        "unit": "4px",
+                        "element-gap-sm": "8px",
+                        "element-gap-md": "12px",
+                        "element-gap-xs": "4px",
+                        "section-gap": "24px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "headline-xs": ["Inter"],
+                        "data-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-xs": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "600" }],
+                        "data-mono": ["13px", { "lineHeight": "16px", "letterSpacing": "-0.02em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-full flex font-body-md overflow-hidden">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-40 bg-surface dark:bg-surface-dim h-screen w-64 border-r border-outline-variant hidden md:flex">
+<div class="px-container-padding py-4 border-b border-outline-variant flex items-center gap-element-gap-sm">
+<span class="material-symbols-outlined text-primary">hub</span>
+<div class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed">Operations Hub</div>
+</div>
+<div class="px-container-padding py-2 border-b border-outline-variant">
+<div class="flex items-center gap-element-gap-md">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden">
+<img alt="User Profile" class="object-cover w-full h-full" data-alt="A small, professional headshot of a corporate user, neutral expression, crisp lighting, high contrast, suitable for a minimalist dashboard avatar. The aesthetic is clean and utilitarian, blending seamlessly with a flat, developer-focused UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7ZfRXwzplYnbAf0DMdIRILuPo17_lFCiL79t1vYxBFJWgCYzzWYKgEPmU-8_gg6mXB3LoZlTls_qCb36HO9Y_VZDFOAfU34BTGzBMWURKgUEoneY-NjYZION_-Zb70gBD6QO0Ob37syq97Mqh_0HOvybDoVDE0zs1YyX7CSk2bBUnNxqXCpBmP3Lo_Vhg-Nqe-kmEzUGSCbDu62dOoL27ajhhWkAs6kn99gKOgH0eFp7yY_6Yauk"/>
+</div>
+<div>
+<div class="font-body-md text-body-md font-semibold">User Profile</div>
+<div class="font-data-mono text-data-mono text-on-surface-variant text-xs">v1.0.4</div>
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto py-2 flex flex-col gap-unit">
+<a class="flex items-center gap-element-gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-100 instant duration-100 ease-in font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-element-gap-md px-4 py-3 border-l-2 border-primary bg-secondary-container text-on-secondary-container font-semibold transition-colors duration-100 instant duration-100 ease-in font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="event_note" data-weight="fill" style="font-variation-settings: 'FILL' 1;">event_note</span>
+                Planning
+            </a>
+<a class="flex items-center gap-element-gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-100 instant duration-100 ease-in font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="timer">timer</span>
+                Focus Mode
+            </a>
+<a class="flex items-center gap-element-gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-100 instant duration-100 ease-in font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+                Journal
+            </a>
+<a class="flex items-center gap-element-gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-100 instant duration-100 ease-in font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+                Knowledge Base
+            </a>
+</div>
+<div class="border-t border-outline-variant py-2 flex flex-col gap-unit">
+<a class="flex items-center gap-element-gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-100 instant duration-100 ease-in font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-element-gap-md px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-100 instant duration-100 ease-in font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+                Support
+            </a>
+</div>
+</nav>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-0 md:left-64 h-14 flex justify-between items-center px-container-padding z-30 bg-surface dark:bg-surface-dim border-b border-outline-variant flat no shadows">
+<div class="flex items-center gap-element-gap-md md:hidden">
+<button class="text-on-surface-variant hover:text-primary transition-colors instant duration-100">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed">Operations Hub</div>
+</div>
+<div class="hidden md:flex flex-1"></div>
+<div class="flex items-center gap-element-gap-md">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="pl-8 pr-3 py-1.5 bg-surface-container border border-outline-variant rounded text-body-sm focus:border-outline focus:ring-0 w-64 transition-colors" placeholder="Search..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors instant duration-100 relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors instant duration-100 md:hidden">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 mt-14 h-[calc(100vh-3.5rem)] flex flex-col sm:flex-row bg-surface overflow-hidden">
+<!-- Weekly Grid (Left/Main Canvas) -->
+<div class="flex-1 flex flex-col min-w-0 border-r border-outline-variant h-full overflow-hidden">
+<div class="p-container-padding border-b border-outline-variant flex justify-between items-center bg-surface-bright shrink-0">
+<div class="font-headline-sm text-headline-sm text-primary">Current Week</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors rounded font-body-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="px-3 py-1.5 border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors rounded font-body-sm">
+                        Today
+                    </button>
+<button class="px-3 py-1.5 border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors rounded font-body-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-x-auto overflow-y-auto no-scrollbar bg-surface-container-low p-2">
+<div class="grid grid-cols-7 gap-2 min-w-[800px] h-full">
+<!-- MON -->
+<div class="flex flex-col gap-2 h-full">
+<div class="text-center py-1 border-b border-outline-variant font-data-mono text-data-mono text-on-surface-variant">MON 12</div>
+<div class="flex-1 flex flex-col gap-2 rounded bg-surface-container-lowest border border-outline-variant p-2">
+<!-- Task Card -->
+<div class="bg-surface border border-outline-variant p-2 rounded cursor-grab hover:border-outline transition-colors">
+<div class="flex justify-between items-start mb-1">
+<div class="font-label-caps text-label-caps text-on-surface-variant px-1 bg-surface-container rounded">DB MIGRATION</div>
+<span class="w-2 h-2 rounded-full bg-error mt-1"></span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface leading-tight mb-2">Update user schema to v2</div>
+<div class="flex items-center gap-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">timer</span> 4
+                                </div>
+</div>
+</div>
+</div>
+<!-- TUE -->
+<div class="flex flex-col gap-2 h-full">
+<div class="text-center py-1 border-b border-outline-variant font-data-mono text-data-mono text-on-surface-variant">TUE 13</div>
+<div class="flex-1 flex flex-col gap-2 rounded bg-surface-container-lowest border border-outline-variant p-2 bg-surface-container-highest/20">
+<!-- Empty Drop Zone -->
+</div>
+</div>
+<!-- WED -->
+<div class="flex flex-col gap-2 h-full">
+<div class="text-center py-1 border-b border-outline-variant font-data-mono text-data-mono text-on-surface-variant">WED 14</div>
+<div class="flex-1 flex flex-col gap-2 rounded bg-surface-container-lowest border border-outline-variant p-2">
+<div class="bg-surface border border-outline-variant p-2 rounded cursor-grab hover:border-outline transition-colors">
+<div class="flex justify-between items-start mb-1">
+<div class="font-label-caps text-label-caps text-on-surface-variant px-1 bg-surface-container rounded">FRONTEND</div>
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed mt-1"></span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface leading-tight mb-2">Implement Planning UI</div>
+<div class="flex items-center gap-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">timer</span> 8
+                                </div>
+</div>
+</div>
+</div>
+<!-- THU -->
+<div class="flex flex-col gap-2 h-full">
+<div class="text-center py-1 border-b border-outline-variant font-data-mono text-data-mono text-on-surface-variant bg-secondary-container/30 text-primary-fixed-dim rounded-t">THU 15</div>
+<div class="flex-1 flex flex-col gap-2 rounded bg-surface-container-lowest border border-outline-variant p-2 border-t-2 border-t-primary">
+<!-- Current Day Indicator -->
+</div>
+</div>
+<!-- FRI -->
+<div class="flex flex-col gap-2 h-full">
+<div class="text-center py-1 border-b border-outline-variant font-data-mono text-data-mono text-on-surface-variant">FRI 16</div>
+<div class="flex-1 flex flex-col gap-2 rounded bg-surface-container-lowest border border-outline-variant p-2">
+</div>
+</div>
+<!-- SAT -->
+<div class="flex flex-col gap-2 h-full opacity-60">
+<div class="text-center py-1 border-b border-outline-variant font-data-mono text-data-mono text-on-surface-variant">SAT 17</div>
+<div class="flex-1 flex flex-col gap-2 rounded bg-surface-container-lowest border border-outline-variant p-2 bg-surface-variant/30">
+</div>
+</div>
+<!-- SUN -->
+<div class="flex flex-col gap-2 h-full opacity-60">
+<div class="text-center py-1 border-b border-outline-variant font-data-mono text-data-mono text-on-surface-variant">SUN 18</div>
+<div class="flex-1 flex flex-col gap-2 rounded bg-surface-container-lowest border border-outline-variant p-2 bg-surface-variant/30">
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Backlog Panel (Right) -->
+<div class="w-full sm:w-80 flex flex-col shrink-0 h-full bg-surface-bright">
+<div class="p-container-padding border-b border-outline-variant flex justify-between items-center bg-surface-bright">
+<div class="font-headline-sm text-headline-sm text-primary">Backlog</div>
+<button class="p-1 border border-outline-variant bg-primary-container text-on-primary hover:bg-primary transition-colors rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-3 flex flex-col gap-2 bg-surface-container-low">
+<!-- Backlog Item -->
+<div class="bg-surface border border-outline-variant p-2.5 rounded cursor-grab hover:border-outline transition-colors group">
+<div class="flex justify-between items-start mb-1.5">
+<div class="font-label-caps text-label-caps text-on-surface-variant px-1 bg-surface-container rounded border border-outline-variant/50">API</div>
+<div class="flex gap-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-error-container text-on-error-container">P1</span>
+</div>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface leading-tight mb-2">Write documentation for auth endpoints</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">timer</span> 2
+                        </div>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+</div>
+<!-- Backlog Item -->
+<div class="bg-surface border border-outline-variant p-2.5 rounded cursor-grab hover:border-outline transition-colors group">
+<div class="flex justify-between items-start mb-1.5">
+<div class="font-label-caps text-label-caps text-on-surface-variant px-1 bg-surface-container rounded border border-outline-variant/50">DESIGN</div>
+<div class="flex gap-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-tertiary-fixed text-on-tertiary-fixed">P2</span>
+</div>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface leading-tight mb-2">Create asset exports for v1.1 release</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">timer</span> 3
+                        </div>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+</div>
+<!-- Backlog Item -->
+<div class="bg-surface border border-outline-variant p-2.5 rounded cursor-grab hover:border-outline transition-colors group">
+<div class="flex justify-between items-start mb-1.5">
+<div class="font-label-caps text-label-caps text-on-surface-variant px-1 bg-surface-container rounded border border-outline-variant/50">QA</div>
+<div class="flex gap-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-surface-variant text-on-surface-variant">P3</span>
+</div>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface leading-tight mb-2">Cross-browser testing on Safari</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">timer</span> 5
+                        </div>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Task Creation Modal (Demonstrated as overlay) -->
+<div class="fixed inset-0 bg-on-surface/20 z-50 flex items-center justify-center p-4 backdrop-blur-[1px] hidden" id="taskModal">
+<div class="bg-surface border border-outline-variant w-full max-w-md rounded shadow-none">
+<div class="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-bright">
+<div class="font-headline-xs text-headline-xs font-bold text-primary">New Task</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors" onclick="document.getElementById('taskModal').classList.add('hidden')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-5 flex flex-col gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="font-label-caps text-label-caps text-on-surface-variant">TASK TITLE</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-body-sm focus:border-outline focus:ring-0 transition-colors" placeholder="Enter task description..." type="text"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-caps text-label-caps text-on-surface-variant">PROJECT / TAG</label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-body-sm appearance-none focus:border-outline focus:ring-0 transition-colors">
+<option>API Development</option>
+<option>Frontend Implementation</option>
+<option>Design System</option>
+<option>DevOps / Infra</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-sm">expand_more</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-caps text-label-caps text-on-surface-variant">PRIORITY</label>
+<div class="flex gap-2">
+<button class="flex-1 py-1.5 border border-error bg-error-container text-on-error-container rounded text-body-sm font-medium transition-colors">P1 High</button>
+<button class="flex-1 py-1.5 border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-high rounded text-body-sm transition-colors">P2 Med</button>
+<button class="flex-1 py-1.5 border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-high rounded text-body-sm transition-colors">P3 Low</button>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-caps text-label-caps text-on-surface-variant">ESTIMATED POMODOROS (25m)</label>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">timer</span>
+<input class="w-24 bg-surface-container-lowest border border-outline-variant rounded px-3 py-1.5 font-data-mono text-data-mono focus:border-outline focus:ring-0 transition-colors" max="10" min="1" type="number" value="1"/>
+</div>
+</div>
+</div>
+<div class="px-5 py-4 border-t border-outline-variant bg-surface-container-low flex justify-end gap-3">
+<button class="px-4 py-2 border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-high rounded text-body-sm transition-colors instant duration-100" onclick="document.getElementById('taskModal').classList.add('hidden')">Cancel</button>
+<button class="px-4 py-2 bg-primary-container text-on-primary hover:bg-primary rounded text-body-sm font-medium transition-colors instant duration-100">Create Task</button>
+</div>
+</div>
+</div>
+</body></html>

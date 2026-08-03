@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Directorio de Clientes - CentralOps CRM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-background": "#1b1b1d",
+                      "outline-variant": "#c4c6cd",
+                      "on-tertiary-container": "#e2c59d",
+                      "on-primary-fixed": "#0d1c2e",
+                      "tertiary-fixed-dim": "#dfc29a",
+                      "surface-container-highest": "#e4e2e3",
+                      "on-tertiary-fixed": "#281901",
+                      "surface-container-high": "#eae7e9",
+                      "on-tertiary": "#ffffff",
+                      "secondary-fixed-dim": "#bcc7de",
+                      "secondary-fixed": "#d8e3fb",
+                      "primary": "#303e51",
+                      "tertiary-fixed": "#fcdeb4",
+                      "surface-container-low": "#f5f3f5",
+                      "surface-variant": "#e4e2e3",
+                      "surface-tint": "#515f74",
+                      "outline": "#75777d",
+                      "on-primary-container": "#bbcae1",
+                      "secondary-container": "#d5e0f8",
+                      "on-primary": "#ffffff",
+                      "on-secondary-container": "#586377",
+                      "on-surface-variant": "#44474c",
+                      "secondary": "#545f73",
+                      "inverse-primary": "#b9c7df",
+                      "on-surface": "#1b1b1d",
+                      "primary-fixed-dim": "#b9c7df",
+                      "tertiary-container": "#665131",
+                      "on-tertiary-fixed-variant": "#574325",
+                      "surface": "#fbf9fa",
+                      "on-secondary-fixed-variant": "#3c475a",
+                      "inverse-surface": "#303032",
+                      "error-container": "#ffdad6",
+                      "inverse-on-surface": "#f2f0f2",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "tertiary": "#4d3a1c",
+                      "on-secondary-fixed": "#111c2d",
+                      "surface-container": "#efedef",
+                      "surface-bright": "#fbf9fa",
+                      "on-error": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed-variant": "#3a485b",
+                      "primary-container": "#475569",
+                      "background": "#fbf9fa",
+                      "surface-dim": "#dbd9db",
+                      "primary-fixed": "#d5e3fc"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "element-gap-sm": "8px",
+                      "container-padding": "16px",
+                      "element-gap-md": "12px",
+                      "element-gap-xs": "4px",
+                      "section-gap": "24px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "headline-xs": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-xs": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "data-mono": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-sm": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md h-screen flex flex-col overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim w-full h-14 border-b border-outline-variant flex justify-between items-center px-container-padding">
+<div class="flex items-center gap-element-gap-md">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface dark:text-inverse-on-surface">CentralOps CRM</span>
+</div>
+<div class="flex-1 max-w-md mx-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full h-8 pl-10 pr-4 bg-surface-container-low border border-outline-variant rounded focus:outline-none focus:border-outline focus:ring-0 text-sm font-body-sm text-on-surface placeholder:text-on-surface-variant transition-colors" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-element-gap-sm">
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded transition-colors duration-100 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded transition-colors duration-100 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded border border-outline-variant overflow-hidden ml-2">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A professional headshot of a corporate user in a modern office environment. High key lighting, clean background, sharp focus, professional attire. The overall aesthetic is highly polished and suitable for an enterprise software avatar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_Rscie72oD9zkYg_GxMV4uDkrtr4RZ1LF7nX0m0B44wOyruUMyCOszDCdXp5vpXM8m8wmpgCapfKopArZ-AJ2lBMBIpXVfmS1UypnVd9T3LiJVn_W7FyNCu7OFLSQ270mTy_c31vwQACk_FkvzKqp_lsM4Ys5V-1ILyal8poFtEOwezTpWDQq_9_aB_OSIsYgFBqxwtsCItn1tDxIfscsm9dROuEXksdLm7a2d5AYbsY56g01ICU"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-full py-section-gap bg-surface-container-low dark:bg-surface-dim w-64 border-r border-outline-variant">
+<div class="px-container-padding mb-section-gap">
+<div class="flex items-center gap-element-gap-md mb-2">
+<div class="w-8 h-8 rounded border border-outline-variant bg-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-lg">corporate_fare</span>
+</div>
+<div>
+<h2 class="font-headline-xs text-headline-xs font-semibold text-primary">Management Console</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Billing Module v1.0</p>
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto">
+<ul class="flex flex-col gap-unit">
+<li>
+<a class="flex items-center gap-element-gap-sm text-on-surface-variant hover:text-on-surface px-4 py-2 hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors duration-100 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-element-gap-sm border-l-2 border-primary bg-surface-container-high text-primary font-semibold px-4 py-2 transition-colors duration-100 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-lg">contacts</span>
+<span class="font-body-md text-body-md">CRM/Commercial</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-element-gap-sm text-on-surface-variant hover:text-on-surface px-4 py-2 hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors duration-100 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-lg">account_tree</span>
+<span class="font-body-md text-body-md">Projects</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="mt-auto px-unit pt-4 border-t border-outline-variant">
+<ul class="flex flex-col gap-unit">
+<li>
+<a class="flex items-center gap-element-gap-sm text-on-surface-variant hover:text-on-surface px-4 py-2 hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors duration-100 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-lg">help</span>
+<span class="font-body-md text-body-md">Support</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-element-gap-sm text-on-surface-variant hover:text-on-surface px-4 py-2 hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors duration-100 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-lg">terminal</span>
+<span class="font-body-md text-body-md">Logs</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex overflow-hidden bg-background">
+<!-- Left/Main section: Client List -->
+<div class="flex-1 flex flex-col min-w-[400px] border-r border-outline-variant bg-surface">
+<!-- Toolbar -->
+<div class="px-container-padding py-3 border-b border-outline-variant flex justify-between items-center bg-surface">
+<h1 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Client Directory</h1>
+<div class="flex gap-element-gap-sm">
+<button class="px-3 py-1.5 bg-surface border border-outline-variant rounded font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                            Filter
+                        </button>
+<button class="px-3 py-1.5 bg-primary-container text-on-primary rounded font-body-sm text-body-sm hover:bg-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">add</span>
+                            New Client
+                        </button>
+</div>
+</div>
+<!-- Table -->
+<div class="flex-1 overflow-auto">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface-container-low z-10 border-b border-outline-variant shadow-[0_1px_0_0_#c4c6cd]">
+<tr>
+<th class="font-label-caps text-label-caps text-on-surface-variant px-container-padding py-2 uppercase tracking-wider">Nombre</th>
+<th class="font-label-caps text-label-caps text-on-surface-variant px-container-padding py-2 uppercase tracking-wider">Empresa</th>
+<th class="font-label-caps text-label-caps text-on-surface-variant px-container-padding py-2 uppercase tracking-wider text-right">Total Billed</th>
+<th class="font-label-caps text-label-caps text-on-surface-variant px-container-padding py-2 uppercase tracking-wider w-24">Estado</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant">
+<!-- Active Row -->
+<tr class="hover:bg-surface-container-lowest cursor-pointer transition-colors bg-surface-container-highest">
+<td class="px-container-padding py-3 font-semibold text-primary">Elena Rodriguez</td>
+<td class="px-container-padding py-3 text-on-surface-variant">Nexus Tech Solutions</td>
+<td class="px-container-padding py-3 font-data-mono text-data-mono text-right">$145,200.00</td>
+<td class="px-container-padding py-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-[#e6f4ea] text-[#137333] border border-[#ceead6] text-[11px] font-semibold tracking-wide">Activo</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest cursor-pointer transition-colors">
+<td class="px-container-padding py-3 font-medium">Marcus Chen</td>
+<td class="px-container-padding py-3 text-on-surface-variant">Global Logistics Inc.</td>
+<td class="px-container-padding py-3 font-data-mono text-data-mono text-right">$89,450.50</td>
+<td class="px-container-padding py-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-[#e6f4ea] text-[#137333] border border-[#ceead6] text-[11px] font-semibold tracking-wide">Activo</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest cursor-pointer transition-colors">
+<td class="px-container-padding py-3 font-medium">Sarah Jenkins</td>
+<td class="px-container-padding py-3 text-on-surface-variant">Apex Financial</td>
+<td class="px-container-padding py-3 font-data-mono text-data-mono text-right">$210,000.00</td>
+<td class="px-container-padding py-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant text-[11px] font-semibold tracking-wide">Inactivo</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right side: Client Profile Panel -->
+<div class="w-96 bg-surface flex flex-col overflow-y-auto">
+<!-- Panel Header -->
+<div class="px-container-padding py-4 border-b border-outline-variant sticky top-0 bg-surface z-10 flex justify-between items-start">
+<div>
+<h2 class="font-headline-sm text-headline-sm font-semibold text-primary mb-1">Elena Rodriguez</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">business</span>
+                            Nexus Tech Solutions
+                        </p>
+</div>
+<button class="p-1 text-on-surface-variant hover:bg-surface-container rounded transition-colors">
+<span class="material-symbols-outlined text-sm">more_vert</span>
+</button>
+</div>
+<div class="p-container-padding flex flex-col gap-section-gap">
+<!-- Resumen Financiero -->
+<div class="border border-outline-variant rounded bg-surface-container-lowest overflow-hidden">
+<div class="px-3 py-2 bg-surface-container-low border-b border-outline-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-secondary">payments</span>
+<h3 class="font-label-caps text-label-caps uppercase text-secondary">Resumen Financiero</h3>
+</div>
+<div class="p-3 grid grid-cols-2 gap-4">
+<div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Total Billed</p>
+<p class="font-data-mono text-data-mono text-on-surface text-base">$145,200.00</p>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Current Balance</p>
+<p class="font-data-mono text-data-mono text-error font-semibold text-base">$12,450.00</p>
+</div>
+</div>
+</div>
+<!-- Datos de Contacto -->
+<div class="border border-outline-variant rounded bg-surface-container-lowest overflow-hidden">
+<div class="px-3 py-2 bg-surface-container-low border-b border-outline-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-secondary">contact_mail</span>
+<h3 class="font-label-caps text-label-caps uppercase text-secondary">Datos de Contacto</h3>
+</div>
+<div class="p-3 flex flex-col gap-3 font-body-sm text-body-sm">
+<div class="flex justify-between items-center border-b border-surface-container pb-2">
+<span class="text-on-surface-variant">Email</span>
+<a class="text-primary hover:underline" href="mailto:elena.r@nexustech.com">elena.r@nexustech.com</a>
+</div>
+<div class="flex justify-between items-center border-b border-surface-container pb-2">
+<span class="text-on-surface-variant">Phone</span>
+<span class="font-data-mono text-data-mono">+1 (555) 019-2834</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant">Location</span>
+<span class="text-on-surface">San Francisco, CA</span>
+</div>
+</div>
+</div>
+<!-- Historial Relacional -->
+<div class="border border-outline-variant rounded bg-surface-container-lowest overflow-hidden flex-1">
+<div class="px-3 py-2 bg-surface-container-low border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-secondary">history</span>
+<h3 class="font-label-caps text-label-caps uppercase text-secondary">Historial Relacional</h3>
+</div>
+<button class="text-primary hover:text-primary-fixed text-xs font-semibold">View All</button>
+</div>
+<ul class="flex flex-col divide-y divide-outline-variant">
+<li class="p-3 hover:bg-surface transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Cloud Migration Q3</span>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-[#e8f0fe] text-[#1967d2] border border-[#d2e3fc] text-[10px] font-semibold">Completed</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-xs">Sep 15, 2023 • Project Lead: T. Moore</p>
+</li>
+<li class="p-3 hover:bg-surface transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Security Audit FY24</span>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-[#fef7e0] text-[#b06000] border border-[#fce8b2] text-[10px] font-semibold">In Progress</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-xs">Nov 02, 2023 • Project Lead: A. Smith</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

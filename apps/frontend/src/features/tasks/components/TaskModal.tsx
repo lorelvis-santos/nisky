@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { Timer, X } from "lucide-react";
 import type { Task, TaskPriority, TaskStatus } from "@/types/entities";
 import { useTaskQuery } from "../hooks/useTasks";
 import { taskSchema } from "../schemas/task.schema";
@@ -12,6 +12,7 @@ export type TaskForm = {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate?: string;
+  pomodoroEstimate: number;
 };
 
 const emptyForm: TaskForm = {
@@ -20,6 +21,7 @@ const emptyForm: TaskForm = {
   status: "PENDING",
   priority: "NORMAL",
   dueDate: "",
+  pomodoroEstimate: 0,
 };
 
 export function TaskModal({
@@ -28,6 +30,7 @@ export function TaskModal({
   onClose,
   onSave,
   onDelete,
+  onStartPomodoro,
   onAddSubtask,
   onToggleSubtask,
   onDeleteSubtask,
@@ -37,6 +40,7 @@ export function TaskModal({
   onClose: () => void;
   onSave: (form: TaskForm) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onStartPomodoro?: () => void;
   onAddSubtask: (taskId: string, title: string) => Promise<void>;
   onToggleSubtask: (
     taskId: string,
@@ -53,8 +57,9 @@ export function TaskModal({
           title: task.title,
           description: task.description ?? "",
           status: task.status,
-          priority: task.priority,
-          dueDate: task.dueDate ? task.dueDate.slice(0, 10) : "",
+           priority: task.priority,
+           dueDate: task.dueDate ? task.dueDate.slice(0, 10) : "",
+           pomodoroEstimate: task.pomodoroEstimate,
         }
       : { ...emptyForm, ...initialForm },
   );
@@ -100,7 +105,7 @@ export function TaskModal({
           </button>
         </div>
         <div className="space-y-4 overflow-y-auto p-5">
-          <label className="block">
+           <label className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">
               TÍTULO
             </span>
@@ -157,6 +162,23 @@ export function TaskModal({
                 }
                 type="date"
                 value={form.dueDate}
+              />
+            </label>
+            <label className="block">
+              <span className="font-label-caps text-label-caps text-on-surface-variant">
+                ESTIMADO POMODOROS
+              </span>
+              <input
+                className="field mt-1"
+                min={0}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    pomodoroEstimate: Number(event.target.value) || 0,
+                  })
+                }
+                type="number"
+                value={form.pomodoroEstimate}
               />
             </label>
             <label className="block">
@@ -267,6 +289,15 @@ export function TaskModal({
             </button>
           ) : null}
           <div className="flex gap-3">
+          {task && onStartPomodoro && (
+            <button
+              className="flex items-center gap-1 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+              onClick={onStartPomodoro}
+              type="button"
+            >
+              <Timer size={14} /> Pomodoro
+            </button>
+          )}
           <button
             className="border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high"
             onClick={onClose}

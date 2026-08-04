@@ -9,6 +9,15 @@ function taskDate(value: string | null | undefined) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00.000Z`) : new Date(value);
 }
 
+function taskProgress<T extends { subtasks?: Array<{ completed: boolean }> }>(task: T) {
+  const subtasks = task.subtasks ?? [];
+  return {
+    ...task,
+    subtaskCount: subtasks.length,
+    completedSubtasks: subtasks.filter((subtask) => subtask.completed).length,
+  };
+}
+
 export class TaskService {
   async list(userId: string, query: TaskQueryDto) {
     const page = Math.max(1, Number(query.page) || 1);
@@ -31,7 +40,7 @@ export class TaskService {
       prisma.task.findMany({ where, skip, take, orderBy, include: { subtasks: { orderBy: { order: "asc" } } } }),
       prisma.task.count({ where }),
     ]);
-    return buildPaginatedResponse(data, totalItems, page, limit);
+    return buildPaginatedResponse(data.map(taskProgress), totalItems, page, limit);
   }
 
   async getById(userId: string, id: string) {
@@ -40,7 +49,7 @@ export class TaskService {
       include: { subtasks: { orderBy: { order: "asc" } } },
     });
     if (!task) throw new AppError("NOT_FOUND", "Tarea no encontrada");
-    return task;
+    return taskProgress(task);
   }
 
   async create(userId: string, data: CreateTaskDto) {
@@ -52,10 +61,11 @@ export class TaskService {
         status: data.status,
         priority: data.priority,
         dueDate: taskDate(data.dueDate),
+        pomodoroEstimate: data.pomodoroEstimate ?? 0,
         completedAt: data.status === "COMPLETED" ? new Date() : null,
       },
       include: { subtasks: true },
-    });
+    }).then(taskProgress);
   }
 
   async update(userId: string, id: string, data: UpdateTaskDto) {
@@ -69,9 +79,10 @@ export class TaskService {
         ...(data.status !== undefined ? { status: data.status, completedAt } : {}),
         ...(data.priority !== undefined ? { priority: data.priority } : {}),
         ...(data.dueDate !== undefined ? { dueDate: taskDate(data.dueDate) } : {}),
+        ...(data.pomodoroEstimate !== undefined ? { pomodoroEstimate: data.pomodoroEstimate } : {}),
       },
       include: { subtasks: { orderBy: { order: "asc" } } },
-    });
+    }).then(taskProgress);
   }
 
   async delete(userId: string, id: string) {

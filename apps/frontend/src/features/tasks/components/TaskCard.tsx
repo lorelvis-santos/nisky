@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, MoreHorizontal } from "lucide-react";
+import { CheckCircle2, CheckSquare2, Circle, MoreHorizontal, Timer } from "lucide-react";
 import type { Task } from "@/types/entities";
 import { isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "./PriorityChip";
@@ -22,6 +22,8 @@ export function TaskCard({
 }) {
   const completed = task.status === "COMPLETED";
   const overdue = isTaskOverdue(task);
+  const subtaskTotal = task.subtaskCount ?? task.subtasks?.length ?? 0;
+  const completedSubtasks = task.completedSubtasks ?? task.subtasks?.filter((subtask) => subtask.completed).length ?? 0;
   return (
     <article
       aria-label={`Tarea: ${task.title}`}
@@ -83,7 +85,11 @@ export function TaskCard({
       </div>
       <div className="ml-7 flex items-center justify-between gap-2">
         <PriorityChip priority={task.priority} />
-        {overdue && <span className="font-data-mono text-data-mono text-xs text-error">Vencida</span>}
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
+          {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
+          {overdue && <span className="font-data-mono text-data-mono text-xs text-error">Vencida</span>}
+        </div>
       </div>
     </article>
   );

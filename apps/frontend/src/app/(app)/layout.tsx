@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { TopAppBar } from "@/components/ui/TopAppBar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -18,6 +19,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (isLoading || !isAuthenticated) {
     return <div className="flex min-h-screen items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando sesión...</div>;
   }
+
+  if (pathname === "/focus") return <>{children}</>;
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

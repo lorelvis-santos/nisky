@@ -55,6 +55,7 @@ function useModalUrl() {
       params.delete("quickNoteId");
       navigateWithModal(params, true);
     },
+    openFocus: (taskId: string) => router.push(`/focus?taskId=${encodeURIComponent(taskId)}`),
   };
 }
 
@@ -85,6 +86,7 @@ function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
       status: "PENDING",
       priority: "NORMAL",
       description: "",
+      pomodoroEstimate: 0,
     };
   } catch {
     return undefined;
@@ -260,6 +262,7 @@ function TasksPageContent() {
             await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
           }}
           onSave={saveTask}
+          onStartPomodoro={editingTask ? () => modalUrl.openFocus(editingTask.id) : undefined}
           onToggleSubtask={async (taskId, subtaskId, completed) => {
             await mutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed });
           }}

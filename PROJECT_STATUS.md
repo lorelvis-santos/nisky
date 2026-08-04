@@ -39,6 +39,18 @@
 - [x] Detección de fechas en español con Chrono al convertir capturas en tareas
 - [x] Migraciones Prisma de hábitos y capturas rápidas
 
+## Fase 1: Gestión diaria - Iteración 3
+
+- [x] Modelo persistente de sesiones y configuración Pomodoro
+- [x] Timer full-screen en modo enfoque sin shell de navegación
+- [x] Inicio, pausa, reanudación, detención y finalización
+- [x] Auto-ciclo configurable y sonido al completar
+- [x] Historial reciente y estadísticas de Pomodoro
+- [x] Estimado y contador de Pomodoros vinculados a tareas
+- [x] Botón desde tarea para abrir Pomodoro con tarea preseleccionada
+- [x] Progreso de subtareas `completadas/total` en tareas y dashboard
+- [x] Migración, typecheck, lint, build y smoke test de integración
+
 ## Próxima iteración
 
-Temporizador Pomodoro con historial persistente y relación opcional con tareas, seguido por diario cifrado y base de conocimiento.
+Diario cifrado y base de conocimiento.

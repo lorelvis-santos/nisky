@@ -39,6 +39,10 @@ export interface Task {
   dueDate: string | null;
   completedAt: string | null;
   order: number;
+  pomodoroEstimate: number;
+  pomodoroCount: number;
+  subtaskCount?: number;
+  completedSubtasks?: number;
   subtasks?: Subtask[];
   createdAt: string;
   updatedAt: string;
@@ -91,4 +95,43 @@ export interface QuickNote {
   status: QuickNoteStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export type PomodoroPhase = "WORK" | "SHORT_BREAK" | "LONG_BREAK";
+export type PomodoroSessionStatus = "ACTIVE" | "PAUSED" | "COMPLETED" | "CANCELLED";
+
+export interface PomodoroSession {
+  id: string;
+  userId: string;
+  taskId: string | null;
+  phase: PomodoroPhase;
+  status: PomodoroSessionStatus;
+  plannedSec: number;
+  actualSec: number | null;
+  cycleIndex: number;
+  startedAt: string;
+  pausedAt: string | null;
+  totalPausedSec: number;
+  endedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  task?: { id: string; title: string } | null;
+}
+
+export interface PomodoroSettings {
+  workSec: number;
+  shortBreakSec: number;
+  longBreakSec: number;
+  cyclesPerLong: number;
+  autoCycle: boolean;
+  soundEnabled: boolean;
+}
+
+export interface PomodoroStats {
+  totalSessions: number;
+  completedSessions: number;
+  completedWorkSessions: number;
+  totalWorkSec: number;
+  totalBreakSec: number;
+  activeDays: number;
 }

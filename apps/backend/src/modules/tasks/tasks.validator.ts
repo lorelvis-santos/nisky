@@ -3,6 +3,7 @@ import { z } from "zod";
 const taskStatus = z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"]);
 const taskPriority = z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]);
 const dateValue = z.string().trim().refine((value) => !Number.isNaN(Date.parse(value)), "La fecha no es válida");
+const pomodoroEstimate = z.number().int().min(0).max(100);
 
 export const idParamSchema = z.object({ id: z.uuid("El identificador no es válido") });
 export const subtaskParamsSchema = z.object({
@@ -16,6 +17,7 @@ export const createTaskSchema = z.object({
   status: taskStatus.optional(),
   priority: taskPriority.optional(),
   dueDate: dateValue.optional(),
+  pomodoroEstimate: pomodoroEstimate.optional(),
 });
 
 export const updateTaskSchema = createTaskSchema.partial().extend({ dueDate: dateValue.nullable().optional() });

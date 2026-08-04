@@ -1,4 +1,4 @@
-import { GripVertical, MoreHorizontal } from "lucide-react";
+import { CheckSquare2, GripVertical, MoreHorizontal, Timer } from "lucide-react";
 import type { Task } from "@/types/entities";
 import { PriorityChip } from "./PriorityChip";
 
@@ -13,6 +13,8 @@ export function BacklogItem({
   onToggle: () => void;
   onDragStateChange?: (dragging: boolean) => void;
 }) {
+  const subtaskTotal = task.subtaskCount ?? task.subtasks?.length ?? 0;
+  const completedSubtasks = task.completedSubtasks ?? task.subtasks?.filter((subtask) => subtask.completed).length ?? 0;
   return (
     <article
       aria-label={`Tarea pendiente: ${task.title}`}
@@ -55,7 +57,11 @@ export function BacklogItem({
         </button>
       </div>
       <div className="flex items-center justify-between gap-2 text-on-surface-variant">
-        <PriorityChip priority={task.priority} />
+        <div className="flex items-center gap-2">
+          <PriorityChip priority={task.priority} />
+          <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
+          {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
+        </div>
         <div className="flex items-center gap-2">
           <button
             aria-label={

@@ -14,7 +14,7 @@ La implementación actual se concentra en la Fase 1, Gestión diaria. Esta fase 
 3. Capturar imprevistos en una bandeja de entrada sin obligar a clasificarlos inmediatamente.
 4. Convertir una captura en tarea, sugiriendo automáticamente una fecha detectada en español.
 
-No se implementan todavía Pomodoro, diario cifrado, base de conocimiento, CRM ni finanzas. Las rutas placeholder existentes pueden mantenerse.
+No se implementan todavía diario cifrado, base de conocimiento, CRM ni finanzas. Pomodoro ya está incluido en la Iteración 3. Las rutas placeholder restantes pueden mantenerse.
 
 ## 2. Reglas no negociables
 
@@ -656,3 +656,40 @@ bun run build
 - Pomodoro e historial de sesiones.
 - Drag-and-drop táctil avanzado; se conserva HTML5 drag-and-drop actual.
 - Reglas semánticas complejas para fechas ambiguas; Chrono solo genera sugerencias editables.
+
+## 12. Iteración 3 implementada: Pomodoro
+
+La Iteración 3 implementa el modo enfoque y su integración con tareas.
+
+### Backend
+
+- Modelos `PomodoroSession` y `PomodoroSettings` persistentes y scoped por `userId`.
+- Estados `ACTIVE`, `PAUSED`, `COMPLETED` y `CANCELLED`.
+- Fases `WORK`, `SHORT_BREAK` y `LONG_BREAK`.
+- Settings por usuario: trabajo, descansos, ciclos, auto-ciclo y sonido.
+- API en `/api/v1/pomodoro` para settings, sesiones, acciones, historial y estadísticas.
+- Prevención de sesiones activas simultáneas por usuario.
+- Incremento transaccional de `Task.pomodoroCount` al completar una sesión `WORK` vinculada.
+- `Task.pomodoroEstimate` configurable de 0 a 100.
+- Progreso de subtareas devuelto como `completedSubtasks` y `subtaskCount`.
+
+### Frontend
+
+- `/focus` en pantalla completa sin sidebar ni TopAppBar.
+- Timer calculado desde timestamps de servidor para sobrevivir renders y pausas.
+- Inicio, pausa, reanudación, detención y finalización manual.
+- Auto-ciclo opcional entre trabajo y descansos.
+- Selector de tarea activa con progreso de Pomodoros y subtareas.
+- Configuración modal y sonido al finalizar.
+- Historial reciente de sesiones.
+- Botón `Pomodoro` desde el modal de tarea con preselección vía `?taskId=`.
+- Indicador `Timer pomodorosHechos/pomodorosEstimados` en tarjetas, backlog y dashboard.
+- Indicador `CheckSquare subtareasCompletadas/subtareasTotales` en tarjetas, backlog y dashboard.
+
+### Migración
+
+```bash
+cd apps/backend
+bun run db:migrate -- --name add_pomodoro
+bun run db:generate
+```

@@ -25,6 +25,8 @@ model User {
   habits        Habit[]
   habitEntries  HabitEntry[]
   quickNotes    QuickNote[]
+  pomodoroSessions PomodoroSession[]
+  pomodoroSettings PomodoroSettings?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -43,6 +45,9 @@ model Task {
   completedAt        DateTime?
   order              Int          @default(0)
   subtasks           Subtask[]
+  pomodoroEstimate   Int          @default(0)
+  pomodoroCount      Int          @default(0)
+  pomodoroSessions   PomodoroSession[]
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
@@ -80,6 +85,54 @@ enum TaskPriority {
   NORMAL
   HIGH
   URGENT
+}
+
+enum PomodoroPhase {
+  WORK
+  SHORT_BREAK
+  LONG_BREAK
+}
+
+enum PomodoroSessionStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+model PomodoroSession {
+  id             String                 @id @default(uuid())
+  userId         String
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId         String?
+  task           Task?                  @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  phase          PomodoroPhase
+  status         PomodoroSessionStatus  @default(ACTIVE)
+  plannedSec     Int
+  actualSec      Int?
+  cycleIndex     Int                    @default(1)
+  startedAt      DateTime               @default(now())
+  pausedAt       DateTime?
+  totalPausedSec Int                    @default(0)
+  endedAt        DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([userId, startedAt])
+  @@index([userId, status])
+  @@index([userId, taskId])
+}
+
+model PomodoroSettings {
+  userId        String   @id
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workSec       Int      @default(1500)
+  shortBreakSec Int      @default(300)
+  longBreakSec  Int      @default(900)
+  cyclesPerLong Int      @default(4)
+  autoCycle     Boolean  @default(false)
+  soundEnabled  Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
 }
 
 enum HabitFrequency {

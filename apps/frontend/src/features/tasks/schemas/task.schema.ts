@@ -6,6 +6,7 @@ export const taskSchema = z.object({
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
   priority: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]),
   dueDate: z.string().optional(),
+  pomodoroEstimate: z.number().int().min(0).max(100),
 });
 
 export const subtaskSchema = z.object({ title: z.string().trim().min(1, "El título es requerido").max(200) });

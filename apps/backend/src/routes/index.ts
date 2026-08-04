@@ -5,6 +5,7 @@ import uploadRoutes from "../modules/uploads/uploads.routes";
 import taskRoutes from "../modules/tasks/tasks.routes";
 import habitRoutes from "../modules/habits/habits.routes";
 import quickNoteRoutes from "../modules/quicknotes/quicknotes.routes";
+import pomodoroRoutes from "../modules/pomodoro/pomodoro.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -13,5 +14,6 @@ router.use("/uploads", uploadRoutes);
 router.use("/tasks", taskRoutes);
 router.use("/habits", habitRoutes);
 router.use("/quick-notes", quickNoteRoutes);
+router.use("/pomodoro", pomodoroRoutes);
 
 export default router;

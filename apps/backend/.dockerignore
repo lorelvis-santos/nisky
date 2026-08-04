@@ -1,5 +1,14 @@
 node_modules
-.env*
-src/infra/prisma/generated
-src/infra/prisma/migrations
+dist
+build
+*.log
+.env
+.env.*
+!.env.example
 .git
+.gitignore
+README.md
+docker-compose.yml
+coverage
+.nyc_output
+.codebase-memory

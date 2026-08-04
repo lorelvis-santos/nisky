@@ -40,7 +40,9 @@ export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: Quic
           <button className="bg-primary-container px-3 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50" disabled={!draft.trim() || saveState === "saving"} onClick={() => void save()} type="button">Guardar captura</button>
         </div>
       </div>
-      {(query.data ?? []).length > 0 && (
+      {query.isError ? (
+        <p className="border-t border-outline-variant p-3 font-body-sm text-body-sm text-error">No se pudieron cargar las capturas.</p>
+      ) : (query.data ?? []).length > 0 && (
         <div className="border-t border-outline-variant p-3">
           <p className="mb-2 font-label-caps text-label-caps text-on-surface-variant">BANDEJA DE ENTRADA</p>
           <div className="max-h-[220px] overflow-y-auto">{(query.data ?? []).map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)}</div>

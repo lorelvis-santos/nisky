@@ -4,10 +4,11 @@ import type { CreateQuickNoteDto, QuickNoteQueryDto, UpdateQuickNoteDto } from "
 
 export class QuickNoteService {
   async list(userId: string, query: QuickNoteQueryDto) {
+    const limit = Math.min(50, Math.max(1, Number(query.limit) || 8));
     return prisma.quickNote.findMany({
       where: { userId, ...(query.status ? { status: query.status } : {}) },
       orderBy: { createdAt: "desc" },
-      take: query.limit,
+      take: limit,
     });
   }
 

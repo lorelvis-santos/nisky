@@ -238,8 +238,9 @@ Reglas:
 1. `DAILY` significa que la racha cuenta días consecutivos.
 2. `WEEKLY` conserva `targetDays` para la evolución posterior; la primera UI solo debe permitir y mostrar hábitos diarios.
 3. Archivar oculta el hábito del dashboard sin borrar sus entradas.
-4. Eliminar borra el hábito y sus entradas por cascade.
-5. Una fecha de entrada es una fecha calendario normalizada a `T12:00:00.000Z`.
+4. El manager debe poder listar hábitos archivados y restaurarlos con `archived: false`.
+5. Eliminar borra el hábito y sus entradas por cascade.
+6. Una fecha de entrada es una fecha calendario normalizada a `T12:00:00.000Z`.
 
 Ejecutar:
 

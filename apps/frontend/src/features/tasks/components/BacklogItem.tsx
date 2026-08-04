@@ -16,7 +16,7 @@ export function BacklogItem({
   return (
     <article
       aria-label={`Tarea pendiente: ${task.title}`}
-      className="group flex min-h-[104px] flex-col gap-2 border border-outline-variant bg-surface p-3 transition-colors hover:border-outline"
+      className="group flex min-h-[104px] cursor-grab flex-col gap-2 border border-outline-variant bg-surface p-3 transition-colors hover:border-outline active:cursor-grabbing"
       draggable
       onDoubleClick={onOpen}
       onDragEnd={() => onDragStateChange?.(false)}

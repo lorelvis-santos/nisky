@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createHabit, deleteHabit, fetchHabits, toggleHabitEntry, updateHabit, type CreateHabitPayload, type UpdateHabitPayload } from "../api/habits";
 
-export function useHabitsQuery() {
-  return useQuery({ queryKey: ["habits"], queryFn: fetchHabits });
+export function useHabitsQuery(options: { includeArchived?: boolean } = {}) {
+  const includeArchived = options.includeArchived ?? false;
+  return useQuery({ queryKey: ["habits", { includeArchived }], queryFn: () => fetchHabits(includeArchived) });
 }
 
 export function useHabitMutations() {

@@ -2,13 +2,13 @@ import { Router } from "express";
 import { requireAuth } from "../../middlewares/auth.middleware";
 import { validateBody, validateParams, validateQuery } from "../../middlewares/validate.middleware";
 import { HabitController } from "./habits.controller";
-import { createHabitSchema, entriesQuerySchema, idParamSchema, toggleEntrySchema, updateHabitSchema } from "./habits.validator";
+import { createHabitSchema, entriesQuerySchema, habitQuerySchema, idParamSchema, toggleEntrySchema, updateHabitSchema } from "./habits.validator";
 
 const router = Router();
 const controller = new HabitController();
 
 router.use(requireAuth);
-router.get("/", controller.list);
+router.get("/", validateQuery(habitQuerySchema), controller.list);
 router.post("/", validateBody(createHabitSchema), controller.create);
 router.get("/:id", validateParams(idParamSchema), controller.getById);
 router.patch("/:id", validateParams(idParamSchema), validateBody(updateHabitSchema), controller.update);

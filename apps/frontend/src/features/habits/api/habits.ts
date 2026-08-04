@@ -13,8 +13,8 @@ export interface UpdateHabitPayload extends Partial<CreateHabitPayload> {
   archived?: boolean;
 }
 
-export async function fetchHabits() {
-  const { data } = await api.get<ApiResponse<Habit[]>>("/habits");
+export async function fetchHabits(includeArchived = false) {
+  const { data } = await api.get<ApiResponse<Habit[]>>("/habits", { params: { includeArchived } });
   return data.data as Habit[];
 }
 

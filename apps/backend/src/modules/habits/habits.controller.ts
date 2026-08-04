@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
 import { habitService } from "./habits.service";
-import type { CreateHabitDto, EntriesQueryDto, ToggleEntryDto, UpdateHabitDto } from "./habits.validator";
+import type { CreateHabitDto, EntriesQueryDto, HabitQueryDto, ToggleEntryDto, UpdateHabitDto } from "./habits.validator";
 
 type IdParams = { id: string };
 
@@ -12,7 +12,7 @@ function userId(req: Request) {
 
 export class HabitController {
   list = async (req: Request, res: Response, next: NextFunction) => {
-    try { res.success(await habitService.list(userId(req))); } catch (error) { next(error); }
+    try { res.success(await habitService.list(userId(req), (req.query as unknown as HabitQueryDto).includeArchived)); } catch (error) { next(error); }
   };
 
   create = async (req: Request<{}, {}, CreateHabitDto>, res: Response, next: NextFunction) => {

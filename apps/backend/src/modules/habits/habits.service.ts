@@ -21,9 +21,9 @@ function addDays(value: string, amount: number) {
 }
 
 export class HabitService {
-  async list(userId: string) {
+  async list(userId: string, includeArchived = false) {
     const habits = await prisma.habit.findMany({
-      where: { userId, archived: false },
+      where: { userId, ...(includeArchived ? {} : { archived: false }) },
       orderBy: { createdAt: "asc" },
     });
     return Promise.all(habits.map(async (habit) => {

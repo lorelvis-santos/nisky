@@ -5,6 +5,10 @@ const dateValue = z.string().trim().refine((value) => !Number.isNaN(Date.parse(v
 
 export const idParamSchema = z.object({ id: z.uuid("El identificador no es válido") });
 
+export const habitQuerySchema = z.object({
+  includeArchived: z.enum(["true", "false"]).transform((value) => value === "true").default(false),
+});
+
 export const createHabitSchema = z.object({
   name: z.string("El nombre es requerido").trim().min(1, "El nombre es requerido").max(100),
   color: z.string().trim().max(20).optional(),
@@ -31,3 +35,4 @@ export type CreateHabitDto = z.infer<typeof createHabitSchema>;
 export type UpdateHabitDto = z.infer<typeof updateHabitSchema>;
 export type ToggleEntryDto = z.infer<typeof toggleEntrySchema>;
 export type EntriesQueryDto = z.infer<typeof entriesQuerySchema>;
+export type HabitQueryDto = z.infer<typeof habitQuerySchema>;

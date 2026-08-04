@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useHabitsQuery, useHabitMutations } from "../hooks/useHabits";
 
 export function HabitManager({ onClose }: { onClose: () => void }) {
-  const query = useHabitsQuery();
+  const query = useHabitsQuery({ includeArchived: true });
   const mutations = useHabitMutations();
   const [newName, setNewName] = useState("");
   const [names, setNames] = useState<Record<string, string>>({});
@@ -44,6 +44,15 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const restore = async (id: string) => {
+    try {
+      await mutations.update.mutateAsync({ id, payload: { archived: false } });
+      toast.success("Hábito restaurado");
+    } catch {
+      toast.error("No se pudo restaurar el hábito");
+    }
+  };
+
   const remove = async (id: string) => {
     if (deleteId !== id) {
       setDeleteId(id);
@@ -71,14 +80,29 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
             <button className="border border-outline-variant px-3 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={() => void create()} type="button">Añadir</button>
           </div>
           {query.isLoading ? <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando hábitos...</p> : (query.data ?? []).length === 0 ? <p className="font-body-sm text-body-sm text-on-surface-variant">No tienes hábitos configurados.</p> : (
-            <div className="divide-y divide-outline-variant border-y border-outline-variant">
-              {(query.data ?? []).map((habit) => (
+            <div className="space-y-4">
+              <div className="divide-y divide-outline-variant border-y border-outline-variant">
+              {(query.data ?? []).filter((habit) => !habit.archived).map((habit) => (
                 <div className="flex items-center gap-2 py-2" key={habit.id}>
                   <input className="field h-8" onBlur={() => void rename(habit.id)} onChange={(event) => setNames((current) => ({ ...current, [habit.id]: event.target.value }))} value={names[habit.id] ?? habit.name} />
                   <button aria-label={`Archivar ${habit.name}`} className="shrink-0 text-on-surface-variant hover:text-primary" onClick={() => void archive(habit.id)} type="button"><Archive size={16} /></button>
                   <button aria-label={`Eliminar ${habit.name}`} className={`shrink-0 text-on-surface-variant hover:text-error ${deleteId === habit.id ? "bg-error px-1 text-error-foreground" : ""}`} onClick={() => void remove(habit.id)} type="button"><Trash2 size={16} /></button>
                 </div>
               ))}
+              {(query.data ?? []).filter((habit) => !habit.archived).length === 0 && <p className="py-3 font-body-sm text-body-sm text-on-surface-variant">No hay hábitos activos.</p>}
+              </div>
+              {(query.data ?? []).some((habit) => habit.archived) && <section className="border-t border-outline-variant pt-3">
+                <h3 className="mb-2 font-label-caps text-label-caps text-on-surface-variant">ARCHIVADOS</h3>
+                <div className="divide-y divide-outline-variant border-y border-outline-variant">
+                  {(query.data ?? []).filter((habit) => habit.archived).map((habit) => (
+                    <div className="flex items-center gap-2 py-2" key={habit.id}>
+                      <span className="flex-1 font-body-sm text-body-sm text-on-surface-variant">{habit.name}</span>
+                      <button aria-label={`Desarchivar ${habit.name}`} className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => void restore(habit.id)} type="button"><ArchiveRestore size={16} /> Desarchivar</button>
+                      <button aria-label={`Eliminar ${habit.name}`} className={`shrink-0 text-on-surface-variant hover:text-error ${deleteId === habit.id ? "bg-error px-1 text-error-foreground" : ""}`} onClick={() => void remove(habit.id)} type="button"><Trash2 size={16} /></button>
+                    </div>
+                  ))}
+                </div>
+              </section>}
             </div>
           )}
         </div>

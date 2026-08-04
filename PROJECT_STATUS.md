@@ -29,8 +29,10 @@
 - [x] Eliminación de tareas con confirmación inline
 - [x] Indicadores de tareas vencidas en planificación y dashboard
 - [x] Reordenamiento manual persistente dentro de cada columna semanal
+- [x] Cursor de arrastre visible en tareas de planificación y backlog
 - [x] Modelo y API persistente de hábitos con entradas diarias y rachas
 - [x] Registro de hábitos conectado al dashboard y manager de hábitos
+- [x] Listado y restauración de hábitos archivados
 - [x] Modelo y API de capturas rápidas con bandeja INBOX/ARCHIVED
 - [x] Guardado explícito de capturas rápidas y acciones de archivar, eliminar y convertir
 - [x] Detección de fechas en español con Chrono al convertir capturas en tareas

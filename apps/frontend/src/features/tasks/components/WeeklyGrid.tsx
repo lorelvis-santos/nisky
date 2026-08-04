@@ -23,6 +23,7 @@ export function WeeklyGrid({
   dayOrder,
   isDragging,
   onDragStateChange,
+  onStartPomodoro,
 }: {
   weekStart: Date;
   tasks: Task[];
@@ -33,6 +34,7 @@ export function WeeklyGrid({
   dayOrder: Record<string, string[]>;
   isDragging: boolean;
   onDragStateChange: (dragging: boolean) => void;
+  onStartPomodoro: (task: Task) => void;
 }) {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const today = dateKey(new Date());
@@ -121,6 +123,7 @@ export function WeeklyGrid({
                           reorderAt(taskId, taskIndex);
                         }}
                         onOpen={() => onOpen(task)}
+                        onStartPomodoro={() => onStartPomodoro(task)}
                         onToggle={() => onToggle(task)}
                         task={task}
                       />

@@ -196,6 +196,7 @@ function TasksPageContent() {
 
   const openCreate = () => modalUrl.openCreate();
   const openEdit = (task: Task) => modalUrl.openTask(task.id);
+  const openFocus = (task: Task) => modalUrl.openFocus(task.id);
   const closeModal = () => modalUrl.close();
 
   return (
@@ -223,6 +224,7 @@ function TasksPageContent() {
             onMoveTask={(taskId, dueDate) => void moveTask(taskId, dueDate)}
             onOpen={openEdit}
             onReorder={(key, ids) => void handleReorder(key, ids)}
+            onStartPomodoro={openFocus}
             onToggle={(task) => void toggleTask(task)}
             tasks={tasks}
             weekStart={weekStart}
@@ -234,6 +236,7 @@ function TasksPageContent() {
             onOpen={openEdit}
             onPriority={setPriority}
             onSearch={setSearch}
+            onStartPomodoro={openFocus}
             onToggle={(task) => void toggleTask(task)}
             priority={priority}
             search={search}

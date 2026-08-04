@@ -13,6 +13,7 @@ export function BacklogPanel({
   onToggle,
   onMoveTask,
   onDragStateChange,
+  onStartPomodoro,
 }: {
   tasks: Task[];
   search: string;
@@ -24,6 +25,7 @@ export function BacklogPanel({
   onToggle: (task: Task) => void;
   onMoveTask: (taskId: string) => void;
   onDragStateChange: (dragging: boolean) => void;
+  onStartPomodoro: (task: Task) => void;
 }) {
   return (
     <aside
@@ -94,6 +96,7 @@ export function BacklogPanel({
               key={task.id}
               onDragStateChange={onDragStateChange}
               onOpen={() => onOpen(task)}
+              onStartPomodoro={() => onStartPomodoro(task)}
               onToggle={() => onToggle(task)}
               task={task}
             />

@@ -1,4 +1,4 @@
-import { CheckSquare2, GripVertical, MoreHorizontal, Timer } from "lucide-react";
+import { CheckSquare2, GripVertical, MoreHorizontal, Play, Timer } from "lucide-react";
 import type { Task } from "@/types/entities";
 import { PriorityChip } from "./PriorityChip";
 
@@ -7,11 +7,13 @@ export function BacklogItem({
   onOpen,
   onToggle,
   onDragStateChange,
+  onStartPomodoro,
 }: {
   task: Task;
   onOpen: () => void;
   onToggle: () => void;
   onDragStateChange?: (dragging: boolean) => void;
+  onStartPomodoro?: () => void;
 }) {
   const subtaskTotal = task.subtaskCount ?? task.subtasks?.length ?? 0;
   const completedSubtasks = task.completedSubtasks ?? task.subtasks?.filter((subtask) => subtask.completed).length ?? 0;
@@ -63,6 +65,7 @@ export function BacklogItem({
           {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
         </div>
         <div className="flex items-center gap-2">
+          {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="flex items-center justify-center border border-outline-variant p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
           <button
             aria-label={
               task.status === "COMPLETED"

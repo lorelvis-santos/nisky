@@ -49,6 +49,8 @@ export class AuthController {
       setRefreshCookie(res, result.refreshToken);
       res.success({ accessToken: result.accessToken, user: result.user });
     } catch (error) {
+      // An invalid refresh cookie must not make the proxy treat the client as authenticated.
+      res.clearCookie(COOKIE_NAME, { path: cookieOptions.path });
       next(error);
     }
   };

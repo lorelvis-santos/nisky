@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(result.accessToken);
     setToken(result.accessToken);
     setUser(result.user);
+    setIsLoading(false);
   }, []);
 
   const logout = useCallback(async () => {
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(null);
       setToken(null);
       setUser(null);
+      setIsLoading(false);
       router.replace("/login");
     };
     window.addEventListener("auth:refreshed", onRefreshed);

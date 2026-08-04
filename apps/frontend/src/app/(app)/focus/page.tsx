@@ -21,6 +21,7 @@ import {
   usePomodoroSettingsQuery,
 } from "@/features/pomodoro/hooks/usePomodoro";
 import { playCompletionSound } from "@/features/pomodoro/lib/sound";
+import { usePomodoro } from "@/context/PomodoroProvider";
 
 const fallbackSettings: PomodoroSettings = {
   workSec: 1500,
@@ -46,6 +47,7 @@ function FocusPageContent() {
   const tasksQuery = useTasksQuery({ limit: 100 });
   const selectedTaskQuery = useTaskQuery(taskIdFromUrl);
   const mutations = usePomodoroMutations();
+  const globalPomodoro = usePomodoro();
   const settings = settingsQuery.data ?? fallbackSettings;
   const [phase, setPhase] = useState<PomodoroPhase>("WORK");
   const [cycleIndex, setCycleIndex] = useState(1);
@@ -65,7 +67,7 @@ function FocusPageContent() {
     null;
   const currentSession =
     session === undefined
-      ? (sessionsQuery.data?.data.find(
+      ? (globalPomodoro.activeSession ?? sessionsQuery.data?.data.find(
           (item) => item.status === "ACTIVE" || item.status === "PAUSED",
         ) ?? null)
       : session;
@@ -106,12 +108,13 @@ function FocusPageContent() {
         setPhase(nextPhase);
         setCycleIndex(nextCycleIndex);
         setSession(started);
+        globalPomodoro.setActiveSession(started);
         setNow(Date.now());
       } catch {
         toast.error("No se pudo iniciar la sesión Pomodoro");
       }
     },
-    [mutations.start, selectedTaskId],
+    [globalPomodoro, mutations.start, selectedTaskId],
   );
 
   const completeSession = useCallback(async () => {
@@ -141,13 +144,14 @@ function FocusPageContent() {
             ? 1
             : currentSession.cycleIndex;
       setSession(null);
+      globalPomodoro.clearActiveSession();
       if (settings.autoCycle) await startPhase(nextPhase, nextCycle);
     } catch {
       toast.error("No se pudo completar la sesión");
     } finally {
       completionInFlight.current = false;
     }
-  }, [currentSession, mutations.action, settings, startPhase]);
+  }, [currentSession, globalPomodoro, mutations.action, settings, startPhase]);
 
   useEffect(() => {
     if (currentSession?.status !== "ACTIVE" || remainingSec > 0)
@@ -164,6 +168,7 @@ function FocusPageContent() {
         action: paused ? "RESUME" : "PAUSE",
       });
       setSession(updated);
+      globalPomodoro.setActiveSession(updated);
       setNow(Date.now());
     } catch {
       toast.error("No se pudo actualizar la sesión");
@@ -178,6 +183,7 @@ function FocusPageContent() {
         action: "CANCEL",
       });
       setSession(null);
+      globalPomodoro.clearActiveSession();
       toast.success("Sesión detenida");
     } catch {
       toast.error("No se pudo detener la sesión");

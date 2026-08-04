@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { api, refreshAccessToken, setAccessToken } from "@/lib/api";
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,13 +31,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const logout = useCallback(async () => {
-    try { await api.post("/auth/logout"); } catch { /* logout is idempotent */ }
+  const clearSession = useCallback(() => {
     setAccessToken(null);
     setToken(null);
     setUser(null);
+    queryClient.clear();
+  }, [queryClient]);
+
+  const logout = useCallback(async () => {
+    try { await api.post("/auth/logout"); } catch { /* logout is idempotent */ }
+    clearSession();
     router.replace("/login");
-  }, [router]);
+  }, [router, clearSession]);
 
   useEffect(() => {
     const onRefreshed = (event: Event) => {
@@ -43,9 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result?.accessToken && result.user) setAuth(result);
     };
     const onLogout = () => {
-      setAccessToken(null);
-      setToken(null);
-      setUser(null);
+      clearSession();
       setIsLoading(false);
       router.replace("/login");
     };
@@ -55,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("auth:refreshed", onRefreshed);
       window.removeEventListener("auth:logout", onLogout);
     };
-  }, [router, setAuth]);
+  }, [router, setAuth, clearSession]);
 
   useEffect(() => {
     let active = true;

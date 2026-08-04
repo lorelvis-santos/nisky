@@ -11,6 +11,18 @@
 - [x] Steel Monolith aplicado
 - [x] Verificación de API, migraciones, typecheck y build
 
-## Próxima fase
+## Fase 1: Gestión diaria - Iteración 1
 
-Gestión diaria: tareas, planificación, Pomodoro, diario cifrado y base de conocimiento.
+- [x] Shell responsive centralizado con sidebar drawer móvil y TopAppBar
+- [x] Navegación en inglés con UI en español
+- [x] Modelo multiusuario de tareas y subtareas
+- [x] CRUD de tareas con estados, prioridades y fechas
+- [x] CRUD de subtareas con aislamiento por usuario
+- [x] Planificación semanal responsive y backlog ordenado por prioridad
+- [x] Modal de creación/edición y actualización inline de estado
+- [x] Placeholders navegables para enfoque, diario, conocimiento y soporte
+- [x] Migración Prisma, typecheck, lint, build y smoke test de API
+
+## Próxima iteración
+
+Temporizador Pomodoro con historial persistente y relación opcional con tareas, seguido por diario cifrado y base de conocimiento.

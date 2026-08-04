@@ -20,10 +20,63 @@ model User {
   role          UserRole       @default(USER)
   avatarUrl     String?
   refreshTokens RefreshToken[]
+  tasks         Task[]
+  subtasks      Subtask[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
   @@index([role])
+}
+
+model Task {
+  id                 String       @id @default(uuid())
+  userId             String
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title              String
+  description        String?
+  status             TaskStatus   @default(PENDING)
+  priority           TaskPriority @default(NORMAL)
+  dueDate            DateTime?
+  completedAt        DateTime?
+  order              Int          @default(0)
+  subtasks           Subtask[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+  @@index([userId, priority])
+}
+
+model Subtask {
+  id          String    @id @default(uuid())
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([taskId])
+  @@index([userId])
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
 model RefreshToken {

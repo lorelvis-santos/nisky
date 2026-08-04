@@ -1,0 +1,111 @@
+"use client";
+
+import { Suspense, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import type { Task, TaskPriority } from "@/types/entities";
+import { BacklogPanel } from "@/features/tasks/components/BacklogPanel";
+import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
+import { WeekNavigation } from "@/features/tasks/components/WeekNavigation";
+import { WeeklyGrid } from "@/features/tasks/components/WeeklyGrid";
+import { useTaskMutations, useTaskQuery, useTasksQuery } from "@/features/tasks/hooks/useTasks";
+
+const emptyTasks: Task[] = [];
+
+function useModalUrl() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const state = { taskId: searchParams.get("taskId"), create: searchParams.get("modal") === "create" };
+
+  const navigateWithModal = (params: URLSearchParams, replace = false) => {
+    const query = params.toString();
+    const url = query ? `${pathname}?${query}` : pathname;
+    if (replace) router.replace(url, { scroll: false });
+    else router.push(url, { scroll: false });
+  };
+
+  return {
+    state,
+    openTask: (taskId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("modal");
+      params.set("taskId", taskId);
+      navigateWithModal(params);
+    },
+    openCreate: () => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("taskId");
+      params.set("modal", "create");
+      navigateWithModal(params);
+    },
+    close: () => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("taskId");
+      params.delete("modal");
+      navigateWithModal(params, true);
+    },
+  };
+}
+
+function monday(date: Date) {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  const day = result.getDay();
+  result.setDate(result.getDate() - (day === 0 ? 6 : day - 1));
+  return result;
+}
+
+function weekLabel(start: Date) {
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  return `${start.toLocaleDateString("es-CO", { day: "2-digit", month: "short" })} - ${end.toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}`;
+}
+
+function TasksPageContent() {
+  const [weekStart, setWeekStart] = useState(() => monday(new Date()));
+  const [search, setSearch] = useState("");
+  const [priority, setPriority] = useState<TaskPriority | "ALL">("ALL");
+  const [isDragging, setIsDragging] = useState(false);
+  const modalUrl = useModalUrl();
+  const query = useTasksQuery({ q: search || undefined, priority: priority === "ALL" ? undefined : priority });
+  const urlTaskQuery = useTaskQuery(modalUrl.state.taskId);
+  const mutations = useTaskMutations();
+  const tasks = query.data?.data ?? emptyTasks;
+  const backlog = useMemo(() => tasks.filter((task) => !task.dueDate), [tasks]);
+  const taskFromUrl = urlTaskQuery.data ?? tasks.find((task) => task.id === modalUrl.state.taskId) ?? null;
+  const editingTask = taskFromUrl;
+  const modalOpen = Boolean(modalUrl.state.taskId || modalUrl.state.create);
+
+  const moveWeek = (amount: number) => setWeekStart((current) => { const next = new Date(current); next.setDate(next.getDate() + amount * 7); return next; });
+  const toggleTask = async (task: Task) => {
+    try { await mutations.update.mutateAsync({ id: task.id, payload: { status: task.status === "COMPLETED" ? "PENDING" : "COMPLETED" } }); } catch { toast.error("No se pudo actualizar la tarea"); }
+  };
+  const moveTask = async (taskId: string, dueDate: string | null) => {
+    const task = tasks.find((item) => item.id === taskId);
+    const currentDueDate = task?.dueDate ? task.dueDate.slice(0, 10) : null;
+    if (currentDueDate === dueDate) return;
+    try {
+      await mutations.update.mutateAsync({ id: taskId, payload: { dueDate } });
+      toast.success(dueDate ? "Fecha de vencimiento actualizada" : "Tarea devuelta a pendientes");
+    } catch { toast.error("No se pudo mover la tarea"); }
+  };
+  const saveTask = async (form: TaskForm) => {
+    const payload = { ...form, description: form.description || undefined, dueDate: form.dueDate || undefined };
+    try {
+      if (editingTask) await mutations.update.mutateAsync({ id: editingTask.id, payload });
+      else await mutations.create.mutateAsync(payload);
+      modalUrl.close();
+      toast.success(editingTask ? "Tarea actualizada" : "Tarea creada");
+    } catch { toast.error("No se pudo guardar la tarea"); }
+  };
+  const openCreate = () => { modalUrl.openCreate(); };
+  const openEdit = (task: Task) => { modalUrl.openTask(task.id); };
+  const closeModal = () => { modalUrl.close(); };
+
+  return <section className="flex h-full min-h-0 flex-col bg-surface"><div className="flex shrink-0 flex-col gap-3 border-b border-outline-variant bg-surface-bright p-container-padding sm:flex-row sm:items-center sm:justify-between"><div><p className="font-label-caps text-label-caps uppercase text-on-surface-variant">GESTIÓN DIARIA</p><h1 className="mt-1 font-headline-sm text-headline-sm text-primary">Planificación</h1></div><div className="flex items-center justify-between gap-3 sm:justify-end"><span className="font-data-mono text-data-mono text-xs text-on-surface-variant sm:hidden">{weekLabel(weekStart)}</span><WeekNavigation label={weekLabel(weekStart)} onNext={() => moveWeek(1)} onPrevious={() => moveWeek(-1)} onToday={() => setWeekStart(monday(new Date()))} /></div></div>{query.isLoading ? <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando tareas...</div> : query.isError ? <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-error">No se pudieron cargar las tareas.</div> : <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden"><WeeklyGrid isDragging={isDragging} onDragStateChange={setIsDragging} onMoveTask={(taskId, dueDate) => void moveTask(taskId, dueDate)} onOpen={openEdit} onToggle={(task) => void toggleTask(task)} tasks={tasks} weekStart={weekStart} /><BacklogPanel onCreate={openCreate} onDragStateChange={setIsDragging} onMoveTask={(taskId) => void moveTask(taskId, null)} onOpen={openEdit} onPriority={setPriority} onSearch={setSearch} onToggle={(task) => void toggleTask(task)} priority={priority} search={search} tasks={backlog} /></div>} {modalOpen && (!modalUrl.state.taskId || editingTask) && <TaskModal key={editingTask?.id ?? "new"} onAddSubtask={async (taskId, title) => { await mutations.addSubtask.mutateAsync({ taskId, title }); }} onClose={closeModal} onDeleteSubtask={async (taskId, subtaskId) => { await mutations.removeSubtask.mutateAsync({ taskId, subtaskId }); }} onSave={saveTask} onToggleSubtask={async (taskId, subtaskId, completed) => { await mutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed }); }} task={editingTask} />}</section>;
+}
+
+export default function TasksPage() {
+  return <Suspense fallback={<div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando planificación...</div>}><TasksPageContent /></Suspense>;
+}

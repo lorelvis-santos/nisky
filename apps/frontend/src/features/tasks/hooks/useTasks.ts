@@ -1,0 +1,25 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createSubtask, createTask, deleteSubtask, deleteTask, fetchTask, fetchTasks, updateSubtask, updateTask, type TaskQuery, type TaskUpdatePayload } from "../api/tasks";
+
+export function useTasksQuery(params: TaskQuery = {}) {
+  return useQuery({ queryKey: ["tasks", params], queryFn: () => fetchTasks(params) });
+}
+
+export function useTaskQuery(id: string | null) {
+  return useQuery({ queryKey: ["task", id], queryFn: () => fetchTask(id as string), enabled: Boolean(id) });
+}
+
+export function useTaskMutations() {
+  const client = useQueryClient();
+  const invalidate = async () => {
+    await client.invalidateQueries({ queryKey: ["tasks"] });
+    await client.invalidateQueries({ queryKey: ["task"] });
+  };
+  const create = useMutation({ mutationFn: createTask, onSuccess: invalidate });
+  const update = useMutation({ mutationFn: ({ id, payload }: { id: string; payload: TaskUpdatePayload }) => updateTask(id, payload), onSuccess: invalidate });
+  const remove = useMutation({ mutationFn: deleteTask, onSuccess: invalidate });
+  const addSubtask = useMutation({ mutationFn: ({ taskId, title }: { taskId: string; title: string }) => createSubtask(taskId, title), onSuccess: invalidate });
+  const toggleSubtask = useMutation({ mutationFn: ({ taskId, subtaskId, completed }: { taskId: string; subtaskId: string; completed: boolean }) => updateSubtask(taskId, subtaskId, { completed }), onSuccess: invalidate });
+  const removeSubtask = useMutation({ mutationFn: ({ taskId, subtaskId }: { taskId: string; subtaskId: string }) => deleteSubtask(taskId, subtaskId), onSuccess: invalidate });
+  return { create, update, remove, addSubtask, toggleSubtask, removeSubtask };
+}

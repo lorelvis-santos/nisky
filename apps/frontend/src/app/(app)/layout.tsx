@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
 import { Sidebar } from "@/components/ui/Sidebar";
+import { TopAppBar } from "@/components/ui/TopAppBar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace("/login");
@@ -17,5 +19,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return <div className="flex min-h-screen items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando sesión...</div>;
   }
 
-  return <div className="flex min-h-screen bg-background"><Sidebar user={user} /><main className="min-w-0 flex-1">{children}</main></div>;
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      <Sidebar user={user} open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <TopAppBar onMenu={() => setMenuOpen(true)} />
+        <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+      </main>
+    </div>
+  );
 }

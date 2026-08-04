@@ -34,6 +34,15 @@ La Fase 0 entrega una base ejecutable, reproducible y segura:
 
 Tareas, hábitos, planificación semanal, Pomodoro, diario cifrado AES-256-GCM y base de conocimiento.
 
+#### Iteración 1: Tareas y shell responsive
+
+- Rutas de aplicación en inglés y textos de interfaz en español.
+- Shell común basado en el layout financiero: sidebar, TopAppBar y canvas desplazable.
+- Sidebar con drawer para móviles y navegación hacia tareas, enfoque, diario, conocimiento, ajustes y soporte.
+- Tareas multiusuario con estados, prioridades, fecha límite y subtareas.
+- Vista de planificación semanal con backlog y modal de creación/edición.
+- Actualización inline del estado y orden por prioridad (`URGENT`, `HIGH`, `NORMAL`, `LOW`).
+
 ### Fase 2: CRM comercial
 
 Clientes, proyectos, fases financieras, mantenimiento, facturación incremental y ledger.

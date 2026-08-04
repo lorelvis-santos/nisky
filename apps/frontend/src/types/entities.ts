@@ -13,3 +13,46 @@ export interface AuthResponse {
   accessToken: string;
   user: User;
 }
+
+export type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type TaskPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
+
+export interface Subtask {
+  id: string;
+  taskId: string;
+  userId: string;
+  title: string;
+  completed: boolean;
+  completedAt: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Task {
+  id: string;
+  userId: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: string | null;
+  completedAt: string | null;
+  order: number;
+  subtasks?: Subtask[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginationMeta {
+  currentPage: number;
+  itemsPerPage: number;
+  itemCount: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface Paginated<T> {
+  data: T[];
+  meta: PaginationMeta;
+}

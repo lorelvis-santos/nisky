@@ -33,6 +33,17 @@ export function formatRelativeDate(value: string | Date, lowercase = false, refe
   return lowercase ? label.toLowerCase() : label;
 }
 
+export function formatCreatedAt(value: string | Date) {
+  const date = value instanceof Date ? value : new Date(value);
+  return new Intl.DateTimeFormat("es-CO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function isTaskOverdue(task: { dueDate: string | null; status: string }) {
   if (!task.dueDate || task.status === "COMPLETED" || task.status === "CANCELLED") return false;
   const dueDate = calendarDate(task.dueDate);

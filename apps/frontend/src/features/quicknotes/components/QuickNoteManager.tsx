@@ -4,7 +4,7 @@ import { ArchiveRestore, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { QuickNote } from "@/types/entities";
-import { formatRelativeDate } from "@/lib/utils";
+import { formatCreatedAt } from "@/lib/utils";
 import { useQuickNoteMutations, useQuickNotesQuery } from "../hooks/useQuickNotes";
 
 export function QuickNoteManager({ onClose }: { onClose: () => void }) {
@@ -53,7 +53,7 @@ export function QuickNoteManager({ onClose }: { onClose: () => void }) {
               {notes.filter((note) => note.status === "ARCHIVED").map((note) => (
                 <div className="py-3" key={note.id}>
                   <p className="font-body-sm text-body-sm text-on-surface">{note.content}</p>
-                  <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">{formatRelativeDate(note.createdAt, true)}</p>
+                  <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">Creada {formatCreatedAt(note.createdAt)}</p>
                   <div className="mt-2 flex items-center gap-3">
                     <button className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => void restore(note)} type="button"><ArchiveRestore size={14} /> Restaurar</button>
                     <button aria-label={`Eliminar ${note.content}`} className={`flex items-center gap-1 font-body-sm text-body-sm ${deleteId === note.id ? "bg-error px-2 py-1 text-error-foreground" : "text-on-surface-variant hover:text-error"}`} onClick={() => void remove(note)} type="button"><Trash2 className={deleteId === note.id ? "text-on-primary" : undefined} size={14} />{deleteId === note.id ? "Confirmar" : "Eliminar"}</button>

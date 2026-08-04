@@ -4,7 +4,7 @@ import { Archive, ArrowRight, CalendarClock, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { QuickNote } from "@/types/entities";
-import { formatRelativeDate } from "@/lib/utils";
+import { formatCreatedAt } from "@/lib/utils";
 import { useQuickNoteMutations } from "../hooks/useQuickNotes";
 import { detectDate, type DetectedDate } from "../utils/detectDate";
 
@@ -25,7 +25,7 @@ export function QuickNoteItem({ note, onConvertToTask }: { note: QuickNote; onCo
   return (
     <div className="border-b border-outline-variant py-2 last:border-b-0">
       <p className="font-body-sm text-body-sm text-on-surface">{note.content}</p>
-      <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">{formatRelativeDate(note.createdAt, true)}</p>
+      <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">Creada {formatCreatedAt(note.createdAt)}</p>
       {detected && <span className="mt-1 inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha: {detected.label}</span>}
       <div className="mt-1 flex items-center justify-between gap-3">
         <button className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => onConvertToTask(note, detected)} type="button"><ArrowRight size={13} /> Convertir en tarea</button>

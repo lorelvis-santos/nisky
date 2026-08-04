@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Task } from "@/types/entities";
 import { TaskCard } from "./TaskCard";
 
@@ -18,6 +19,8 @@ export function WeeklyGrid({
   onOpen,
   onToggle,
   onMoveTask,
+  onReorder,
+  dayOrder,
   isDragging,
   onDragStateChange,
 }: {
@@ -25,10 +28,13 @@ export function WeeklyGrid({
   tasks: Task[];
   onOpen: (task: Task) => void;
   onToggle: (task: Task) => void;
-  onMoveTask: (taskId: string, dueDate: string) => void;
+  onMoveTask: (taskId: string, dueDate: string) => void | Promise<void>;
+  onReorder: (dateKey: string, taskIds: string[]) => void;
+  dayOrder: Record<string, string[]>;
   isDragging: boolean;
   onDragStateChange: (dragging: boolean) => void;
 }) {
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
   const today = dateKey(new Date());
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
@@ -44,6 +50,20 @@ export function WeeklyGrid({
             const dayTasks = tasks.filter(
               (task) => task.dueDate && dateKey(task.dueDate) === key,
             );
+            const taskById = new Map(dayTasks.map((task) => [task.id, task]));
+            const configuredIds = dayOrder[key] ?? dayTasks.map((task) => task.id);
+            const orderedTasks = [
+              ...configuredIds.map((taskId) => taskById.get(taskId)).filter((task): task is Task => Boolean(task)),
+              ...dayTasks.filter((task) => !configuredIds.includes(task.id)),
+            ];
+            const reorderAt = (taskId: string, targetIndex: number) => {
+              const sourceIndex = orderedTasks.findIndex((task) => task.id === taskId);
+              if (sourceIndex < 0 || sourceIndex === targetIndex) return;
+              const next = orderedTasks.map((task) => task.id);
+              const [moved] = next.splice(sourceIndex, 1);
+              next.splice(Math.min(targetIndex, next.length), 0, moved);
+              onReorder(key, next);
+            };
             const isToday = key === today;
             return (
               <div
@@ -53,7 +73,15 @@ export function WeeklyGrid({
                 onDrop={(event) => {
                   event.preventDefault();
                   const taskId = taskIdFromDrop(event);
-                  if (taskId) onMoveTask(taskId, key);
+                  setDropTarget(null);
+                  if (!taskId) return;
+                  const sourceTask = tasks.find((task) => task.id === taskId);
+                  if (sourceTask?.dueDate && dateKey(sourceTask.dueDate) === key) {
+                    reorderAt(taskId, orderedTasks.length - 1);
+                    return;
+                  }
+                  onMoveTask(taskId, key);
+                  onReorder(key, [...orderedTasks.map((task) => task.id), taskId]);
                 }}
               >
                 <div
@@ -69,10 +97,29 @@ export function WeeklyGrid({
                       </span>
                     ) : null
                   ) : (
-                    dayTasks.map((task) => (
+                    orderedTasks.map((task, taskIndex) => (
                       <TaskCard
                         key={task.id}
+                        isDropTarget={dropTarget === `${key}:${taskIndex}`}
                         onDragStateChange={onDragStateChange}
+                        onDragOver={() => setDropTarget(`${key}:${taskIndex}`)}
+                        onDrop={(event) => {
+                          event.stopPropagation();
+                          setDropTarget(null);
+                          const taskId = taskIdFromDrop(event);
+                          if (!taskId || taskId === task.id) return;
+                          const sourceTask = tasks.find((item) => item.id === taskId);
+                          if (!sourceTask?.dueDate || dateKey(sourceTask.dueDate) !== key) {
+                            onMoveTask(taskId, key);
+                            onReorder(key, [
+                              ...orderedTasks.slice(0, taskIndex).map((item) => item.id),
+                              taskId,
+                              ...orderedTasks.slice(taskIndex).map((item) => item.id),
+                            ]);
+                            return;
+                          }
+                          reorderAt(taskId, taskIndex);
+                        }}
                         onOpen={() => onOpen(task)}
                         onToggle={() => onToggle(task)}
                         task={task}

@@ -1,7 +1,7 @@
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { buildPaginatedResponse, getPaginationArgs } from "../../utils/pagination/handler";
-import type { CreateSubtaskDto, CreateTaskDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
+import type { CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
 
 function taskDate(value: string | null | undefined) {
   if (value === undefined || value === null) return value;
@@ -22,8 +22,10 @@ export class TaskService {
     };
 
     const orderBy = query.sort === "priority"
-      ? [{ priority: query.order }, { createdAt: "desc" as const }]
-      : { [query.sort]: query.order };
+      ? [{ priority: query.order }, { order: "asc" as const }, { createdAt: "desc" as const }]
+      : query.sort === "dueDate"
+        ? [{ dueDate: query.order }, { order: "asc" as const }, { createdAt: "desc" as const }]
+        : { [query.sort]: query.order };
 
     const [data, totalItems] = await Promise.all([
       prisma.task.findMany({ where, skip, take, orderBy, include: { subtasks: { orderBy: { order: "asc" } } } }),
@@ -75,6 +77,23 @@ export class TaskService {
   async delete(userId: string, id: string) {
     await this.getById(userId, id);
     await prisma.task.delete({ where: { id } });
+  }
+
+  async reorder(userId: string, data: ReorderTasksDto) {
+    const ids = data.items.map((item) => item.id);
+    const owned = await prisma.task.findMany({
+      where: { id: { in: ids }, userId },
+      select: { id: true },
+    });
+    if (owned.length !== new Set(ids).size) {
+      throw new AppError("NOT_FOUND", "Tarea no encontrada");
+    }
+    await prisma.$transaction(
+      data.items.map((item) => prisma.task.update({
+        where: { id: item.id },
+        data: { order: item.order },
+      })),
+    );
   }
 
   async listSubtasks(userId: string, taskId: string) {

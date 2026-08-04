@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import type { Task, TaskPriority } from "@/types/entities";
+import type { Task, TaskPriority, TaskStatus } from "@/types/entities";
 import { useTaskQuery } from "../hooks/useTasks";
 import { taskSchema } from "../schemas/task.schema";
 
 export type TaskForm = {
   title: string;
   description?: string;
+  status: TaskStatus;
   priority: TaskPriority;
   dueDate?: string;
 };
@@ -16,21 +17,26 @@ export type TaskForm = {
 const emptyForm: TaskForm = {
   title: "",
   description: "",
+  status: "PENDING",
   priority: "NORMAL",
   dueDate: "",
 };
 
 export function TaskModal({
   task,
+  initialForm,
   onClose,
   onSave,
+  onDelete,
   onAddSubtask,
   onToggleSubtask,
   onDeleteSubtask,
 }: {
   task: Task | null;
+  initialForm?: Partial<TaskForm>;
   onClose: () => void;
   onSave: (form: TaskForm) => Promise<void>;
+  onDelete?: () => Promise<void>;
   onAddSubtask: (taskId: string, title: string) => Promise<void>;
   onToggleSubtask: (
     taskId: string,
@@ -46,13 +52,15 @@ export function TaskModal({
       ? {
           title: task.title,
           description: task.description ?? "",
+          status: task.status,
           priority: task.priority,
           dueDate: task.dueDate ? task.dueDate.slice(0, 10) : "",
         }
-      : emptyForm,
+      : { ...emptyForm, ...initialForm },
   );
   const [subtaskTitle, setSubtaskTitle] = useState("");
   const [error, setError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (!task && current) return null;
   const subtasks = current?.subtasks ?? [];
@@ -151,6 +159,26 @@ export function TaskModal({
                 value={form.dueDate}
               />
             </label>
+            <label className="block">
+              <span className="font-label-caps text-label-caps text-on-surface-variant">
+                ESTADO
+              </span>
+              <select
+                className="field mt-1"
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    status: event.target.value as TaskStatus,
+                  })
+                }
+                value={form.status}
+              >
+                <option value="PENDING">Pendiente</option>
+                <option value="IN_PROGRESS">En progreso</option>
+                <option value="COMPLETED">Completada</option>
+                <option value="CANCELLED">Cancelada</option>
+              </select>
+            </label>
           </div>
           {task && current && (
             <section className="border-t border-outline-variant pt-4">
@@ -222,7 +250,23 @@ export function TaskModal({
             <p className="font-body-sm text-body-sm text-error">{error}</p>
           )}
         </div>
-        <div className="flex justify-end gap-3 border-t border-outline-variant bg-surface-container-low px-5 py-4">
+        <div className={`flex items-center gap-3 border-t border-outline-variant bg-surface-container-low px-5 py-4 ${task ? "justify-between" : "justify-end"}`}>
+          {task && onDelete ? (
+            <button
+              className={confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"}
+              onClick={() => {
+                if (!confirmDelete) {
+                  setConfirmDelete(true);
+                  return;
+                }
+                void onDelete();
+              }}
+              type="button"
+            >
+              {confirmDelete ? "¿Eliminar tarea?" : "Eliminar"}
+            </button>
+          ) : null}
+          <div className="flex gap-3">
           <button
             className="border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high"
             onClick={onClose}
@@ -237,6 +281,7 @@ export function TaskModal({
           >
             {task ? "Guardar cambios" : "Crear tarea"}
           </button>
+          </div>
         </div>
       </div>
     </div>

@@ -23,6 +23,19 @@
 - [x] Placeholders navegables para enfoque, diario, conocimiento y soporte
 - [x] Migración Prisma, typecheck, lint, build y smoke test de API
 
+## Fase 1: Gestión diaria - Iteración 2
+
+- [x] Selector de estado completo en el modal de tareas
+- [x] Eliminación de tareas con confirmación inline
+- [x] Indicadores de tareas vencidas en planificación y dashboard
+- [x] Reordenamiento manual persistente dentro de cada columna semanal
+- [x] Modelo y API persistente de hábitos con entradas diarias y rachas
+- [x] Registro de hábitos conectado al dashboard y manager de hábitos
+- [x] Modelo y API de capturas rápidas con bandeja INBOX/ARCHIVED
+- [x] Guardado explícito de capturas rápidas y acciones de archivar, eliminar y convertir
+- [x] Detección de fechas en español con Chrono al convertir capturas en tareas
+- [x] Migraciones Prisma de hábitos y capturas rápidas
+
 ## Próxima iteración
 
 Temporizador Pomodoro con historial persistente y relación opcional con tareas, seguido por diario cifrado y base de conocimiento.

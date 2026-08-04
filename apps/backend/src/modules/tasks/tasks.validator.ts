@@ -20,6 +20,13 @@ export const createTaskSchema = z.object({
 
 export const updateTaskSchema = createTaskSchema.partial().extend({ dueDate: dateValue.nullable().optional() });
 
+export const reorderTasksSchema = z.object({
+  items: z.array(z.object({
+    id: z.uuid("El identificador no es válido"),
+    order: z.number().int().min(0),
+  })).min(1, "Debe enviar al menos una tarea"),
+});
+
 export const createSubtaskSchema = z.object({
   title: z.string("El título es requerido").trim().min(1, "El título es requerido").max(200),
 });
@@ -40,6 +47,7 @@ export const taskQuerySchema = z.object({
 
 export type CreateTaskDto = z.infer<typeof createTaskSchema>;
 export type UpdateTaskDto = z.infer<typeof updateTaskSchema>;
+export type ReorderTasksDto = z.infer<typeof reorderTasksSchema>;
 export type CreateSubtaskDto = z.infer<typeof createSubtaskSchema>;
 export type UpdateSubtaskDto = z.infer<typeof updateSubtaskSchema>;
 export type TaskQueryDto = z.infer<typeof taskQuerySchema>;

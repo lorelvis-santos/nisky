@@ -1,5 +1,6 @@
 import { CheckCircle2, Circle, MoreHorizontal } from "lucide-react";
 import type { Task } from "@/types/entities";
+import { isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "./PriorityChip";
 
 export function TaskCard({
@@ -7,17 +8,24 @@ export function TaskCard({
   onOpen,
   onToggle,
   onDragStateChange,
+  onDragOver,
+  onDrop,
+  isDropTarget,
 }: {
   task: Task;
   onOpen: () => void;
   onToggle: () => void;
   onDragStateChange?: (dragging: boolean) => void;
+  onDragOver?: (event: React.DragEvent<HTMLElement>) => void;
+  onDrop?: (event: React.DragEvent<HTMLElement>) => void;
+  isDropTarget?: boolean;
 }) {
   const completed = task.status === "COMPLETED";
+  const overdue = isTaskOverdue(task);
   return (
     <article
       aria-label={`Tarea: ${task.title}`}
-      className={`group flex min-h-[112px] flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline ${completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant"}`}
+      className={`group flex min-h-[112px] flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline ${completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant"} ${overdue ? "border-l-2 border-l-error" : ""} ${isDropTarget ? "border-t-2 border-t-primary" : ""}`}
       draggable
       onDoubleClick={onOpen}
       onDragEnd={() => onDragStateChange?.(false)}
@@ -25,6 +33,14 @@ export function TaskCard({
         event.dataTransfer.setData("text/task-id", task.id);
         event.dataTransfer.effectAllowed = "move";
         onDragStateChange?.(true);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        onDragOver?.(event);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        onDrop?.(event);
       }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -67,6 +83,7 @@ export function TaskCard({
       </div>
       <div className="ml-7 flex items-center justify-between gap-2">
         <PriorityChip priority={task.priority} />
+        {overdue && <span className="font-data-mono text-data-mono text-xs text-error">Vencida</span>}
       </div>
     </article>
   );

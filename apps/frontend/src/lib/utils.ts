@@ -32,3 +32,10 @@ export function formatRelativeDate(value: string | Date, lowercase = false, refe
 
   return lowercase ? label.toLowerCase() : label;
 }
+
+export function isTaskOverdue(task: { dueDate: string | null; status: string }) {
+  if (!task.dueDate || task.status === "COMPLETED" || task.status === "CANCELLED") return false;
+  const dueDate = calendarDate(task.dueDate);
+  const today = calendarDate(new Date());
+  return dueDate.getTime() < today.getTime();
+}

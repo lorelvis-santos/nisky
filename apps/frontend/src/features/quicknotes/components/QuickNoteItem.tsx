@@ -1,0 +1,37 @@
+"use client";
+
+import { Archive, ArrowRight, CalendarClock, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import type { QuickNote } from "@/types/entities";
+import { formatRelativeDate } from "@/lib/utils";
+import { useQuickNoteMutations } from "../hooks/useQuickNotes";
+import { detectDate, type DetectedDate } from "../utils/detectDate";
+
+export function QuickNoteItem({ note, onConvertToTask }: { note: QuickNote; onConvertToTask: (note: QuickNote, detected: DetectedDate | null) => void }) {
+  const mutations = useQuickNoteMutations();
+  const detected = detectDate(note.content);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const archive = async () => {
+    try { await mutations.archive.mutateAsync(note.id); toast.success("Captura archivada"); } catch { toast.error("No se pudo archivar la captura"); }
+  };
+
+  const remove = async () => {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    try { await mutations.remove.mutateAsync(note.id); toast.success("Captura eliminada"); } catch { toast.error("No se pudo eliminar la captura"); }
+  };
+
+  return (
+    <div className="border-b border-outline-variant py-2 last:border-b-0">
+      <p className="font-body-sm text-body-sm text-on-surface">{note.content}</p>
+      <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">{formatRelativeDate(note.createdAt, true)}</p>
+      {detected && <span className="mt-1 inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha: {detected.label}</span>}
+      <div className="mt-1 flex items-center gap-3">
+        <button className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => onConvertToTask(note, detected)} type="button"><ArrowRight size={13} /> Convertir en tarea</button>
+        <button aria-label="Archivar captura" className="text-on-surface-variant hover:text-primary" onClick={() => void archive()} type="button"><Archive size={14} /></button>
+        <button aria-label="Eliminar captura" className={confirmDelete ? "bg-error px-2 text-error-foreground" : "text-on-surface-variant hover:text-error"} onClick={() => void remove()} type="button"><Trash2 size={14} /></button>
+      </div>
+    </div>
+  );
+}

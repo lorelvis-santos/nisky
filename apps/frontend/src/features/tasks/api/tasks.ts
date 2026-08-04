@@ -40,6 +40,10 @@ export async function deleteTask(id: string) {
   await api.delete(`/tasks/${id}`);
 }
 
+export async function reorderTasks(items: { id: string; order: number }[]) {
+  await api.patch("/tasks/reorder", { items });
+}
+
 export async function createSubtask(taskId: string, title: string) {
   const { data } = await api.post<ApiResponse<Subtask>>(`/tasks/${taskId}/subtasks`, { title });
   return data.data as Subtask;

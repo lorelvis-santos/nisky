@@ -56,3 +56,39 @@ export interface Paginated<T> {
   data: T[];
   meta: PaginationMeta;
 }
+
+export type HabitFrequency = "DAILY" | "WEEKLY";
+
+export interface Habit {
+  id: string;
+  userId: string;
+  name: string;
+  color: string | null;
+  frequency: HabitFrequency;
+  targetDays: number;
+  archived: boolean;
+  todayCompleted: boolean;
+  streak: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HabitEntry {
+  id: string;
+  habitId: string;
+  userId: string;
+  date: string;
+  completed: boolean;
+  createdAt: string;
+}
+
+export type QuickNoteStatus = "INBOX" | "ARCHIVED";
+
+export interface QuickNote {
+  id: string;
+  userId: string;
+  content: string;
+  status: QuickNoteStatus;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -35,6 +35,7 @@
 - [x] Listado y restauración de hábitos archivados
 - [x] Modelo y API de capturas rápidas con bandeja INBOX/ARCHIVED
 - [x] Guardado explícito de capturas rápidas y acciones de archivar, eliminar y convertir
+- [x] Manager de capturas archivadas con restauración a la bandeja INBOX
 - [x] Detección de fechas en español con Chrono al convertir capturas en tareas
 - [x] Migraciones Prisma de hábitos y capturas rápidas
 

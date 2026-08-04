@@ -476,6 +476,7 @@ Crear `apps/frontend/src/features/quicknotes/` con:
 - `utils/detectDate.ts`
 - `components/QuickCapture.tsx`
 - `components/QuickNoteItem.tsx`
+- `components/QuickNoteManager.tsx`
 
 Añadir tipos:
 
@@ -562,6 +563,7 @@ Nuevos frontend:
 - `apps/frontend/src/features/quicknotes/utils/detectDate.ts`
 - `apps/frontend/src/features/quicknotes/components/QuickCapture.tsx`
 - `apps/frontend/src/features/quicknotes/components/QuickNoteItem.tsx`
+- `apps/frontend/src/features/quicknotes/components/QuickNoteManager.tsx`
 
 Modificados principales:
 

@@ -6,14 +6,17 @@ import { toast } from "sonner";
 import type { QuickNote } from "@/types/entities";
 import { useQuickNoteMutations, useQuickNotesQuery } from "../hooks/useQuickNotes";
 import { QuickNoteItem } from "./QuickNoteItem";
+import { QuickNoteManager } from "./QuickNoteManager";
 import { detectDate, type DetectedDate } from "../utils/detectDate";
 
 export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: QuickNote, detected: DetectedDate | null) => void }) {
   const [draft, setDraft] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [managerOpen, setManagerOpen] = useState(false);
   const query = useQuickNotesQuery("INBOX");
   const mutations = useQuickNoteMutations();
   const detected = draft.trim() ? detectDate(draft) : null;
+  const inboxNotes = (query.data ?? []).filter((note) => note.status === "INBOX");
 
   const save = useCallback(async () => {
     const content = draft.trim();
@@ -42,12 +45,16 @@ export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: Quic
       </div>
       {query.isError ? (
         <p className="border-t border-outline-variant p-3 font-body-sm text-body-sm text-error">No se pudieron cargar las capturas.</p>
-      ) : (query.data ?? []).length > 0 && (
+      ) : inboxNotes.length > 0 && (
         <div className="border-t border-outline-variant p-3">
           <p className="mb-2 font-label-caps text-label-caps text-on-surface-variant">BANDEJA DE ENTRADA</p>
-          <div className="max-h-[220px] overflow-y-auto">{(query.data ?? []).map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)}</div>
+          <div className="max-h-[220px] overflow-y-auto">{inboxNotes.map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)}</div>
         </div>
       )}
+      <div className="flex justify-end border-t border-outline-variant p-3">
+        <button className="font-label-caps text-label-caps text-primary hover:underline" onClick={() => setManagerOpen(true)} type="button">VER ARCHIVADAS</button>
+      </div>
+      {managerOpen && <QuickNoteManager onClose={() => setManagerOpen(false)} />}
     </div>
   );
 }

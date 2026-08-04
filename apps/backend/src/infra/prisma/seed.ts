@@ -17,6 +17,12 @@ async function main() {
     create: { email, passwordHash, name: "Admin Nisky", role: "ADMIN" },
   });
 
+  await prisma.setting.upsert({
+    where: { key: "publicSignup" },
+    update: {},
+    create: { key: "publicSignup", value: "true", description: "Permite que cualquier persona cree una cuenta" },
+  });
+
   console.log(`Nisky seed complete: ${admin.email}`);
 }
 

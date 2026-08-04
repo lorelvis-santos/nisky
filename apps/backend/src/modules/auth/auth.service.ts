@@ -73,6 +73,8 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(data.password, user.passwordHash))) {
       throw new AppError("UNAUTHORIZED", "Credenciales inválidas");
     }
+    if (!user.isActive) throw new AppError("FORBIDDEN", "Tu cuenta está deshabilitada");
+    await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     return this.issue(user, metadata);
   }
 
@@ -103,6 +105,10 @@ export class AuthService {
     if (!stored || stored.revokedAt || stored.expiresAt <= new Date() || !(await bcrypt.compare(raw, stored.tokenHash))) {
       throw new AppError("UNAUTHORIZED", "Refresh token inválido o expirado");
     }
+    if (!stored.user.isActive) {
+      await prisma.refreshToken.updateMany({ where: { id }, data: { revokedAt: new Date() } });
+      throw new AppError("FORBIDDEN", "Tu cuenta está deshabilitada");
+    }
 
     const revoked = await prisma.refreshToken.updateMany({
       where: { id, revokedAt: null },
@@ -125,6 +131,15 @@ export class AuthService {
     if (!raw) return;
     const id = refreshId(raw);
     if (id) await prisma.refreshToken.updateMany({ where: { id, revokedAt: null }, data: { revokedAt: new Date() } });
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, passwordHash: true } });
+    if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      throw new AppError("UNAUTHORIZED", "La contraseña actual es incorrecta");
+    }
+    await prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(newPassword, 12) } });
+    await prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
   }
 }
 

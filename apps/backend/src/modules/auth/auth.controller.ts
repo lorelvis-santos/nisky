@@ -1,7 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
+import { getPublicSignup } from "../../utils/settings/publicSignup";
 import { authService } from "./auth.service";
-import type { LoginDto, RegisterDto } from "./auth.validator";
+import type { ChangePasswordDto, LoginDto, RegisterDto } from "./auth.validator";
 
 const COOKIE_NAME = "refreshToken";
 const cookieOptions = {
@@ -34,7 +35,8 @@ export class AuthController {
 
   register = async (req: Request<{}, {}, RegisterDto>, res: Response, next: NextFunction) => {
     try {
-      if (process.env.PUBLIC_SIGNUP !== "true") throw new AppError("FORBIDDEN", "El registro público está deshabilitado");
+      const publicSignup = await getPublicSignup();
+      if (!publicSignup) throw new AppError("FORBIDDEN", "El registro público está deshabilitado");
       const result = await authService.register(req.body, metadata(req));
       setRefreshCookie(res, result.refreshToken);
       res.success({ accessToken: result.accessToken, user: result.user }, 201);
@@ -72,5 +74,19 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
+  };
+
+  changePassword = async (req: Request<{}, {}, ChangePasswordDto>, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) throw new AppError("UNAUTHORIZED");
+      await authService.changePassword(req.user.id, req.body.currentPassword, req.body.newPassword);
+      res.success({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  config = async (_req: Request, res: Response, next: NextFunction) => {
+    try { res.success({ publicSignup: await getPublicSignup() }); } catch (error) { next(error); }
   };
 }

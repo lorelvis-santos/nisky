@@ -17,5 +17,11 @@ export const registerSchema = z.object({
   password: passwordSchema,
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string("La contraseña actual es requerida").min(1, "La contraseña actual es requerida"),
+  newPassword: passwordSchema,
+});
+
 export type LoginDto = z.infer<typeof loginSchema>;
 export type RegisterDto = z.infer<typeof registerSchema>;
+export type ChangePasswordDto = z.infer<typeof changePasswordSchema>;

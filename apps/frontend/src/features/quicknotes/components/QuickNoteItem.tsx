@@ -30,7 +30,7 @@ export function QuickNoteItem({ note, onConvertToTask }: { note: QuickNote; onCo
       <div className="mt-1 flex items-center gap-3">
         <button className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => onConvertToTask(note, detected)} type="button"><ArrowRight size={13} /> Convertir en tarea</button>
         <button aria-label="Archivar captura" className="text-on-surface-variant hover:text-primary" onClick={() => void archive()} type="button"><Archive size={14} /></button>
-        <button aria-label="Eliminar captura" className={confirmDelete ? "bg-error px-2 text-error-foreground" : "text-on-surface-variant hover:text-error"} onClick={() => void remove()} type="button"><Trash2 size={14} /></button>
+        <button aria-label="Eliminar captura" className={confirmDelete ? "bg-error px-2 text-error-foreground" : "text-on-surface-variant hover:text-error"} onClick={() => void remove()} type="button"><Trash2 className={confirmDelete ? "text-on-primary" : undefined} size={14} /></button>
       </div>
     </div>
   );

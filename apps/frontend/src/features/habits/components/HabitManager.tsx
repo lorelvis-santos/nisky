@@ -86,7 +86,7 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
                 <div className="flex items-center gap-2 py-2" key={habit.id}>
                   <input className="field h-8" onBlur={() => void rename(habit.id)} onChange={(event) => setNames((current) => ({ ...current, [habit.id]: event.target.value }))} value={names[habit.id] ?? habit.name} />
                   <button aria-label={`Archivar ${habit.name}`} className="shrink-0 text-on-surface-variant hover:text-primary" onClick={() => void archive(habit.id)} type="button"><Archive size={16} /></button>
-                  <button aria-label={`Eliminar ${habit.name}`} className={`shrink-0 text-on-surface-variant hover:text-error ${deleteId === habit.id ? "bg-error px-1 text-error-foreground" : ""}`} onClick={() => void remove(habit.id)} type="button"><Trash2 size={16} /></button>
+                  <button aria-label={`Eliminar ${habit.name}`} className={`shrink-0 text-on-surface-variant hover:text-error ${deleteId === habit.id ? "bg-error px-1 text-error-foreground" : ""}`} onClick={() => void remove(habit.id)} type="button"><Trash2 className={deleteId === habit.id ? "text-on-primary" : undefined} size={16} /></button>
                 </div>
               ))}
               {(query.data ?? []).filter((habit) => !habit.archived).length === 0 && <p className="py-3 font-body-sm text-body-sm text-on-surface-variant">No hay hábitos activos.</p>}
@@ -98,7 +98,7 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
                     <div className="flex items-center gap-2 py-2" key={habit.id}>
                       <span className="flex-1 font-body-sm text-body-sm text-on-surface-variant">{habit.name}</span>
                       <button aria-label={`Desarchivar ${habit.name}`} className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => void restore(habit.id)} type="button"><ArchiveRestore size={16} /> Desarchivar</button>
-                      <button aria-label={`Eliminar ${habit.name}`} className={`shrink-0 text-on-surface-variant hover:text-error ${deleteId === habit.id ? "bg-error px-1 text-error-foreground" : ""}`} onClick={() => void remove(habit.id)} type="button"><Trash2 size={16} /></button>
+                      <button aria-label={`Eliminar ${habit.name}`} className={`shrink-0 text-on-surface-variant hover:text-error ${deleteId === habit.id ? "bg-error px-1 text-error-foreground" : ""}`} onClick={() => void remove(habit.id)} type="button"><Trash2 className={deleteId === habit.id ? "text-on-primary" : undefined} size={16} /></button>
                     </div>
                   ))}
                 </div>

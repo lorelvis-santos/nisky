@@ -4,6 +4,7 @@ import type { AuthResponse } from "@/types/entities";
 import type { RegisterFormData } from "../schemas/auth.schema";
 
 export async function registerRequest(payload: RegisterFormData) {
-  const { data } = await api.post<ApiResponse<AuthResponse>>("/auth/register", payload);
+  const body = { name: payload.name, email: payload.email, password: payload.password };
+  const { data } = await api.post<ApiResponse<AuthResponse>>("/auth/register", body);
   return data.data as AuthResponse;
 }

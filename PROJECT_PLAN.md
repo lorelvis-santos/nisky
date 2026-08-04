@@ -454,8 +454,10 @@ Reglas:
 6. `isoDate` debe formarse con getters locales `YYYY-MM-DD`.
 7. Mostrar `matchedText` y `label` al usuario antes de convertir.
 8. No modificar automáticamente el texto original de la nota.
-9. Frases vagas como `pronto` no generan fecha.
-10. La fecha detectada es una sugerencia editable, nunca una obligación.
+9. Aceptar únicamente coincidencias explícitas: relativos (`mañana`), días de semana, fechas con mes, formatos numéricos o expresiones como `el 20`.
+10. No convertir cantidades aisladas como `200 pesos` en fechas.
+11. Frases vagas como `pronto` no generan fecha.
+12. La fecha detectada es una sugerencia editable, nunca una obligación.
 
 Ejemplos mínimos que deben funcionar:
 

@@ -27,10 +27,12 @@ export function QuickNoteItem({ note, onConvertToTask }: { note: QuickNote; onCo
       <p className="font-body-sm text-body-sm text-on-surface">{note.content}</p>
       <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">{formatRelativeDate(note.createdAt, true)}</p>
       {detected && <span className="mt-1 inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha: {detected.label}</span>}
-      <div className="mt-1 flex items-center gap-3">
+      <div className="mt-1 flex items-center justify-between gap-3">
         <button className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => onConvertToTask(note, detected)} type="button"><ArrowRight size={13} /> Convertir en tarea</button>
-        <button aria-label="Archivar captura" className="text-on-surface-variant hover:text-primary" onClick={() => void archive()} type="button"><Archive size={14} /></button>
-        <button aria-label="Eliminar captura" className={confirmDelete ? "bg-error px-2 py-1 text-error-foreground" : "text-on-surface-variant hover:text-error"} onClick={() => void remove()} type="button"><Trash2 className={confirmDelete ? "text-on-primary" : undefined} size={14} /></button>
+        <div className="flex items-center gap-3">
+          <button aria-label="Archivar captura" className="text-on-surface-variant hover:text-primary" onClick={() => void archive()} type="button"><Archive size={14} /></button>
+          <button aria-label="Eliminar captura" className={confirmDelete ? "bg-error px-2 py-1 text-error-foreground" : "text-on-surface-variant hover:text-error"} onClick={() => void remove()} type="button"><Trash2 className={confirmDelete ? "text-on-primary" : undefined} size={14} /></button>
+        </div>
       </div>
     </div>
   );

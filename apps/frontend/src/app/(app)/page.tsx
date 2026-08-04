@@ -27,8 +27,9 @@ export default function DashboardPage() {
   const [habitManagerOpen, setHabitManagerOpen] = useState(false);
   const tasksQuery = useTasksQuery({ limit: 100, sort: "priority", order: "desc" });
   const taskMutations = useTaskMutations();
-  const habitsQuery = useHabitsQuery();
+  const habitsQuery = useHabitsQuery({ includeArchived: false });
   const habitMutations = useHabitMutations();
+  const activeHabits = (habitsQuery.data ?? []).filter((habit) => !habit.archived);
   const tasks = (tasksQuery.data?.data ?? [])
     .filter((task) => task.status !== "COMPLETED" && task.status !== "CANCELLED")
     .slice(0, 8);
@@ -82,9 +83,9 @@ export default function DashboardPage() {
                 <button className="font-label-caps text-label-caps text-primary hover:underline" onClick={() => setHabitManagerOpen(true)} type="button">EDITAR</button>
               </div>
               <div className="flex flex-col gap-1 p-2">
-                {habitsQuery.isLoading ? <p className="p-2 font-body-sm text-body-sm text-on-surface-variant">Cargando hábitos...</p> : habitsQuery.isError ? <p className="p-2 font-body-sm text-body-sm text-error">No se pudieron cargar los hábitos.</p> : (habitsQuery.data ?? []).length === 0 ? (
+                {habitsQuery.isLoading ? <p className="p-2 font-body-sm text-body-sm text-on-surface-variant">Cargando hábitos...</p> : habitsQuery.isError ? <p className="p-2 font-body-sm text-body-sm text-error">No se pudieron cargar los hábitos.</p> : activeHabits.length === 0 ? (
                   <div className="flex flex-col gap-2 p-2"><p className="font-body-sm text-body-sm text-on-surface-variant">No tienes hábitos configurados.</p><button className="self-start font-body-sm text-body-sm text-primary underline" onClick={() => setHabitManagerOpen(true)} type="button">Crear hábito</button></div>
-                ) : (habitsQuery.data ?? []).map((habit) => <HabitRow key={habit.id} habit={habit} onToggle={() => void habitMutations.toggleEntry.mutateAsync({ id: habit.id, date: todayKey })} />)}
+                ) : activeHabits.map((habit) => <HabitRow key={habit.id} habit={habit} onToggle={() => void habitMutations.toggleEntry.mutateAsync({ id: habit.id, date: todayKey })} />)}
               </div>
             </div>
 

@@ -29,7 +29,7 @@ export function TaskCard({
   return (
     <article
       aria-label={`Tarea: ${task.title}`}
-      className={`group flex min-h-[112px] cursor-grab flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline active:cursor-grabbing ${completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant"} ${overdue ? "border-l-2 border-l-error" : ""} ${isDropTarget ? "border-t-2 border-t-primary" : ""}`}
+      className={`group relative flex min-h-[112px] cursor-grab flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline active:cursor-grabbing ${completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant"} ${overdue ? "border-l-2 border-l-error" : ""} ${isDropTarget ? "border-t-2 border-t-primary" : ""}`}
       draggable
       onDoubleClick={onOpen}
       onDragEnd={() => onDragStateChange?.(false)}
@@ -91,9 +91,9 @@ export function TaskCard({
           <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
           {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
           {overdue && <span className="font-data-mono text-data-mono text-xs text-error">Vencida</span>}
-          {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="flex items-center justify-center border border-outline-variant p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
         </div>
       </div>
+      {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="absolute bottom-3 right-3 flex items-center justify-center border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
     </article>
   );
 }

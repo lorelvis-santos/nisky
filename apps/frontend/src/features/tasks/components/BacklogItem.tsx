@@ -20,7 +20,7 @@ export function BacklogItem({
   return (
     <article
       aria-label={`Tarea pendiente: ${task.title}`}
-      className="group flex min-h-[104px] cursor-grab flex-col gap-2 border border-outline-variant bg-surface p-3 transition-colors hover:border-outline active:cursor-grabbing"
+      className="group relative flex min-h-[104px] cursor-grab flex-col gap-2 border border-outline-variant bg-surface p-3 transition-colors hover:border-outline active:cursor-grabbing"
       draggable
       onDoubleClick={onOpen}
       onDragEnd={() => onDragStateChange?.(false)}
@@ -65,7 +65,6 @@ export function BacklogItem({
           {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
         </div>
         <div className="flex items-center gap-2">
-          {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="flex items-center justify-center border border-outline-variant p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
           <button
             aria-label={
               task.status === "COMPLETED"
@@ -84,6 +83,7 @@ export function BacklogItem({
           />
         </div>
       </div>
+      {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="absolute bottom-3 right-3 flex items-center justify-center border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
     </article>
   );
 }

@@ -27,7 +27,7 @@ export function QuickNoteItem({ note, onConvertToTask }: { note: QuickNote; onCo
       <p className="font-body-sm text-body-sm text-on-surface">{note.content}</p>
       <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">Creada {formatCreatedAt(note.createdAt)}</p>
       {detected && <span className="mt-1 inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha: {detected.label}</span>}
-      <div className="mt-2 flex items-center justify-between gap-3 border-t border-outline-variant pt-2">
+      <div className="mt-2 flex items-center justify-between gap-3 pt-2">
         <button className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => onConvertToTask(note, detected)} type="button"><ArrowRight size={13} /> Convertir en tarea</button>
         <div className="flex items-center gap-3">
           <button aria-label="Archivar captura" className="text-on-surface-variant hover:text-primary" onClick={() => void archive()} type="button"><Archive size={14} /></button>

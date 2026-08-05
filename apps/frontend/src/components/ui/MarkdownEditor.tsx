@@ -48,7 +48,7 @@ type Props = {
 };
 
 const toolbar: Array<{ label: string; icon: typeof Bold; snippet: string; title: string }> = [
-  { label: "Título", icon: Heading2, title: "Título (H2)", snippet: "\n## Título\n" },
+  { label: "Título", icon: Heading2, title: "Título", snippet: "\n## Título\n" },
   { label: "Negrita", icon: Bold, title: "Negrita", snippet: "**negrita**" },
   { label: "Cursiva", icon: Italic, title: "Cursiva", snippet: "*cursiva*" },
   { label: "Lista", icon: List, title: "Lista", snippet: "\n- elemento\n" },

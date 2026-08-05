@@ -72,7 +72,7 @@ export function TaskModal({
   const submit = async () => {
     const result = taskSchema.safeParse(form);
     if (!result.success) {
-      setError(result.error.issues[0]?.message ?? "Revisa los datos");
+      setError(result.error.issues[0]?.message ?? "Revisa los datos e inténtalo de nuevo");
       return;
     }
     setError("");

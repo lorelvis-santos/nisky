@@ -37,21 +37,21 @@ export function JournalEditor({
   const submit = async () => {
     const result = journalEntrySchema.safeParse({ ...form, tags: parseTags(tagsText) });
     if (!result.success) {
-      setError(result.error.issues[0]?.message ?? "Revisa los datos");
+      setError(result.error.issues[0]?.message ?? "Revisa los datos e inténtalo de nuevo");
       return;
     }
     setError("");
     try {
       await onSave(result.data);
     } catch {
-      setError("No se pudo guardar la entrada");
+      setError("Ups, no pudimos guardar tu entrada. Inténtalo de nuevo.");
     }
   };
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-container-padding p-container-padding sm:p-section-gap">
       <div>
-        <p className="font-label-caps text-label-caps text-on-surface-variant">DIARIO Y REFLEXIÓN</p>
+        <p className="font-label-caps text-label-caps text-on-surface-variant">MI DIARIO</p>
         <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">{entry ? "Editar entrada" : "Nueva entrada"}</h1>
       </div>
 

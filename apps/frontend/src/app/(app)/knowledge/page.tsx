@@ -33,10 +33,10 @@ export default function KnowledgePage() {
   const save = async (form: NoteForm) => {
     if (creating) {
       await mutations.create.mutateAsync(form);
-      toast.success("Nota creada");
+      toast.success("¡Nota creada!");
     } else if (editing) {
       await mutations.update.mutateAsync({ id: editing.id, payload: form });
-      toast.success("Nota actualizada");
+      toast.success("¡Nota actualizada!");
     }
     setEditing(null);
     setCreating(false);
@@ -45,7 +45,7 @@ export default function KnowledgePage() {
   const remove = async () => {
     if (!editing) return;
     await mutations.remove.mutateAsync(editing.id);
-    toast.success("Nota eliminada");
+    toast.success("¡Nota eliminada!");
     setEditing(null);
     setCreating(false);
   };
@@ -54,7 +54,7 @@ export default function KnowledgePage() {
     try {
       await mutations.togglePin.mutateAsync({ id: note.id, pinned: !note.pinned });
     } catch {
-      toast.error("No se pudo actualizar la nota");
+      toast.error("Ups, no pudimos actualizar tu nota.");
     }
   };
 
@@ -77,7 +77,7 @@ export default function KnowledgePage() {
     <section className="flex h-full min-h-0 flex-col bg-surface">
       <div className="flex shrink-0 flex-col gap-3 border-b border-outline-variant bg-surface-bright p-container-padding sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">BASE DE CONOCIMIENTO</p>
+          <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">MIS NOTAS</p>
           <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">Notas y referencias</h1>
         </div>
         <div className="flex items-center gap-3">
@@ -96,16 +96,16 @@ export default function KnowledgePage() {
         {query.isLoading ? (
           <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando notas...</div>
         ) : query.isError ? (
-          <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-error">No se pudieron cargar las notas.</div>
+          <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus notas. Inténtalo de nuevo.</div>
         ) : (
           <div className="grid grid-cols-1 gap-section-gap p-container-padding lg:grid-cols-[16rem_1fr]">
             <KnowledgeSidebar active={filter} facets={facetsQuery.data} onFilter={setFilter} />
             {notes.length === 0 ? (
               <div className="flex min-h-[16rem] flex-col items-center justify-center gap-2 border border-outline-variant bg-surface-container-lowest p-section-gap text-center">
                 <BookOpen className="text-primary" size={28} />
-                <p className="font-label-caps text-label-caps text-on-surface-variant">BASE DE CONOCIMIENTO</p>
+                <p className="font-label-caps text-label-caps text-on-surface-variant">MIS NOTAS</p>
                 <p className="max-w-xl font-body-sm text-body-sm text-on-surface-variant">
-                  {filter || search ? "No hay notas que coincidan con los filtros." : "Guarda aquí tus notas, referencias e ideas."}
+                  {filter || search ? "No encontramos notas con esa búsqueda." : "Guarda aquí tus notas, referencias e ideas."}
                 </p>
                 {!filter && !search && (
                   <button className="mt-2 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={openNew} type="button">

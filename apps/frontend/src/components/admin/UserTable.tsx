@@ -37,10 +37,10 @@ export function UserTable({ users, onEdit }: Props) {
                   <p className="font-body-md text-body-md">{user.name ?? "-"}{isSelf && <span className="ml-2 text-on-surface-variant">(tú)</span>}</p>
                   <p className="font-data-mono text-data-mono text-xs text-on-surface-variant">{user.email}</p>
                 </td>
-                <td className="px-4 py-3 font-data-mono text-data-mono text-body-sm">{user.role}</td>
+                <td className="px-4 py-3 font-data-mono text-data-mono text-body-sm">{user.role === "ADMIN" ? "Administrador" : "Miembro"}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-block border px-2 py-0.5 font-label-caps text-label-caps uppercase ${user.isActive ? "border-outline-variant text-on-surface" : "border-error text-error"}`}>
-                    {user.isActive ? "Activo" : "Deshabilitado"}
+                    {user.isActive ? "Activo" : "Inactivo"}
                   </span>
                 </td>
                 <td className="px-4 py-3 font-data-mono text-data-mono text-xs text-on-surface-variant">{formatDate(user.lastLoginAt)}</td>

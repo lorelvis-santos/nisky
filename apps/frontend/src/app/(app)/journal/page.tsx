@@ -29,7 +29,7 @@ export default function JournalPage() {
 
   if (query.isError) {
     if (isForbidden(query.error)) return <JournalLocked />;
-    return <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-error">No se pudo cargar el diario.</div>;
+    return <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos abrir tu diario. Inténtalo de nuevo en un momento.</div>;
   }
 
   const openNew = () => {
@@ -45,19 +45,19 @@ export default function JournalPage() {
   const save = async (form: JournalEntryForm) => {
     if (creating) {
       const created = await mutations.create.mutateAsync(form);
-      toast.success("Entrada guardada");
+      toast.success("¡Entrada guardada!");
       setCreating(false);
       setSelectedId(created.id);
     } else if (selected) {
       await mutations.update.mutateAsync({ id: selected.id, payload: form });
-      toast.success("Entrada actualizada");
+      toast.success("¡Entrada actualizada!");
     }
   };
 
   const remove = async () => {
     if (!selected) return;
     await mutations.remove.mutateAsync(selected.id);
-    toast.success("Entrada eliminada");
+    toast.success("¡Entrada eliminada!");
     setSelectedId(null);
     setCreating(false);
   };
@@ -84,10 +84,10 @@ export default function JournalPage() {
         ) : (
           <article className="flex min-h-[20rem] flex-col items-center justify-center gap-2 border border-outline-variant bg-surface-container-lowest p-section-gap text-center">
             <NotebookPen className="text-primary" size={28} />
-            <p className="font-label-caps text-label-caps text-on-surface-variant">DIARIO Y REFLEXIÓN</p>
+            <p className="font-label-caps text-label-caps text-on-surface-variant">MI DIARIO</p>
             <h1 className="font-headline-sm text-headline-sm text-primary">Una pausa para pensar</h1>
             <p className="max-w-xl font-body-sm text-body-sm text-on-surface-variant">
-              Tus entradas se cifran con tu contraseña y solo se descifran durante tu sesión activa.
+              Escribe tranquilo: tus entradas solo se abren para ti, y solo mientras estás conectado.
             </p>
             <button className="mt-2 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={openNew} type="button">
               Nueva entrada

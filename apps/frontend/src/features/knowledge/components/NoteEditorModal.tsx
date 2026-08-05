@@ -41,14 +41,14 @@ export function NoteEditorModal({
   const submit = async () => {
     const result = noteFormSchema.safeParse({ ...form, tags: parseTags(tagsText) });
     if (!result.success) {
-      setError(result.error.issues[0]?.message ?? "Revisa los datos");
+      setError(result.error.issues[0]?.message ?? "Revisa los datos e inténtalo de nuevo");
       return;
     }
     setError("");
     try {
       await onSave(result.data);
     } catch {
-      setError("No se pudo guardar la nota");
+      setError("Ups, no pudimos guardar tu nota. Inténtalo de nuevo.");
     }
   };
 
@@ -57,7 +57,7 @@ export function NoteEditorModal({
     try {
       await onDelete();
     } catch {
-      setError("No se pudo eliminar la nota");
+      setError("Ups, no pudimos borrar tu nota. Inténtalo de nuevo.");
     }
   };
 

@@ -14,12 +14,12 @@ export function QuickNoteItem({ note, onConvertToTask }: { note: QuickNote; onCo
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const archive = async () => {
-    try { await mutations.archive.mutateAsync(note.id); toast.success("Captura archivada"); } catch { toast.error("No se pudo archivar la captura"); }
+    try { await mutations.archive.mutateAsync(note.id); toast.success("¡Captura archivada!"); } catch { toast.error("Ups, no pudimos archivar la captura. Inténtalo de nuevo."); }
   };
 
   const remove = async () => {
     if (!confirmDelete) { setConfirmDelete(true); return; }
-    try { await mutations.remove.mutateAsync(note.id); toast.success("Captura eliminada"); } catch { toast.error("No se pudo eliminar la captura"); }
+    try { await mutations.remove.mutateAsync(note.id); toast.success("¡Captura eliminada!"); } catch { toast.error("Ups, no pudimos eliminar la captura. Inténtalo de nuevo."); }
   };
 
   return (

@@ -111,7 +111,7 @@ function FocusPageContent() {
         globalPomodoro.setActiveSession(started);
         setNow(Date.now());
       } catch {
-        toast.error("No se pudo iniciar la sesión Pomodoro");
+        toast.error("Ups, no pudimos iniciar el Pomodoro.");
       }
     },
     [globalPomodoro, mutations.start, selectedTaskId],
@@ -128,8 +128,8 @@ function FocusPageContent() {
       playCompletionSound(settings.soundEnabled);
       toast.success(
         currentSession.phase === "WORK"
-          ? "Pomodoro completado"
-          : "Descanso terminado",
+          ? "¡Buen trabajo! Pomodoro completado"
+          : "Descanso terminado. ¿Listo para el siguiente?",
       );
       const nextPhase =
         currentSession.phase === "WORK"
@@ -147,7 +147,7 @@ function FocusPageContent() {
       globalPomodoro.clearActiveSession();
       if (settings.autoCycle) await startPhase(nextPhase, nextCycle);
     } catch {
-      toast.error("No se pudo completar la sesión");
+      toast.error("Ups, no pudimos guardar el Pomodoro completado. Inténtalo de nuevo.");
     } finally {
       completionInFlight.current = false;
     }
@@ -171,7 +171,7 @@ function FocusPageContent() {
       globalPomodoro.setActiveSession(updated);
       setNow(Date.now());
     } catch {
-      toast.error("No se pudo actualizar la sesión");
+      toast.error("Ups, algo falló al pausar o reanudar. Inténtalo de nuevo.");
     }
   };
 
@@ -184,9 +184,9 @@ function FocusPageContent() {
       });
       setSession(null);
       globalPomodoro.clearActiveSession();
-      toast.success("Sesión detenida");
+      toast.success("¡Listo, detuvimos el Pomodoro!");
     } catch {
-      toast.error("No se pudo detener la sesión");
+      toast.error("Ups, no pudimos detener el Pomodoro.");
     }
   };
 
@@ -260,7 +260,7 @@ function FocusPageContent() {
         <div className="flex w-full max-w-2xl flex-col gap-4">
           <div className="flex items-center justify-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
             <Timer size={15} />{" "}
-            {settings.autoCycle ? "Ciclos automáticos activos" : "Ciclo manual"}
+            {settings.autoCycle ? "Pasar al descanso automáticamente" : "Tú decides cuándo descansar"}
           </div>
           <SessionList sessions={sessionsQuery.data?.data ?? []} />
         </div>

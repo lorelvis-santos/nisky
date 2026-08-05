@@ -23,7 +23,7 @@ export function JournalSidebar({
   return (
     <aside className="flex min-h-0 flex-col border border-outline-variant bg-surface-container-lowest lg:h-full">
       <div className="flex shrink-0 items-center justify-between border-b border-outline-variant p-container-padding">
-        <span className="font-label-caps text-label-caps text-on-surface-variant">HISTORIAL</span>
+        <span className="font-label-caps text-label-caps text-on-surface-variant">MIS ENTRADAS</span>
         <button aria-label="Nueva entrada" className="flex h-8 w-8 items-center justify-center bg-primary-container text-on-primary hover:bg-primary" onClick={onNew} type="button">
           <Plus size={16} />
         </button>

@@ -7,16 +7,16 @@ import { useAuth } from "@/context/AuthProvider";
 import type { User } from "@/types/entities";
 
 const primaryItems = [
-  { href: "/", label: "Panel", icon: LayoutDashboard },
-  { href: "/tasks", label: "Planificación", icon: CalendarDays },
-  { href: "/focus", label: "Modo Enfoque", icon: Timer },
+  { href: "/", label: "Mi día", icon: LayoutDashboard },
+  { href: "/tasks", label: "Planificación y tareas", icon: CalendarDays },
+  { href: "/focus", label: "Modo enfoque", icon: Timer },
   { href: "/journal", label: "Diario", icon: PencilLine },
-  { href: "/knowledge", label: "Base de conocimiento", icon: BookOpen },
+  { href: "/knowledge", label: "Mis notas", icon: BookOpen },
 ];
 
 const secondaryItems = [
   { href: "/settings", label: "Ajustes", icon: Settings },
-  { href: "/support", label: "Soporte", icon: HelpCircle },
+  { href: "/support", label: "Ayuda", icon: HelpCircle },
 ];
 
 function NavItem({ href, label, icon: Icon, onNavigate }: { href: string; label: string; icon: typeof LayoutDashboard; onNavigate?: () => void }) {

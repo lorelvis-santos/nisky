@@ -6,13 +6,13 @@ import { toast } from "sonner";
 import { formatPomodoroTime, usePomodoro } from "@/context/PomodoroProvider";
 
 const titles: Record<string, string> = {
-  "/": "Panel de operaciones",
+  "/": "Mi día",
   "/tasks": "Planificación y tareas",
   "/focus": "Modo enfoque",
-  "/journal": "Diario y reflexión",
-  "/knowledge": "Base de conocimiento",
+  "/journal": "Diario",
+  "/knowledge": "Mis notas",
   "/settings": "Ajustes",
-  "/support": "Soporte",
+  "/support": "Ayuda",
 };
 
 export function TopAppBar({ onMenu }: { onMenu: () => void }) {
@@ -22,11 +22,11 @@ export function TopAppBar({ onMenu }: { onMenu: () => void }) {
   const title = titles[pathname] ?? "Nisky";
 
   const togglePause = async () => {
-    try { await pomodoro.pauseResume(); } catch { toast.error("No se pudo actualizar el Pomodoro"); }
+    try { await pomodoro.pauseResume(); } catch { toast.error("Ups, no pudimos actualizar el Pomodoro."); }
   };
 
   const cancel = async () => {
-    try { await pomodoro.cancel(); toast.success("Pomodoro cancelado"); } catch { toast.error("No se pudo cancelar el Pomodoro"); }
+    try { await pomodoro.cancel(); toast.success("¡Listo, Pomodoro cancelado!"); } catch { toast.error("Ups, no pudimos cancelar el Pomodoro."); }
   };
 
   return (

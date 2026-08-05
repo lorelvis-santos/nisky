@@ -88,7 +88,7 @@ export function BacklogPanel({
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {tasks.length === 0 ? (
           <p className="py-8 text-center font-body-sm text-body-sm text-on-surface-variant">
-            No hay tareas pendientes.
+            Todo al día. No hay tareas sin fecha.
           </p>
         ) : (
           tasks.map((task) => (

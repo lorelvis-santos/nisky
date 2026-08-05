@@ -13,6 +13,7 @@ export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: Quic
   const [draft, setDraft] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [managerOpen, setManagerOpen] = useState(false);
+  const [allOpen, setAllOpen] = useState(false);
   const query = useQuickNotesQuery("INBOX");
   const mutations = useQuickNoteMutations();
   const detected = draft.trim() ? detectDate(draft) : null;
@@ -29,7 +30,7 @@ export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: Quic
       window.setTimeout(() => setSaveState("idle"), 1500);
     } catch {
       setSaveState("idle");
-      toast.error("No se pudo guardar la captura");
+      toast.error("Ups, no pudimos guardar tu captura. Inténtalo de nuevo.");
     }
   }, [draft, mutations.create]);
 
@@ -44,16 +45,20 @@ export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: Quic
         </div>
       </div>
       {query.isError ? (
-        <p className="border-t border-outline-variant p-3 font-body-sm text-body-sm text-error">No se pudieron cargar las capturas.</p>
+        <p className="border-t border-outline-variant p-3 font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus capturas. Inténtalo de nuevo.</p>
       ) : inboxNotes.length > 0 && (
         <div className="border-t border-outline-variant p-3">
-          <p className="mb-2 font-label-caps text-label-caps text-on-surface-variant">BANDEJA DE ENTRADA</p>
-          <div className="max-h-[220px] overflow-y-auto">{inboxNotes.map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)}</div>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="font-label-caps text-label-caps text-on-surface-variant">BANDEJA DE ENTRADA</p>
+            {inboxNotes.length > 8 && <button aria-label={`Ver todas las capturas (${inboxNotes.length})`} className="font-label-caps text-label-caps text-primary hover:underline" onClick={() => setAllOpen(true)} type="button">VER TODAS ({inboxNotes.length})</button>}
+          </div>
+          <div className="max-h-[220px] overflow-y-auto">{inboxNotes.slice(0, 8).map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)}</div>
         </div>
       )}
       <div className="flex justify-end border-t border-outline-variant p-3">
         <button className="font-label-caps text-label-caps text-primary hover:underline" onClick={() => setManagerOpen(true)} type="button">VER ARCHIVADAS</button>
       </div>
+      {allOpen && <QuickNoteManager onClose={() => setAllOpen(false)} onConvertToTask={onConvertToTask} view="inbox" />}
       {managerOpen && <QuickNoteManager onClose={() => setManagerOpen(false)} />}
     </div>
   );

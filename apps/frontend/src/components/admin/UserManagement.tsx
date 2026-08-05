@@ -41,7 +41,7 @@ export function UserManagement() {
       {query.isLoading ? (
         <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando usuarios...</p>
       ) : query.isError ? (
-        <p className="font-body-sm text-body-sm text-error">No se pudieron cargar los usuarios.</p>
+        <p className="font-body-sm text-body-sm text-error">Ups, no pudimos cargar los usuarios. Inténtalo de nuevo.</p>
       ) : users.length === 0 ? (
         <p className="border border-outline-variant bg-surface-container-lowest p-container-padding font-body-sm text-body-sm text-on-surface-variant">No se encontraron usuarios.</p>
       ) : (

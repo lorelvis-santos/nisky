@@ -141,7 +141,7 @@ function TasksPageContent() {
         payload: { status: task.status === "COMPLETED" ? "PENDING" : "COMPLETED" },
       });
     } catch {
-      toast.error("No se pudo actualizar la tarea");
+      toast.error("Ups, no pudimos actualizar la tarea.");
     }
   };
 
@@ -151,9 +151,9 @@ function TasksPageContent() {
     if (currentDueDate === dueDate) return;
     try {
       await mutations.update.mutateAsync({ id: taskId, payload: { dueDate } });
-      toast.success(dueDate ? "Fecha de vencimiento actualizada" : "Tarea devuelta a pendientes");
+      toast.success(dueDate ? "¡Listo, fecha actualizada!" : "¡Listo, la devolvimos a pendientes!");
     } catch {
-      toast.error("No se pudo mover la tarea");
+      toast.error("Ups, no pudimos mover la tarea. Inténtalo de nuevo.");
     }
   };
 
@@ -164,7 +164,7 @@ function TasksPageContent() {
       await mutations.reorder.mutateAsync(taskIds.map((id, order) => ({ id, order })));
     } catch {
       setDayOrder(previous);
-      toast.error("No se pudo guardar el orden");
+      toast.error("Ups, no pudimos guardar el orden.");
     }
   };
 
@@ -183,14 +183,14 @@ function TasksPageContent() {
           try {
             await archiveQuickNote(modalUrl.state.quickNoteId);
           } catch {
-            toast.warning("La tarea se creó, pero no se pudo archivar la captura");
+            toast.warning("La tarea se creó, pero no pudimos guardar tu nota original.");
           }
         }
       }
       modalUrl.close();
-      toast.success(editingTask ? "Tarea actualizada" : "Tarea creada");
+      toast.success(editingTask ? "¡Listo, tarea actualizada!" : "¡Listo, tarea creada!");
     } catch {
-      toast.error("No se pudo guardar la tarea");
+      toast.error("Ups, no pudimos guardar la tarea. Inténtalo de nuevo.");
     }
   };
 
@@ -203,8 +203,8 @@ function TasksPageContent() {
     <section className="flex h-full min-h-0 flex-col bg-surface">
       <div className="flex shrink-0 flex-col gap-3 border-b border-outline-variant bg-surface-bright p-container-padding sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">GESTIÓN DIARIA</p>
-          <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">Planificación</h1>
+          <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">MI SEMANA</p>
+          <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">Mis tareas</h1>
         </div>
         <div className="flex items-center justify-between gap-3 sm:justify-end">
           <span className="font-data-mono text-data-mono text-xs text-on-surface-variant sm:hidden">{weekLabel(weekStart)}</span>
@@ -212,9 +212,9 @@ function TasksPageContent() {
         </div>
       </div>
       {query.isLoading ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando tareas...</div>
+        <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando tus tareas...</div>
       ) : query.isError ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-error">No se pudieron cargar las tareas.</div>
+        <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus tareas. Inténtalo de nuevo.</div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
           <WeeklyGrid
@@ -252,13 +252,13 @@ function TasksPageContent() {
             await mutations.addSubtask.mutateAsync({ taskId, title });
           }}
           onClose={closeModal}
-          onDelete={editingTask ? async () => {
+            onDelete={editingTask ? async () => {
             try {
               await mutations.remove.mutateAsync(editingTask.id);
               modalUrl.close();
-              toast.success("Tarea eliminada");
+              toast.success("¡Listo, tarea eliminada!");
             } catch {
-              toast.error("No se pudo eliminar la tarea");
+              toast.error("Ups, no pudimos eliminarla. Inténtalo de nuevo.");
             }
           } : undefined}
           onDeleteSubtask={async (taskId, subtaskId) => {
@@ -278,7 +278,7 @@ function TasksPageContent() {
 
 export default function TasksPage() {
   return (
-    <Suspense fallback={<div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando planificación...</div>}>
+    <Suspense fallback={<div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando tus tareas...</div>}>
       <TasksPageContent />
     </Suspense>
   );

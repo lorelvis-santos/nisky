@@ -16,14 +16,14 @@ export function TaskFocusDetails({ task, disabled }: { task: Task; disabled: boo
       await mutations.update.mutateAsync({ id: task.id, payload: { pomodoroEstimate: estimate } });
       toast.success("Estimado Pomodoro guardado");
     } catch {
-      toast.error("No se pudo guardar el estimado");
+      toast.error("Ups, no pudimos guardar el estimado. Inténtalo de nuevo.");
     }
   };
   const toggleSubtask = async (subtaskId: string, nextCompleted: boolean) => {
     try {
       await mutations.toggleSubtask.mutateAsync({ taskId: task.id, subtaskId, completed: nextCompleted });
     } catch {
-      toast.error("No se pudo actualizar la subtarea");
+      toast.error("Ups, no pudimos actualizar la subtarea. Inténtalo de nuevo.");
     }
   };
 

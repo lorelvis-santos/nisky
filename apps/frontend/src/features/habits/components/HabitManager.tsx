@@ -20,7 +20,7 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
       setNewName("");
       toast.success("Hábito añadido");
     } catch {
-      toast.error("No se pudo crear el hábito");
+      toast.error("Ups, no pudimos crear el hábito. Inténtalo de nuevo.");
     }
   };
 
@@ -31,7 +31,7 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
     try {
       await mutations.update.mutateAsync({ id, payload: { name } });
     } catch {
-      toast.error("No se pudo actualizar el hábito");
+      toast.error("Ups, no pudimos actualizar el hábito. Inténtalo de nuevo.");
     }
   };
 
@@ -40,7 +40,7 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
       await mutations.update.mutateAsync({ id, payload: { archived: true } });
       toast.success("Hábito archivado");
     } catch {
-      toast.error("No se pudo archivar el hábito");
+      toast.error("Ups, no pudimos archivar el hábito. Inténtalo de nuevo.");
     }
   };
 
@@ -49,7 +49,7 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
       await mutations.update.mutateAsync({ id, payload: { archived: false } });
       toast.success("Hábito restaurado");
     } catch {
-      toast.error("No se pudo restaurar el hábito");
+      toast.error("Ups, no pudimos restaurar el hábito. Inténtalo de nuevo.");
     }
   };
 
@@ -63,7 +63,7 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
       setDeleteId(null);
       toast.success("Hábito eliminado");
     } catch {
-      toast.error("No se pudo eliminar el hábito");
+      toast.error("Ups, no pudimos eliminar el hábito. Inténtalo de nuevo.");
     }
   };
 

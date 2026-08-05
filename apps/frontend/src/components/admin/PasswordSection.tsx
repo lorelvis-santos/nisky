@@ -21,7 +21,7 @@ type FormData = z.infer<typeof schema>;
 export function PasswordSection() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
   const mutation = useChangePassword(() => {
-    toast.success("Contraseña actualizada");
+    toast.success("¡Contraseña actualizada!");
     reset();
   });
 

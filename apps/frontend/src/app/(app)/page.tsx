@@ -63,7 +63,7 @@ export default function DashboardPage() {
         },
       });
     } catch {
-      toast.error("No se pudo actualizar la tarea");
+      toast.error("Ups, no pudimos actualizar la tarea.");
     }
   };
 
@@ -82,7 +82,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-1 border-b border-outline-variant pb-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-              PANEL DE OPERACIONES
+              MI DÍA
             </p>
             <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">
               Hola, {user?.name ?? "usuario"}
@@ -112,12 +112,12 @@ export default function DashboardPage() {
               <div>
                 {tasksQuery.isLoading ? (
                   <p className="p-container-padding font-body-sm text-body-sm text-on-surface-variant">
-                    Cargando tareas...
+                    Cargando tus tareas...
                   </p>
                 ) : tasksQuery.isError ? (
                   <div className="flex flex-col gap-3 p-container-padding">
                     <p className="font-body-sm text-body-sm text-error">
-                      No se pudieron cargar las tareas.
+                      Ups, no pudimos cargar tus tareas. Inténtalo de nuevo.
                     </p>
                     <Link
                       className="font-body-sm text-body-sm text-primary underline"
@@ -129,7 +129,7 @@ export default function DashboardPage() {
                 ) : tasks.length === 0 ? (
                   <div className="flex flex-col gap-2 p-container-padding">
                     <p className="font-body-md text-body-md">
-                      No hay tareas activas.
+                      Tu día está despejado. ¡Sin tareas pendientes!
                     </p>
                     <Link
                       className="font-body-sm text-body-sm text-primary underline"
@@ -168,16 +168,16 @@ export default function DashboardPage() {
               <div className="flex flex-col gap-1 p-2">
                 {habitsQuery.isLoading ? (
                   <p className="p-2 font-body-sm text-body-sm text-on-surface-variant">
-                    Cargando hábitos...
+                    Cargando tus hábitos...
                   </p>
                 ) : habitsQuery.isError ? (
                   <p className="p-2 font-body-sm text-body-sm text-error">
-                    No se pudieron cargar los hábitos.
+                    Ups, no pudimos cargar tus hábitos. Inténtalo de nuevo.
                   </p>
                 ) : activeHabits.length === 0 ? (
                   <div className="flex flex-col gap-2 p-2">
                     <p className="font-body-sm text-body-sm text-on-surface-variant">
-                      No tienes hábitos configurados.
+                      Aún no tienes hábitos. ¡Crea el primero!
                     </p>
                     <button
                       className="self-start font-body-sm text-body-sm text-primary underline"

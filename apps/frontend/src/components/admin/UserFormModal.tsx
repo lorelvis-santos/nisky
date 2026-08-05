@@ -49,14 +49,14 @@ export function UserFormModal({ user, onClose }: Props) {
     try {
       if (user) {
         await mutations.update.mutateAsync({ id: user.id, payload });
-        toast.success("Usuario actualizado");
+        toast.success("¡Usuario actualizado!");
       } else {
         await mutations.create.mutateAsync({ name, email, role, password });
-        toast.success("Usuario creado");
+        toast.success("¡Usuario creado!");
       }
       onClose();
     } catch (err) {
-      setError(errorMessage(err, "No se pudo guardar el usuario"));
+      setError(errorMessage(err, "Ups, no pudimos guardar el usuario. Inténtalo de nuevo."));
     }
   };
 
@@ -64,10 +64,10 @@ export function UserFormModal({ user, onClose }: Props) {
     if (!user) return;
     try {
       await mutations.remove.mutateAsync(user.id);
-      toast.success("Usuario eliminado");
+      toast.success("¡Usuario eliminado!");
       onClose();
     } catch (err) {
-      setError(errorMessage(err, "No se pudo eliminar el usuario"));
+      setError(errorMessage(err, "Ups, no pudimos eliminar el usuario. Inténtalo de nuevo."));
     }
   };
 
@@ -99,7 +99,7 @@ export function UserFormModal({ user, onClose }: Props) {
               <span className="font-label-caps text-label-caps text-on-surface-variant">ESTADO</span>
               <select className="field mt-1" disabled={isSelf} onChange={(event) => set("isActive", event.target.value === "true")} value={String(form.isActive)}>
                 <option value="true">Activo</option>
-                <option value="false">Deshabilitado</option>
+                <option value="false">Inactivo</option>
               </select>
             </label>
           </div>

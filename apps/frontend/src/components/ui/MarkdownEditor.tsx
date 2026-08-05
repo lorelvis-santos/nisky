@@ -58,7 +58,7 @@ const toolbar: Array<{ label: string; icon: typeof Bold; snippet: string; title:
 
 export function MarkdownEditor({ value, onChange, minHeight = "18rem", placeholder }: Props) {
   const extensions = useMemo(
-    () => [markdown({ base: markdownLanguage, codeLanguages: languages }), steelEditorTheme],
+    () => [markdown({ base: markdownLanguage, codeLanguages: languages }), steelEditorTheme, EditorView.lineWrapping],
     [],
   );
 

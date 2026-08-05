@@ -25,9 +25,9 @@ export function NoteCard({
   };
 
   return (
-    <article className="flex flex-col border border-outline-variant bg-surface-container-lowest">
-      <div className="flex items-start justify-between gap-2 border-b border-outline-variant p-container-padding">
-        <h2 className="line-clamp-2 font-body-md font-medium text-body-md text-primary">{note.title}</h2>
+    <article className="flex min-w-0 flex-col border border-outline-variant bg-surface-container-lowest">
+      <div className="flex min-w-0 items-start justify-between gap-2 border-b border-outline-variant p-container-padding">
+        <h2 className="line-clamp-2 min-w-0 break-words font-body-md font-medium text-body-md text-primary">{note.title}</h2>
         <button
           aria-label={note.pinned ? "Desfijar" : "Fijar"}
           className={`shrink-0 ${note.pinned ? "text-primary" : "text-on-surface-variant hover:text-primary"}`}
@@ -37,8 +37,8 @@ export function NoteCard({
           <Pin size={16} fill={note.pinned ? "currentColor" : "none"} />
         </button>
       </div>
-      <button className="flex-1 p-container-padding text-left" onClick={() => onEdit(note)} type="button">
-        <p className="line-clamp-5 whitespace-pre-line font-body-sm text-body-sm text-on-surface-variant">{note.content}</p>
+      <button className="min-w-0 flex-1 p-container-padding text-left" onClick={() => onEdit(note)} type="button">
+        <p className="line-clamp-5 break-words whitespace-pre-line font-body-sm text-body-sm text-on-surface-variant">{note.content}</p>
       </button>
       <div className="flex items-center justify-between gap-2 border-t border-outline-variant px-container-padding py-2">
         <div className="min-w-0 flex-1">
@@ -47,7 +47,7 @@ export function NoteCard({
               {note.tags.map((tag) => `#${tag}`).join(" ")}
             </p>
           )}
-          <p className="font-data-mono text-data-mono text-[11px] text-on-surface-variant">
+          <p className="break-words font-data-mono text-data-mono text-[11px] text-on-surface-variant">
             {note.category ? `${note.category} · ` : ""}{noteDate(note.updatedAt)}
           </p>
         </div>

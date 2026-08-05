@@ -83,12 +83,12 @@ export function NoteEditorModal({
               <input className="field mt-1" onChange={(event) => setTagsText(event.target.value)} placeholder="ideas, recursos" value={tagsText} />
             </label>
           </div>
-          <label className="block">
+          <div className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">CONTENIDO</span>
             <div className="mt-1">
               <MarkdownEditor minHeight="16rem" onChange={(content) => set("content", content)} placeholder="Escribe tu nota..." value={form.content} />
             </div>
-          </label>
+          </div>
           <label className="flex cursor-pointer items-center gap-2">
             <input checked={form.pinned} className="h-4 w-4 accent-primary" onChange={(event) => set("pinned", event.target.checked)} type="checkbox" />
             <span className="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant"><Pin size={13} /> Nota fijada</span>

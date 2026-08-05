@@ -44,7 +44,7 @@ export default function SettingsPage() {
             <dl className="grid max-w-2xl gap-4 sm:grid-cols-2">
               <div><dt className="font-label-caps text-label-caps uppercase text-on-surface-variant">Nombre</dt><dd className="mt-1 font-body-md text-body-md">{user?.name ?? "-"}</dd></div>
               <div><dt className="font-label-caps text-label-caps uppercase text-on-surface-variant">Email</dt><dd className="mt-1 font-data-mono text-data-mono">{user?.email}</dd></div>
-              <div><dt className="font-label-caps text-label-caps uppercase text-on-surface-variant">Rol</dt><dd className="mt-1 font-data-mono text-data-mono">{user?.role}</dd></div>
+              <div><dt className="font-label-caps text-label-caps uppercase text-on-surface-variant">Rol</dt><dd className="mt-1 font-data-mono text-data-mono">{user?.role === "ADMIN" ? "Administrador" : "Miembro"}</dd></div>
             </dl>
           )}
 

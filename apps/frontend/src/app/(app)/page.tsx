@@ -167,12 +167,12 @@ export default function DashboardPage() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="divide-y divide-outline-variant">
+                  <div className="flex flex-col gap-3 p-container-padding">
                     {days.map((day) => {
                       const dayTasks = tasksByDay(day);
                       return (
-                        <div key={dayKey(day)}>
-                          <div className="flex items-start justify-between gap-3 bg-surface-container-low px-4 py-3">
+                        <div className="border border-outline-variant" key={dayKey(day)}>
+                          <div className="flex items-start justify-between gap-3 border-b border-outline-variant bg-surface-container-low px-4 py-3">
                             <div>
                               <p className={`font-label-caps text-label-caps ${dayTasks.length > 0 ? "text-primary" : "text-on-surface-variant"}`}>
                                 {dayLabel(day)}

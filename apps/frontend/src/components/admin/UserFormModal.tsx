@@ -115,10 +115,10 @@ export function UserFormModal({ user, onClose }: Props) {
           </div>
           {error && <p className="border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
         </div>
-        <div className="flex items-center justify-between gap-3 border-t border-outline-variant bg-surface-container-low px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
           {user && !isSelf ? (
             <button
-              className={confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"}
+              className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap`}
               onClick={() => {
                 if (!confirmDelete) {
                   setConfirmDelete(true);
@@ -131,9 +131,9 @@ export function UserFormModal({ user, onClose }: Props) {
               {confirmDelete ? "¿Eliminar usuario?" : "Eliminar"}
             </button>
           ) : <span />}
-          <div className="flex gap-3">
-            <button className="border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={onClose} type="button">Cancelar</button>
-            <button className="bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={() => void save()} type="button">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+            <button className="whitespace-nowrap border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={onClose} type="button">Cancelar</button>
+            <button className="whitespace-nowrap bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={() => void save()} type="button">
               {mutations.create.isPending || mutations.update.isPending ? "Guardando..." : user ? "Guardar cambios" : "Crear usuario"}
             </button>
           </div>

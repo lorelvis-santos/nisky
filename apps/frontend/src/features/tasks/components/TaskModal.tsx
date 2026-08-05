@@ -94,18 +94,40 @@ export function TaskModal({
       role="dialog"
     >
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col border border-outline-variant bg-surface shadow-none">
-        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant bg-surface-bright px-5 py-4">
           <h2 className="font-headline-xs text-headline-xs font-bold text-primary">
             {task ? "Editar tarea" : "Nueva tarea"}
           </h2>
-          <button
-            aria-label="Cerrar"
-            className="text-on-surface-variant hover:text-on-surface"
-            onClick={onClose}
-            type="button"
-          >
-            <X size={19} />
-          </button>
+          <div className="flex flex-1 items-center justify-between gap-2 sm:flex-none sm:justify-start">
+            <div className="flex items-center gap-2">
+              {task && onStartPomodoro && (
+                <button
+                  className="flex items-center gap-1 border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+                  onClick={onStartPomodoro}
+                  type="button"
+                >
+                  <Timer size={14} /> Pomodoro
+                </button>
+              )}
+              {task && onCreateReminder && (
+                <button
+                  className="whitespace-nowrap border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+                  onClick={onCreateReminder}
+                  type="button"
+                >
+                  Recordarme
+                </button>
+              )}
+            </div>
+            <button
+              aria-label="Cerrar"
+              className="text-on-surface-variant hover:text-on-surface"
+              onClick={onClose}
+              type="button"
+            >
+              <X size={19} />
+            </button>
+          </div>
         </div>
         <div className="space-y-4 overflow-y-auto p-5">
            <label className="block">
@@ -275,10 +297,10 @@ export function TaskModal({
             <p className="font-body-sm text-body-sm text-error">{error}</p>
           )}
         </div>
-        <div className={`flex items-center gap-3 border-t border-outline-variant bg-surface-container-low px-5 py-4 ${task ? "justify-between" : "justify-end"}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
           {task && onDelete ? (
             <button
-              className={confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"}
+              className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap`}
               onClick={() => {
                 if (!confirmDelete) {
                   setConfirmDelete(true);
@@ -290,40 +312,22 @@ export function TaskModal({
             >
               {confirmDelete ? "¿Eliminar tarea?" : "Eliminar"}
             </button>
-          ) : null}
-          <div className="flex gap-3">
-           {task && onStartPomodoro && (
+          ) : <span />}
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
             <button
-              className="flex items-center gap-1 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
-              onClick={onStartPomodoro}
+              className="whitespace-nowrap border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high"
+              onClick={onClose}
               type="button"
             >
-              <Timer size={14} /> Pomodoro
+              Cancelar
             </button>
-           )}
-           {task && onCreateReminder && (
-             <button
-               className="border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
-               onClick={onCreateReminder}
-               type="button"
-             >
-               Recordarme
-             </button>
-           )}
-          <button
-            className="border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high"
-            onClick={onClose}
-            type="button"
-          >
-            Cancelar
-          </button>
-          <button
-            className="bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
-            onClick={() => void submit()}
-            type="button"
-          >
-            {task ? "Guardar cambios" : "Crear tarea"}
-          </button>
+            <button
+              className="whitespace-nowrap bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
+              onClick={() => void submit()}
+              type="button"
+            >
+              {task ? "Guardar cambios" : "Crear tarea"}
+            </button>
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CheckSquare2, Circle, Timer } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckSquare2, Circle, Timer } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
@@ -287,7 +287,7 @@ function DashboardTask({
   const completedSubtasks = task.completedSubtasks ?? task.subtasks?.filter((subtask) => subtask.completed).length ?? 0;
   return (
     <div
-      className={`group flex items-start justify-between gap-3 border-b border-outline-variant px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-container-low ${overdue ? "border-l-2 border-l-error" : ""}`}
+      className={`group flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-container-low ${overdue ? "border-l-2 border-l-error" : ""}`}
     >
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <button
@@ -307,21 +307,21 @@ function DashboardTask({
           </Link>
           {task.dueDate && (
             <p
-              className={`mt-1 font-data-mono text-data-mono text-xs ${overdue ? "text-error" : "text-on-surface-variant"}`}
+              className={`mt-1 flex items-center gap-1.5 font-data-mono text-data-mono text-xs ${overdue ? "text-error" : "text-on-surface-variant"}`}
             >
-              {overdue ? "Vencida: " : "Vence "}
-              {formatRelativeDate(task.dueDate, true)}
+              {overdue && <AlertCircle aria-label="Vencida" className="shrink-0 text-error" size={13} />}
+              <span>{overdue ? "Vencida " : "Vence "}{formatRelativeDate(task.dueDate, true)}</span>
             </p>
           )}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
-        {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <span className="flex items-center gap-1 whitespace-nowrap font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
+        {subtaskTotal > 0 && <span className="flex items-center gap-1 whitespace-nowrap font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
         <PriorityChip priority={task.priority} />
         <Link
           aria-label={`Ver detalle de ${task.title}`}
-          className="flex h-7 w-7 items-center justify-center border border-outline-variant text-on-surface-variant hover:border-outline hover:bg-surface-container-high hover:text-primary"
+          className="flex h-7 w-7 shrink-0 items-center justify-center border border-outline-variant text-on-surface-variant hover:border-outline hover:bg-surface-container-high hover:text-primary"
           href={`/tasks?taskId=${encodeURIComponent(task.id)}`}
           title="Ver detalle"
         >

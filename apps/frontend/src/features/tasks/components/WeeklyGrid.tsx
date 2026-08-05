@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Task } from "@/types/entities";
 import { TaskCard } from "./TaskCard";
 
@@ -37,14 +37,28 @@ export function WeeklyGrid({
   onStartPomodoro: (task: Task) => void;
 }) {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const today = dateKey(new Date());
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + index);
     return date;
   });
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const todayColumn = el.querySelector<HTMLElement>("[data-today='true']");
+    if (!todayColumn) return;
+    const containerRect = el.getBoundingClientRect();
+    const columnRect = todayColumn.getBoundingClientRect();
+    const maxScroll = Math.max(el.scrollWidth - el.clientWidth, 0);
+    const target = el.scrollLeft + (columnRect.left - containerRect.left) - (el.clientWidth - columnRect.width) / 2;
+    el.scrollLeft = Math.min(Math.max(target, 0), maxScroll);
+  }, []);
+
   return (
-    <div className="h-[520px] min-h-[520px] flex-none overflow-auto bg-surface-container-low p-3 lg:h-auto lg:min-h-0 lg:flex-1">
+    <div ref={scrollRef} className="h-[520px] min-h-[520px] flex-none overflow-auto bg-surface-container-low p-3 lg:h-auto lg:min-h-0 lg:flex-1">
       <div className="grid min-w-[1798px] grid-cols-[repeat(7,minmax(250px,1fr))] gap-2">
         <div className="contents">
           {days.map((day, index) => {
@@ -70,6 +84,7 @@ export function WeeklyGrid({
             return (
               <div
                 className="flex min-h-[480px] min-w-0 flex-col gap-2"
+                data-today={isToday ? "true" : undefined}
                 key={key}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={(event) => {

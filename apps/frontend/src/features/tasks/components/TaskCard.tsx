@@ -85,15 +85,15 @@ export function TaskCard({
           <MoreHorizontal size={17} />
         </button>
       </div>
-      <div className="ml-7 flex items-center justify-between gap-2">
+      <div className="ml-7 mt-auto flex items-center justify-between gap-2">
         <PriorityChip priority={task.priority} />
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
           {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
           {overdue && <span className="font-data-mono text-data-mono text-xs text-error">Vencida</span>}
+          {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="flex items-center justify-center border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
         </div>
       </div>
-      {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="absolute bottom-3 right-3 flex items-center justify-center border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
     </article>
   );
 }

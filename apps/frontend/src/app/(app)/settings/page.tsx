@@ -5,14 +5,17 @@ import { useAuth } from "@/context/AuthProvider";
 import { PasswordSection } from "@/components/admin/PasswordSection";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 import { UserManagement } from "@/components/admin/UserManagement";
+import { MoodleManager } from "@/components/moodle/MoodleManager";
+import { MoodleTasksList } from "@/components/moodle/MoodleTasksList";
 import { PushSubscriptionManager } from "@/components/pwa/PushSubscriptionManager";
 
-type Tab = "profile" | "security" | "notifications" | "admin";
+type Tab = "profile" | "security" | "notifications" | "moodle" | "admin";
 
 const tabs: Array<{ id: Tab; label: string; adminOnly?: boolean }> = [
   { id: "profile", label: "Perfil" },
   { id: "security", label: "Seguridad" },
   { id: "notifications", label: "Notificaciones" },
+  { id: "moodle", label: "Moodle" },
   { id: "admin", label: "Administración", adminOnly: true },
 ];
 
@@ -59,6 +62,13 @@ export default function SettingsPage() {
           {active === "notifications" && (
             <div className="max-w-2xl">
               <PushSubscriptionManager />
+            </div>
+          )}
+
+          {active === "moodle" && (
+            <div className="space-y-8">
+              <MoodleManager />
+              <MoodleTasksList />
             </div>
           )}
 

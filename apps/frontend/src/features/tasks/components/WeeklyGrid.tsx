@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { Task } from "@/types/entities";
+import { localDateKey } from "@/lib/utils";
 import { TaskCard } from "./TaskCard";
 
 const dayNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
 
 export function dateKey(date: Date | string) {
-  if (typeof date === "string") return date.slice(0, 10);
+  if (typeof date === "string") return localDateKey(date);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 

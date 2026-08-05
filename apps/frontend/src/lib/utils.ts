@@ -7,12 +7,25 @@ export function cn(...inputs: ClassValue[]) {
 
 function calendarDate(value: string | Date) {
   if (typeof value === "string") {
-    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-    if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    // Date-only values ("YYYY-MM-DD) represent a local calendar day, not UTC.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
   }
 
   const date = value instanceof Date ? value : new Date(value);
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
+ * Devuelve el día calendario en hora local (YYYY-MM-DD) de un valor ISO (UTC),
+ * de modo que una fecha como "2026-08-06T03:59:00.000Z" cuente como el 5 de
+ * agosto en una zona horaria UTC-4.
+ */
+export function localDateKey(value: string | Date) {
+  const date = value instanceof Date ? value : new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export function formatRelativeDate(value: string | Date, lowercase = false, reference = new Date()) {

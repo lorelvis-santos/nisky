@@ -2,3 +2,8 @@ node_modules/
 .env
 .env.local
 src/infra/prisma/generated/
+
+# Python venv local (cliente Moodle)
+scripts/.venv/
+__pycache__/
+*.pyc

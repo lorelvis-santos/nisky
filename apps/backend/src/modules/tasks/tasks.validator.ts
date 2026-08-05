@@ -29,6 +29,10 @@ export const reorderTasksSchema = z.object({
   })).min(1, "Debe enviar al menos una tarea"),
 });
 
+export const archiveTaskSchema = z.object({
+  archived: z.boolean(),
+});
+
 export const createSubtaskSchema = z.object({
   title: z.string("El título es requerido").trim().min(1, "El título es requerido").max(200),
 });
@@ -53,3 +57,4 @@ export type ReorderTasksDto = z.infer<typeof reorderTasksSchema>;
 export type CreateSubtaskDto = z.infer<typeof createSubtaskSchema>;
 export type UpdateSubtaskDto = z.infer<typeof updateSubtaskSchema>;
 export type TaskQueryDto = z.infer<typeof taskQuerySchema>;
+export type ArchiveTaskDto = z.infer<typeof archiveTaskSchema>;

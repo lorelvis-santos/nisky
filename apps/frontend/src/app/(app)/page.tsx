@@ -19,13 +19,8 @@ import {
   useTaskMutations,
   useTasksQuery,
 } from "@/features/tasks/hooks/useTasks";
-import { formatRelativeDate, isTaskOverdue } from "@/lib/utils";
+import { formatRelativeDate, isTaskOverdue, localDateKey } from "@/lib/utils";
 import type { QuickNote, Task } from "@/types/entities";
-
-function localDateKey() {
-  const date = new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
 
 function dayKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -61,13 +56,13 @@ export default function DashboardPage() {
   const tasks = (tasksQuery.data?.data ?? []).filter(
     (task) => task.status !== "COMPLETED" && task.status !== "CANCELLED",
   );
-  const todayKey = localDateKey();
+  const todayKey = localDateKey(new Date());
   const days = weekDaysFromToday();
   const tasksByDay = (day: Date) => {
     const key = dayKey(day);
-    const dayTasks = tasks.filter((task) => task.dueDate && task.dueDate.slice(0, 10) === key);
+    const dayTasks = tasks.filter((task) => task.dueDate && localDateKey(task.dueDate) === key);
     if (key !== todayKey) return dayTasks;
-    const overdue = tasks.filter((task) => task.dueDate && task.dueDate.slice(0, 10) < key);
+    const overdue = tasks.filter((task) => task.dueDate && localDateKey(task.dueDate) < key);
     return [...overdue, ...dayTasks];
   };
   const dayLabel = (day: Date) => {

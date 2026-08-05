@@ -2,7 +2,7 @@
 FROM oven/bun:1.3.11-slim AS builder
 
 RUN apt-get update -y \
-  && apt-get install -y openssl \
+  && apt-get install -y openssl python3 python3-venv \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -14,11 +14,15 @@ COPY . .
 
 RUN bunx prisma generate
 
+# Cliente Moodle (moodle_fetch.py usa curl_cffi)
+RUN python3 -m venv scripts/.venv \
+  && scripts/.venv/bin/pip install --no-cache-dir -r scripts/requirements.txt
+
 # Stage 2: Runner
 FROM oven/bun:1.3.11-slim AS runner
 
 RUN apt-get update -y \
-  && apt-get install -y openssl adduser \
+  && apt-get install -y openssl adduser python3 \
   && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system --gid 1001 bunjs \
@@ -36,6 +40,7 @@ COPY --from=builder --chown=bunuser:bunjs /app/tsconfig.json ./tsconfig.json
 COPY --from=builder --chown=bunuser:bunjs /app/package.json ./package.json
 COPY --from=builder --chown=bunuser:bunjs /app/docker-entrypoint.sh ./docker-entrypoint.sh
 COPY --from=builder --chown=bunuser:bunjs /app/src ./src
+COPY --from=builder --chown=bunuser:bunjs /app/scripts ./scripts
 COPY --from=builder --chown=bunuser:bunjs /app/node_modules ./node_modules
 
 EXPOSE 4000

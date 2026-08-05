@@ -25,6 +25,7 @@ export class TaskService {
     const { skip, take } = getPaginationArgs(page, limit);
     const where = {
       userId,
+      archivedAt: null,
       ...(query.status ? { status: query.status } : {}),
       ...(query.priority ? { priority: query.priority } : {}),
       ...(query.q ? { OR: [{ title: { contains: query.q } }, { description: { contains: query.q } }] } : {}),
@@ -61,6 +62,7 @@ export class TaskService {
         status: data.status,
         priority: data.priority,
         dueDate: taskDate(data.dueDate),
+        source: "MANUAL",
         pomodoroEstimate: data.pomodoroEstimate ?? 0,
         completedAt: data.status === "COMPLETED" ? new Date() : null,
       },
@@ -86,8 +88,20 @@ export class TaskService {
   }
 
   async delete(userId: string, id: string) {
-    await this.getById(userId, id);
+    const task = await this.getById(userId, id);
+    if (task.source === "MOODLE") {
+      throw new AppError("FORBIDDEN", "Las tareas de Moodle no se pueden eliminar. Archívalas para ocultarlas.");
+    }
     await prisma.task.delete({ where: { id } });
+  }
+
+  async archive(userId: string, id: string, archived: boolean) {
+    await this.getById(userId, id);
+    return prisma.task.update({
+      where: { id },
+      data: { archivedAt: archived ? new Date() : null },
+      include: { subtasks: { orderBy: { order: "asc" } } },
+    }).then(taskProgress);
   }
 
   async reorder(userId: string, data: ReorderTasksDto) {

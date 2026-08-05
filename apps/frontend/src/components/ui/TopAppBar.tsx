@@ -67,8 +67,8 @@ export function TopAppBar({ onMenu }: { onMenu: () => void }) {
 type Notice = { id: string; kind: "task" | "reminder"; title: string; detail: string; url: string };
 
 function calendarDay(value: string) {
-  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
-  return new Date(year, month - 1, day);
+  const date = new Date(value);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function dayDifference(value: string) {

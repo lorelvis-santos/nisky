@@ -10,6 +10,7 @@ import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal"
 import { WeekNavigation } from "@/features/tasks/components/WeekNavigation";
 import { WeeklyGrid, dateKey } from "@/features/tasks/components/WeeklyGrid";
 import { useTaskMutations, useTaskQuery, useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { localDateKey } from "@/lib/utils";
 
 const emptyTasks: Task[] = [];
 
@@ -148,7 +149,7 @@ function TasksPageContent() {
 
   const moveTask = async (taskId: string, dueDate: string | null) => {
     const task = tasks.find((item) => item.id === taskId);
-    const currentDueDate = task?.dueDate ? task.dueDate.slice(0, 10) : null;
+    const currentDueDate = task?.dueDate ? localDateKey(task.dueDate) : null;
     if (currentDueDate === dueDate) return;
     try {
       await mutations.update.mutateAsync({ id: taskId, payload: { dueDate } });

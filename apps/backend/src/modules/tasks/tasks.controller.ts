@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
 import { taskService } from "./tasks.service";
-import type { CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
+import type { ArchiveTaskDto, CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
 
 type IdParams = { id: string };
 type SubtaskParams = { id: string; subtaskId: string };
@@ -30,6 +30,10 @@ export class TaskController {
 
   delete = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
     try { await taskService.delete(userId(req), req.params.id); res.success({ success: true }); } catch (error) { next(error); }
+  };
+
+  archive = async (req: Request<IdParams, {}, ArchiveTaskDto>, res: Response, next: NextFunction) => {
+    try { res.success(await taskService.archive(userId(req), req.params.id, req.body.archived)); } catch (error) { next(error); }
   };
 
   reorder = async (req: Request<{}, {}, ReorderTasksDto>, res: Response, next: NextFunction) => {

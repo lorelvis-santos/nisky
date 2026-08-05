@@ -11,6 +11,7 @@ import journalRoutes from "../modules/journal/journal.routes";
 import knowledgeRoutes from "../modules/knowledge/knowledge.routes";
 import pushRoutes from "../modules/push/push.routes";
 import reminderRoutes from "../modules/reminders/reminders.routes";
+import moodleRoutes from "../modules/moodle/moodle.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -25,5 +26,6 @@ router.use("/journal", journalRoutes);
 router.use("/knowledge", knowledgeRoutes);
 router.use("/push", pushRoutes);
 router.use("/reminders", reminderRoutes);
+router.use("/moodle", moodleRoutes);
 
 export default router;

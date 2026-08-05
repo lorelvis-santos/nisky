@@ -12,3 +12,4 @@ docker-compose.yml
 coverage
 .nyc_output
 .codebase-memory
+scripts/.venv

@@ -5,6 +5,7 @@ import { Timer, X } from "lucide-react";
 import type { Task, TaskPriority, TaskStatus } from "@/types/entities";
 import { useTaskQuery } from "../hooks/useTasks";
 import { taskSchema } from "../schemas/task.schema";
+import { localDateKey } from "@/lib/utils";
 
 export type TaskForm = {
   title: string;
@@ -60,7 +61,7 @@ export function TaskModal({
           description: task.description ?? "",
           status: task.status,
            priority: task.priority,
-           dueDate: task.dueDate ? task.dueDate.slice(0, 10) : "",
+           dueDate: task.dueDate ? localDateKey(task.dueDate) : "",
            pomodoroEstimate: task.pomodoroEstimate,
         }
       : { ...emptyForm, ...initialForm },

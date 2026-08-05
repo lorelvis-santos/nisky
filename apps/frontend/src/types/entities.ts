@@ -29,6 +29,8 @@ export interface Subtask {
   updatedAt: string;
 }
 
+export type TaskSource = "MANUAL" | "MOODLE";
+
 export interface Task {
   id: string;
   userId: string;
@@ -38,6 +40,9 @@ export interface Task {
   priority: TaskPriority;
   dueDate: string | null;
   completedAt: string | null;
+  archivedAt: string | null;
+  source: TaskSource;
+  sourceRef: string | null;
   order: number;
   pomodoroEstimate: number;
   pomodoroCount: number;
@@ -119,6 +124,18 @@ export interface Reminder {
 
 export type PomodoroPhase = "WORK" | "SHORT_BREAK" | "LONG_BREAK";
 export type PomodoroSessionStatus = "ACTIVE" | "PAUSED" | "COMPLETED" | "CANCELLED";
+
+export interface MoodleAccount {
+  id: string;
+  domain: string;
+  username: string;
+  service: string;
+  enabled: boolean;
+  lastSyncAt: string | null;
+  syncError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface PomodoroSession {
   id: string;

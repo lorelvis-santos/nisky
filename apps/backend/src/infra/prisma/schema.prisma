@@ -34,6 +34,7 @@ model User {
   notes          Note[]
   pushSubscriptions PushSubscription[]
   reminders      Reminder[]
+  moodleAccounts MoodleAccount[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -51,6 +52,9 @@ model Task {
   dueDate            DateTime?
   completedAt        DateTime?
   order              Int          @default(0)
+  source             TaskSource   @default(MANUAL)
+  sourceRef          String?
+  archivedAt         DateTime?
   subtasks           Subtask[]
   pomodoroEstimate   Int          @default(0)
   pomodoroCount      Int          @default(0)
@@ -61,6 +65,13 @@ model Task {
   @@index([userId, status])
   @@index([userId, dueDate])
   @@index([userId, priority])
+  @@index([userId, source, sourceRef])
+  @@unique([userId, source, sourceRef])
+}
+
+enum TaskSource {
+  MANUAL
+  MOODLE
 }
 
 model Subtask {
@@ -296,4 +307,24 @@ model Reminder {
   @@index([isActive, triggerAt])
   @@index([userId, isActive, triggerAt])
   @@index([userId, triggerAt])
+}
+
+model MoodleAccount {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain       String
+  username     String
+  tokenCipher  String
+  tokenIv      String
+  tokenAuthTag String
+  service      String   @default("moodle_mobile_app")
+  enabled      Boolean  @default(true)
+  lastSyncAt   DateTime?
+  syncError    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, domain])
+  @@index([userId])
 }

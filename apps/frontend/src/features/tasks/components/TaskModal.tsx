@@ -31,6 +31,7 @@ export function TaskModal({
   onSave,
   onDelete,
   onStartPomodoro,
+  onCreateReminder,
   onAddSubtask,
   onToggleSubtask,
   onDeleteSubtask,
@@ -41,6 +42,7 @@ export function TaskModal({
   onSave: (form: TaskForm) => Promise<void>;
   onDelete?: () => Promise<void>;
   onStartPomodoro?: () => void;
+  onCreateReminder?: () => void;
   onAddSubtask: (taskId: string, title: string) => Promise<void>;
   onToggleSubtask: (
     taskId: string,
@@ -289,7 +291,7 @@ export function TaskModal({
             </button>
           ) : null}
           <div className="flex gap-3">
-          {task && onStartPomodoro && (
+           {task && onStartPomodoro && (
             <button
               className="flex items-center gap-1 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
               onClick={onStartPomodoro}
@@ -297,7 +299,16 @@ export function TaskModal({
             >
               <Timer size={14} /> Pomodoro
             </button>
-          )}
+           )}
+           {task && onCreateReminder && (
+             <button
+               className="border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+               onClick={onCreateReminder}
+               type="button"
+             >
+               Recordarme
+             </button>
+           )}
           <button
             className="border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high"
             onClick={onClose}

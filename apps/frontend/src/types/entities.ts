@@ -97,6 +97,26 @@ export interface QuickNote {
   updatedAt: string;
 }
 
+export type ReminderRepeatType = "DAILY" | "WEEKLY" | "MONTHLY";
+
+export interface Reminder {
+  id: string;
+  userId: string;
+  title: string;
+  body: string | null;
+  triggerAt: string;
+  timezone: string;
+  repeatType: ReminderRepeatType | null;
+  repeatInterval: number;
+  repeatDaysOfWeek: number[];
+  repeatDayOfMonth: number | null;
+  payload: { type?: string; taskId?: string; habitId?: string } | null;
+  isActive: boolean;
+  sentAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type PomodoroPhase = "WORK" | "SHORT_BREAK" | "LONG_BREAK";
 export type PomodoroSessionStatus = "ACTIVE" | "PAUSED" | "COMPLETED" | "CANCELLED";
 

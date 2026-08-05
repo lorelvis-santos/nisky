@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CalendarDays, HelpCircle, LayoutDashboard, LogOut, PencilLine, Settings, Timer, X } from "lucide-react";
+import { AlarmClock, Bell, BookOpen, CalendarDays, HelpCircle, LayoutDashboard, LogOut, PencilLine, Settings, Timer, X } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import type { User } from "@/types/entities";
 
@@ -12,16 +12,18 @@ const primaryItems = [
   { href: "/focus", label: "Modo enfoque", icon: Timer },
   { href: "/journal", label: "Diario", icon: PencilLine },
   { href: "/knowledge", label: "Mis notas", icon: BookOpen },
+  { href: "/reminders", label: "Recordatorios", icon: AlarmClock },
 ];
 
 const secondaryItems = [
+  { href: "/settings/push", label: "Notificaciones", icon: Bell },
   { href: "/settings", label: "Ajustes", icon: Settings },
   { href: "/support", label: "Ayuda", icon: HelpCircle },
 ];
 
 function NavItem({ href, label, icon: Icon, onNavigate }: { href: string; label: string; icon: typeof LayoutDashboard; onNavigate?: () => void }) {
   const pathname = usePathname();
-  const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const active = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <Link

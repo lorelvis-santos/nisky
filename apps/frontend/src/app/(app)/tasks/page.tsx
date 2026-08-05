@@ -94,6 +94,7 @@ function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
 }
 
 function TasksPageContent() {
+  const router = useRouter();
   const [weekStart, setWeekStart] = useState(() => monday(new Date()));
   const [search, setSearch] = useState("");
   const [priority, setPriority] = useState<TaskPriority | "ALL">("ALL");
@@ -265,6 +266,7 @@ function TasksPageContent() {
             await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
           }}
           onSave={saveTask}
+          onCreateReminder={editingTask ? () => router.push(`/reminders?taskId=${encodeURIComponent(editingTask.id)}&title=${encodeURIComponent(editingTask.title)}`) : undefined}
           onStartPomodoro={editingTask ? () => modalUrl.openFocus(editingTask.id) : undefined}
           onToggleSubtask={async (taskId, subtaskId, completed) => {
             await mutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed });

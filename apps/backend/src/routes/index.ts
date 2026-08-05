@@ -9,6 +9,8 @@ import pomodoroRoutes from "../modules/pomodoro/pomodoro.routes";
 import adminRoutes from "../modules/admin/admin.routes";
 import journalRoutes from "../modules/journal/journal.routes";
 import knowledgeRoutes from "../modules/knowledge/knowledge.routes";
+import pushRoutes from "../modules/push/push.routes";
+import reminderRoutes from "../modules/reminders/reminders.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -21,5 +23,7 @@ router.use("/pomodoro", pomodoroRoutes);
 router.use("/admin", adminRoutes);
 router.use("/journal", journalRoutes);
 router.use("/knowledge", knowledgeRoutes);
+router.use("/push", pushRoutes);
+router.use("/reminders", reminderRoutes);
 
 export default router;

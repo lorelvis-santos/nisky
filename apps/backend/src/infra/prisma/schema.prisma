@@ -32,6 +32,8 @@ model User {
   journalSalt    Bytes?
   journalEntries JournalEntry[]
   notes          Note[]
+  pushSubscriptions PushSubscription[]
+  reminders      Reminder[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -250,4 +252,48 @@ model Setting {
   createdAt   DateTime @default(now())
 
   @@index([key])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, endpoint])
+  @@index([userId])
+}
+
+enum ReminderRepeatType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model Reminder {
+  id               String             @id @default(uuid())
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String             @db.VarChar(200)
+  body             String?
+  triggerAt        DateTime
+  timezone         String             @default("America/Bogota")
+  repeatType       ReminderRepeatType?
+  repeatInterval   Int                @default(1)
+  repeatDaysOfWeek Int[]
+  repeatDayOfMonth Int?
+  payload          Json?
+  isActive         Boolean            @default(true)
+  sentAt           DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([isActive, triggerAt])
+  @@index([userId, isActive, triggerAt])
+  @@index([userId, triggerAt])
 }

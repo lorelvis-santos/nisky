@@ -135,3 +135,35 @@ export interface PomodoroStats {
   totalBreakSec: number;
   activeDays: number;
 }
+
+export interface JournalEntry {
+  id: string;
+  title: string;
+  classification: string | null;
+  tags: string[];
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Note {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  category: string | null;
+  tags: string[];
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FacetCount {
+  name: string;
+  count: number;
+}
+
+export interface KnowledgeFacets {
+  categories: FacetCount[];
+  tags: FacetCount[];
+}

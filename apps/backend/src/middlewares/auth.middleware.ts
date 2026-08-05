@@ -8,6 +8,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: { id: string; email: string; role: UserRole };
+      sessionId?: string;
     }
   }
 }
@@ -52,5 +53,11 @@ export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
     next(new AppError("FORBIDDEN", "Acceso restringido a administradores"));
     return;
   }
+  next();
+}
+
+export function attachSessionId(req: Request, _res: Response, next: NextFunction) {
+  const raw = req.cookies?.refreshToken as string | undefined;
+  req.sessionId = raw?.split(".", 1)[0] || undefined;
   next();
 }

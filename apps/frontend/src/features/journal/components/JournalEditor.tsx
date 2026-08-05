@@ -1,0 +1,105 @@
+"use client";
+
+import { useState } from "react";
+import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
+import type { JournalEntry } from "@/types/entities";
+import { journalEntrySchema, type JournalEntryForm } from "../schemas/journal.schema";
+
+function parseTags(value: string) {
+  return value
+    .split(",")
+    .map((tag) => tag.trim().toLowerCase())
+    .filter(Boolean)
+    .slice(0, 20);
+}
+
+export function JournalEditor({
+  entry,
+  onSave,
+  onDelete,
+}: {
+  entry: JournalEntry | null;
+  onSave: (form: JournalEntryForm) => Promise<void>;
+  onDelete?: () => Promise<void>;
+}) {
+  const [form, setForm] = useState<JournalEntryForm>({
+    title: entry?.title ?? "",
+    content: entry?.content ?? "",
+    classification: entry?.classification ?? undefined,
+    tags: entry?.tags ?? [],
+  });
+  const [tagsText, setTagsText] = useState((entry?.tags ?? []).join(", "));
+  const [error, setError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const set = <K extends keyof JournalEntryForm>(key: K, value: JournalEntryForm[K]) => setForm((current) => ({ ...current, [key]: value }));
+
+  const submit = async () => {
+    const result = journalEntrySchema.safeParse({ ...form, tags: parseTags(tagsText) });
+    if (!result.success) {
+      setError(result.error.issues[0]?.message ?? "Revisa los datos");
+      return;
+    }
+    setError("");
+    try {
+      await onSave(result.data);
+    } catch {
+      setError("No se pudo guardar la entrada");
+    }
+  };
+
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-container-padding p-container-padding sm:p-section-gap">
+      <div>
+        <p className="font-label-caps text-label-caps text-on-surface-variant">DIARIO Y REFLEXIÓN</p>
+        <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">{entry ? "Editar entrada" : "Nueva entrada"}</h1>
+      </div>
+
+      <label className="block">
+        <span className="font-label-caps text-label-caps text-on-surface-variant">TÍTULO</span>
+        <input autoFocus className="field mt-1" maxLength={200} onChange={(event) => set("title", event.target.value)} placeholder="¿Sobre qué escribes hoy?" value={form.title} />
+      </label>
+
+      <div className="grid grid-cols-1 gap-container-padding sm:grid-cols-2">
+        <label className="block">
+          <span className="font-label-caps text-label-caps text-on-surface-variant">CLASIFICACIÓN (OPCIONAL)</span>
+          <input className="field mt-1" maxLength={60} onChange={(event) => set("classification", event.target.value || undefined)} placeholder="Ej: Reflexión" value={form.classification ?? ""} />
+        </label>
+        <label className="block">
+          <span className="font-label-caps text-label-caps text-on-surface-variant">ETIQUETAS (OPCIONAL)</span>
+          <input className="field mt-1" onChange={(event) => setTagsText(event.target.value)} placeholder="ideas, diario" value={tagsText} />
+        </label>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        <span className="mb-1 font-label-caps text-label-caps text-on-surface-variant">CONTENIDO</span>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <MarkdownEditor minHeight="24rem" onChange={(content) => set("content", content)} placeholder="Escribe libremente..." value={form.content} />
+        </div>
+      </div>
+
+      {error && <p className="border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
+
+      <div className={`flex items-center gap-3 border-t border-outline-variant pt-container-padding ${entry ? "justify-between" : "justify-end"}`}>
+        {entry && onDelete ? (
+          <button
+            className={confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"}
+            onClick={() => {
+              if (!confirmDelete) {
+                setConfirmDelete(true);
+                return;
+              }
+              void onDelete();
+            }}
+            type="button"
+          >
+            {confirmDelete ? "¿Eliminar entrada?" : "Eliminar"}
+          </button>
+        ) : null}
+        <button className="bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={() => void submit()} type="button">
+          {entry ? "Guardar cambios" : "Guardar entrada"}
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -79,7 +79,7 @@ export class AuthController {
   changePassword = async (req: Request<{}, {}, ChangePasswordDto>, res: Response, next: NextFunction) => {
     try {
       if (!req.user) throw new AppError("UNAUTHORIZED");
-      await authService.changePassword(req.user.id, req.body.currentPassword, req.body.newPassword);
+      await authService.changePassword(req.user.id, req.body.currentPassword, req.body.newPassword, req.sessionId);
       res.success({ success: true });
     } catch (error) {
       next(error);

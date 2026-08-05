@@ -7,6 +7,8 @@ import habitRoutes from "../modules/habits/habits.routes";
 import quickNoteRoutes from "../modules/quicknotes/quicknotes.routes";
 import pomodoroRoutes from "../modules/pomodoro/pomodoro.routes";
 import adminRoutes from "../modules/admin/admin.routes";
+import journalRoutes from "../modules/journal/journal.routes";
+import knowledgeRoutes from "../modules/knowledge/knowledge.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -17,5 +19,7 @@ router.use("/habits", habitRoutes);
 router.use("/quick-notes", quickNoteRoutes);
 router.use("/pomodoro", pomodoroRoutes);
 router.use("/admin", adminRoutes);
+router.use("/journal", journalRoutes);
+router.use("/knowledge", knowledgeRoutes);
 
 export default router;

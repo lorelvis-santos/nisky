@@ -3,6 +3,8 @@ import { randomBytes, randomUUID } from "node:crypto";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
+import { deriveJournalKey, newJournalSalt, decryptJournalContent, encryptJournalContent } from "../../utils/journal/crypto";
+import { dropJournalKey, dropJournalKeysForUser, migrateJournalKey, storeJournalKey } from "../../utils/journal/keyStore";
 import type { LoginDto, RegisterDto } from "./auth.validator";
 
 const MAX_ACTIVE_REFRESH_TOKENS = 5;
@@ -65,7 +67,7 @@ export class AuthService {
   private async issue(user: { id: string; email: string; name: string | null; role: "ADMIN" | "USER"; avatarUrl?: string | null }, metadata: RequestMetadata) {
     const refresh = newRefreshToken();
     await this.storeRefreshToken(user.id, refresh.raw, metadata);
-    return { accessToken: accessTokenFor(user), refreshToken: refresh.raw, user: publicUser(user) };
+    return { accessToken: accessTokenFor(user), refreshToken: refresh.raw, refreshTokenId: refresh.id, user: publicUser(user) };
   }
 
   async login(data: LoginDto, metadata: RequestMetadata) {
@@ -74,8 +76,17 @@ export class AuthService {
       throw new AppError("UNAUTHORIZED", "Credenciales inválidas");
     }
     if (!user.isActive) throw new AppError("FORBIDDEN", "Tu cuenta está deshabilitada");
+
+    let salt = user.journalSalt;
+    if (!salt) {
+      salt = newJournalSalt();
+      await prisma.user.update({ where: { id: user.id }, data: { journalSalt: salt } });
+    }
     await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-    return this.issue(user, metadata);
+
+    const result = await this.issue(user, metadata);
+    storeJournalKey(result.refreshTokenId, user.id, deriveJournalKey(data.password, salt));
+    return result;
   }
 
   async register(data: RegisterDto, metadata: RequestMetadata) {
@@ -88,9 +99,12 @@ export class AuthService {
         name: data.name,
         passwordHash: await bcrypt.hash(data.password, 12),
         role: "USER",
+        journalSalt: newJournalSalt(),
       },
     });
-    return this.issue(user, metadata);
+    const result = await this.issue(user, metadata);
+    storeJournalKey(result.refreshTokenId, user.id, deriveJournalKey(data.password, user.journalSalt as Uint8Array));
+    return result;
   }
 
   async refresh(raw: string | undefined, metadata: RequestMetadata) {
@@ -115,7 +129,9 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
     if (revoked.count !== 1) throw new AppError("UNAUTHORIZED", "Refresh token ya utilizado");
-    return this.issue(stored.user, metadata);
+    const result = await this.issue(stored.user, metadata);
+    migrateJournalKey(id, result.refreshTokenId, stored.user.id);
+    return result;
   }
 
   async me(userId: string) {
@@ -130,16 +146,50 @@ export class AuthService {
   async logout(raw: string | undefined) {
     if (!raw) return;
     const id = refreshId(raw);
-    if (id) await prisma.refreshToken.updateMany({ where: { id, revokedAt: null }, data: { revokedAt: new Date() } });
+    if (id) {
+      await prisma.refreshToken.updateMany({ where: { id, revokedAt: null }, data: { revokedAt: new Date() } });
+      dropJournalKey(id);
+    }
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, passwordHash: true } });
+  async changePassword(userId: string, currentPassword: string, newPassword: string, refreshTokenId?: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, passwordHash: true, journalSalt: true },
+    });
     if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
       throw new AppError("UNAUTHORIZED", "La contraseña actual es incorrecta");
     }
-    await prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(newPassword, 12) } });
-    await prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+
+    let salt = user.journalSalt;
+    if (!salt) {
+      salt = newJournalSalt();
+    }
+
+    const oldKey = deriveJournalKey(currentPassword, salt);
+    const newKey = deriveJournalKey(newPassword, salt);
+    const entries = await prisma.journalEntry.findMany({
+      where: { userId },
+      select: { id: true, contentCipher: true, iv: true, authTag: true },
+    });
+
+    const reEncrypted = entries.map((entry) => {
+      const content = decryptJournalContent(entry.contentCipher, entry.iv, entry.authTag, oldKey);
+      const encrypted = encryptJournalContent(content, newKey);
+      return prisma.journalEntry.update({
+        where: { id: entry.id },
+        data: { contentCipher: encrypted.contentCipher, iv: encrypted.iv, authTag: encrypted.authTag },
+      });
+    });
+
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(newPassword, 12), journalSalt: salt } }),
+      prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+      ...reEncrypted,
+    ]);
+
+    dropJournalKeysForUser(userId, refreshTokenId);
+    if (refreshTokenId) storeJournalKey(refreshTokenId, userId, newKey);
   }
 }
 

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../../middlewares/auth.middleware";
+import { attachSessionId, requireAuth } from "../../middlewares/auth.middleware";
 import { validateBody } from "../../middlewares/validate.middleware";
 import { AuthController } from "./auth.controller";
 import { changePasswordSchema, loginSchema, registerSchema } from "./auth.validator";
@@ -13,6 +13,6 @@ router.post("/refresh", controller.refresh);
 router.get("/config", controller.config);
 router.get("/me", requireAuth, controller.me);
 router.post("/logout", controller.logout);
-router.patch("/password", requireAuth, validateBody(changePasswordSchema), controller.changePassword);
+router.patch("/password", requireAuth, attachSessionId, validateBody(changePasswordSchema), controller.changePassword);
 
 export default router;

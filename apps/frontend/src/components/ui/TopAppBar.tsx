@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { formatPomodoroTime, usePomodoro } from "@/context/PomodoroProvider";
 
 const titles: Record<string, string> = {
-  "/": "Mi día",
+  "/": "Mi semana",
   "/tasks": "Planificación y tareas",
   "/focus": "Modo enfoque",
   "/journal": "Diario",

@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthProvider";
 import type { User } from "@/types/entities";
 
 const primaryItems = [
-  { href: "/", label: "Mi día", icon: LayoutDashboard },
+  { href: "/", label: "Mi semana", icon: LayoutDashboard },
   { href: "/tasks", label: "Planificación y tareas", icon: CalendarDays },
   { href: "/focus", label: "Modo enfoque", icon: Timer },
   { href: "/journal", label: "Diario", icon: PencilLine },

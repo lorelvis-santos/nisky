@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { EditorView } from "@codemirror/view";
 import { Bold, Code, Heading2, Italic, Link, List, Quote } from "lucide-react";
+import { MarkdownPreview } from "./MarkdownPreview";
 
 const steelEditorTheme = EditorView.theme({
   "&": {
@@ -61,6 +62,7 @@ export function MarkdownEditor({ value, onChange, minHeight = "18rem", placehold
     () => [markdown({ base: markdownLanguage, codeLanguages: languages }), steelEditorTheme, EditorView.lineWrapping],
     [],
   );
+  const [preview, setPreview] = useState(false);
 
   const insert = (snippet: string) => {
     onChange(`${value}${snippet}`);
@@ -68,29 +70,53 @@ export function MarkdownEditor({ value, onChange, minHeight = "18rem", placehold
 
   return (
     <div className="border border-outline-variant bg-surface-container-lowest">
-      <div className="flex flex-wrap items-center gap-1 border-b border-outline-variant bg-surface-container-low px-2 py-1">
-        {toolbar.map((item) => (
+      <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant bg-surface-container-low px-2 py-1">
+        <div className="flex border border-outline-variant bg-surface-container-lowest">
           <button
-            aria-label={item.title}
-            className="flex h-7 w-7 items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
-            key={item.label}
-            onClick={() => insert(item.snippet)}
-            title={item.title}
+            className={`px-2.5 py-1 font-label-caps text-label-caps ${preview ? "text-on-surface-variant hover:text-on-surface" : "bg-primary-container text-on-primary"}`}
+            onClick={() => setPreview(false)}
             type="button"
           >
-            <item.icon size={15} />
+            Editar
           </button>
-        ))}
+          <button
+            className={`px-2.5 py-1 font-label-caps text-label-caps ${preview ? "bg-primary-container text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+            onClick={() => setPreview(true)}
+            type="button"
+          >
+            Ver
+          </button>
+        </div>
+        {!preview && (
+          <div className="flex flex-wrap items-center gap-1 border-l border-outline-variant pl-2">
+            {toolbar.map((item) => (
+              <button
+                aria-label={item.title}
+                className="flex h-7 w-7 items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+                key={item.label}
+                onClick={() => insert(item.snippet)}
+                title={item.title}
+                type="button"
+              >
+                <item.icon size={15} />
+              </button>
+            ))}
+          </div>
+        )}
         <span className="ml-auto hidden font-label-caps text-label-caps text-[10px] text-on-surface-variant sm:block">MARKDOWN</span>
       </div>
-      <div className="px-3" style={{ minHeight }}>
-        <CodeMirror
-          extensions={extensions}
-          onChange={onChange}
-          placeholder={placeholder}
-          value={value}
-        />
-      </div>
+      {preview ? (
+        <MarkdownPreview content={value} />
+      ) : (
+        <div className="px-3" style={{ minHeight }}>
+          <CodeMirror
+            extensions={extensions}
+            onChange={onChange}
+            placeholder={placeholder}
+            value={value}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const HOP_BY_HOP_HEADERS = [
+  "connection",
+  "keep-alive",
+  "transfer-encoding",
+  "content-length",
+  "content-encoding",
+  "te",
+  "trailer",
+  "upgrade",
+];
+
 function resolveBackendUrl(): string | null {
   const raw = (process.env.BACKEND_INTERNAL_URL ?? "").trim();
   if (!raw) return null;
@@ -23,8 +34,14 @@ async function proxyHandler(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const target = `${backendUrl}${pathname}${search}`;
 
-  const headers = new Headers(request.headers);
-  headers.delete("host");
+  const headers = new Headers();
+  const excluded = new Set(["host", ...HOP_BY_HOP_HEADERS]);
+  for (const [key, value] of request.headers.entries()) {
+    if (!excluded.has(key.toLowerCase())) headers.set(key, value);
+  }
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) headers.set("x-forwarded-for", forwardedFor);
+  headers.set("accept-encoding", "identity");
 
   try {
     const hasBody = request.method !== "GET" && request.method !== "HEAD";
@@ -36,14 +53,18 @@ async function proxyHandler(request: NextRequest) {
       redirect: "manual",
     } as RequestInit);
 
+    const body = await upstream.arrayBuffer();
+
     const responseHeaders = new Headers();
     for (const [key, value] of upstream.headers.entries()) {
-      if (key.toLowerCase() !== "set-cookie") responseHeaders.set(key, value);
+      if (key.toLowerCase() !== "set-cookie" && !HOP_BY_HOP_HEADERS.includes(key.toLowerCase())) {
+        responseHeaders.set(key, value);
+      }
     }
     const cookies = upstream.headers.getSetCookie?.() ?? [];
     for (const cookie of cookies) responseHeaders.append("set-cookie", cookie);
 
-    return new NextResponse(upstream.body, {
+    return new NextResponse(body, {
       status: upstream.status,
       statusText: upstream.statusText,
       headers: responseHeaders,

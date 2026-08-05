@@ -10,7 +10,7 @@ import type {
   PomodoroSettings,
 } from "@/types/entities";
 import { TaskFocusDetails } from "@/features/pomodoro/components/TaskFocusDetails";
-import { useTaskQuery, useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { useTaskMutations, useTaskQuery, useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import { Controls } from "@/features/pomodoro/components/Controls";
 import { SessionList } from "@/features/pomodoro/components/SessionList";
 import { SettingsModal } from "@/features/pomodoro/components/SettingsModal";
@@ -47,6 +47,7 @@ function FocusPageContent() {
   const tasksQuery = useTasksQuery({ limit: 100 });
   const selectedTaskQuery = useTaskQuery(taskIdFromUrl);
   const mutations = usePomodoroMutations();
+  const taskMutations = useTaskMutations();
   const globalPomodoro = usePomodoro();
   const settings = settingsQuery.data ?? fallbackSettings;
   const [phase, setPhase] = useState<PomodoroPhase>("WORK");
@@ -63,7 +64,7 @@ function FocusPageContent() {
   );
   const selectedTask =
     tasks.find((task) => task.id === selectedTaskId) ??
-    selectedTaskQuery.data ??
+    (taskIdFromUrl ? selectedTaskQuery.data : null) ??
     null;
   const currentSession =
     session === undefined
@@ -72,7 +73,6 @@ function FocusPageContent() {
         ) ?? null)
       : session;
   const displayPhase = currentSession?.phase ?? phase;
-  const displayCycleIndex = currentSession?.cycleIndex ?? cycleIndex;
   const remainingSec = currentSession
     ? Math.max(
         0,
@@ -143,6 +143,8 @@ function FocusPageContent() {
           : currentSession.phase === "LONG_BREAK"
             ? 1
             : currentSession.cycleIndex;
+      setPhase(nextPhase);
+      setCycleIndex(nextCycle);
       setSession(null);
       globalPomodoro.clearActiveSession();
       if (settings.autoCycle) await startPhase(nextPhase, nextCycle);
@@ -190,6 +192,21 @@ function FocusPageContent() {
     }
   };
 
+  const completeTask = async () => {
+    if (!selectedTask) return;
+    try {
+      await taskMutations.update.mutateAsync({
+        id: selectedTask.id,
+        payload: { status: "COMPLETED" },
+      });
+      toast.success("¡Tarea completada!");
+      setSelectedTaskId("");
+      if (taskIdFromUrl) router.replace("/focus");
+    } catch {
+      toast.error("Ups, no pudimos completar la tarea. Inténtalo de nuevo.");
+    }
+  };
+
   return (
     <main className="relative flex min-h-screen w-full flex-col items-center overflow-y-auto bg-surface px-4 py-6 sm:px-8 sm:py-10">
       <button
@@ -208,48 +225,41 @@ function FocusPageContent() {
         <Settings size={17} />
       </button>
       <div className="flex w-full max-w-2xl flex-col items-center gap-8 pt-16 sm:gap-12 sm:pt-10">
-        <div className="flex w-full flex-col items-center border border-outline-variant bg-surface-container-lowest p-5 text-center sm:p-6">
-          <span className="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant">
-            ENFOQUE ACTUAL
+        <div className="flex w-full flex-col items-center border border-outline-variant bg-surface-container-lowest p-4 text-center sm:p-5">
+          <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+            ¿EN QUÉ VAS A TRABAJAR?
           </span>
           <select
-            aria-label="Tarea vinculada"
-            className="field mt-3 max-w-xl text-center"
+            aria-label="Seleccionar tarea"
+            className="field mt-3 w-full max-w-xl"
             disabled={running}
             onChange={(event) => setSelectedTaskId(event.target.value)}
             value={selectedTaskId}
           >
-            <option value="">Sin tarea vinculada</option>
+            <option value="">Elige una tarea para empezar</option>
             {tasks.map((task) => (
               <option key={task.id} value={task.id}>
-                {task.title} · Pomodoros {task.pomodoroCount}/
-                {task.pomodoroEstimate} · Subtareas{" "}
-                {task.completedSubtasks ?? 0}/
-                {task.subtaskCount ?? task.subtasks?.length ?? 0}
+                {task.title}
               </option>
             ))}
           </select>
-          {selectedTaskId && (
-            <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">
-              La sesión de trabajo se asociará a esta tarea.
-            </p>
-          )}
         </div>
         {selectedTask && (
           <TaskFocusDetails
             disabled={running}
             key={selectedTask.id}
+            onComplete={completeTask}
             task={selectedTask}
           />
         )}
         <TimerDisplay
-          cycleIndex={displayCycleIndex}
-          cyclesPerLong={settings.cyclesPerLong}
           phase={displayPhase}
+          pomodorosCompleted={selectedTask?.pomodoroCount ?? null}
+          pomodorosEstimated={selectedTask?.pomodoroEstimate ?? null}
           remainingSec={remainingSec}
         />
         <Controls
-          onComplete={() => void completeSession()}
+          onCompletePomodoro={() => void completeSession()}
           onPause={() => void pauseResume()}
           onResume={() => void pauseResume()}
           onStart={() => void startPhase(phase, cycleIndex)}

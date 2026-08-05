@@ -17,7 +17,6 @@ const titles: Record<string, string> = {
   "/knowledge": "Mis notas",
   "/reminders": "Recordatorios",
   "/settings": "Ajustes",
-  "/settings/push": "Notificaciones",
   "/support": "Ayuda",
 };
 

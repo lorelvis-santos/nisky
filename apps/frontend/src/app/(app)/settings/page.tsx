@@ -5,12 +5,14 @@ import { useAuth } from "@/context/AuthProvider";
 import { PasswordSection } from "@/components/admin/PasswordSection";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 import { UserManagement } from "@/components/admin/UserManagement";
+import { PushSubscriptionManager } from "@/components/pwa/PushSubscriptionManager";
 
-type Tab = "profile" | "security" | "admin";
+type Tab = "profile" | "security" | "notifications" | "admin";
 
 const tabs: Array<{ id: Tab; label: string; adminOnly?: boolean }> = [
   { id: "profile", label: "Perfil" },
   { id: "security", label: "Seguridad" },
+  { id: "notifications", label: "Notificaciones" },
   { id: "admin", label: "Administración", adminOnly: true },
 ];
 
@@ -51,6 +53,12 @@ export default function SettingsPage() {
           {active === "security" && (
             <div className="max-w-2xl">
               <PasswordSection />
+            </div>
+          )}
+
+          {active === "notifications" && (
+            <div className="max-w-2xl">
+              <PushSubscriptionManager />
             </div>
           )}
 

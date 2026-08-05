@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AlarmClock, Bell, BookOpen, CalendarDays, HelpCircle, LayoutDashboard, LogOut, PencilLine, Settings, Timer, X } from "lucide-react";
+import { AlarmClock, BookOpen, CalendarDays, HelpCircle, LayoutDashboard, LogOut, PencilLine, Settings, Timer, X } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
 import type { User } from "@/types/entities";
 
@@ -16,7 +16,6 @@ const primaryItems = [
 ];
 
 const secondaryItems = [
-  { href: "/settings/push", label: "Notificaciones", icon: Bell },
   { href: "/settings", label: "Ajustes", icon: Settings },
   { href: "/support", label: "Ayuda", icon: HelpCircle },
 ];

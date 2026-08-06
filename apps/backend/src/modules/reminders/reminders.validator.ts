@@ -50,8 +50,14 @@ export const snoozeReminderSchema = z.object({
   minutes: z.number().int().min(1).max(1440),
 });
 
+export const resolveReminderSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("accept") }),
+  z.object({ action: z.literal("snooze"), triggerAt: triggerAtSchema }),
+]);
+
 export { idParamSchema };
 export type CreateReminderDto = z.infer<typeof createReminderSchema>;
 export type UpdateReminderDto = z.infer<typeof updateReminderSchema>;
 export type ReminderQueryDto = z.infer<typeof reminderQuerySchema>;
 export type SnoozeReminderDto = z.infer<typeof snoozeReminderSchema>;
+export type ResolveReminderDto = z.infer<typeof resolveReminderSchema>;

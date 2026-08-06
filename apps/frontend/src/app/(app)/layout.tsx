@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
+import { PendingRemindersGate } from "@/features/reminders/components/PendingRemindersGate";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { TopAppBar } from "@/components/ui/TopAppBar";
 
@@ -29,6 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <TopAppBar onMenu={() => setMenuOpen(true)} />
         <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
       </main>
+      <PendingRemindersGate />
     </div>
   );
 }

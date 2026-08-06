@@ -301,6 +301,7 @@ model Reminder {
   payload          Json?
   isActive         Boolean            @default(true)
   sentAt           DateTime?
+  resolvedAt       DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 

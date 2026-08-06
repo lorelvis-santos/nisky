@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
 import { reminderService } from "./reminders.service";
-import type { CreateReminderDto, ReminderQueryDto, SnoozeReminderDto, UpdateReminderDto } from "./reminders.validator";
+import type { CreateReminderDto, ReminderQueryDto, ResolveReminderDto, SnoozeReminderDto, UpdateReminderDto } from "./reminders.validator";
 
 type IdParams = { id: string };
 
@@ -33,5 +33,13 @@ export class ReminderController {
 
   snooze = async (req: Request<IdParams, {}, SnoozeReminderDto>, res: Response, next: NextFunction) => {
     try { res.success(await reminderService.snooze(userId(req), req.params.id, req.body)); } catch (error) { next(error); }
+  };
+
+  pending = async (req: Request, res: Response, next: NextFunction) => {
+    try { res.success(await reminderService.pending(userId(req))); } catch (error) { next(error); }
+  };
+
+  resolve = async (req: Request<IdParams, {}, ResolveReminderDto>, res: Response, next: NextFunction) => {
+    try { res.success(await reminderService.resolve(userId(req), req.params.id, req.body)); } catch (error) { next(error); }
   };
 }

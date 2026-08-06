@@ -1,7 +1,7 @@
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { DateTime } from "luxon";
-import type { CreateReminderDto, ReminderQueryDto, SnoozeReminderDto, UpdateReminderDto } from "./reminders.validator";
+import type { CreateReminderDto, ReminderQueryDto, ResolveReminderDto, SnoozeReminderDto, UpdateReminderDto } from "./reminders.validator";
 
 function nextOccurrence(triggerAt: Date, timezone: string, repeatType: "DAILY" | "WEEKLY" | "MONTHLY", interval: number, days: number[], dayOfMonth: number | null) {
   const local = DateTime.fromJSDate(triggerAt, { zone: timezone });
@@ -88,21 +88,40 @@ export class ReminderService {
     });
   }
 
+  pending(userId: string) {
+    return prisma.reminder.findMany({
+      where: { userId, isActive: true, resolvedAt: null, triggerAt: { lte: new Date() } },
+      orderBy: { triggerAt: "asc" },
+    });
+  }
+
+  async resolve(userId: string, id: string, data: ResolveReminderDto) {
+    const reminder = await this.getById(userId, id);
+    if (data.action === "accept") {
+      if (!reminder.repeatType) {
+        return prisma.reminder.update({ where: { id }, data: { isActive: false, resolvedAt: new Date() } });
+      }
+      const next = nextOccurrence(reminder.triggerAt, reminder.timezone, reminder.repeatType, reminder.repeatInterval, reminder.repeatDaysOfWeek, reminder.repeatDayOfMonth);
+      return prisma.reminder.update({ where: { id }, data: { triggerAt: next, sentAt: null, isActive: true } });
+    }
+    const triggerAt = new Date(data.triggerAt);
+    if (triggerAt <= new Date()) throw new AppError("BAD_REQUEST", "La fecha del recordatorio debe ser futura");
+    return prisma.reminder.update({
+      where: { id },
+      data: { triggerAt, sentAt: null, isActive: true, resolvedAt: null },
+    });
+  }
+
   due(limit = 100) {
     return prisma.reminder.findMany({
-      where: { isActive: true, triggerAt: { lte: new Date() } },
+      where: { isActive: true, sentAt: null, triggerAt: { lte: new Date() } },
       orderBy: { triggerAt: "asc" },
       take: limit,
     });
   }
 
-  async markProcessed(reminder: Awaited<ReturnType<ReminderService["due"]>>[number]) {
-    if (!reminder.repeatType) {
-      await prisma.reminder.update({ where: { id: reminder.id }, data: { isActive: false, sentAt: new Date() } });
-      return;
-    }
-    const next = nextOccurrence(reminder.triggerAt, reminder.timezone, reminder.repeatType, reminder.repeatInterval, reminder.repeatDaysOfWeek, reminder.repeatDayOfMonth);
-    await prisma.reminder.update({ where: { id: reminder.id }, data: { triggerAt: next, sentAt: new Date(), isActive: true } });
+  async markSent(reminder: Awaited<ReturnType<ReminderService["due"]>>[number]) {
+    await prisma.reminder.update({ where: { id: reminder.id }, data: { sentAt: new Date() } });
   }
 }
 

@@ -26,7 +26,7 @@ export async function processDueReminders() {
           data: { reminderId: reminder.id, payload: reminder.payload },
         });
         if (result.total > 0 && result.sent === 0) continue;
-        await reminderService.markProcessed(reminder);
+        await reminderService.markSent(reminder);
       } catch (error) {
         console.error(`[reminders] No se pudo enviar ${reminder.id}`, error);
       }

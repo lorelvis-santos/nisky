@@ -5,9 +5,11 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatPomodoroTime, usePomodoro } from "@/context/PomodoroProvider";
-import { useRemindersQuery } from "@/features/reminders/hooks/useReminders";
+import { useRemindersQuery, usePendingRemindersQuery } from "@/features/reminders/hooks/useReminders";
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import type { Reminder, Task } from "@/types/entities";
+
+const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
 
 const titles: Record<string, string> = {
   "/": "Mi semana",
@@ -26,9 +28,11 @@ export function TopAppBar({ onMenu }: { onMenu: () => void }) {
   const pomodoro = usePomodoro();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const remindersQuery = useRemindersQuery();
+  const pendingQuery = usePendingRemindersQuery();
   const tasksQuery = useTasksQuery({ limit: 100, sort: "dueDate", order: "asc" });
   const title = titles[pathname] ?? "Nisky";
-  const notices = buildNotices(tasksQuery.data?.data ?? [], remindersQuery.data ?? []);
+  const pending = pendingQuery.data ?? [];
+  const notices = buildNotices(tasksQuery.data?.data ?? [], remindersQuery.data ?? [], pending);
 
   const togglePause = async () => {
     try { await pomodoro.pauseResume(); } catch { toast.error("Ups, no pudimos actualizar el Pomodoro."); }
@@ -53,9 +57,10 @@ export function TopAppBar({ onMenu }: { onMenu: () => void }) {
         <div className="relative">
           <button aria-expanded={notificationsOpen} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setNotificationsOpen((open) => !open)} type="button">
             <Bell size={19} />
+            {pending.length > 0 && <span aria-hidden="true" className="absolute bottom-0.5 right-0.5 h-2 w-2 rounded-full bg-error" />}
             {notices.length > 0 && <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-data-mono text-[10px] text-on-primary">{notices.length > 9 ? "9+" : notices.length}</span>}
           </button>
-          {notificationsOpen && <NotificationPanel notices={notices} onClose={() => setNotificationsOpen(false)} onOpen={(url) => { setNotificationsOpen(false); router.push(url); }} />}
+          {notificationsOpen && <NotificationPanel notices={notices} onClose={() => setNotificationsOpen(false)} onOpen={(url, kind) => { setNotificationsOpen(false); if (kind === "pending") { window.dispatchEvent(new CustomEvent(OPEN_PENDING_EVENT)); return; } router.push(url); }} />}
         </div>
         <button aria-label="Historial" className="hidden p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary sm:block" type="button"><History size={19} /></button>
         <button aria-label="Perfil" className="p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" type="button"><UserCircle size={20} /></button>
@@ -64,7 +69,7 @@ export function TopAppBar({ onMenu }: { onMenu: () => void }) {
   );
 }
 
-type Notice = { id: string; kind: "task" | "reminder"; title: string; detail: string; url: string };
+type Notice = { id: string; kind: "task" | "reminder" | "pending"; title: string; detail: string; url: string };
 
 function calendarDay(value: string) {
   const date = new Date(value);
@@ -90,7 +95,14 @@ function reminderUrl(reminder: Reminder) {
   return "/reminders";
 }
 
-function buildNotices(tasks: Task[], reminders: Reminder[]) {
+function buildNotices(tasks: Task[], reminders: Reminder[], pending: Reminder[]) {
+  const pendingNotices: Notice[] = pending.map((reminder) => ({
+    id: `pending-${reminder.id}`,
+    kind: "pending" as const,
+    title: reminder.title,
+    detail: `Pendiente · venció el ${new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(reminder.triggerAt))}`,
+    url: "/reminders",
+  }));
   const taskNotices: Notice[] = tasks
     .filter((task) => task.status !== "COMPLETED" && task.status !== "CANCELLED" && task.dueDate && dayDifference(task.dueDate) <= 2)
     .map((task) => ({ id: `task-${task.id}`, kind: "task" as const, title: task.title, detail: taskDueLabel(task), url: `/tasks?taskId=${encodeURIComponent(task.id)}` }));
@@ -101,10 +113,10 @@ function buildNotices(tasks: Task[], reminders: Reminder[]) {
     detail: `Recordatorio · ${new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(reminder.triggerAt))}`,
     url: reminderUrl(reminder),
   }));
-  return [...taskNotices, ...reminderNotices].slice(0, 9);
+  return [...pendingNotices, ...taskNotices, ...reminderNotices].slice(0, 9);
 }
 
-function NotificationPanel({ notices, onClose, onOpen }: { notices: Notice[]; onClose: () => void; onOpen: (url: string) => void }) {
+function NotificationPanel({ notices, onClose, onOpen }: { notices: Notice[]; onClose: () => void; onOpen: (url: string, kind: Notice["kind"]) => void }) {
   return (
     <div className="fixed inset-x-4 top-14 z-50 border border-outline-variant bg-surface-container-lowest p-3 text-left sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[22rem]">
       <div className="flex items-center justify-between border-b border-outline-variant pb-3">
@@ -119,15 +131,15 @@ function NotificationPanel({ notices, onClose, onOpen }: { notices: Notice[]; on
       ) : (
         <div className="max-h-80 overflow-y-auto divide-y divide-outline-variant pr-1 [scrollbar-gutter:stable]">
           {notices.map((notice) => (
-            <button className="flex w-full items-start gap-3 py-3 text-left hover:bg-surface-container-low" key={notice.id} onClick={() => onOpen(notice.url)} type="button">
-              <span className="mt-0.5 shrink-0 text-primary">{notice.kind === "task" ? <ListTodo size={16} /> : <AlarmClock size={16} />}</span>
+            <button className="flex w-full items-start gap-3 py-3 text-left hover:bg-surface-container-low" key={notice.id} onClick={() => onOpen(notice.url, notice.kind)} type="button">
+              <span className={`mt-0.5 shrink-0 ${notice.kind === "pending" ? "text-error" : "text-primary"}`}>{notice.kind === "task" ? <ListTodo size={16} /> : <AlarmClock size={16} />}</span>
               <span className="min-w-0 flex-1"><span className="block truncate font-body-sm text-body-sm text-on-surface">{notice.title}</span><span className="mt-0.5 flex items-center gap-1 font-data-mono text-data-mono text-xs text-on-surface-variant">{notice.kind === "task" ? <CalendarClock size={11} /> : null}{notice.detail}</span></span>
               <ChevronRight className="mt-0.5 shrink-0 text-on-surface-variant" size={15} />
             </button>
           ))}
         </div>
       )}
-      <button className="mt-3 flex w-full items-center justify-center border-t border-outline-variant pt-3 font-body-sm text-body-sm text-primary hover:underline" onClick={() => onOpen("/reminders")} type="button">Ver recordatorios</button>
+      <button className="mt-3 flex w-full items-center justify-center border-t border-outline-variant pt-3 font-body-sm text-body-sm text-primary hover:underline" onClick={() => onOpen("/reminders", "reminder")} type="button">Ver recordatorios</button>
     </div>
   );
 }

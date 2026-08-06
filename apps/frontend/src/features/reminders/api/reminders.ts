@@ -32,3 +32,15 @@ export async function snoozeReminder(id: string, minutes: number) {
   const { data } = await api.post<ApiResponse<Reminder>>(`/reminders/${id}/snooze`, { minutes });
   return data.data;
 }
+
+export async function fetchPendingReminders() {
+  const { data } = await api.get<ApiResponse<Reminder[]>>("/reminders/pending");
+  return data.data;
+}
+
+export type ResolveReminderPayload = { action: "accept" } | { action: "snooze"; triggerAt: string };
+
+export async function resolveReminder(id: string, payload: ResolveReminderPayload) {
+  const { data } = await api.post<ApiResponse<Reminder>>(`/reminders/${id}/resolve`, payload);
+  return data.data;
+}

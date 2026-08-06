@@ -118,6 +118,7 @@ export interface Reminder {
   payload: { type?: string; taskId?: string; habitId?: string } | null;
   isActive: boolean;
   sentAt: string | null;
+  resolvedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

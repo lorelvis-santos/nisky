@@ -1,11 +1,13 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useState } from "react";
 import type { Task } from "@/types/entities";
 import { dateKey } from "@/lib/tasks";
-import { useTouchTaskDrag } from "../hooks/useTouchTaskDrag";
-import { TaskCard } from "./TaskCard";
+import { cn } from "@/lib/utils";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableTaskCard, TaskCardShell } from "./TaskCard";
+import { DroppableColumn } from "../dnd/DroppableColumn";
+import { dayContainerId, taskDragId, useTasksDnd } from "../dnd/TasksDnDProvider";
 
 const dayNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
 
@@ -17,31 +19,20 @@ function dayLabel(day: Date) {
 export function DayList({
   weekStart,
   tasks,
-  dayOrder,
-  isDragging,
   onOpen,
   onToggle,
-  onMoveTask,
-  onReorder,
-  onDragStateChange,
   onStartPomodoro,
   onCreateOnDay,
 }: {
   weekStart: Date;
   tasks: Task[];
-  dayOrder: Record<string, string[]>;
-  isDragging: boolean;
   onOpen: (task: Task) => void;
   onToggle: (task: Task) => void;
-  onMoveTask: (taskId: string, dueDate: string) => void | Promise<void>;
-  onReorder: (dateKey: string, taskIds: string[]) => void;
-  onDragStateChange: (dragging: boolean) => void;
   onStartPomodoro: (task: Task) => void;
   onCreateOnDay: (dateKey: string) => void;
 }) {
   const today = dateKey(new Date());
-  const drag = useTouchTaskDrag({ tasks, dayOrder, onMoveTask, onReorder, onDragStateChange });
-  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const { overContainerId } = useTasksDnd();
   const weekDays = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + index);
@@ -72,9 +63,8 @@ export function DayList({
           </header>
           <div className="flex flex-col gap-3 border border-outline-variant bg-surface-container-lowest p-3">
             {overdueTasks.map((task) => (
-              <TaskCard
+              <TaskCardShell
                 key={task.id}
-                onDragStateChange={onDragStateChange}
                 onOpen={() => onOpen(task)}
                 onStartPomodoro={() => onStartPomodoro(task)}
                 onToggle={() => onToggle(task)}
@@ -86,28 +76,17 @@ export function DayList({
       )}
       {visibleDays.map((day) => {
         const key = dateKey(day);
-        const dayTasks = tasks.filter((task) => task.dueDate && dateKey(task.dueDate) === key);
-        const taskById = new Map(dayTasks.map((task) => [task.id, task]));
-        const orderedTasks = drag
-          .orderedIdsFor(key)
-          .map((taskId) => taskById.get(taskId))
-          .filter((task): task is Task => Boolean(task));
+        const dayTasks = tasks
+          .filter((task) => task.dueDate && dateKey(task.dueDate) === key)
+          .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt));
+        const orderedIds = dayTasks.map((task) => taskDragId(task.id));
         const isToday = key === today;
+        const isEmpty = dayTasks.length === 0;
+        const isHighlight = overContainerId === dayContainerId(key);
         return (
-          <section data-day-key={key} key={key} onDragOver={(event) => {
-            event.preventDefault();
-            if (orderedTasks.length === 0) setDropTarget(`${key}:empty`);
-          }} onDrop={(event) => {
-            event.preventDefault();
-            const taskId = event.dataTransfer.getData("text/task-id");
-            setDropTarget(null);
-            if (!taskId) return;
-            const sourceTask = tasks.find((task) => task.id === taskId);
-            const sourceKey = sourceTask?.dueDate ? dateKey(sourceTask.dueDate) : "";
-            drag.applyDrop(taskId, sourceKey, key, orderedTasks.length);
-          }}>
-            <header className={`sticky top-0 z-10 flex items-center justify-between border-b px-3 py-2 ${isToday ? "border-t-2 border-t-primary bg-secondary-container text-primary" : "border-outline-variant bg-surface"}`}>
-              <span className={`font-data-mono text-data-mono text-xs uppercase ${isToday ? "font-bold" : "text-on-surface-variant"}`}>
+          <section data-day-key={key} key={key}>
+            <header className={cn("sticky top-0 z-10 flex items-center justify-between border-b px-3 py-2", isToday ? "border-t-2 border-t-primary bg-secondary-container text-primary" : "border-outline-variant bg-surface")}>
+              <span className={cn("font-data-mono text-data-mono text-xs uppercase", isToday ? "font-bold" : "text-on-surface-variant")}>
                 {isToday ? `HOY · ${dayLabel(day)}` : dayLabel(day)}
               </span>
               <button
@@ -119,38 +98,32 @@ export function DayList({
                 <Plus size={15} />
               </button>
             </header>
-            <div className={`flex flex-col gap-3 border bg-surface-container-lowest p-3 ${dropTarget === `${key}:empty` ? "border-2 border-dashed border-primary bg-primary-container/10" : "border-outline-variant"}`}>
-              {orderedTasks.length === 0 ? (
-                isDragging || dropTarget === `${key}:empty` ? (
-                  <span className={`py-2 text-center font-body-sm text-body-sm ${dropTarget === `${key}:empty` ? "text-primary" : "text-on-surface-variant"}`}>Suelta aquí una tarea</span>
+            <DroppableColumn
+              className={cn(
+                "flex flex-col gap-3 border bg-surface-container-lowest p-3",
+                isEmpty && (isHighlight ? "border-2 border-dashed border-primary bg-primary-container/10" : "border-outline-variant"),
+              )}
+              highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
+              id={dayContainerId(key)}
+            >
+              {isEmpty ? (
+                isHighlight ? (
+                  <span className="py-2 text-center font-body-sm text-body-sm text-primary">Suelta aquí una tarea</span>
                 ) : null
               ) : (
-                orderedTasks.map((task, taskIndex) => (
-                  <TaskCard
-                    key={task.id}
-                    isDropTarget={dropTarget === `${key}:${taskIndex}` || (drag.touchDropTarget?.key === key && drag.touchDropTarget.index === taskIndex)}
-                    onDragHandleDown={drag.handleDragHandleDown}
-                    onDragHandleMove={drag.handleDragHandleMove}
-                    onDragHandleUp={drag.handleDragHandleUp}
-                    onDragStateChange={onDragStateChange}
-                    onDragOver={() => setDropTarget(`${key}:${taskIndex}`)}
-                    onDrop={(event) => {
-                      event.stopPropagation();
-                      setDropTarget(null);
-                      const taskId = event.dataTransfer.getData("text/task-id");
-                      if (!taskId || taskId === task.id) return;
-                      const sourceTask = tasks.find((item) => item.id === taskId);
-                      const sourceKey = sourceTask?.dueDate ? dateKey(sourceTask.dueDate) : "";
-                      drag.applyDrop(taskId, sourceKey, key, taskIndex);
-                    }}
-                    onOpen={() => onOpen(task)}
-                    onStartPomodoro={() => onStartPomodoro(task)}
-                    onToggle={() => onToggle(task)}
-                    task={task}
-                  />
-                ))
+                <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
+                  {dayTasks.map((task) => (
+                    <SortableTaskCard
+                      key={task.id}
+                      onOpen={() => onOpen(task)}
+                      onStartPomodoro={() => onStartPomodoro(task)}
+                      onToggle={() => onToggle(task)}
+                      task={task}
+                    />
+                  ))}
+                </SortableContext>
               )}
-            </div>
+            </DroppableColumn>
           </section>
         );
       })}

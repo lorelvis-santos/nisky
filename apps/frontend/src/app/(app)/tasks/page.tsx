@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { LayoutGrid, List, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -13,8 +13,10 @@ import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal"
 import { WeekNavigation } from "@/features/tasks/components/WeekNavigation";
 import { WeeklyGrid } from "@/features/tasks/components/WeeklyGrid";
 import { useTaskMutations, useTaskQuery, useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { BACKLOG_CONTAINER, TasksDnDProvider, dayKeyFromContainerId } from "@/features/tasks/dnd/TasksDnDProvider";
 import { dateKey } from "@/lib/tasks";
 import { localDateKey } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const emptyTasks: Task[] = [];
 
@@ -120,9 +122,10 @@ function TasksPageContent() {
   const [weekStart, setWeekStart] = useState(() => monday(new Date()));
   const [search, setSearch] = useState("");
   const [priority, setPriority] = useState<TaskPriority | "ALL">("ALL");
-  const [isDragging, setIsDragging] = useState(false);
   const [dayOrder, setDayOrder] = useState<Record<string, string[]>>({});
+  const [backlogOrder, setBacklogOrder] = useState<string[]>([]);
   const [view, setView] = useState<TaskView>(initialTaskView);
+  const isMobile = useIsMobile(1023);
   const modalUrl = useModalUrl();
   const query = useTasksQuery({ q: search || undefined, priority: priority === "ALL" ? undefined : priority });
   const urlTaskQuery = useTaskQuery(modalUrl.state.taskId);
@@ -178,10 +181,18 @@ function TasksPageContent() {
     const task = tasks.find((item) => item.id === taskId);
     const currentDueDate = task?.dueDate ? localDateKey(task.dueDate) : null;
     if (currentDueDate === dueDate) return;
+    const previousDayOrder = dayOrder;
+    if (currentDueDate) {
+      setDayOrder((current) => ({
+        ...current,
+        [currentDueDate]: (current[currentDueDate] ?? []).filter((id) => id !== taskId),
+      }));
+    }
     try {
       await mutations.update.mutateAsync({ id: taskId, payload: { dueDate } });
       toast.success(dueDate ? "¡Listo, fecha actualizada!" : "¡Listo, la devolvimos a pendientes!");
     } catch {
+      setDayOrder(previousDayOrder);
       toast.error("Ups, no pudimos mover la tarea. Inténtalo de nuevo.");
     }
   };
@@ -195,6 +206,22 @@ function TasksPageContent() {
       setDayOrder(previous);
       toast.error("Ups, no pudimos guardar el orden.");
     }
+  };
+
+  const handleReorderBacklog = async (taskIds: string[]) => {
+    const previous = backlogOrder;
+    setBacklogOrder(taskIds);
+    try {
+      await mutations.reorder.mutateAsync(taskIds.map((id, order) => ({ id, order })));
+    } catch {
+      setBacklogOrder(previous);
+      toast.error("Ups, no pudimos guardar el orden.");
+    }
+  };
+
+  const handleReorderDispatch = (containerId: string, taskIds: string[]) => {
+    if (containerId === BACKLOG_CONTAINER) return handleReorderBacklog(taskIds);
+    return handleReorder(dayKeyFromContainerId(containerId), taskIds);
   };
 
   const saveTask = async (form: TaskForm) => {
@@ -267,98 +294,87 @@ function TasksPageContent() {
       ) : query.isError ? (
         <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus tareas. Inténtalo de nuevo.</div>
       ) : (
-        <>
-          <div className="min-h-0 flex-1 flex-col overflow-y-auto pb-20 lg:hidden">
-            <DayList
-              dayOrder={visibleDayOrder}
-              isDragging={isDragging}
-              onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
-              onDragStateChange={setIsDragging}
-              onMoveTask={(taskId, dueDate) => void moveTask(taskId, dueDate)}
-              onOpen={openEdit}
-              onReorder={(key, ids) => void handleReorder(key, ids)}
-              onStartPomodoro={openFocus}
-              onToggle={(task) => void toggleTask(task)}
-              tasks={tasks}
-              weekStart={weekStart}
-            />
-            <MobileBacklog
-              onCreate={openCreate}
-              onDragStateChange={setIsDragging}
-              onMoveTask={(taskId) => void moveTask(taskId, null)}
-              onOpen={openEdit}
-              onPriority={setPriority}
-              onSearch={setSearch}
-              onStartPomodoro={openFocus}
-              onToggle={(task) => void toggleTask(task)}
-              priority={priority}
-              search={search}
-              tasks={backlog}
-            />
-          </div>
-          <div className="hidden min-h-0 flex-1 lg:flex">
-            {view === "list" ? (
-              <>
-                <div className="min-h-0 flex-1 flex-col overflow-y-auto">
-                  <DayList
-                    dayOrder={visibleDayOrder}
-                    isDragging={isDragging}
-                    onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
-                    onDragStateChange={setIsDragging}
-                    onMoveTask={(taskId, dueDate) => void moveTask(taskId, dueDate)}
+        <TasksDnDProvider
+          backlogOrder={backlogOrder}
+          dayOrder={visibleDayOrder}
+          onDragStateChange={() => {}}
+          onMoveTask={(taskId, dueDate) => void moveTask(taskId, dueDate)}
+          onReorder={handleReorderDispatch}
+          tasks={tasks}
+        >
+          {isMobile ? (
+            <div className="min-h-0 flex-1 flex-col overflow-y-auto pb-20">
+              <DayList
+                onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
+                onOpen={openEdit}
+                onStartPomodoro={openFocus}
+                onToggle={(task) => void toggleTask(task)}
+                tasks={tasks}
+                weekStart={weekStart}
+              />
+              <MobileBacklog
+                onCreate={openCreate}
+                onOpen={openEdit}
+                onPriority={setPriority}
+                onSearch={setSearch}
+                onStartPomodoro={openFocus}
+                onToggle={(task) => void toggleTask(task)}
+                priority={priority}
+                search={search}
+                tasks={backlog}
+              />
+            </div>
+          ) : (
+            <div className="min-h-0 flex-1 lg:flex">
+              {view === "list" ? (
+                <>
+                  <div className="min-h-0 flex-1 flex-col overflow-y-auto">
+                    <DayList
+                      onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
+                      onOpen={openEdit}
+                      onStartPomodoro={openFocus}
+                      onToggle={(task) => void toggleTask(task)}
+                      tasks={tasks}
+                      weekStart={weekStart}
+                    />
+                  </div>
+                  <BacklogPanel
+                    onCreate={openCreate}
                     onOpen={openEdit}
-                    onReorder={(key, ids) => void handleReorder(key, ids)}
+                    onPriority={setPriority}
+                    onSearch={setSearch}
+                    onStartPomodoro={openFocus}
+                    onToggle={(task) => void toggleTask(task)}
+                    priority={priority}
+                    search={search}
+                    tasks={backlog}
+                  />
+                </>
+              ) : (
+                <>
+                  <WeeklyGrid
+                    onOpen={openEdit}
                     onStartPomodoro={openFocus}
                     onToggle={(task) => void toggleTask(task)}
                     tasks={tasks}
                     weekStart={weekStart}
                   />
-                </div>
-                <BacklogPanel
-                  onCreate={openCreate}
-                  onDragStateChange={setIsDragging}
-                  onMoveTask={(taskId) => void moveTask(taskId, null)}
-                  onOpen={openEdit}
-                  onPriority={setPriority}
-                  onSearch={setSearch}
-                  onStartPomodoro={openFocus}
-                  onToggle={(task) => void toggleTask(task)}
-                  priority={priority}
-                  search={search}
-                  tasks={backlog}
-                />
-              </>
-            ) : (
-              <>
-                <WeeklyGrid
-                  dayOrder={visibleDayOrder}
-                  isDragging={isDragging}
-                  onDragStateChange={setIsDragging}
-                  onMoveTask={(taskId, dueDate) => void moveTask(taskId, dueDate)}
-                  onOpen={openEdit}
-                  onReorder={(key, ids) => void handleReorder(key, ids)}
-                  onStartPomodoro={openFocus}
-                  onToggle={(task) => void toggleTask(task)}
-                  tasks={tasks}
-                  weekStart={weekStart}
-                />
-                <BacklogPanel
-                  onCreate={openCreate}
-                  onDragStateChange={setIsDragging}
-                  onMoveTask={(taskId) => void moveTask(taskId, null)}
-                  onOpen={openEdit}
-                  onPriority={setPriority}
-                  onSearch={setSearch}
-                  onStartPomodoro={openFocus}
-                  onToggle={(task) => void toggleTask(task)}
-                  priority={priority}
-                  search={search}
-                  tasks={backlog}
-                />
-              </>
-            )}
-          </div>
-        </>
+                  <BacklogPanel
+                    onCreate={openCreate}
+                    onOpen={openEdit}
+                    onPriority={setPriority}
+                    onSearch={setSearch}
+                    onStartPomodoro={openFocus}
+                    onToggle={(task) => void toggleTask(task)}
+                    priority={priority}
+                    search={search}
+                    tasks={backlog}
+                  />
+                </>
+              )}
+            </div>
+          )}
+        </TasksDnDProvider>
       )}
       <button
         aria-label="Nueva tarea"

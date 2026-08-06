@@ -1,32 +1,36 @@
-import { AlertCircle, CheckCircle2, CheckSquare2, Circle, GripVertical, MoreHorizontal, Play, Timer } from "lucide-react";
-import type { Task } from "@/types/entities";
-import { isTaskOverdue } from "@/lib/utils";
-import { PriorityChip } from "./PriorityChip";
+"use client";
 
-export function TaskCard({
+import { AlertCircle, CheckCircle2, CheckSquare2, Circle, GripVertical, MoreHorizontal, Play, Timer } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
+import type { Task } from "@/types/entities";
+import { cn, isTaskOverdue } from "@/lib/utils";
+import { PriorityChip } from "./PriorityChip";
+import { taskDragId } from "../dnd/TasksDnDProvider";
+
+type HandleProps = {
+  ref: (node: HTMLElement | null) => void;
+  attributes: DraggableAttributes;
+  listeners: DraggableSyntheticListeners;
+};
+
+export function TaskCardShell({
   task,
   onOpen,
   onToggle,
-  onDragStateChange,
-  onDragOver,
-  onDrop,
-  isDropTarget,
   onStartPomodoro,
-  onDragHandleDown,
-  onDragHandleMove,
-  onDragHandleUp,
+  dragging = false,
+  dropTarget = false,
+  handleProps,
 }: {
   task: Task;
   onOpen: () => void;
   onToggle: () => void;
-  onDragStateChange?: (dragging: boolean) => void;
-  onDragOver?: (event: React.DragEvent<HTMLElement>) => void;
-  onDrop?: (event: React.DragEvent<HTMLElement>) => void;
-  isDropTarget?: boolean;
   onStartPomodoro?: () => void;
-  onDragHandleDown?: (event: React.PointerEvent<HTMLButtonElement>, taskId: string) => void;
-  onDragHandleMove?: (event: React.PointerEvent<HTMLButtonElement>) => void;
-  onDragHandleUp?: () => void;
+  dragging?: boolean;
+  dropTarget?: boolean;
+  handleProps?: HandleProps;
 }) {
   const completed = task.status === "COMPLETED";
   const overdue = isTaskOverdue(task);
@@ -35,25 +39,16 @@ export function TaskCard({
   return (
     <article
       aria-label={`Tarea: ${task.title}`}
-      className={`group relative flex min-h-[112px] cursor-grab flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline active:cursor-grabbing ${completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant"} ${overdue ? "border-l-2 border-l-error" : ""} ${isDropTarget ? "border-2 border-primary bg-primary-container/20" : ""}`}
+      className={cn(
+        "group relative flex min-h-[112px] flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline",
+        completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant",
+        overdue && "border-l-2 border-l-error",
+        dropTarget && "border-2 border-primary bg-primary-container/20",
+        dragging && "opacity-40",
+      )}
       data-task-card
       data-task-id={task.id}
-      draggable
       onDoubleClick={onOpen}
-      onDragEnd={() => onDragStateChange?.(false)}
-      onDragStart={(event) => {
-        event.dataTransfer.setData("text/task-id", task.id);
-        event.dataTransfer.effectAllowed = "move";
-        onDragStateChange?.(true);
-      }}
-      onDragOver={(event) => {
-        event.preventDefault();
-        onDragOver?.(event);
-      }}
-      onDrop={(event) => {
-        event.preventDefault();
-        onDrop?.(event);
-      }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -85,22 +80,20 @@ export function TaskCard({
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {onDragHandleDown && (
+          {/* eslint-disable react-hooks/refs -- los listeners de dnd-kit se aplican por spread (falso positivo) */}
+          {handleProps && (
             <button
               aria-label={`Arrastrar ${task.title}`}
-              className="pointer-coarse:flex hidden cursor-grab touch-none items-center p-1 text-on-surface-variant hover:text-primary active:cursor-grabbing"
-              onPointerCancel={onDragHandleUp}
-              onPointerDown={(event) => {
-                event.stopPropagation();
-                onDragHandleDown?.(event, task.id);
-              }}
-              onPointerMove={onDragHandleMove}
-              onPointerUp={onDragHandleUp}
+              className="flex cursor-grab touch-none items-center p-1 text-on-surface-variant hover:text-primary active:cursor-grabbing"
+              ref={handleProps.ref}
               type="button"
+              {...handleProps.attributes}
+              {...handleProps.listeners}
             >
               <GripVertical size={16} />
             </button>
           )}
+          {/* eslint-enable react-hooks/refs */}
           <button
             aria-label={`Más detalles de ${task.title}`}
             className="mt-0.5 shrink-0 text-on-surface-variant opacity-50 transition-opacity hover:text-primary group-hover:opacity-100"
@@ -121,5 +114,38 @@ export function TaskCard({
         </div>
       </div>
     </article>
+  );
+}
+
+export function SortableTaskCard({
+  task,
+  onOpen,
+  onToggle,
+  onStartPomodoro,
+}: {
+  task: Task;
+  onOpen: () => void;
+  onToggle: () => void;
+  onStartPomodoro?: () => void;
+}) {
+  const { attributes, isDragging, listeners, over, setActivatorNodeRef, setNodeRef, transform, transition } = useSortable({
+    id: taskDragId(task.id),
+  });
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <TaskCardShell
+        dropTarget={Boolean(over) && over?.id === taskDragId(task.id)}
+        dragging={isDragging}
+        handleProps={{ attributes, listeners, ref: setActivatorNodeRef }}
+        onOpen={onOpen}
+        onStartPomodoro={onStartPomodoro}
+        onToggle={onToggle}
+        task={task}
+      />
+    </div>
   );
 }

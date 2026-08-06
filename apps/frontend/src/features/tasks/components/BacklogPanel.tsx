@@ -1,6 +1,12 @@
+"use client";
+
 import { Plus, Search } from "lucide-react";
 import type { Task, TaskPriority } from "@/types/entities";
-import { BacklogItem } from "./BacklogItem";
+import { cn } from "@/lib/utils";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableBacklogItem } from "./BacklogItem";
+import { DroppableColumn } from "../dnd/DroppableColumn";
+import { BACKLOG_CONTAINER, taskDragId, useTasksDnd } from "../dnd/TasksDnDProvider";
 
 export function BacklogPanel({
   tasks,
@@ -11,8 +17,6 @@ export function BacklogPanel({
   onCreate,
   onOpen,
   onToggle,
-  onMoveTask,
-  onDragStateChange,
   onStartPomodoro,
 }: {
   tasks: Task[];
@@ -23,20 +27,13 @@ export function BacklogPanel({
   onCreate: () => void;
   onOpen: (task: Task) => void;
   onToggle: (task: Task) => void;
-  onMoveTask: (taskId: string) => void;
-  onDragStateChange: (dragging: boolean) => void;
   onStartPomodoro: (task: Task) => void;
 }) {
+  const { overContainerId } = useTasksDnd();
+  const isHighlight = overContainerId === BACKLOG_CONTAINER;
+  const orderedIds = tasks.map((task) => taskDragId(task.id));
   return (
-    <aside
-      className="flex h-[420px] min-h-[420px] w-full shrink-0 flex-none flex-col bg-surface-bright lg:h-full lg:min-h-0 lg:w-80 lg:flex-none"
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={(event) => {
-        event.preventDefault();
-        const taskId = event.dataTransfer.getData("text/task-id");
-        if (taskId) onMoveTask(taskId);
-      }}
-    >
+    <aside className="flex h-[420px] min-h-[420px] w-full shrink-0 flex-none flex-col bg-surface-bright lg:h-full lg:min-h-0 lg:w-80 lg:flex-none">
       <div className="flex items-center justify-between border-b border-outline-variant p-container-padding">
         <div>
           <h2 className="font-headline-sm text-headline-sm text-primary">
@@ -85,24 +82,32 @@ export function BacklogPanel({
           <option value="LOW">Bajas</option>
         </select>
       </div>
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+      <DroppableColumn
+        className={cn(
+          "min-h-0 flex-1 space-y-2 overflow-y-auto p-3",
+          tasks.length === 0 && isHighlight && "border-2 border-dashed border-primary bg-primary-container/10",
+        )}
+        highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
+        id={BACKLOG_CONTAINER}
+      >
         {tasks.length === 0 ? (
           <p className="py-8 text-center font-body-sm text-body-sm text-on-surface-variant">
             Todo al día. No hay tareas sin fecha.
           </p>
         ) : (
-          tasks.map((task) => (
-            <BacklogItem
-              key={task.id}
-              onDragStateChange={onDragStateChange}
-              onOpen={() => onOpen(task)}
-              onStartPomodoro={() => onStartPomodoro(task)}
-              onToggle={() => onToggle(task)}
-              task={task}
-            />
-          ))
+          <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
+            {tasks.map((task) => (
+              <SortableBacklogItem
+                key={task.id}
+                onOpen={() => onOpen(task)}
+                onStartPomodoro={() => onStartPomodoro(task)}
+                onToggle={() => onToggle(task)}
+                task={task}
+              />
+            ))}
+          </SortableContext>
         )}
-      </div>
+      </DroppableColumn>
     </aside>
   );
 }

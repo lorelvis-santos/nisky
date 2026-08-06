@@ -22,3 +22,9 @@ apps/backend/src/infra/prisma/generated/
 .idea/
 *.log
 .codebase-memory/
+
+# Copied package artifacts (never track)
+apps/frontend/src/features/habits/components/LICENSE
+apps/frontend/src/features/habits/components/README.md
+apps/frontend/src/features/habits/components/index.d.ts
+apps/frontend/src/features/habits/components/package.json

@@ -1,13 +1,13 @@
 "use client";
 
 import { ChevronDown, Plus, Search } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Task, TaskPriority } from "@/types/entities";
 import { cn } from "@/lib/utils";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SortableBacklogItem } from "./BacklogItem";
 import { DroppableColumn } from "../dnd/DroppableColumn";
-import { BACKLOG_CONTAINER, taskDragId, useTasksDnd } from "../dnd/TasksDnDProvider";
+import { BACKLOG_CONTAINER, useTasksDnd } from "../dnd/TasksDnDProvider";
 
 export function MobileBacklog({
   tasks,
@@ -31,16 +31,18 @@ export function MobileBacklog({
   onStartPomodoro: (task: Task) => void;
 }) {
   const [open, setOpen] = useState(true);
-  const { overContainerId } = useTasksDnd();
+  const { orderedIdsForContainer, overContainerId } = useTasksDnd();
   const isHighlight = overContainerId === BACKLOG_CONTAINER;
-  const orderedIds = tasks.map((task) => taskDragId(task.id));
+  const tasksById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks]);
+  const orderedIds = orderedIdsForContainer(BACKLOG_CONTAINER);
+  const backlogTasks = orderedIds.map((id) => tasksById.get(id)).filter((task): task is Task => Boolean(task));
 
   return (
     <aside className="shrink-0 border-t border-outline-variant bg-surface-bright">
       <div className="flex items-center justify-between px-container-padding">
         <button aria-expanded={open} className="flex flex-1 items-center justify-between py-4 text-left" onClick={() => setOpen((current) => !current)} type="button">
           <div>
-            <h2 className="font-headline-sm text-headline-sm text-primary">Pendientes ({tasks.length})</h2>
+            <h2 className="font-headline-sm text-headline-sm text-primary">Pendientes ({backlogTasks.length})</h2>
             <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Tareas sin fecha</p>
           </div>
           <ChevronDown className={`shrink-0 text-on-surface-variant transition-transform ${open ? "rotate-180" : ""}`} size={18} />
@@ -67,16 +69,16 @@ export function MobileBacklog({
           <DroppableColumn
             className={cn(
               "min-h-0 space-y-2 p-3",
-              tasks.length === 0 && isHighlight && "border-2 border-dashed border-primary bg-primary-container/10",
+              backlogTasks.length === 0 && isHighlight && "border-2 border-dashed border-primary bg-primary-container/10",
             )}
             highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
             id={BACKLOG_CONTAINER}
           >
-            {tasks.length === 0 ? (
+            {backlogTasks.length === 0 ? (
               <p className="py-8 text-center font-body-sm text-body-sm text-on-surface-variant">Todo al día. No hay tareas sin fecha.</p>
             ) : (
               <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
-                {tasks.map((task) => (
+                {backlogTasks.map((task) => (
                   <SortableBacklogItem
                     key={task.id}
                     onOpen={() => onOpen(task)}

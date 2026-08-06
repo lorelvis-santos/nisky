@@ -17,6 +17,8 @@ type DragProps = {
   style?: CSSProperties;
 };
 
+const stopDragStart = (event: { stopPropagation: () => void }) => event.stopPropagation();
+
 export function TaskCardShell({
   task,
   onOpen,
@@ -70,6 +72,8 @@ export function TaskCardShell({
               aria-label={completed ? "Marcar pendiente" : "Marcar completada"}
               className="mt-0.5 shrink-0 text-outline hover:text-primary"
               onClick={onToggle}
+              onPointerDown={stopDragStart}
+              onTouchStart={stopDragStart}
               type="button"
             >
               {completed ? <CheckCircle2 size={17} /> : <Circle size={17} />}
@@ -77,6 +81,8 @@ export function TaskCardShell({
             <button
               className="min-w-0 flex-1 text-left"
               onClick={onOpen}
+              onPointerDown={stopDragStart}
+              onTouchStart={stopDragStart}
               type="button"
             >
               <p
@@ -92,6 +98,8 @@ export function TaskCardShell({
               aria-label={`Más detalles de ${task.title}`}
               className="mt-0.5 shrink-0 text-on-surface-variant opacity-50 transition-opacity hover:text-primary group-hover:opacity-100"
               onClick={onOpen}
+              onPointerDown={stopDragStart}
+              onTouchStart={stopDragStart}
               type="button"
             >
               <MoreHorizontal size={17} />
@@ -104,7 +112,7 @@ export function TaskCardShell({
             <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
             {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
             {overdue && <AlertCircle aria-label="Vencida" className="shrink-0 text-error" size={13} />}
-            {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="flex shrink-0 items-center justify-center border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
+            {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="flex shrink-0 items-center justify-center border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={stopDragStart} onTouchStart={stopDragStart} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
           </div>
         </div>
       </article>

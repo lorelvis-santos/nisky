@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { LayoutGrid, List, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -13,7 +13,8 @@ import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal"
 import { WeekNavigation } from "@/features/tasks/components/WeekNavigation";
 import { WeeklyGrid } from "@/features/tasks/components/WeeklyGrid";
 import { useTaskMutations, useTaskQuery, useTasksQuery } from "@/features/tasks/hooks/useTasks";
-import { BACKLOG_CONTAINER, TasksDnDProvider, dayContainerId, dayKeyFromContainerId } from "@/features/tasks/dnd/TasksDnDProvider";
+import { BACKLOG_CONTAINER, TasksDnDProvider, dayKeyFromContainerId } from "@/features/tasks/dnd/TasksDnDProvider";
+import { dateKey } from "@/lib/tasks";
 import { localDateKey } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -123,7 +124,6 @@ function TasksPageContent() {
   const [priority, setPriority] = useState<TaskPriority | "ALL">("ALL");
   const [dayOrder, setDayOrder] = useState<Record<string, string[]>>({});
   const [backlogOrder, setBacklogOrder] = useState<string[]>([]);
-  const [pendingPlacement, setPendingPlacement] = useState<Record<string, string>>({});
   const [view, setView] = useState<TaskView>(initialTaskView);
   const isMobile = useIsMobile(1023);
   const modalUrl = useModalUrl();
@@ -131,10 +131,27 @@ function TasksPageContent() {
   const urlTaskQuery = useTaskQuery(modalUrl.state.taskId);
   const mutations = useTaskMutations();
   const tasks = query.data?.data ?? emptyTasks;
+  const backlog = useMemo(() => tasks.filter((task) => !task.dueDate), [tasks]);
   const taskFromUrl = urlTaskQuery.data ?? tasks.find((task) => task.id === modalUrl.state.taskId) ?? null;
   const editingTask = taskFromUrl;
   const modalOpen = Boolean(modalUrl.state.taskId || modalUrl.state.create);
   const initialForm = parsePrefill(modalUrl.state.prefill);
+
+  const visibleDayOrder = useMemo(() => {
+    const next = { ...dayOrder };
+    for (let index = 0; index < 7; index += 1) {
+      const currentDate = new Date(weekStart);
+      currentDate.setDate(currentDate.getDate() + index);
+      const key = dateKey(currentDate);
+      const currentIds = tasks
+        .filter((task) => task.dueDate && dateKey(task.dueDate) === key)
+        .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
+        .map((task) => task.id);
+      const existing = dayOrder[key]?.filter((id) => currentIds.includes(id)) ?? [];
+      next[key] = [...existing, ...currentIds.filter((id) => !existing.includes(id))];
+    }
+    return next;
+  }, [dayOrder, tasks, weekStart]);
 
   const moveWeek = (amount: number) => {
     setWeekStart((current) => {
@@ -165,21 +182,17 @@ function TasksPageContent() {
     const currentDueDate = task?.dueDate ? localDateKey(task.dueDate) : null;
     if (currentDueDate === dueDate) return;
     const previousDayOrder = dayOrder;
-    const previousPlacement = pendingPlacement;
-    const targetContainer = dueDate ? dayContainerId(dueDate) : BACKLOG_CONTAINER;
     if (currentDueDate) {
       setDayOrder((current) => ({
         ...current,
         [currentDueDate]: (current[currentDueDate] ?? []).filter((id) => id !== taskId),
       }));
     }
-    setPendingPlacement((current) => ({ ...current, [taskId]: targetContainer }));
     try {
       await mutations.update.mutateAsync({ id: taskId, payload: { dueDate } });
       toast.success(dueDate ? "¡Listo, fecha actualizada!" : "¡Listo, la devolvimos a pendientes!");
     } catch {
       setDayOrder(previousDayOrder);
-      setPendingPlacement(previousPlacement);
       toast.error("Ups, no pudimos mover la tarea. Inténtalo de nuevo.");
     }
   };
@@ -283,11 +296,10 @@ function TasksPageContent() {
       ) : (
         <TasksDnDProvider
           backlogOrder={backlogOrder}
-          dayOrder={dayOrder}
+          dayOrder={visibleDayOrder}
           onDragStateChange={() => {}}
           onMoveTask={(taskId, dueDate) => void moveTask(taskId, dueDate)}
           onReorder={handleReorderDispatch}
-          pendingPlacement={pendingPlacement}
           tasks={tasks}
         >
           {isMobile ? (
@@ -309,7 +321,7 @@ function TasksPageContent() {
                 onToggle={(task) => void toggleTask(task)}
                 priority={priority}
                 search={search}
-                tasks={tasks}
+                tasks={backlog}
               />
             </div>
           ) : (
@@ -335,7 +347,7 @@ function TasksPageContent() {
                     onToggle={(task) => void toggleTask(task)}
                     priority={priority}
                     search={search}
-                    tasks={tasks}
+                    tasks={backlog}
                   />
                 </>
               ) : (
@@ -356,7 +368,7 @@ function TasksPageContent() {
                     onToggle={(task) => void toggleTask(task)}
                     priority={priority}
                     search={search}
-                    tasks={tasks}
+                    tasks={backlog}
                   />
                 </>
               )}

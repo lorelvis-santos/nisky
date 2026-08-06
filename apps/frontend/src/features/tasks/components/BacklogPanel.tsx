@@ -1,13 +1,12 @@
 "use client";
 
 import { Plus, Search } from "lucide-react";
-import { useMemo } from "react";
 import type { Task, TaskPriority } from "@/types/entities";
 import { cn } from "@/lib/utils";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SortableBacklogItem } from "./BacklogItem";
 import { DroppableColumn } from "../dnd/DroppableColumn";
-import { BACKLOG_CONTAINER, useTasksDnd } from "../dnd/TasksDnDProvider";
+import { BACKLOG_CONTAINER, taskDragId, useTasksDnd } from "../dnd/TasksDnDProvider";
 
 export function BacklogPanel({
   tasks,
@@ -30,11 +29,9 @@ export function BacklogPanel({
   onToggle: (task: Task) => void;
   onStartPomodoro: (task: Task) => void;
 }) {
-  const { orderedIdsForContainer, overContainerId } = useTasksDnd();
+  const { overContainerId } = useTasksDnd();
   const isHighlight = overContainerId === BACKLOG_CONTAINER;
-  const tasksById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks]);
-  const orderedIds = orderedIdsForContainer(BACKLOG_CONTAINER);
-  const backlogTasks = orderedIds.map((id) => tasksById.get(id)).filter((task): task is Task => Boolean(task));
+  const orderedIds = tasks.map((task) => taskDragId(task.id));
   return (
     <aside className="flex h-[420px] min-h-[420px] w-full shrink-0 flex-none flex-col bg-surface-bright lg:h-full lg:min-h-0 lg:w-80 lg:flex-none">
       <div className="flex items-center justify-between border-b border-outline-variant p-container-padding">
@@ -88,18 +85,18 @@ export function BacklogPanel({
       <DroppableColumn
         className={cn(
           "min-h-0 flex-1 space-y-2 overflow-y-auto p-3",
-          backlogTasks.length === 0 && isHighlight && "border-2 border-dashed border-primary bg-primary-container/10",
+          tasks.length === 0 && isHighlight && "border-2 border-dashed border-primary bg-primary-container/10",
         )}
         highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
         id={BACKLOG_CONTAINER}
       >
-        {backlogTasks.length === 0 ? (
+        {tasks.length === 0 ? (
           <p className="py-8 text-center font-body-sm text-body-sm text-on-surface-variant">
             Todo al día. No hay tareas sin fecha.
           </p>
         ) : (
           <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
-            {backlogTasks.map((task) => (
+            {tasks.map((task) => (
               <SortableBacklogItem
                 key={task.id}
                 onOpen={() => onOpen(task)}

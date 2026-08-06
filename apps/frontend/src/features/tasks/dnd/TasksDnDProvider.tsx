@@ -39,8 +39,6 @@ export function taskIdFromDragId(dragId: string) {
 type TasksDnDContextValue = {
   activeTask: Task | null;
   overContainerId: string | null;
-  orderedIdsForContainer: (containerId: string) => string[];
-  displayContainerOf: (taskId: string) => string;
 };
 
 const TasksDnDContext = createContext<TasksDnDContextValue | null>(null);
@@ -59,24 +57,10 @@ function containerOf(task: Task): string {
   return task.dueDate ? dayContainerId(dateKey(task.dueDate)) : BACKLOG_CONTAINER;
 }
 
-class MousePointerSensor extends PointerSensor {
-  static activators = [
-    {
-      eventName: "onPointerDown" as const,
-      handler: ({ nativeEvent: event }: { nativeEvent: PointerEvent }) => {
-        if (event.pointerType !== "mouse") return false;
-        if (!event.isPrimary || event.button !== 0) return false;
-        return true;
-      },
-    },
-  ];
-}
-
 export function TasksDnDProvider({
   tasks,
   dayOrder,
   backlogOrder,
-  pendingPlacement,
   onMoveTask,
   onReorder,
   onDragStateChange,
@@ -85,7 +69,6 @@ export function TasksDnDProvider({
   tasks: Task[];
   dayOrder: Record<string, string[]>;
   backlogOrder: string[];
-  pendingPlacement: Record<string, string>;
   onMoveTask: (taskId: string, dueDate: string | null) => void | Promise<void>;
   onReorder: (containerId: string, taskIds: string[]) => void | Promise<void>;
   onDragStateChange: (dragging: boolean) => void;
@@ -93,28 +76,9 @@ export function TasksDnDProvider({
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overContainerId, setOverContainerId] = useState<string | null>(null);
-  const [workingDayOrder, setWorkingDayOrder] = useState(dayOrder);
-  const [workingBacklogOrder, setWorkingBacklogOrder] = useState(backlogOrder);
-  const [workingPlacement, setWorkingPlacement] = useState(pendingPlacement);
-  const [prevOrderProps, setPrevOrderProps] = useState({ dayOrder, backlogOrder, pendingPlacement });
-  const [prevActiveId, setPrevActiveId] = useState<string | null>(null);
-
-  if (
-    activeId === null &&
-    (prevActiveId !== null ||
-      prevOrderProps.dayOrder !== dayOrder ||
-      prevOrderProps.backlogOrder !== backlogOrder ||
-      prevOrderProps.pendingPlacement !== pendingPlacement)
-  ) {
-    setPrevOrderProps({ dayOrder, backlogOrder, pendingPlacement });
-    setPrevActiveId(activeId);
-    setWorkingDayOrder(dayOrder);
-    setWorkingBacklogOrder(backlogOrder);
-    setWorkingPlacement(pendingPlacement);
-  }
 
   const sensors = useSensors(
-    useSensor(MousePointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
@@ -124,75 +88,42 @@ export function TasksDnDProvider({
     [activeId, tasks],
   );
 
-  const displayContainerOf = useCallback(
-    (taskId: string): string => {
-      if (taskId === activeId) {
-        const task = findTask(tasks, taskId);
-        return task ? containerOf(task) : BACKLOG_CONTAINER;
-      }
-      const task = findTask(tasks, taskId);
-      if (!task) return BACKLOG_CONTAINER;
-      const placement = workingPlacement[taskId];
-      return placement && placement !== containerOf(task) ? placement : containerOf(task);
-    },
-    [activeId, tasks, workingPlacement],
-  );
-
   const orderedIdsForContainer = useCallback(
     (containerId: string): string[] => {
-      const members = tasks
-        .filter((task) => displayContainerOf(task.id) === containerId)
-        .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt));
       if (containerId === BACKLOG_CONTAINER) {
-        const existing = workingBacklogOrder.filter((id) => members.some((task) => task.id === id));
-        return [...existing, ...members.filter((task) => !existing.includes(task.id)).map((task) => task.id)];
+        const currentIds = tasks
+          .filter((task) => !task.dueDate)
+          .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
+          .map((task) => task.id);
+        const existing = backlogOrder.filter((id) => currentIds.includes(id));
+        return [...existing, ...currentIds.filter((id) => !existing.includes(id))];
       }
       const dayKey = dayKeyFromContainerId(containerId);
-      const existing = (workingDayOrder[dayKey] ?? []).filter((id) => members.some((task) => task.id === id));
-      return [...existing, ...members.filter((task) => !existing.includes(task.id)).map((task) => task.id)];
+      const currentIds = tasks
+        .filter((task) => task.dueDate && dateKey(task.dueDate) === dayKey)
+        .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
+        .map((task) => task.id);
+      const existing = (dayOrder[dayKey] ?? []).filter((id) => currentIds.includes(id));
+      return [...existing, ...currentIds.filter((id) => !existing.includes(id))];
     },
-    [displayContainerOf, tasks, workingBacklogOrder, workingDayOrder],
+    [tasks, dayOrder, backlogOrder],
   );
-
-  const moveActiveInOrder = useCallback(
-    (containerId: string, overTaskId: string | null, activeTaskId: string): string[] => {
-      const current = orderedIdsForContainer(containerId);
-      let targetIndex = current.length;
-      if (overTaskId && overTaskId !== activeTaskId) {
-        const index = current.indexOf(overTaskId);
-        if (index >= 0) targetIndex = index;
-      }
-      const withoutActive = current.filter((id) => id !== activeTaskId);
-      withoutActive.splice(Math.min(targetIndex, withoutActive.length), 0, activeTaskId);
-      return withoutActive;
-    },
-    [orderedIdsForContainer],
-  );
-
-  const setContainerOrder = useCallback((containerId: string, taskIds: string[]) => {
-    if (containerId === BACKLOG_CONTAINER) {
-      setWorkingBacklogOrder(taskIds);
-      return;
-    }
-    const dayKey = dayKeyFromContainerId(containerId);
-    setWorkingDayOrder((current) => ({ ...current, [dayKey]: taskIds }));
-  }, []);
-
-  const isContainerId = useCallback((id: string) => id.startsWith(DAY_PREFIX) || id === BACKLOG_CONTAINER, []);
 
   const resolveContainerId = useCallback(
     (id: string): string | null => {
-      if (id.startsWith("task:")) return displayContainerOf(taskIdFromDragId(id));
-      if (isContainerId(id)) return id;
+      if (id.startsWith("task:")) {
+        const task = findTask(tasks, taskIdFromDragId(id));
+        return task ? containerOf(task) : null;
+      }
+      if (id.startsWith(DAY_PREFIX) || id === BACKLOG_CONTAINER) return id;
       return null;
     },
-    [displayContainerOf, isContainerId],
+    [tasks],
   );
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       setActiveId(String(event.active.id));
-      setOverContainerId(null);
       onDragStateChange(true);
     },
     [onDragStateChange],
@@ -200,73 +131,50 @@ export function TasksDnDProvider({
 
   const handleDragOver = useCallback(
     (event: DragMoveEvent) => {
+      setOverContainerId(event.over ? resolveContainerId(String(event.over.id)) : null);
+    },
+    [resolveContainerId],
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActiveId(null);
+      setOverContainerId(null);
+      onDragStateChange(false);
       const over = event.over;
-      setOverContainerId(over ? resolveContainerId(String(over.id)) : null);
       if (!over) return;
       const overId = String(over.id);
       if (overId === String(event.active.id)) return;
       const activeTaskId = taskIdFromDragId(String(event.active.id));
       const activeTask = findTask(tasks, activeTaskId);
       if (!activeTask) return;
-
-      const currentContainer = displayContainerOf(activeTaskId);
-      let targetContainer: string;
-      let overTaskId: string | null = null;
-      if (isContainerId(overId)) {
-        targetContainer = overId;
-      } else {
-        const overTask = findTask(tasks, taskIdFromDragId(overId));
-        if (!overTask) return;
-        targetContainer = displayContainerOf(overTask.id);
-        overTaskId = overTask.id;
-      }
-
-      if (targetContainer === currentContainer) {
-        if (overTaskId == null) return;
-        setContainerOrder(targetContainer, moveActiveInOrder(targetContainer, overTaskId, activeTaskId));
-        return;
-      }
-
-      setWorkingPlacement((current) => ({ ...current, [activeTaskId]: targetContainer }));
-      setContainerOrder(targetContainer, moveActiveInOrder(targetContainer, overTaskId, activeTaskId));
-    },
-    [displayContainerOf, isContainerId, moveActiveInOrder, resolveContainerId, setContainerOrder, tasks],
-  );
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const over = event.over;
-      const activeTaskId = taskIdFromDragId(String(event.active.id));
-      const activeTask = findTask(tasks, activeTaskId);
-      setActiveId(null);
-      setOverContainerId(null);
-      onDragStateChange(false);
-      if (!over || !activeTask) return;
-      const overId = String(over.id);
-      if (overId === String(event.active.id)) return;
-
-      const overIsContainer = isContainerId(overId);
-      const overTask = overIsContainer ? null : findTask(tasks, taskIdFromDragId(overId));
-      if (!overIsContainer && !overTask) return;
-
       const sourceContainer = containerOf(activeTask);
-      const targetContainer = overIsContainer
-        ? overId
-        : displayContainerOf(overTask!.id);
-      const finalIds = moveActiveInOrder(targetContainer, overIsContainer ? null : overTask!.id, activeTaskId);
+      const targetContainer = resolveContainerId(overId) ?? sourceContainer;
+      const overIsItem = overId.startsWith("task:");
+      const overTask = overIsItem ? findTask(tasks, taskIdFromDragId(overId)) : null;
+
+      let targetIndex: number | null = null;
+      if (overIsItem && overTask) {
+        const ids = orderedIdsForContainer(containerOf(overTask)).filter((id) => id !== activeTaskId);
+        targetIndex = Math.max(0, ids.indexOf(overTask.id));
+      }
+
+      const buildOrder = (containerId: string) => {
+        const ids = orderedIdsForContainer(containerId).filter((id) => id !== activeTaskId);
+        if (targetIndex != null) ids.splice(Math.min(targetIndex, ids.length), 0, activeTaskId);
+        return ids;
+      };
 
       if (sourceContainer === targetContainer) {
-        if (overIsContainer) return;
-        const current = orderedIdsForContainer(targetContainer);
-        if (current.length === finalIds.length && current.every((id, index) => id === finalIds[index])) return;
-        void onReorder(targetContainer, finalIds);
+        if (targetIndex == null || !overIsItem) return;
+        void onReorder(sourceContainer, buildOrder(sourceContainer));
         return;
       }
       const targetDueDate = targetContainer === BACKLOG_CONTAINER ? null : dayKeyFromContainerId(targetContainer);
       void onMoveTask(activeTaskId, targetDueDate);
-      void onReorder(targetContainer, finalIds);
+      if (targetIndex != null) void onReorder(targetContainer, buildOrder(targetContainer));
     },
-    [displayContainerOf, isContainerId, moveActiveInOrder, onDragStateChange, onMoveTask, onReorder, orderedIdsForContainer, tasks],
+    [onDragStateChange, onMoveTask, onReorder, orderedIdsForContainer, resolveContainerId, tasks],
   );
 
   const handleDragCancel = useCallback(() => {
@@ -275,10 +183,7 @@ export function TasksDnDProvider({
     onDragStateChange(false);
   }, [onDragStateChange]);
 
-  const contextValue = useMemo<TasksDnDContextValue>(
-    () => ({ activeTask, displayContainerOf, orderedIdsForContainer, overContainerId }),
-    [activeTask, displayContainerOf, orderedIdsForContainer, overContainerId],
-  );
+  const contextValue = useMemo<TasksDnDContextValue>(() => ({ activeTask, overContainerId }), [activeTask, overContainerId]);
 
   return (
     <DndContext

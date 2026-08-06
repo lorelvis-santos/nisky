@@ -17,8 +17,6 @@ type DragProps = {
   style?: CSSProperties;
 };
 
-const stopDragStart = (event: { stopPropagation: () => void }) => event.stopPropagation();
-
 export function BacklogItemShell({
   task,
   onOpen,
@@ -64,8 +62,6 @@ export function BacklogItemShell({
           <button
             className="min-w-0 flex-1 text-left"
             onClick={onOpen}
-            onPointerDown={stopDragStart}
-            onTouchStart={stopDragStart}
             type="button"
           >
             <p
@@ -80,8 +76,6 @@ export function BacklogItemShell({
               aria-label={`Más detalles de ${task.title}`}
               className="mt-0.5 shrink-0 text-on-surface-variant opacity-50 transition-opacity hover:text-primary group-hover:opacity-100"
               onClick={onOpen}
-              onPointerDown={stopDragStart}
-              onTouchStart={stopDragStart}
               type="button"
             >
               <MoreHorizontal size={17} />
@@ -98,14 +92,12 @@ export function BacklogItemShell({
             aria-label={task.status === "COMPLETED" ? "Marcar pendiente" : "Marcar completada"}
             className="font-body-sm text-body-sm hover:text-primary"
             onClick={onToggle}
-            onPointerDown={stopDragStart}
-            onTouchStart={stopDragStart}
             type="button"
           >
             {task.status === "COMPLETED" ? "Completada" : "Pendiente"}
           </button>
         </div>
-        {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="absolute bottom-3 right-3 flex items-center justify-center border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={stopDragStart} onTouchStart={stopDragStart} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
+        {onStartPomodoro && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="absolute bottom-3 right-3 flex items-center justify-center border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
       </article>
     </>
   );

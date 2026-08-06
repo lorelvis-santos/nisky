@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { Task } from "@/types/entities";
 import { dateKey } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SortableTaskCard } from "./TaskCard";
 import { DroppableColumn } from "../dnd/DroppableColumn";
-import { dayContainerId, useTasksDnd } from "../dnd/TasksDnDProvider";
+import { dayContainerId, taskDragId, useTasksDnd } from "../dnd/TasksDnDProvider";
 
 const dayNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
 
@@ -26,8 +26,7 @@ export function WeeklyGrid({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const today = dateKey(new Date());
-  const { orderedIdsForContainer, overContainerId } = useTasksDnd();
-  const tasksById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks]);
+  const { overContainerId } = useTasksDnd();
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + index);
@@ -52,12 +51,13 @@ export function WeeklyGrid({
         <div className="contents">
           {days.map((day, index) => {
             const key = dateKey(day);
-            const containerId = dayContainerId(key);
-            const orderedIds = orderedIdsForContainer(containerId);
-            const dayTasks = orderedIds.map((id) => tasksById.get(id)).filter((task): task is Task => Boolean(task));
+            const dayTasks = tasks
+              .filter((task) => task.dueDate && dateKey(task.dueDate) === key)
+              .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt));
+            const orderedIds = dayTasks.map((task) => taskDragId(task.id));
             const isToday = key === today;
             const isEmpty = dayTasks.length === 0;
-            const isHighlight = overContainerId === containerId;
+            const isHighlight = overContainerId === dayContainerId(key);
             return (
               <div
                 className="flex min-h-[480px] min-w-0 flex-col gap-2"
@@ -78,7 +78,7 @@ export function WeeklyGrid({
                     isEmpty && isHighlight && "border-2 border-dashed border-primary bg-primary-container/10",
                   )}
                   highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
-                  id={containerId}
+                  id={dayContainerId(key)}
                 >
                   {isEmpty ? (
                     isHighlight ? (

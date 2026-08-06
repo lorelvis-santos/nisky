@@ -1,14 +1,13 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useMemo } from "react";
 import type { Task } from "@/types/entities";
 import { dateKey } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SortableTaskCard, TaskCardShell } from "./TaskCard";
 import { DroppableColumn } from "../dnd/DroppableColumn";
-import { dayContainerId, useTasksDnd } from "../dnd/TasksDnDProvider";
+import { dayContainerId, taskDragId, useTasksDnd } from "../dnd/TasksDnDProvider";
 
 const dayNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
 
@@ -33,8 +32,7 @@ export function DayList({
   onCreateOnDay: (dateKey: string) => void;
 }) {
   const today = dateKey(new Date());
-  const { displayContainerOf, orderedIdsForContainer, overContainerId } = useTasksDnd();
-  const tasksById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks]);
+  const { overContainerId } = useTasksDnd();
   const weekDays = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + index);
@@ -51,7 +49,7 @@ export function DayList({
     : weekDays
   ).filter((day) => {
     const key = dateKey(day);
-    return key === today || tasks.some((task) => displayContainerOf(task.id) === dayContainerId(key));
+    return key === today || tasks.some((task) => task.dueDate && dateKey(task.dueDate) === key);
   });
 
   return (
@@ -78,12 +76,13 @@ export function DayList({
       )}
       {visibleDays.map((day) => {
         const key = dateKey(day);
-        const containerId = dayContainerId(key);
-        const orderedIds = orderedIdsForContainer(containerId);
-        const dayTasks = orderedIds.map((id) => tasksById.get(id)).filter((task): task is Task => Boolean(task));
+        const dayTasks = tasks
+          .filter((task) => task.dueDate && dateKey(task.dueDate) === key)
+          .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt));
+        const orderedIds = dayTasks.map((task) => taskDragId(task.id));
         const isToday = key === today;
         const isEmpty = dayTasks.length === 0;
-        const isHighlight = overContainerId === containerId;
+        const isHighlight = overContainerId === dayContainerId(key);
         return (
           <section data-day-key={key} key={key}>
             <header className={cn("sticky top-0 z-10 flex items-center justify-between border-b px-3 py-2", isToday ? "border-t-2 border-t-primary bg-secondary-container text-primary" : "border-outline-variant bg-surface")}>
@@ -105,7 +104,7 @@ export function DayList({
                 isEmpty && (isHighlight ? "border-2 border-dashed border-primary bg-primary-container/10" : "border-outline-variant"),
               )}
               highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
-              id={containerId}
+              id={dayContainerId(key)}
             >
               {isEmpty ? (
                 isHighlight ? (

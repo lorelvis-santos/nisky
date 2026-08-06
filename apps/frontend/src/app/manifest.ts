@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
     name: "Nisky",
     short_name: "Nisky",
     description: "Tu espacio para organizar el día, tareas, hábitos y notas.",
@@ -12,7 +13,10 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#303e51",
     orientation: "portrait-primary",
     categories: ["productivity", "utilities"],
+    lang: "es",
     icons: [
+      { src: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
       { src: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
       { src: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],

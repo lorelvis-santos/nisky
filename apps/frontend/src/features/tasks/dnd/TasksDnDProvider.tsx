@@ -155,7 +155,7 @@ export function TasksDnDProvider({
 
       let targetIndex: number | null = null;
       if (overIsItem && overTask) {
-        const ids = orderedIdsForContainer(containerOf(overTask)).filter((id) => id !== activeTaskId);
+        const ids = orderedIdsForContainer(containerOf(overTask));
         targetIndex = Math.max(0, ids.indexOf(overTask.id));
       }
 

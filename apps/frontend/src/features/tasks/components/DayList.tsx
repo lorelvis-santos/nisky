@@ -48,7 +48,7 @@ export function DayList({
   const currentWeek = weekDays.some((day) => dateKey(day) === today);
 
   const overdueTasks = tasks
-    .filter((task) => task.dueDate && dateKey(task.dueDate) < today)
+    .filter((task) => task.status !== "COMPLETED" && task.status !== "CANCELLED" && task.dueDate && dateKey(task.dueDate) < today)
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.order - b.order);
 
   const visibleDays = (currentWeek

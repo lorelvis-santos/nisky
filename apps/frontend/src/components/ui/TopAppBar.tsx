@@ -12,7 +12,7 @@ import type { Reminder, Task } from "@/types/entities";
 const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
 
 const titles: Record<string, string> = {
-  "/": "Mi semana",
+  "/": "Mi día",
   "/tasks": "Planificación y tareas",
   "/focus": "Modo enfoque",
   "/journal": "Diario",

@@ -76,7 +76,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between gap-3 border-b border-outline-variant pb-4 sm:items-end">
           <div>
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-              MI SEMANA
+              MI DÍA
             </p>
             <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">
               Hola, {user?.name ?? "usuario"}

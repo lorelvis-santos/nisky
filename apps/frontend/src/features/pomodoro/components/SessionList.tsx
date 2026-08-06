@@ -37,7 +37,7 @@ export function SessionList({ sessions }: { sessions: PomodoroSession[] }) {
         onClick={() => setExpanded((current) => !current)}
         type="button"
       >
-        <div>
+        <div className="min-w-0">
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">TU ACTIVIDAD</p>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
             {completedWork.length} {completedWork.length === 1 ? "Pomodoro" : "Pomodoros"} · {formatDuration(totalWorkSec)} enfocado

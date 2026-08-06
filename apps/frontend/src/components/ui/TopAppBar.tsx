@@ -1,6 +1,7 @@
 "use client";
 
 import { AlarmClock, Bell, CalendarClock, ChevronRight, History, ListTodo, Menu, Pause, Play, Square, UserCircle, X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -47,7 +48,7 @@ export function TopAppBar({ onMenu }: { onMenu: () => void }) {
       <div className="flex items-center gap-element-gap-sm">
         <div className="flex items-center gap-element-gap-md md:hidden">
           <button aria-label="Abrir menú" className="text-on-surface-variant hover:text-primary" onClick={onMenu} type="button"><Menu size={20} /></button>
-          <span className="font-headline-sm text-headline-sm font-bold text-primary">Nisky</span>
+          <Link aria-label="Ir a Mi día" className="font-headline-sm text-headline-sm font-bold text-primary hover:underline" href="/">Nisky</Link>
         </div>
         {pomodoro.activeSession && pomodoro.remainingSec !== null && <div className="flex items-center gap-1 border border-outline-variant bg-surface-container-lowest px-2 py-1"><button aria-label={pomodoro.activeSession.status === "PAUSED" ? "Reanudar Pomodoro" : "Pausar Pomodoro"} className="text-primary hover:text-primary-container" onClick={() => void togglePause()} type="button">{pomodoro.activeSession.status === "PAUSED" ? <Play size={14} /> : <Pause size={14} />}</button><button aria-label="Abrir Pomodoro" className="font-data-mono text-data-mono text-xs text-primary hover:underline" onClick={() => router.push(`/focus${pomodoro.activeSession?.taskId ? `?taskId=${encodeURIComponent(pomodoro.activeSession.taskId)}` : ""}`)} type="button">{formatPomodoroTime(pomodoro.remainingSec)}</button><button aria-label="Cancelar Pomodoro" className="text-on-surface-variant hover:text-error" onClick={() => void cancel()} type="button"><Square size={13} /></button></div>}
       </div>

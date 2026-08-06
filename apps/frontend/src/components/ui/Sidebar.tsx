@@ -44,7 +44,7 @@ export function Sidebar({ user, open, onClose }: { user: User | null; open: bool
       {open && <button aria-label="Cerrar menú" className="fixed inset-0 z-40 bg-on-surface/20 md:hidden" onClick={onClose} type="button" />}
       <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-outline-variant bg-surface transition-transform duration-150 md:static md:z-auto md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-14 items-center justify-between border-b border-outline-variant px-container-padding">
-          <h1 className="font-headline-sm text-headline-sm font-bold text-primary">Nisky</h1>
+          <Link className="font-headline-sm text-headline-sm font-bold text-primary hover:underline" href="/">Nisky</Link>
           <button aria-label="Cerrar menú" className="text-on-surface-variant md:hidden" onClick={onClose} type="button"><X size={20} /></button>
         </div>
         <div className="border-b border-outline-variant px-container-padding py-3">

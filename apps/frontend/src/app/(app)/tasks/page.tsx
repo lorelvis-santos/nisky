@@ -233,7 +233,7 @@ function TasksPageContent() {
         <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus tareas. Inténtalo de nuevo.</div>
       ) : (
         <>
-          <div className="min-h-0 flex-1 flex-col overflow-y-auto lg:hidden">
+          <div className="min-h-0 flex-1 flex-col overflow-y-auto pb-20 lg:hidden">
             <DayList
               dayOrder={visibleDayOrder}
               isDragging={isDragging}

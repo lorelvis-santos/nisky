@@ -30,7 +30,7 @@ export function MobileBacklog({
   onDragStateChange: (dragging: boolean) => void;
   onStartPomodoro: (task: Task) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   return (
     <aside className="shrink-0 border-t border-outline-variant bg-surface-bright">

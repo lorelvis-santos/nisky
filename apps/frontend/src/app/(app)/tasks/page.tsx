@@ -7,10 +7,13 @@ import { toast } from "sonner";
 import type { Task, TaskPriority } from "@/types/entities";
 import { archiveQuickNote } from "@/features/quicknotes/api/quicknotes";
 import { BacklogPanel } from "@/features/tasks/components/BacklogPanel";
+import { DayList } from "@/features/tasks/components/DayList";
+import { MobileBacklog } from "@/features/tasks/components/MobileBacklog";
 import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
 import { WeekNavigation } from "@/features/tasks/components/WeekNavigation";
-import { WeeklyGrid, dateKey } from "@/features/tasks/components/WeeklyGrid";
+import { WeeklyGrid } from "@/features/tasks/components/WeeklyGrid";
 import { useTaskMutations, useTaskQuery, useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { dateKey } from "@/lib/tasks";
 import { localDateKey } from "@/lib/utils";
 
 const emptyTasks: Task[] = [];
@@ -46,7 +49,16 @@ function useModalUrl() {
     openCreate: () => {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("taskId");
+      params.delete("prefill");
+      params.delete("quickNoteId");
       params.set("modal", "create");
+      navigateWithModal(params);
+    },
+    openCreateWithDate: (dueDate: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("taskId");
+      params.set("modal", "create");
+      params.set("prefill", encodeURIComponent(JSON.stringify({ title: "", dueDate })));
       navigateWithModal(params);
     },
     close: () => {
@@ -81,9 +93,8 @@ function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
     const parsed: unknown = JSON.parse(decodeURIComponent(value));
     if (!parsed || typeof parsed !== "object") return undefined;
     const source = parsed as Record<string, unknown>;
-    if (typeof source.title !== "string" || !source.title.trim()) return undefined;
     return {
-      title: source.title.trim(),
+      title: typeof source.title === "string" ? source.title.trim() : "",
       dueDate: typeof source.dueDate === "string" ? source.dueDate : "",
       status: "PENDING",
       priority: "NORMAL",
@@ -210,14 +221,6 @@ function TasksPageContent() {
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">MI SEMANA</p>
             <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">Mis tareas</h1>
           </div>
-          <button
-            aria-label="Nueva tarea"
-            className="flex shrink-0 items-center gap-1.5 border border-outline-variant bg-surface px-3 py-2 font-body-sm text-body-sm text-primary hover:bg-surface-container-high sm:hidden"
-            onClick={openCreate}
-            type="button"
-          >
-            <Plus size={15} /> Nueva tarea
-          </button>
         </div>
         <div className="flex items-center justify-between gap-3 sm:justify-end">
           <span className="font-data-mono text-data-mono text-xs text-on-surface-variant sm:hidden">{weekLabel(weekStart)}</span>
@@ -229,34 +232,72 @@ function TasksPageContent() {
       ) : query.isError ? (
         <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus tareas. Inténtalo de nuevo.</div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
-          <WeeklyGrid
-            dayOrder={visibleDayOrder}
-            isDragging={isDragging}
-            onDragStateChange={setIsDragging}
-            onMoveTask={(taskId, dueDate) => void moveTask(taskId, dueDate)}
-            onOpen={openEdit}
-            onReorder={(key, ids) => void handleReorder(key, ids)}
-            onStartPomodoro={openFocus}
-            onToggle={(task) => void toggleTask(task)}
-            tasks={tasks}
-            weekStart={weekStart}
-          />
-          <BacklogPanel
-            onCreate={openCreate}
-            onDragStateChange={setIsDragging}
-            onMoveTask={(taskId) => void moveTask(taskId, null)}
-            onOpen={openEdit}
-            onPriority={setPriority}
-            onSearch={setSearch}
-            onStartPomodoro={openFocus}
-            onToggle={(task) => void toggleTask(task)}
-            priority={priority}
-            search={search}
-            tasks={backlog}
-          />
-        </div>
+        <>
+          <div className="min-h-0 flex-1 flex-col overflow-y-auto lg:hidden">
+            <DayList
+              dayOrder={visibleDayOrder}
+              isDragging={isDragging}
+              onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
+              onDragStateChange={setIsDragging}
+              onMoveTask={(taskId, dueDate) => void moveTask(taskId, dueDate)}
+              onOpen={openEdit}
+              onReorder={(key, ids) => void handleReorder(key, ids)}
+              onStartPomodoro={openFocus}
+              onToggle={(task) => void toggleTask(task)}
+              tasks={tasks}
+              weekStart={weekStart}
+            />
+            <MobileBacklog
+              onCreate={openCreate}
+              onDragStateChange={setIsDragging}
+              onMoveTask={(taskId) => void moveTask(taskId, null)}
+              onOpen={openEdit}
+              onPriority={setPriority}
+              onSearch={setSearch}
+              onStartPomodoro={openFocus}
+              onToggle={(task) => void toggleTask(task)}
+              priority={priority}
+              search={search}
+              tasks={backlog}
+            />
+          </div>
+          <div className="hidden min-h-0 flex-1 lg:flex">
+            <WeeklyGrid
+              dayOrder={visibleDayOrder}
+              isDragging={isDragging}
+              onDragStateChange={setIsDragging}
+              onMoveTask={(taskId, dueDate) => void moveTask(taskId, dueDate)}
+              onOpen={openEdit}
+              onReorder={(key, ids) => void handleReorder(key, ids)}
+              onStartPomodoro={openFocus}
+              onToggle={(task) => void toggleTask(task)}
+              tasks={tasks}
+              weekStart={weekStart}
+            />
+            <BacklogPanel
+              onCreate={openCreate}
+              onDragStateChange={setIsDragging}
+              onMoveTask={(taskId) => void moveTask(taskId, null)}
+              onOpen={openEdit}
+              onPriority={setPriority}
+              onSearch={setSearch}
+              onStartPomodoro={openFocus}
+              onToggle={(task) => void toggleTask(task)}
+              priority={priority}
+              search={search}
+              tasks={backlog}
+            />
+          </div>
+        </>
       )}
+      <button
+        aria-label="Nueva tarea"
+        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center border border-outline-variant bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container lg:hidden"
+        onClick={openCreate}
+        type="button"
+      >
+        <Plus size={22} />
+      </button>
       {modalOpen && (!modalUrl.state.taskId || editingTask) && (
         <TaskModal
           initialForm={initialForm}

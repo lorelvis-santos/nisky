@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const onLogout = () => {
       clearSession();
       setIsLoading(false);
-      router.replace("/login");
+      router.replace("/login?expired=1");
     };
     window.addEventListener("auth:refreshed", onRefreshed);
     window.addEventListener("auth:logout", onLogout);

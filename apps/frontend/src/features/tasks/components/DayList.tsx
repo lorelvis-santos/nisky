@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { useState } from "react";
 import type { Task } from "@/types/entities";
 import { dateKey } from "@/lib/tasks";
 import { useTouchTaskDrag } from "../hooks/useTouchTaskDrag";
@@ -40,6 +41,7 @@ export function DayList({
 }) {
   const today = dateKey(new Date());
   const drag = useTouchTaskDrag({ tasks, dayOrder, onMoveTask, onReorder, onDragStateChange });
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
   const weekDays = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + index);
@@ -92,9 +94,13 @@ export function DayList({
           .filter((task): task is Task => Boolean(task));
         const isToday = key === today;
         return (
-          <section data-day-key={key} key={key} onDragOver={(event) => event.preventDefault()} onDrop={(event) => {
+          <section data-day-key={key} key={key} onDragOver={(event) => {
+            event.preventDefault();
+            if (orderedTasks.length === 0) setDropTarget(`${key}:empty`);
+          }} onDrop={(event) => {
             event.preventDefault();
             const taskId = event.dataTransfer.getData("text/task-id");
+            setDropTarget(null);
             if (!taskId) return;
             const sourceTask = tasks.find((task) => task.id === taskId);
             const sourceKey = sourceTask?.dueDate ? dateKey(sourceTask.dueDate) : "";
@@ -113,20 +119,30 @@ export function DayList({
                 <Plus size={15} />
               </button>
             </header>
-            <div className="flex flex-col gap-3 border border-outline-variant bg-surface-container-lowest p-3">
+            <div className={`flex flex-col gap-3 border bg-surface-container-lowest p-3 ${dropTarget === `${key}:empty` ? "border-2 border-dashed border-primary bg-primary-container/10" : "border-outline-variant"}`}>
               {orderedTasks.length === 0 ? (
-                isDragging ? (
-                  <span className="py-2 text-center font-body-sm text-body-sm text-on-surface-variant">Suelta aquí una tarea</span>
+                isDragging || dropTarget === `${key}:empty` ? (
+                  <span className={`py-2 text-center font-body-sm text-body-sm ${dropTarget === `${key}:empty` ? "text-primary" : "text-on-surface-variant"}`}>Suelta aquí una tarea</span>
                 ) : null
               ) : (
                 orderedTasks.map((task, taskIndex) => (
                   <TaskCard
                     key={task.id}
-                    isDropTarget={drag.touchDropTarget?.key === key && drag.touchDropTarget.index === taskIndex}
+                    isDropTarget={dropTarget === `${key}:${taskIndex}` || (drag.touchDropTarget?.key === key && drag.touchDropTarget.index === taskIndex)}
                     onDragHandleDown={drag.handleDragHandleDown}
                     onDragHandleMove={drag.handleDragHandleMove}
                     onDragHandleUp={drag.handleDragHandleUp}
                     onDragStateChange={onDragStateChange}
+                    onDragOver={() => setDropTarget(`${key}:${taskIndex}`)}
+                    onDrop={(event) => {
+                      event.stopPropagation();
+                      setDropTarget(null);
+                      const taskId = event.dataTransfer.getData("text/task-id");
+                      if (!taskId || taskId === task.id) return;
+                      const sourceTask = tasks.find((item) => item.id === taskId);
+                      const sourceKey = sourceTask?.dueDate ? dateKey(sourceTask.dueDate) : "";
+                      drag.applyDrop(taskId, sourceKey, key, taskIndex);
+                    }}
                     onOpen={() => onOpen(task)}
                     onStartPomodoro={() => onStartPomodoro(task)}
                     onToggle={() => onToggle(task)}

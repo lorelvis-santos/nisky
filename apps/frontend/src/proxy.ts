@@ -8,7 +8,12 @@ export function proxy(request: NextRequest) {
   const isAuthPath = authPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
   const isProtectedPath = pathname === "/" || pathname === "/settings" || pathname.startsWith("/settings/");
 
-  if (hasRefreshCookie && isAuthPath) return NextResponse.redirect(new URL("/", request.url));
+  // expired=1 marks an auto-logout after a failed token refresh: the cookie may
+  // still be present client-side, so skip the bounce or /login would redirect
+  // back to "/" forever.
+  if (hasRefreshCookie && isAuthPath && !request.nextUrl.searchParams.has("expired")) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
   if (!hasRefreshCookie && isProtectedPath) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);

@@ -33,6 +33,7 @@ export async function refreshAccessToken(): Promise<AuthResponse | null> {
       return result;
     } catch {
       setAccessToken(null);
+      void axios.post(`${API_URL}/auth/logout`, {}, { withCredentials: true, timeout: 5000 }).catch(() => undefined);
       emit("auth:logout");
       return null;
     } finally {

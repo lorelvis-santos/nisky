@@ -35,7 +35,7 @@ export function TaskCard({
   return (
     <article
       aria-label={`Tarea: ${task.title}`}
-      className={`group relative flex min-h-[112px] cursor-grab flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline active:cursor-grabbing ${completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant"} ${overdue ? "border-l-2 border-l-error" : ""} ${isDropTarget ? "border-t-2 border-t-primary" : ""}`}
+      className={`group relative flex min-h-[112px] cursor-grab flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline active:cursor-grabbing ${completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant"} ${overdue ? "border-l-2 border-l-error" : ""} ${isDropTarget ? "border-2 border-primary bg-primary-container/20" : ""}`}
       data-task-card
       data-task-id={task.id}
       draggable

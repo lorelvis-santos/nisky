@@ -40,18 +40,49 @@ export function DayList({
 }) {
   const today = dateKey(new Date());
   const drag = useTouchTaskDrag({ tasks, dayOrder, onMoveTask, onReorder, onDragStateChange });
-  const days = Array.from({ length: 7 }, (_, index) => {
+  const weekDays = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + index);
     return date;
-  }).filter((day) => {
+  });
+  const currentWeek = weekDays.some((day) => dateKey(day) === today);
+
+  const overdueTasks = tasks
+    .filter((task) => task.dueDate && dateKey(task.dueDate) < today)
+    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.order - b.order);
+
+  const visibleDays = (currentWeek
+    ? [weekDays.find((day) => dateKey(day) === today)!, ...weekDays.filter((day) => dateKey(day) > today)]
+    : weekDays
+  ).filter((day) => {
     const key = dateKey(day);
     return key === today || tasks.some((task) => task.dueDate && dateKey(task.dueDate) === key);
   });
 
   return (
     <div className="flex-1 space-y-4 p-container-padding">
-      {days.map((day) => {
+      {currentWeek && overdueTasks.length > 0 && (
+        <section>
+          <header className="sticky top-0 z-10 flex items-center justify-between border-b border-outline-variant border-t-2 border-t-error bg-surface px-3 py-2">
+            <span className="font-data-mono text-data-mono text-xs font-bold uppercase text-error">
+              Vencidas ({overdueTasks.length})
+            </span>
+          </header>
+          <div className="flex flex-col gap-3 border border-outline-variant bg-surface-container-lowest p-3">
+            {overdueTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                onDragStateChange={onDragStateChange}
+                onOpen={() => onOpen(task)}
+                onStartPomodoro={() => onStartPomodoro(task)}
+                onToggle={() => onToggle(task)}
+                task={task}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+      {visibleDays.map((day) => {
         const key = dateKey(day);
         const dayTasks = tasks.filter((task) => task.dueDate && dateKey(task.dueDate) === key);
         const taskById = new Map(dayTasks.map((task) => [task.id, task]));
@@ -69,8 +100,8 @@ export function DayList({
             const sourceKey = sourceTask?.dueDate ? dateKey(sourceTask.dueDate) : "";
             drag.applyDrop(taskId, sourceKey, key, orderedTasks.length);
           }}>
-            <header className={`sticky top-0 z-10 flex items-center justify-between border-b px-3 py-2 ${isToday ? "border-t-2 border-t-primary bg-secondary-container/40" : "border-outline-variant bg-surface"}`}>
-              <span className={`font-data-mono text-data-mono text-xs uppercase ${isToday ? "font-bold text-primary" : "text-on-surface-variant"}`}>
+            <header className={`sticky top-0 z-10 flex items-center justify-between border-b px-3 py-2 ${isToday ? "border-t-2 border-t-primary bg-secondary-container text-primary" : "border-outline-variant bg-surface"}`}>
+              <span className={`font-data-mono text-data-mono text-xs uppercase ${isToday ? "font-bold" : "text-on-surface-variant"}`}>
                 {isToday ? `HOY · ${dayLabel(day)}` : dayLabel(day)}
               </span>
               <button

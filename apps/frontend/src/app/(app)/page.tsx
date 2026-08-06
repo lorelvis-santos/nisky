@@ -22,22 +22,6 @@ import {
 import { formatRelativeDate, isTaskOverdue, localDateKey } from "@/lib/utils";
 import type { QuickNote, Task } from "@/types/entities";
 
-function dayKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function weekDaysFromToday() {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + ((7 - end.getDay()) % 7));
-  const days: Date[] = [];
-  for (let current = new Date(start); current <= end; current.setDate(current.getDate() + 1)) {
-    days.push(new Date(current));
-  }
-  return days;
-}
-
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -57,25 +41,12 @@ export default function DashboardPage() {
     (task) => task.status !== "COMPLETED" && task.status !== "CANCELLED",
   );
   const todayKey = localDateKey(new Date());
-  const days = weekDaysFromToday();
-  const tasksByDay = (day: Date) => {
-    const key = dayKey(day);
-    const dayTasks = tasks.filter((task) => task.dueDate && localDateKey(task.dueDate) === key);
-    if (key !== todayKey) return dayTasks;
-    const overdue = tasks.filter((task) => task.dueDate && localDateKey(task.dueDate) < key);
-    return [...overdue, ...dayTasks];
-  };
-  const dayLabel = (day: Date) => {
-    const diff = Math.round((day.getTime() - days[0].getTime()) / 86_400_000);
-    if (diff === 0) return "HOY";
-    if (diff === 1) return "MAÑANA";
-    if (diff === 2) return "PASADO MAÑANA";
-    return day.toLocaleDateString("es-CO", { weekday: "long" }).toUpperCase();
-  };
-  const dayDateLine = (day: Date) => day.toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric" });
-  const weekLabel = days.length === 1
-    ? dayDateLine(days[0])
-    : `${days[0].toLocaleDateString("es-CO", { day: "2-digit", month: "long" })} — ${days[days.length - 1].toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric" })}`;
+  const todayTasks = tasks.filter((task) => task.dueDate && localDateKey(task.dueDate) === todayKey);
+  const overdueTasks = tasks
+    .filter((task) => task.dueDate && localDateKey(task.dueDate) < todayKey)
+    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""));
+  const todayView = [...overdueTasks, ...todayTasks];
+  const todayTitle = new Date().toLocaleDateString("es-CO", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 
   const toggleTask = async (task: Task) => {
     try {
@@ -131,10 +102,10 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low p-container-padding">
                 <div>
                   <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-                    Tu semana
+                    Tareas de hoy
                   </p>
                   <h2 className="mt-1 font-headline-xs text-headline-xs">
-                    {weekLabel}
+                    {todayTitle}
                   </h2>
                 </div>
                 <Link
@@ -161,10 +132,10 @@ export default function DashboardPage() {
                       Ir a mis tareas
                     </Link>
                   </div>
-                ) : tasks.length === 0 ? (
+                ) : todayView.length === 0 ? (
                   <div className="flex flex-col gap-2 p-container-padding">
                     <p className="font-body-md text-body-md">
-                      Tu semana está despejada. ¡Sin tareas pendientes!
+                      Tu día está despejado. ¡Sin tareas para hoy!
                     </p>
                     <Link
                       className="font-body-sm text-body-sm text-primary underline"
@@ -175,41 +146,38 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3 p-container-padding">
-                    {days.map((day) => {
-                      const dayTasks = tasksByDay(day);
-                      return (
-                        <div className="border border-outline-variant" key={dayKey(day)}>
-                          <div className="flex items-start justify-between gap-3 border-b border-outline-variant bg-surface-container-low px-4 py-3">
-                            <div>
-                              <p className={`font-label-caps text-label-caps ${dayTasks.length > 0 ? "text-primary" : "text-on-surface-variant"}`}>
-                                {dayLabel(day)}
-                              </p>
-                              <p className="mt-0.5 font-data-mono text-data-mono text-xs text-on-surface-variant">
-                                {dayDateLine(day)}
-                              </p>
-                            </div>
-                            {dayTasks.length > 0 && (
-                              <span className="shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant">
-                                {dayTasks.length} {dayTasks.length === 1 ? "tarea" : "tareas"}
-                              </span>
-                            )}
-                          </div>
-                          {dayTasks.length === 0 ? (
-                            <p className="px-4 py-3 font-body-sm text-body-sm text-on-surface-variant">
-                              Nada planeado
-                            </p>
-                          ) : (
-                            dayTasks.map((task) => (
-                              <DashboardTask
-                                key={task.id}
-                                onToggle={() => void toggleTask(task)}
-                                task={task}
-                              />
-                            ))
-                          )}
+                    {overdueTasks.length > 0 && (
+                      <div className="border border-outline-variant">
+                        <div className="border-b border-outline-variant bg-surface-container-low px-4 py-3">
+                          <p className="font-label-caps text-label-caps text-error">
+                            Vencidas ({overdueTasks.length})
+                          </p>
                         </div>
-                      );
-                    })}
+                        {overdueTasks.map((task) => (
+                          <DashboardTask
+                            key={task.id}
+                            onToggle={() => void toggleTask(task)}
+                            task={task}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {todayTasks.length > 0 && (
+                      <div className="border border-outline-variant">
+                        <div className="border-b border-outline-variant bg-surface-container-low px-4 py-3">
+                          <p className="font-label-caps text-label-caps text-primary">
+                            Hoy ({todayTasks.length})
+                          </p>
+                        </div>
+                        {todayTasks.map((task) => (
+                          <DashboardTask
+                            key={task.id}
+                            onToggle={() => void toggleTask(task)}
+                            task={task}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

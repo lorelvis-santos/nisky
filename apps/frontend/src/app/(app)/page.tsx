@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowRight, CheckSquare2, Circle, Timer } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckSquare2, Circle, PenLine, Timer } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
@@ -102,7 +102,7 @@ export default function DashboardPage() {
   return (
     <section className="h-full overflow-y-auto bg-background p-container-padding">
       <div className="flex flex-col gap-section-gap">
-        <div className="flex flex-col gap-1 border-b border-outline-variant pb-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex items-center justify-between gap-3 border-b border-outline-variant pb-4 sm:items-end">
           <div>
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
               MI SEMANA
@@ -111,6 +111,18 @@ export default function DashboardPage() {
               Hola, {user?.name ?? "usuario"}
             </h1>
           </div>
+          <button
+            aria-label="Escribir una nota rápida"
+            className="flex shrink-0 items-center gap-1.5 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-primary hover:bg-surface-container-high sm:hidden"
+            onClick={() => {
+              const input = document.getElementById("quick-capture-input");
+              input?.scrollIntoView({ behavior: "smooth", block: "center" });
+              (input as HTMLTextAreaElement | null)?.focus();
+            }}
+            type="button"
+          >
+            <PenLine size={15} /> Nota rápida
+          </button>
         </div>
 
         <div className="grid grid-cols-1 items-start gap-section-gap lg:grid-cols-12">

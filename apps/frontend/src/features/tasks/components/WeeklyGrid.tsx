@@ -38,6 +38,9 @@ export function WeeklyGrid({
   onStartPomodoro: (task: Task) => void;
 }) {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [touchDropTarget, setTouchDropTarget] = useState<{ key: string; index: number } | null>(null);
+  const touchDragRef = useRef<{ taskId: string; sourceKey: string } | null>(null);
+  const touchDropTargetRef = useRef<{ key: string; index: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const today = dateKey(new Date());
   const days = Array.from({ length: 7 }, (_, index) => {
@@ -58,6 +61,77 @@ export function WeeklyGrid({
     el.scrollLeft = Math.min(Math.max(target, 0), maxScroll);
   }, []);
 
+  const orderedIdsFor = (key: string) => {
+    const dayTasks = tasks.filter((task) => task.dueDate && dateKey(task.dueDate) === key);
+    const taskById = new Map(dayTasks.map((task) => [task.id, task]));
+    const configuredIds = dayOrder[key] ?? dayTasks.map((task) => task.id);
+    return [
+      ...configuredIds.map((taskId) => taskById.get(taskId)).filter((task): task is Task => Boolean(task)).map((task) => task.id),
+      ...dayTasks.filter((task) => !configuredIds.includes(task.id)).map((task) => task.id),
+    ];
+  };
+
+  const applyDrop = (taskId: string, sourceKey: string, targetKey: string, targetIndex: number) => {
+    if (sourceKey === targetKey) {
+      const ids = orderedIdsFor(targetKey);
+      const sourceIndex = ids.indexOf(taskId);
+      if (sourceIndex < 0 || sourceIndex === targetIndex) return;
+      const next = [...ids];
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(Math.min(targetIndex, next.length), 0, moved);
+      onReorder(targetKey, next);
+      return;
+    }
+    onMoveTask(taskId, targetKey);
+    onReorder(targetKey, [...orderedIdsFor(targetKey), taskId]);
+  };
+
+  const handleDragHandleDown = (event: React.PointerEvent<HTMLButtonElement>, taskId: string) => {
+    if (event.pointerType === "mouse") return;
+    const task = tasks.find((item) => item.id === taskId);
+    touchDragRef.current = { taskId, sourceKey: task?.dueDate ? dateKey(task.dueDate) : "" };
+    touchDropTargetRef.current = null;
+    setTouchDropTarget(null);
+    onDragStateChange(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleDragHandleMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!touchDragRef.current) return;
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const column = (element as HTMLElement | null)?.closest?.("[data-day-key]");
+    if (!column) {
+      touchDropTargetRef.current = null;
+      setTouchDropTarget(null);
+      return;
+    }
+    const key = (column as HTMLElement).dataset.dayKey ?? "";
+    const taskId = touchDragRef.current.taskId;
+    const cards = Array.from(column.querySelectorAll<HTMLElement>("[data-task-card]")).filter((card) => card.dataset.taskId !== taskId);
+    let index = cards.length;
+    for (let i = 0; i < cards.length; i += 1) {
+      const rect = cards[i].getBoundingClientRect();
+      if (event.clientY < rect.top + rect.height / 2) {
+        index = i;
+        break;
+      }
+    }
+    const next = { key, index };
+    touchDropTargetRef.current = next;
+    setTouchDropTarget(next);
+  };
+
+  const handleDragHandleUp = () => {
+    const drag = touchDragRef.current;
+    touchDragRef.current = null;
+    if (!drag) return;
+    onDragStateChange(false);
+    const target = touchDropTargetRef.current;
+    touchDropTargetRef.current = null;
+    setTouchDropTarget(null);
+    if (target) applyDrop(drag.taskId, drag.sourceKey, target.key, target.index);
+  };
+
   return (
     <div ref={scrollRef} className="h-[520px] min-h-[520px] flex-none overflow-auto bg-surface-container-low p-3 lg:h-auto lg:min-h-0 lg:flex-1">
       <div className="grid min-w-[1798px] grid-cols-[repeat(7,minmax(250px,1fr))] gap-2">
@@ -68,23 +142,14 @@ export function WeeklyGrid({
               (task) => task.dueDate && dateKey(task.dueDate) === key,
             );
             const taskById = new Map(dayTasks.map((task) => [task.id, task]));
-            const configuredIds = dayOrder[key] ?? dayTasks.map((task) => task.id);
-            const orderedTasks = [
-              ...configuredIds.map((taskId) => taskById.get(taskId)).filter((task): task is Task => Boolean(task)),
-              ...dayTasks.filter((task) => !configuredIds.includes(task.id)),
-            ];
-            const reorderAt = (taskId: string, targetIndex: number) => {
-              const sourceIndex = orderedTasks.findIndex((task) => task.id === taskId);
-              if (sourceIndex < 0 || sourceIndex === targetIndex) return;
-              const next = orderedTasks.map((task) => task.id);
-              const [moved] = next.splice(sourceIndex, 1);
-              next.splice(Math.min(targetIndex, next.length), 0, moved);
-              onReorder(key, next);
-            };
+            const orderedTasks = orderedIdsFor(key)
+              .map((taskId) => taskById.get(taskId))
+              .filter((task): task is Task => Boolean(task));
             const isToday = key === today;
             return (
               <div
                 className="flex min-h-[480px] min-w-0 flex-col gap-2"
+                data-day-key={key}
                 data-today={isToday ? "true" : undefined}
                 key={key}
                 onDragOver={(event) => event.preventDefault()}
@@ -94,12 +159,8 @@ export function WeeklyGrid({
                   setDropTarget(null);
                   if (!taskId) return;
                   const sourceTask = tasks.find((task) => task.id === taskId);
-                  if (sourceTask?.dueDate && dateKey(sourceTask.dueDate) === key) {
-                    reorderAt(taskId, orderedTasks.length - 1);
-                    return;
-                  }
-                  onMoveTask(taskId, key);
-                  onReorder(key, [...orderedTasks.map((task) => task.id), taskId]);
+                  const sourceKey = sourceTask?.dueDate ? dateKey(sourceTask.dueDate) : "";
+                  applyDrop(taskId, sourceKey, key, orderedTasks.length);
                 }}
               >
                 <div
@@ -118,7 +179,10 @@ export function WeeklyGrid({
                     orderedTasks.map((task, taskIndex) => (
                       <TaskCard
                         key={task.id}
-                        isDropTarget={dropTarget === `${key}:${taskIndex}`}
+                        isDropTarget={dropTarget === `${key}:${taskIndex}` || (touchDropTarget?.key === key && touchDropTarget.index === taskIndex)}
+                        onDragHandleDown={handleDragHandleDown}
+                        onDragHandleMove={handleDragHandleMove}
+                        onDragHandleUp={handleDragHandleUp}
                         onDragStateChange={onDragStateChange}
                         onDragOver={() => setDropTarget(`${key}:${taskIndex}`)}
                         onDrop={(event) => {
@@ -127,16 +191,8 @@ export function WeeklyGrid({
                           const taskId = taskIdFromDrop(event);
                           if (!taskId || taskId === task.id) return;
                           const sourceTask = tasks.find((item) => item.id === taskId);
-                          if (!sourceTask?.dueDate || dateKey(sourceTask.dueDate) !== key) {
-                            onMoveTask(taskId, key);
-                            onReorder(key, [
-                              ...orderedTasks.slice(0, taskIndex).map((item) => item.id),
-                              taskId,
-                              ...orderedTasks.slice(taskIndex).map((item) => item.id),
-                            ]);
-                            return;
-                          }
-                          reorderAt(taskId, taskIndex);
+                          const sourceKey = sourceTask?.dueDate ? dateKey(sourceTask.dueDate) : "";
+                          applyDrop(taskId, sourceKey, key, taskIndex);
                         }}
                         onOpen={() => onOpen(task)}
                         onStartPomodoro={() => onStartPomodoro(task)}

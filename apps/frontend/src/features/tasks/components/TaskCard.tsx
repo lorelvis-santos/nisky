@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, CheckSquare2, Circle, MoreHorizontal, Play, Timer } from "lucide-react";
+import { AlertCircle, CheckCircle2, CheckSquare2, Circle, GripVertical, MoreHorizontal, Play, Timer } from "lucide-react";
 import type { Task } from "@/types/entities";
 import { isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "./PriorityChip";
@@ -12,6 +12,9 @@ export function TaskCard({
   onDrop,
   isDropTarget,
   onStartPomodoro,
+  onDragHandleDown,
+  onDragHandleMove,
+  onDragHandleUp,
 }: {
   task: Task;
   onOpen: () => void;
@@ -21,6 +24,9 @@ export function TaskCard({
   onDrop?: (event: React.DragEvent<HTMLElement>) => void;
   isDropTarget?: boolean;
   onStartPomodoro?: () => void;
+  onDragHandleDown?: (event: React.PointerEvent<HTMLButtonElement>, taskId: string) => void;
+  onDragHandleMove?: (event: React.PointerEvent<HTMLButtonElement>) => void;
+  onDragHandleUp?: () => void;
 }) {
   const completed = task.status === "COMPLETED";
   const overdue = isTaskOverdue(task);
@@ -30,6 +36,8 @@ export function TaskCard({
     <article
       aria-label={`Tarea: ${task.title}`}
       className={`group relative flex min-h-[112px] cursor-grab flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline active:cursor-grabbing ${completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant"} ${overdue ? "border-l-2 border-l-error" : ""} ${isDropTarget ? "border-t-2 border-t-primary" : ""}`}
+      data-task-card
+      data-task-id={task.id}
       draggable
       onDoubleClick={onOpen}
       onDragEnd={() => onDragStateChange?.(false)}
@@ -76,14 +84,32 @@ export function TaskCard({
             </p>
           </button>
         </div>
-        <button
-          aria-label={`Más detalles de ${task.title}`}
-          className="mt-0.5 shrink-0 text-on-surface-variant opacity-50 transition-opacity hover:text-primary group-hover:opacity-100"
-          onClick={onOpen}
-          type="button"
-        >
-          <MoreHorizontal size={17} />
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          {onDragHandleDown && (
+            <button
+              aria-label={`Arrastrar ${task.title}`}
+              className="pointer-coarse:flex hidden cursor-grab touch-none items-center p-1 text-on-surface-variant hover:text-primary active:cursor-grabbing"
+              onPointerCancel={onDragHandleUp}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                onDragHandleDown?.(event, task.id);
+              }}
+              onPointerMove={onDragHandleMove}
+              onPointerUp={onDragHandleUp}
+              type="button"
+            >
+              <GripVertical size={16} />
+            </button>
+          )}
+          <button
+            aria-label={`Más detalles de ${task.title}`}
+            className="mt-0.5 shrink-0 text-on-surface-variant opacity-50 transition-opacity hover:text-primary group-hover:opacity-100"
+            onClick={onOpen}
+            type="button"
+          >
+            <MoreHorizontal size={17} />
+          </button>
+        </div>
       </div>
       <div className="ml-7 mt-auto flex flex-wrap items-center justify-between gap-2">
         <PriorityChip priority={task.priority} />

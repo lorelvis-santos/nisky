@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import type { Task, TaskPriority } from "@/types/entities";
@@ -204,9 +205,19 @@ function TasksPageContent() {
   return (
     <section className="flex h-full min-h-0 flex-col bg-surface">
       <div className="flex shrink-0 flex-col gap-3 border-b border-outline-variant bg-surface-bright p-container-padding sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">MI SEMANA</p>
-          <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">Mis tareas</h1>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">MI SEMANA</p>
+            <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">Mis tareas</h1>
+          </div>
+          <button
+            aria-label="Nueva tarea"
+            className="flex shrink-0 items-center gap-1.5 border border-outline-variant bg-surface px-3 py-2 font-body-sm text-body-sm text-primary hover:bg-surface-container-high sm:hidden"
+            onClick={openCreate}
+            type="button"
+          >
+            <Plus size={15} /> Nueva tarea
+          </button>
         </div>
         <div className="flex items-center justify-between gap-3 sm:justify-end">
           <span className="font-data-mono text-data-mono text-xs text-on-surface-variant sm:hidden">{weekLabel(weekStart)}</span>

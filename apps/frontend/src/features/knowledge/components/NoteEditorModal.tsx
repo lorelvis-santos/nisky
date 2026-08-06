@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Pin, X } from "lucide-react";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import type { Note } from "@/types/entities";
 import { noteFormSchema, type NoteForm } from "../schemas/knowledge.schema";
 
@@ -36,6 +37,8 @@ export function NoteEditorModal({
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  useModalScrollLock();
+
   const set = <K extends keyof NoteForm>(key: K, value: NoteForm[K]) => setForm((current) => ({ ...current, [key]: value }));
 
   const submit = async () => {
@@ -68,7 +71,7 @@ export function NoteEditorModal({
           <h2 className="font-headline-xs text-headline-xs font-bold text-primary">{note ? "Editar nota" : "Nueva nota"}</h2>
           <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button"><X size={19} /></button>
         </div>
-        <div className="space-y-4 overflow-y-auto p-5">
+        <div className="space-y-4 overflow-y-auto p-5" data-modal-scroll>
           <label className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">TÍTULO</span>
             <input autoFocus className="field mt-1" maxLength={200} onChange={(event) => set("title", event.target.value)} value={form.title} />

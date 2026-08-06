@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Archive, ArchiveRestore, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useHabitsQuery, useHabitMutations } from "../hooks/useHabits";
 
 export function HabitManager({ onClose }: { onClose: () => void }) {
@@ -11,6 +12,8 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
   const [newName, setNewName] = useState("");
   const [names, setNames] = useState<Record<string, string>>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  useModalScrollLock();
 
   const create = async () => {
     const name = newName.trim();
@@ -74,7 +77,7 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
           <h2 className="font-headline-xs text-headline-xs font-bold text-primary">Gestionar hábitos</h2>
           <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button"><X size={19} /></button>
         </div>
-        <div className="space-y-4 overflow-y-auto p-5">
+        <div className="space-y-4 overflow-y-auto p-5" data-modal-scroll>
           <div className="flex gap-2">
             <input className="field" onChange={(event) => setNewName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void create(); }} placeholder="Nuevo hábito..." value={newName} />
             <button className="border border-outline-variant px-3 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={() => void create()} type="button">Añadir</button>

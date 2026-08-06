@@ -37,7 +37,7 @@ export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: Quic
   return (
     <div className="flex min-h-[250px] flex-col">
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <textarea aria-label="Nota rápida" className="min-h-28 flex-1 resize-none border-0 bg-transparent p-0 font-body-sm text-body-sm text-on-surface outline-none placeholder:text-on-surface-variant focus:ring-0" onChange={(event) => { setDraft(event.target.value); setSaveState("idle"); }} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void save(); } }} placeholder="Escribe algo para revisarlo después..." value={draft} />
+        <textarea aria-label="Nota rápida" className="min-h-28 flex-1 resize-none border-0 bg-transparent p-0 font-body-sm text-body-sm text-on-surface outline-none placeholder:text-on-surface-variant focus:ring-0" id="quick-capture-input" onChange={(event) => { setDraft(event.target.value); setSaveState("idle"); }} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void save(); } }} placeholder="Escribe algo para revisarlo después..." value={draft} />
         {detected && <span className="inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha detectada: {detected.label}</span>}
         <div className="flex items-center justify-between gap-3 border-t border-outline-variant pt-3">
           <span className="font-body-sm text-body-sm text-on-surface-variant">{saveState === "saving" ? "Guardando..." : saveState === "saved" ? "Guardado" : `${draft.length} caracteres`}</span>
@@ -52,7 +52,7 @@ export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: Quic
             <p className="font-label-caps text-label-caps text-on-surface-variant">BANDEJA DE ENTRADA</p>
             {inboxNotes.length > 8 && <button aria-label={`Ver todas las capturas (${inboxNotes.length})`} className="font-label-caps text-label-caps text-primary hover:underline" onClick={() => setAllOpen(true)} type="button">VER TODAS ({inboxNotes.length})</button>}
           </div>
-          <div className="max-h-[220px] overflow-y-auto">{inboxNotes.slice(0, 8).map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)}</div>
+          <div>{inboxNotes.slice(0, 8).map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)}</div>
         </div>
       )}
       <div className="flex justify-end border-t border-outline-variant p-3">

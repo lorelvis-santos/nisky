@@ -106,7 +106,7 @@ function buildNotices(tasks: Task[], reminders: Reminder[]) {
 
 function NotificationPanel({ notices, onClose, onOpen }: { notices: Notice[]; onClose: () => void; onOpen: (url: string) => void }) {
   return (
-    <div className="absolute right-0 top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] border border-outline-variant bg-surface-container-lowest p-3 text-left">
+    <div className="fixed inset-x-4 top-14 z-50 border border-outline-variant bg-surface-container-lowest p-3 text-left sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[22rem]">
       <div className="flex items-center justify-between border-b border-outline-variant pb-3">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">AVISOS</p>

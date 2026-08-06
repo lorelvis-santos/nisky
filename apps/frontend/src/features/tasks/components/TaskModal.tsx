@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Timer, X } from "lucide-react";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import type { Task, TaskPriority, TaskStatus } from "@/types/entities";
 import { useTaskQuery } from "../hooks/useTasks";
 import { taskSchema } from "../schemas/task.schema";
@@ -70,6 +71,8 @@ export function TaskModal({
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  useModalScrollLock();
+
   if (!task && current) return null;
   const subtasks = current?.subtasks ?? [];
   const submit = async () => {
@@ -129,7 +132,7 @@ export function TaskModal({
             </button>
           </div>
         </div>
-        <div className="space-y-4 overflow-y-auto p-5">
+        <div className="space-y-4 overflow-y-auto p-5" data-modal-scroll>
            <label className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">
               TÍTULO

@@ -3,6 +3,7 @@
 import { ArchiveRestore, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import type { QuickNote } from "@/types/entities";
 import { formatCreatedAt } from "@/lib/utils";
 import { useQuickNoteMutations, useQuickNotesQuery } from "../hooks/useQuickNotes";
@@ -40,6 +41,8 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
   const notes = query.data ?? [];
   const inbox = view === "inbox";
 
+  useModalScrollLock();
+
   return (
     <div aria-modal="true" className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]" role="dialog">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col border border-outline-variant bg-surface">
@@ -50,7 +53,7 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
           </div>
           <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button"><X size={19} /></button>
         </div>
-        <div className="overflow-y-auto p-5">
+        <div className="overflow-y-auto p-5" data-modal-scroll>
           {query.isLoading ? <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando capturas...</p> : query.isError ? <p className="font-body-sm text-body-sm text-error">{inbox ? "Ups, no pudimos cargar tus capturas. Inténtalo de nuevo." : "Ups, no pudimos cargar las capturas archivadas. Inténtalo de nuevo."}</p> : notes.length === 0 ? <p className="font-body-sm text-body-sm text-on-surface-variant">{inbox ? "Aún no tienes capturas." : "Aún no hay capturas archivadas."}</p> : inbox && onConvertToTask ? (
             notes.map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)
           ) : (

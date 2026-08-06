@@ -76,6 +76,7 @@ export function TasksDnDProvider({
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overContainerId, setOverContainerId] = useState<string | null>(null);
+  const [activeDragSize, setActiveDragSize] = useState<{ width: number; height: number } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -123,6 +124,8 @@ export function TasksDnDProvider({
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
+      const initialRect = event.active.rect.current.initial;
+      setActiveDragSize(initialRect ? { width: initialRect.width, height: initialRect.height } : null);
       setActiveId(String(event.active.id));
       onDragStateChange(true);
     },
@@ -138,6 +141,7 @@ export function TasksDnDProvider({
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
+      setActiveDragSize(null);
       setActiveId(null);
       setOverContainerId(null);
       onDragStateChange(false);
@@ -178,6 +182,7 @@ export function TasksDnDProvider({
   );
 
   const handleDragCancel = useCallback(() => {
+    setActiveDragSize(null);
     setActiveId(null);
     setOverContainerId(null);
     onDragStateChange(false);
@@ -196,7 +201,7 @@ export function TasksDnDProvider({
     >
       <TasksDnDContext.Provider value={contextValue}>{children}</TasksDnDContext.Provider>
       <DragOverlay dropAnimation={null}>
-        {activeTask ? (activeTask.dueDate ? <TaskCardGhost task={activeTask} /> : <BacklogItemGhost task={activeTask} />) : null}
+        {activeTask ? (activeTask.dueDate ? <TaskCardGhost task={activeTask} height={activeDragSize?.height} width={activeDragSize?.width} /> : <BacklogItemGhost task={activeTask} height={activeDragSize?.height} width={activeDragSize?.width} />) : null}
       </DragOverlay>
     </DndContext>
   );

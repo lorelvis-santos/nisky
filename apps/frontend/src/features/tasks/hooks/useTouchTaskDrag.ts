@@ -18,7 +18,7 @@ export function useTouchTaskDrag({
   onDragStateChange: (dragging: boolean) => void;
 }) {
   const [touchDropTarget, setTouchDropTarget] = useState<{ key: string; index: number } | null>(null);
-  const touchDragRef = useRef<{ taskId: string; sourceKey: string } | null>(null);
+  const touchDragRef = useRef<{ taskId: string; sourceKey: string; card: HTMLElement | null } | null>(null);
   const touchDropTargetRef = useRef<{ key: string; index: number } | null>(null);
 
   const orderedIdsFor = (key: string) => {
@@ -49,11 +49,14 @@ export function useTouchTaskDrag({
   const handleDragHandleDown = (event: React.PointerEvent<HTMLButtonElement>, taskId: string) => {
     if (event.pointerType === "mouse") return;
     const task = tasks.find((item) => item.id === taskId);
-    touchDragRef.current = { taskId, sourceKey: task?.dueDate ? dateKey(task.dueDate) : "" };
+    const card = event.currentTarget.closest<HTMLElement>("[data-task-card]");
+    if (card) card.draggable = false;
+    touchDragRef.current = { taskId, sourceKey: task?.dueDate ? dateKey(task.dueDate) : "", card };
     touchDropTargetRef.current = null;
     setTouchDropTarget(null);
     onDragStateChange(true);
     event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
   };
 
   const handleDragHandleMove = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -85,6 +88,7 @@ export function useTouchTaskDrag({
     const drag = touchDragRef.current;
     touchDragRef.current = null;
     if (!drag) return;
+    if (drag.card) drag.card.draggable = true;
     onDragStateChange(false);
     const target = touchDropTargetRef.current;
     touchDropTargetRef.current = null;

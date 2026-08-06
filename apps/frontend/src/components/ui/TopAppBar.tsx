@@ -117,7 +117,7 @@ function NotificationPanel({ notices, onClose, onOpen }: { notices: Notice[]; on
       {notices.length === 0 ? (
         <p className="px-1 py-5 font-body-sm text-body-sm text-on-surface-variant">No tienes avisos pendientes.</p>
       ) : (
-        <div className="max-h-80 overflow-y-auto divide-y divide-outline-variant">
+        <div className="max-h-80 overflow-y-auto divide-y divide-outline-variant pr-1 [scrollbar-gutter:stable]">
           {notices.map((notice) => (
             <button className="flex w-full items-start gap-3 py-3 text-left hover:bg-surface-container-low" key={notice.id} onClick={() => onOpen(notice.url)} type="button">
               <span className="mt-0.5 shrink-0 text-primary">{notice.kind === "task" ? <ListTodo size={16} /> : <AlarmClock size={16} />}</span>

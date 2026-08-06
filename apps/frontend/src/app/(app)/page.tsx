@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowRight, CheckSquare2, Circle, PenLine, Timer } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckSquare2,
+  Circle,
+  PenLine,
+  Timer,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
@@ -41,12 +48,19 @@ export default function DashboardPage() {
     (task) => task.status !== "COMPLETED" && task.status !== "CANCELLED",
   );
   const todayKey = localDateKey(new Date());
-  const todayTasks = tasks.filter((task) => task.dueDate && localDateKey(task.dueDate) === todayKey);
+  const todayTasks = tasks.filter(
+    (task) => task.dueDate && localDateKey(task.dueDate) === todayKey,
+  );
   const overdueTasks = tasks
     .filter((task) => task.dueDate && localDateKey(task.dueDate) < todayKey)
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""));
   const todayView = [...overdueTasks, ...todayTasks];
-  const todayTitle = new Date().toLocaleDateString("es-CO", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+  const todayTitle = new Date().toLocaleDateString("es-CO", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 
   const toggleTask = async (task: Task) => {
     try {
@@ -112,7 +126,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-1 font-label-caps text-label-caps text-primary hover:text-primary-container"
                   href="/tasks"
                 >
-                  VER TODAS <ArrowRight size={14} />
+                  VER MI SEMANA <ArrowRight size={14} />
                 </Link>
               </div>
               <div>
@@ -145,14 +159,9 @@ export default function DashboardPage() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-3 p-container-padding">
+                  <div className="flex flex-col">
                     {overdueTasks.length > 0 && (
-                      <div className="border border-outline-variant">
-                        <div className="border-b border-outline-variant bg-surface-container-low px-4 py-3">
-                          <p className="font-label-caps text-label-caps text-error">
-                            Vencidas ({overdueTasks.length})
-                          </p>
-                        </div>
+                      <div className="border-b border-outline-variant">
                         {overdueTasks.map((task) => (
                           <DashboardTask
                             key={task.id}
@@ -163,12 +172,7 @@ export default function DashboardPage() {
                       </div>
                     )}
                     {todayTasks.length > 0 && (
-                      <div className="border border-outline-variant">
-                        <div className="border-b border-outline-variant bg-surface-container-low px-4 py-3">
-                          <p className="font-label-caps text-label-caps text-primary">
-                            Hoy ({todayTasks.length})
-                          </p>
-                        </div>
+                      <div>
                         {todayTasks.map((task) => (
                           <DashboardTask
                             key={task.id}
@@ -264,7 +268,10 @@ function DashboardTask({
 }) {
   const overdue = isTaskOverdue(task);
   const subtaskTotal = task.subtaskCount ?? task.subtasks?.length ?? 0;
-  const completedSubtasks = task.completedSubtasks ?? task.subtasks?.filter((subtask) => subtask.completed).length ?? 0;
+  const completedSubtasks =
+    task.completedSubtasks ??
+    task.subtasks?.filter((subtask) => subtask.completed).length ??
+    0;
   return (
     <div
       className={`group flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-container-low ${overdue ? "border-l-2 border-l-error" : ""}`}
@@ -289,15 +296,37 @@ function DashboardTask({
             <p
               className={`mt-1 flex items-center gap-1.5 font-data-mono text-data-mono text-xs ${overdue ? "text-error" : "text-on-surface-variant"}`}
             >
-              {overdue && <AlertCircle aria-label="Vencida" className="shrink-0 text-error" size={13} />}
-              <span>{overdue ? "Vencida " : "Vence "}{formatRelativeDate(task.dueDate, true)}</span>
+              {overdue && (
+                <AlertCircle
+                  aria-label="Vencida"
+                  className="shrink-0 text-error"
+                  size={13}
+                />
+              )}
+              <span>
+                {overdue ? "Vencida " : "Vence "}
+                {formatRelativeDate(task.dueDate, true)}
+              </span>
             </p>
           )}
         </div>
       </div>
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-        <span className="flex items-center gap-1 whitespace-nowrap font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
-        {subtaskTotal > 0 && <span className="flex items-center gap-1 whitespace-nowrap font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
+        <span
+          className="flex items-center gap-1 whitespace-nowrap font-data-mono text-data-mono text-xs text-tertiary"
+          title="Pomodoros"
+        >
+          <Timer size={13} /> {task.pomodoroCount ?? 0}/
+          {task.pomodoroEstimate ?? 0}
+        </span>
+        {subtaskTotal > 0 && (
+          <span
+            className="flex items-center gap-1 whitespace-nowrap font-data-mono text-data-mono text-xs text-secondary"
+            title="Subtareas"
+          >
+            <CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}
+          </span>
+        )}
         <PriorityChip priority={task.priority} />
         <Link
           aria-label={`Ver detalle de ${task.title}`}

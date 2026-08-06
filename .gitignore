@@ -28,3 +28,6 @@ apps/frontend/src/features/habits/components/LICENSE
 apps/frontend/src/features/habits/components/README.md
 apps/frontend/src/features/habits/components/index.d.ts
 apps/frontend/src/features/habits/components/package.json
+
+# Next.js dev-generated types (regenerates on every dev/build)
+apps/frontend/next-env.d.ts

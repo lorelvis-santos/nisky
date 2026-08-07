@@ -3,7 +3,6 @@
 import { ChevronDown, Plus, Search } from "lucide-react";
 import { useState } from "react";
 import type { Task, TaskPriority } from "@/types/entities";
-import { cn } from "@/lib/utils";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SortableBacklogItem } from "./BacklogItem";
 import { DroppableColumn } from "../dnd/DroppableColumn";
@@ -36,7 +35,11 @@ export function MobileBacklog({
   const orderedIds = tasks.map((task) => taskDragId(task.id));
 
   return (
-    <aside className="shrink-0 border-t border-outline-variant bg-surface-bright">
+    <DroppableColumn
+      className="shrink-0 border-t border-outline-variant bg-surface-bright"
+      highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
+      id={BACKLOG_CONTAINER}
+    >
       <div className="flex items-center justify-between px-container-padding">
         <button aria-expanded={open} className="flex flex-1 items-center justify-between py-4 text-left" onClick={() => setOpen((current) => !current)} type="button">
           <div>
@@ -64,16 +67,13 @@ export function MobileBacklog({
               <option value="LOW">Bajas</option>
             </select>
           </div>
-          <DroppableColumn
-            className={cn(
-              "min-h-0 space-y-2 p-3",
-              tasks.length === 0 && isHighlight && "border-2 border-dashed border-primary bg-primary-container/10",
-            )}
-            highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
-            id={BACKLOG_CONTAINER}
-          >
+          <div className="min-h-0 space-y-2 p-3">
             {tasks.length === 0 ? (
-              <p className="py-8 text-center font-body-sm text-body-sm text-on-surface-variant">Todo al día. No hay tareas sin fecha.</p>
+              isHighlight ? (
+                <span className="block py-8 text-center font-body-sm text-body-sm text-primary">Suelta aquí una tarea</span>
+              ) : (
+                <p className="py-8 text-center font-body-sm text-body-sm text-on-surface-variant">Todo al día. No hay tareas sin fecha.</p>
+              )
             ) : (
               <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
                 {tasks.map((task) => (
@@ -87,9 +87,9 @@ export function MobileBacklog({
                 ))}
               </SortableContext>
             )}
-          </DroppableColumn>
+          </div>
         </div>
       )}
-    </aside>
+    </DroppableColumn>
   );
 }

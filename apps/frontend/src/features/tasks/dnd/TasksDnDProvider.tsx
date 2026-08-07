@@ -7,10 +7,11 @@ import {
   PointerSensor,
   TouchSensor,
   closestCorners,
+  pointerWithin,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/core";
+import type { CollisionDetection, DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { Task } from "@/types/entities";
@@ -56,6 +57,12 @@ function findTask(tasks: Task[], id: string): Task | null {
 function containerOf(task: Task): string {
   return task.dueDate ? dayContainerId(dateKey(task.dueDate)) : BACKLOG_CONTAINER;
 }
+
+const pointerFirstCollision: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) return pointerCollisions;
+  return closestCorners(args);
+};
 
 export function TasksDnDProvider({
   tasks,
@@ -187,7 +194,7 @@ export function TasksDnDProvider({
 
   return (
     <DndContext
-      collisionDetection={closestCorners}
+      collisionDetection={pointerFirstCollision}
       onDragCancel={handleDragCancel}
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}

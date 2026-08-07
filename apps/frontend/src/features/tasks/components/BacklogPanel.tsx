@@ -2,7 +2,6 @@
 
 import { Plus, Search } from "lucide-react";
 import type { Task, TaskPriority } from "@/types/entities";
-import { cn } from "@/lib/utils";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SortableBacklogItem } from "./BacklogItem";
 import { DroppableColumn } from "../dnd/DroppableColumn";
@@ -33,7 +32,11 @@ export function BacklogPanel({
   const isHighlight = overContainerId === BACKLOG_CONTAINER;
   const orderedIds = tasks.map((task) => taskDragId(task.id));
   return (
-    <aside className="flex h-[420px] min-h-[420px] w-full shrink-0 flex-none flex-col bg-surface-bright lg:h-full lg:min-h-0 lg:w-80 lg:flex-none">
+    <DroppableColumn
+      className="flex h-[420px] min-h-[420px] w-full shrink-0 flex-none flex-col bg-surface-bright lg:h-full lg:min-h-0 lg:w-80 lg:flex-none"
+      highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
+      id={BACKLOG_CONTAINER}
+    >
       <div className="flex items-center justify-between border-b border-outline-variant p-container-padding">
         <div>
           <h2 className="font-headline-sm text-headline-sm text-primary">
@@ -82,18 +85,17 @@ export function BacklogPanel({
           <option value="LOW">Bajas</option>
         </select>
       </div>
-      <DroppableColumn
-        className={cn(
-          "min-h-0 flex-1 space-y-2 overflow-y-auto p-3",
-          tasks.length === 0 && isHighlight && "border-2 border-dashed border-primary bg-primary-container/10",
-        )}
-        highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
-        id={BACKLOG_CONTAINER}
-      >
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {tasks.length === 0 ? (
-          <p className="py-8 text-center font-body-sm text-body-sm text-on-surface-variant">
-            Todo al día. No hay tareas sin fecha.
-          </p>
+          isHighlight ? (
+            <span className="block py-8 text-center font-body-sm text-body-sm text-primary">
+              Suelta aquí una tarea
+            </span>
+          ) : (
+            <p className="py-8 text-center font-body-sm text-body-sm text-on-surface-variant">
+              Todo al día. No hay tareas sin fecha.
+            </p>
+          )
         ) : (
           <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
             {tasks.map((task) => (
@@ -107,7 +109,7 @@ export function BacklogPanel({
             ))}
           </SortableContext>
         )}
-      </DroppableColumn>
-    </aside>
+      </div>
+    </DroppableColumn>
   );
 }

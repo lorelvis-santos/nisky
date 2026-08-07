@@ -205,3 +205,21 @@ export interface KnowledgeFacets {
   categories: FacetCount[];
   tags: FacetCount[];
 }
+
+export type FeedbackCategory = "BUG" | "IDEA" | "IMPROVEMENT" | "OTHER";
+export type FeedbackStatus = "NEW" | "REVIEWING" | "RESOLVED";
+
+export interface Feedback {
+  id: string;
+  userId: string;
+  category: FeedbackCategory;
+  message: string;
+  contactEmail: string | null;
+  status: FeedbackStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FeedbackWithAuthor extends Feedback {
+  user: { id: string; email: string; name: string | null };
+}

@@ -8,6 +8,7 @@ import { UserManagement } from "@/components/admin/UserManagement";
 import { MoodleManager } from "@/components/moodle/MoodleManager";
 import { MoodleTasksList } from "@/components/moodle/MoodleTasksList";
 import { PushSubscriptionManager } from "@/components/pwa/PushSubscriptionManager";
+import { FeedbackAdminPanel } from "@/components/feedback/FeedbackAdminPanel";
 
 type Tab = "profile" | "security" | "notifications" | "moodle" | "admin";
 
@@ -78,6 +79,10 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <h3 className="font-headline-xs text-headline-xs">Usuarios</h3>
                 <UserManagement />
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-headline-xs text-headline-xs">Feedback</h3>
+                <FeedbackAdminPanel />
               </div>
             </div>
           )}

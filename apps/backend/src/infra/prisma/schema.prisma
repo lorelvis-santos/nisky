@@ -35,6 +35,7 @@ model User {
   pushSubscriptions PushSubscription[]
   reminders      Reminder[]
   moodleAccounts MoodleAccount[]
+  feedback      Feedback[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -328,4 +329,32 @@ model MoodleAccount {
 
   @@unique([userId, domain])
   @@index([userId])
+}
+
+enum FeedbackCategory {
+  BUG
+  IDEA
+  IMPROVEMENT
+  OTHER
+}
+
+enum FeedbackStatus {
+  NEW
+  REVIEWING
+  RESOLVED
+}
+
+model Feedback {
+  id           String           @id @default(uuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     FeedbackCategory
+  message      String           @db.Text
+  contactEmail String?
+  status       FeedbackStatus   @default(NEW)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }

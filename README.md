@@ -1,51 +1,77 @@
 # Nisky
 
-Tu espacio para organizar el día, tareas, hábitos y notas.
+Organiza tus días, tus tareas, tus hábitos y tus notas desde un solo lugar.
 
-Nisky te ayuda a planificar la semana, capturar ideas al vuelo, mantener buenos hábitos, concentrarte con Pomodoro, escribir en tu diario privado y tener todo el conocimiento que construyes a un clic.
+Nisky reúne en un solo lugar todo lo que necesitas para organizar tu día a día. Planifica tu semana, gestiona tus tareas, crea hábitos, toma notas, escribe en tu diario y mantén el foco cuando más lo necesites.
 
-## Lo que incluye
+## Lo que puedes hacer
 
-- **Tareas**: planificación semanal con arrastrar y soltar, y una lista de pendientes para lo que aún no tiene fecha.
-- **Hábitos**: registra tus rachas diarias sin complicarte.
-- **Capturas rápidas**: anota imprevistos al instante y conviértelos en tarea con fecha detectada automáticamente.
-- **Pomodoro**: modo enfoque para concentrarte en una tarea, con historial y estadísticas.
-- **Diario y notas**: un diario que se cifra en el servidor y una base de conocimiento con tus notas organizadas.
-- **Recordatorios**: avisos dentro de la app y notificaciones push, con repetición y posponer.
-- **Moodle**: conecta tu cuenta y trae tus tareas del aula a la misma lista.
+* **Tareas:** organiza tu semana con un tablero de arrastrar y soltar, además de una lista para todo lo que aún no tiene fecha.
+* **Hábitos:** registra tus hábitos diarios y sigue tus rachas de forma sencilla.
+* **Capturas rápidas:** guarda cualquier idea, pendiente o recordatorio en segundos. Más tarde puedes revisarlo y, si lo deseas, convertirlo en una tarea.
+* **Pomodoro:** concéntrate en una tarea con el modo de enfoque y consulta tu historial y estadísticas.
+* **Diario y notas:** escribe en un diario cifrado en el servidor y guarda tus apuntes en una base de conocimiento organizada.
+* **Recordatorios:** recibe avisos dentro de la aplicación y notificaciones push, con opciones para repetir o posponer.
+* **Moodle:** conecta tu cuenta para importar las tareas de tu aula virtual. Se integran como tareas nativas de Nisky para que puedas planificar tu semana sin cambiar de aplicación.
 
 ## Próximamente
 
-- **Módulos a tu medida**: activa o desactiva los módulos que necesitas desde tu cuenta — la app se adapta a cada quien, no al revés.
-- **Gestión de clientes**: pensada para freelancers — tus clientes, los proyectos en curso, los pagos pendientes, el seguimiento de mantenimientos y la generación de facturas.
-- **Finanzas**: un vistazo claro de tus cuentas, ingresos y gastos. Si usas SURE, puedes conectarlo igual que Moodle (con un dominio y una API key) para traer tu estado financiero; sin conectarlo, el módulo funciona por sí solo.
+* **Módulos personalizables:** activa únicamente las funciones que necesites para que la aplicación se adapte a tu forma de trabajar.
+* **Gestión de clientes:** un espacio pensado para freelancers donde podrás administrar clientes, proyectos, mantenimientos, pagos pendientes y generar facturas.
+* **Finanzas:** lleva un control claro de tus ingresos, gastos y cuentas desde un solo lugar.
 
 ## Stack
 
-- **Backend**: Bun + Express 5 + Prisma 7 + PostgreSQL.
-- **Frontend**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + shadcn/ui.
-- **Infra**: Docker Compose (Postgres + MinIO).
+**Backend**
 
-## Estado
+* Bun
+* Express 5
+* Prisma 7
+* PostgreSQL
 
-Fase 1 (gestión diaria) completada. Detalle por iteración en [`PROJECT_STATUS.md`](./PROJECT_STATUS.md), alcance completo en [`PROJECT_PLAN.md`](./PROJECT_PLAN.md), reglas de desarrollo en [`AGENTS.md`](./AGENTS.md).
+**Frontend**
+
+* Next.js 16 (App Router)
+* React 19
+* Tailwind CSS 4
+* shadcn/ui
+
+**Infraestructura**
+
+* Docker Compose
+* PostgreSQL
+* MinIO
+
+## Estado del proyecto
+
+La primera fase, centrada en la gestión diaria, ya está completada.
+
+El progreso de cada iteración se encuentra en `PROJECT_STATUS.md`, el alcance completo del proyecto en `PROJECT_PLAN.md` y las reglas de desarrollo en `AGENTS.md`.
 
 ## Inicio rápido
 
+Levanta los servicios necesarios:
+
 ```bash
 docker compose up -d
-cd apps/backend && bun install
+
+cd apps/backend
+bun install
 bun run db:migrate -- --name init
 bun run db:seed
-bun run dev                       # backend en :4000
+bun run dev
 ```
 
-En otra terminal:
+El backend estará disponible en `http://localhost:4000`.
+
+En otra terminal, inicia el frontend:
 
 ```bash
-cd apps/frontend && bun install && bun run dev    # frontend en :3000
+cd apps/frontend
+bun install
+bun run dev
 ```
 
-Cliente Moodle (opcional): `apps/backend/scripts/setup_moodle.sh`.
+El frontend estará disponible en `http://localhost:3000`.
 
-Reglas y convenciones: ver `AGENTS.md`.
+Para conocer las convenciones y reglas del proyecto, consulta `AGENTS.md`.

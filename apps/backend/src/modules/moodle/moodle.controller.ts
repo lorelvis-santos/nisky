@@ -16,7 +16,11 @@ export class MoodleController {
   };
 
   disconnect = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
-    try { await moodleService.disconnect(userId(req), req.params.id); res.success({ success: true }); } catch (error) { next(error); }
+    try { res.success(await moodleService.disconnect(userId(req), req.params.id)); } catch (error) { next(error); }
+  };
+
+  clean = async (req: Request, res: Response, next: NextFunction) => {
+    try { res.success(await moodleService.cleanIntegrationTasks(userId(req))); } catch (error) { next(error); }
   };
 
   list = async (req: Request, res: Response, next: NextFunction) => {

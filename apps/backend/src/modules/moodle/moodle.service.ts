@@ -76,8 +76,32 @@ export class MoodleService {
   }
 
   async disconnect(userId: string, id: string) {
-    const result = await prisma.moodleAccount.deleteMany({ where: { id, userId } });
-    if (result.count !== 1) throw new AppError("NOT_FOUND", "Cuenta de Moodle no encontrada");
+    const account = await prisma.moodleAccount.findFirst({ where: { id, userId } });
+    if (!account) throw new AppError("NOT_FOUND", "Cuenta de Moodle no encontrada");
+    const sourceRefPrefix = `moodle:${account.id}:`;
+    const deleted = await prisma.$transaction([
+      prisma.moodleAccount.delete({ where: { id: account.id } }),
+      prisma.task.deleteMany({
+        where: {
+          userId,
+          source: "MOODLE",
+          status: { in: ["PENDING", "IN_PROGRESS"] },
+          sourceRef: { startsWith: sourceRefPrefix },
+        },
+      }),
+    ]);
+    return { removed: deleted[1].count };
+  }
+
+  async cleanIntegrationTasks(userId: string) {
+    const result = await prisma.task.deleteMany({
+      where: {
+        userId,
+        source: "MOODLE",
+        status: { in: ["PENDING", "IN_PROGRESS"] },
+      },
+    });
+    return { removed: result.count };
   }
 
   async list(userId: string) {

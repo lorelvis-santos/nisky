@@ -2,10 +2,15 @@
 
 import { CheckCircle2, ExternalLink, GraduationCap, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import type { MoodleAccount } from "@/types/entities";
 
 type ConnectMode = "credentials" | "token";
+
+type ConfirmTarget = { kind: "clean" } | { kind: "disconnect"; id: string; host: string };
 
 export function MoodleManager() {
   const [accounts, setAccounts] = useState<MoodleAccount[]>([]);
@@ -19,6 +24,9 @@ export function MoodleManager() {
   const [mode, setMode] = useState<ConnectMode>("credentials");
   const [connecting, setConnecting] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [confirm, setConfirm] = useState<ConfirmTarget | null>(null);
+  const [pending, setPending] = useState(false);
 
   async function loadAccounts() {
     try {
@@ -71,13 +79,34 @@ export function MoodleManager() {
     }
   }
 
-  async function remove(id: string) {
-    setError(null);
+  function askRemove(account: MoodleAccount) {
+    setConfirm({ kind: "disconnect", id: account.id, host: new URL(account.domain).host });
+  }
+
+  function askClean() {
+    setConfirm({ kind: "clean" });
+  }
+
+  async function runConfirm() {
+    if (!confirm) return;
+    setPending(true);
     try {
-      await api.delete(`/moodle/${id}`);
-      setAccounts((prev) => prev.filter((a) => a.id !== id));
+      if (confirm.kind === "disconnect") {
+        await api.delete(`/moodle/${confirm.id}`);
+        setAccounts((prev) => prev.filter((a) => a.id !== confirm.id));
+        await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        toast.success("Cuenta desconectada y sus tareas pendientes eliminadas.");
+      } else {
+        await api.delete("/moodle/tasks");
+        await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        await loadAccounts();
+        toast.success("Tareas pendientes de Moodle eliminadas. Sincroniza para traerlas de nuevo.");
+      }
+      setConfirm(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo desconectar.");
+      toast.error(err instanceof Error ? err.message : "No se pudo completar la acción.");
+    } finally {
+      setPending(false);
     }
   }
 
@@ -195,7 +224,7 @@ export function MoodleManager() {
                 <button className="border border-outline-variant px-3 py-2 text-sm text-primary hover:bg-surface-container-high disabled:opacity-50" disabled={syncingId === account.id} onClick={() => void sync(account.id)} type="button" title="Sincronizar">
                   {syncingId === account.id ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
                 </button>
-                <button className="border border-outline-variant px-3 py-2 text-sm text-error hover:bg-error-container" onClick={() => void remove(account.id)} type="button" title="Desconectar">
+                <button className="border border-outline-variant px-3 py-2 text-sm text-error hover:bg-error-container" onClick={() => askRemove(account)} type="button" title="Desconectar">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -206,6 +235,32 @@ export function MoodleManager() {
         <p className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding font-body-sm text-body-sm text-on-surface-variant">
           Aún no has conectado tu Moodle.
         </p>
+      )}
+
+      <div className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding">
+        <h3 className="font-headline-xs text-headline-xs">Zona peligrosa</h3>
+        <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
+          Elimina todas las tareas pendientes de Moodle (de cuentas conectadas, desconectadas y de cuentas ajenas). Se conservan las completadas/canceladas. Sincroniza de nuevo para traerlas.
+        </p>
+        <button className="mt-3 border border-outline-variant px-4 py-2 font-body-md text-body-md text-error hover:bg-error-container disabled:opacity-50" disabled={pending} onClick={askClean} type="button">
+          Limpiar tareas de Moodle
+        </button>
+      </div>
+
+      {confirm && (
+        <ConfirmModal
+          confirmLabel={confirm.kind === "clean" ? "Eliminar tareas" : "Desconectar"}
+          danger
+          loading={pending}
+          message={
+            confirm.kind === "clean"
+              ? "Se borrarán todas las tareas pendientes de Moodle y tendrás que sincronizar de nuevo para tenerlas. Las tareas completadas o canceladas se conservan."
+              : "Se eliminará la conexión y se borrarán las tareas pendientes de Moodle de esta cuenta. Tendrás que conectar la integración de nuevo para tenerlas de vuelta."
+          }
+          onClose={() => !pending && setConfirm(null)}
+          onConfirm={() => void runConfirm()}
+          title={confirm.kind === "clean" ? "Limpiar tareas de Moodle" : `Desconectar ${confirm.host}`}
+        />
       )}
     </section>
   );

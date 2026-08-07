@@ -12,6 +12,7 @@ router.use(requireAuth);
 router.get("/", controller.list);
 router.post("/", validateBody(connectMoodleSchema), controller.connect);
 router.get("/tasks", validateQuery(moodleTaskQuerySchema), controller.tasks);
+router.delete("/tasks", controller.clean);
 router.post("/:id/sync", validateParams(idParamSchema), controller.sync);
 router.patch("/:id", validateParams(idParamSchema), validateBody(moodleEnabledSchema), controller.setEnabled);
 router.delete("/:id", validateParams(idParamSchema), controller.disconnect);

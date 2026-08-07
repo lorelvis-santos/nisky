@@ -14,7 +14,7 @@ La implementación actual se concentra en la Fase 1, Gestión diaria. Esta fase 
 3. Capturar imprevistos en una bandeja de entrada sin obligar a clasificarlos inmediatamente.
 4. Convertir una captura en tarea, sugiriendo automáticamente una fecha detectada en español.
 
-No se implementan todavía diario cifrado, base de conocimiento, CRM ni finanzas. Pomodoro ya está incluido en la Iteración 3. Las rutas placeholder restantes pueden mantenerse.
+Fase 1 completada incluye además: Pomodoro (Iteración 3), diario cifrado y base de conocimiento (Iteración 4), notificaciones push y recordatorios (Iteración 5) e integración con Moodle (Iteración 6). No se implementan todavía CRM, módulo comercial/financiero ni soporte.
 
 ## 2. Reglas no negociables
 
@@ -651,10 +651,7 @@ bun run build
 
 - Detección automática de importes, personas o categorías.
 - Conversión automática de una captura en deuda, evento o recordatorio especializado.
-- Recordatorios push/email.
-- Diario cifrado.
-- Pomodoro e historial de sesiones.
-- Drag-and-drop táctil avanzado; se conserva HTML5 drag-and-drop actual.
+- CRM, módulo comercial y financiero.
 - Reglas semánticas complejas para fechas ambiguas; Chrono solo genera sugerencias editables.
 
 ## 12. Iteración 3 implementada: Pomodoro
@@ -693,3 +690,62 @@ cd apps/backend
 bun run db:migrate -- --name add_pomodoro
 bun run db:generate
 ```
+
+## 13. Iteración 4 implementada: Diario cifrado y base de conocimiento
+
+### Backend
+
+- Modelo `JournalEntry` con cifrado AES-GCM en servidor: `contentCipher` (bytes), `iv` y `authTag`; el contenido nunca se guarda en claro.
+- Campos `classification` y `tags` por entrada; API en `/api/v1/journal`.
+- Modelo `Note` de base de conocimiento con `title`, `content`, `category`, `tags` y `pinned`; API en `/api/v1/knowledge`.
+
+### Frontend
+
+- Página `/journal` con CRUD de entradas cifradas.
+- Editor Markdown con toggle de preview (`254ee6b`).
+- Página `/knowledge` con tarjetas, categorías, notas fijadas y manejo de texto largo.
+
+## 14. Iteración 5 implementada: Notificaciones y recordatorios
+
+### Backend
+
+- `PushSubscription` persistida por usuario (endpoint, `p256dh`, `auth`) con VAPID; API en `/api/v1/push`.
+- `Reminder` con `triggerAt`, `timezone` (default `America/Bogota`), repetición `DAILY`/`WEEKLY`/`MONTHLY`, `repeatDaysOfWeek`, `repeatDayOfMonth` y `payload` JSON.
+- API en `/api/v1/reminders` con listado, `pending`, creación, actualización, borrado, `snooze` y `resolve`.
+- Recordatorios disparados quedan pendientes in-app hasta que el usuario los resuelve (`reminder_resolved_at`).
+
+### Frontend
+
+- PWA instalable: manifest completo, apple touch icon y service worker registrado también en dev.
+- Página `/reminders` con notificaciones pendientes, snooze y resolución.
+- Ajustes de push movidos a la pestaña de configuración.
+
+## 15. Iteración 6 implementada: Integración Moodle
+
+### Backend
+
+- `MoodleAccount` con `domain`, `username`, token cifrado AES-GCM (`tokenCipher`/`tokenIv`/`tokenAuthTag`), `service` `moodle_mobile_app`, `enabled`, `lastSyncAt` y `syncError`.
+- Cliente Python portable con venv local al repo (`scripts/setup_moodle.sh`, instala `curl_cffi`); el backend lo resuelve automáticamente y se puede sobreescribir con `MOODLE_PYTHON_BIN` / `MOODLE_PYTHON_SCRIPT`.
+- Tareas de Moodle como tareas reales: `Task.source` (`MANUAL`/`MOODLE`), `sourceRef`, unicidad `[userId, source, sourceRef]`, fechas normalizadas con zona horaria y archivado.
+- API en `/api/v1/moodle` para conectar, listar, sincronizar, habilitar/deshabilitar y desconectar cuentas; `/api/v1/moodle/tasks` para listar tareas remotas.
+
+### Migraciones
+
+```bash
+cd apps/backend
+bun run db:migrate -- --name add_journal_and_knowledge
+bun run db:migrate -- --name tasks_source_and_archive
+bun run db:migrate -- --name add_push_subscriptions_and_reminders
+bun run db:migrate -- --name add_moodle
+bun run db:migrate -- --name reminder_resolved_at
+bun run db:generate
+```
+
+## 16. Mejoras de producto acumuladas
+
+- Dashboard MI DIA separado de la planificación semanal; vista semana/lista con preferencia persistida y auto-scroll al día actual.
+- Drag & drop de tareas con dnd-kit (mango, reorden persistente por columna, movimiento entre días y backlog, colisión por puntero y ghost a tamaño real).
+- Pomodoro: flujo de focus simplificado, atajo en tarjeta de tarea y sesión activa en navbar.
+- Gestión de usuarios por admin y signup público configurable en runtime (`/api/v1/admin`, tabla `Setting`).
+- `/health`, Dockerfiles de producción y proxy API con `BACKEND_INTERNAL_URL`.
+- Auth/UI: toggles de visibilidad de contraseña, confirmación de contraseña al registrarse y limpieza de cache de React Query al logout.

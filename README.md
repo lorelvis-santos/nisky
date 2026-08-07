@@ -10,7 +10,7 @@ Plataforma multiusuario para gestión operativa, comercial y financiera, con foc
 
 ## Estado
 
-Fase 1 (Gestión diaria) en curso. Detalle por iteración en [`PROJECT_STATUS.md`](./PROJECT_STATUS.md), alcance completo en [`PROJECT_PLAN.md`](./PROJECT_PLAN.md), reglas de desarrollo en [`AGENTS.md`](./AGENTS.md).
+Fase 1 (Gestión diaria) completada: planificación semanal con drag & drop, hábitos, capturas rápidas, Pomodoro, diario cifrado, base de conocimiento, recordatorios con notificaciones push e integración con Moodle. Detalle por iteración en [`PROJECT_STATUS.md`](./PROJECT_STATUS.md), alcance completo en [`PROJECT_PLAN.md`](./PROJECT_PLAN.md), reglas de desarrollo en [`AGENTS.md`](./AGENTS.md).
 
 ## Inicio rápido
 

@@ -51,6 +51,46 @@
 - [x] Progreso de subtareas `completadas/total` en tareas y dashboard
 - [x] Migración, typecheck, lint, build y smoke test de integración
 
+## Fase 1: Gestión diaria - Iteración 4: Diario cifrado y base de conocimiento
+
+- [x] Modelo `JournalEntry` con cifrado AES-GCM en servidor (`contentCipher`, `iv`, `authTag`)
+- [x] CRUD de entradas de diario con título, clasificación y etiquetas
+- [x] Editor con toggle de preview Markdown
+- [x] Modelo `Note` de base de conocimiento con categoría, etiquetas y notas fijadas
+- [x] Página de conocimiento con tarjetas, editor y manejo de texto largo
+- [x] Migración Prisma, typecheck, lint, build y verificación de cifrado
+
+## Fase 1: Gestión diaria - Iteración 5: Notificaciones y recordatorios
+
+- [x] PWA instalable: manifest completo, apple touch icon y service worker en dev
+- [x] Suscripciones push persistidas (`PushSubscription`) con VAPID y notificación nativa
+- [x] Configuración de push en pestaña de ajustes
+- [x] Modelo `Reminder` con zona horaria y repetición diaria, semanal y mensual
+- [x] Recordatorios disparados quedan pendientes en la app hasta resolverse
+- [x] Snooze y resolución de recordatorios
+- [x] Página de recordatorios y filas de notificación responsive
+- [x] Migración, typecheck, lint, build y verificación PWA
+
+## Fase 1: Gestión diaria - Iteración 6: Integración Moodle
+
+- [x] Modelo `MoodleAccount` con token cifrado (AES-GCM), dominio, estado y `lastSyncAt`/`syncError`
+- [x] Cliente Python portable con venv local (`scripts/setup_moodle.sh` + `curl_cffi`)
+- [x] Tareas de Moodle como tareas reales: `Task.source` (`MANUAL`/`MOODLE`) y `sourceRef` único por usuario
+- [x] Fechas de Moodle normalizadas con zona horaria y archivado de tareas remotas
+- [x] Sync manual por cuenta y API `/api/v1/moodle`
+- [x] Migraciones de producción ordenadas (drop de `MoodleTask` tras `add_moodle`)
+- [x] Typecheck, lint, build y verificación de integración
+
+## Fase 1: Gestión diaria - Mejoras de producto
+
+- [x] Separación de dashboard MI DIA (hoy) y planificación (semana)
+- [x] Vista semana/lista con preferencia persistida y semana scrolleada al día actual
+- [x] Drag & drop con dnd-kit: mango, reorden persistente, movimiento entre días y backlog, colisión por puntero y ghost a tamaño real
+- [x] Pomodoro: flujo de focus simplificado, atajo en tarjeta de tarea y sesión activa en navbar
+- [x] Gestión de usuarios por admin y signup público configurable en runtime
+- [x] `/health`, Dockerfiles de producción y proxy API con `BACKEND_INTERNAL_URL`
+- [x] Mejoras de auth/UI: toggles de contraseña, confirmación al registrarse y limpieza de cache al logout
+
 ## Próxima iteración
 
-Diario cifrado y base de conocimiento.
+CRM, módulo comercial y financiero, y soporte.

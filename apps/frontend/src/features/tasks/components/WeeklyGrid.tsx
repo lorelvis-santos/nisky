@@ -83,6 +83,8 @@ export function WeeklyGrid({
                   {isEmpty ? (
                     isHighlight ? (
                       <span className="mt-2 text-center font-body-sm text-body-sm text-primary">Suelta aquí una tarea</span>
+                    ) : isToday ? (
+                      <span className="mt-2 text-center font-body-sm text-body-sm text-on-surface-variant">Sin tareas para hoy</span>
                     ) : null
                   ) : (
                     <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>

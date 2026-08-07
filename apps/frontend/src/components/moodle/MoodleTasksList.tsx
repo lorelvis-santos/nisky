@@ -1,7 +1,8 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "@/lib/api";
 import type { Task } from "@/types/entities";
 
@@ -24,32 +25,17 @@ function linkFromDescription(description: string | null) {
 }
 
 export function MoodleTasksList() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("pending");
 
-  async function load(status: StatusFilter = filter) {
-    setLoading(true);
-    try {
-      const { data } = await api.get<{ data: Task[] }>("/moodle/tasks", { params: { status, limit: 100 } });
-      setTasks(data.data);
-    } catch {
-      setError("No se pudieron cargar las tareas de Moodle.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["moodle-tasks", filter],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: Task[] }>("/moodle/tasks", { params: { status: filter, limit: 100 } });
+      return data.data;
+    },
+  });
 
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function switchFilter(next: StatusFilter) {
-    setFilter(next);
-    void load(next);
-  }
+  const tasks = data ?? [];
 
   return (
     <section className="space-y-4">
@@ -60,7 +46,7 @@ export function MoodleTasksList() {
             <button
               className={`px-3 py-1.5 font-label-caps text-label-caps uppercase ${filter === f ? "bg-primary-container text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
               key={f}
-              onClick={() => switchFilter(f)}
+              onClick={() => setFilter(f)}
               type="button"
             >
               {f === "pending" ? "Próximas" : f === "overdue" ? "Atrasadas" : "Todas"}
@@ -69,10 +55,10 @@ export function MoodleTasksList() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <p className="flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant"><Loader2 className="animate-spin" size={16} /> Cargando…</p>
       ) : error ? (
-        <p className="font-body-sm text-body-sm text-error">{error}</p>
+        <p className="font-body-sm text-body-sm text-error">No se pudieron cargar las tareas de Moodle.</p>
       ) : tasks.length === 0 ? (
         <p className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding font-body-sm text-body-sm text-on-surface-variant">
           No hay tareas{filter === "overdue" ? " atrasadas" : filter === "pending" ? " próximas" : ""}. Conecta tu Moodle en Ajustes.

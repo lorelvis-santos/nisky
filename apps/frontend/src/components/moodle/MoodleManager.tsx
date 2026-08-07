@@ -72,6 +72,8 @@ export function MoodleManager() {
     try {
       await api.post(`/moodle/${id}/sync`);
       await loadAccounts();
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      await queryClient.invalidateQueries({ queryKey: ["moodle-tasks"] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo sincronizar.");
     } finally {
@@ -95,10 +97,12 @@ export function MoodleManager() {
         await api.delete(`/moodle/${confirm.id}`);
         setAccounts((prev) => prev.filter((a) => a.id !== confirm.id));
         await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        await queryClient.invalidateQueries({ queryKey: ["moodle-tasks"] });
         toast.success("Cuenta desconectada y sus tareas pendientes eliminadas.");
       } else {
         await api.delete("/moodle/tasks");
         await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        await queryClient.invalidateQueries({ queryKey: ["moodle-tasks"] });
         await loadAccounts();
         toast.success("Tareas pendientes de Moodle eliminadas. Sincroniza para traerlas de nuevo.");
       }

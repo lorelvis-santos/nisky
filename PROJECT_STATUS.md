@@ -93,4 +93,7 @@
 
 ## Próxima iteración
 
-CRM, módulo comercial y financiero, y soporte.
+- **Módulos activables por usuario**: cada cuenta activa o desactiva módulos desde Configuración; los desactivados no aparecen en la navegación (núcleo por defecto: tareas, hábitos, capturas, Pomodoro).
+- **Gestión de clientes (freelance)**: información de clientes, proyectos en proceso, control de pagos, seguimiento a mantenimientos y generación de facturas.
+- **Finanzas**: registro local de cuentas, ingresos y gastos, con integración opcional a SURE (dominio + API key por usuario, patrón Moodle) para traer el estado financiero.
+- Soporte.

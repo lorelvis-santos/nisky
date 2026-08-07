@@ -749,3 +749,31 @@ bun run db:generate
 - Gestión de usuarios por admin y signup público configurable en runtime (`/api/v1/admin`, tabla `Setting`).
 - `/health`, Dockerfiles de producción y proxy API con `BACKEND_INTERNAL_URL`.
 - Auth/UI: toggles de visibilidad de contraseña, confirmación de contraseña al registrarse y limpieza de cache de React Query al logout.
+
+## 17. Próximas iteraciones (pendientes)
+
+### 17.1 Gestión de clientes
+
+Módulo pensado para usuarios freelance:
+
+- Información de clientes (datos de contacto, historia).
+- Proyectos en proceso con su estado.
+- Control de pagos por proyecto.
+- Seguimiento a mantenimientos.
+- Generación de facturas.
+
+### 17.2 Finanzas
+
+Dos capas, sin bloquear el módulo:
+
+1. **Modo local (default)**: implementación abstracta y sencilla del modelo de SURE — cuentas, ingresos, gastos y balances, funcional sin configuración.
+2. **Sync con SURE (opcional)**: al igual que Moodle, cada usuario conecta su dominio y API key (credencial cifrada, patrón `MoodleAccount`); si no se conecta, no se muestra ningún bloqueo del módulo.
+
+### 17.3 Módulos activables por usuario
+
+La app se construye en base a las necesidades propias, pero no todos los usuarios necesitan todos los módulos (ej. gestión de clientes es para freelancers). Decisión de producto: **cada usuario activa o desactiva sus módulos** en su cuenta.
+
+- Persistencia: flag por módulo por usuario (columna JSON o tabla `UserModule`; `Setting` actual es global y no sirve para esto).
+- Un módulo desactivado **no aparece en la navegación**; se eliminan los placeholders "próximamente" para quien no los necesita.
+- Backend: middleware por módulo (`requireModule("clients")`) para que el flag no sea solo cosmético.
+- Defaults: el propietario activa todo; un usuario nuevo arranca con el núcleo (tareas, hábitos, capturas, Pomodoro) y activa el resto desde Configuración.

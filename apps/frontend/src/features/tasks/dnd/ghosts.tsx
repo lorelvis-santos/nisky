@@ -5,16 +5,13 @@ import type { Task } from "@/types/entities";
 import { isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "../components/PriorityChip";
 
-export function TaskCardGhost({ task, width, height }: { task: Task; width?: number; height?: number }) {
+export function TaskCardGhost({ task }: { task: Task }) {
   const completed = task.status === "COMPLETED";
   const overdue = isTaskOverdue(task);
   const subtaskTotal = task.subtaskCount ?? task.subtasks?.length ?? 0;
   const completedSubtasks = task.completedSubtasks ?? task.subtasks?.filter((subtask) => subtask.completed).length ?? 0;
   return (
-    <article
-      className="flex min-h-[112px] w-72 max-w-[22rem] flex-col gap-2 border-2 border-primary bg-surface p-3"
-      style={width || height ? { width, height } : undefined}
-    >
+    <article className="flex h-full w-full flex-col gap-2 border-2 border-primary bg-surface p-3">
       <p className={`line-clamp-2 break-words font-body-sm text-body-sm leading-5 ${completed ? "line-through opacity-60" : ""}`}>
         {task.title}
       </p>
@@ -36,15 +33,12 @@ export function TaskCardGhost({ task, width, height }: { task: Task; width?: num
   );
 }
 
-export function BacklogItemGhost({ task, width, height }: { task: Task; width?: number; height?: number }) {
+export function BacklogItemGhost({ task }: { task: Task }) {
   const completed = task.status === "COMPLETED";
   const subtaskTotal = task.subtaskCount ?? task.subtasks?.length ?? 0;
   const completedSubtasks = task.completedSubtasks ?? task.subtasks?.filter((subtask) => subtask.completed).length ?? 0;
   return (
-    <article
-      className="flex w-72 max-w-[22rem] flex-col gap-2 border-2 border-primary bg-surface p-3"
-      style={width || height ? { width, height } : undefined}
-    >
+    <article className="flex h-full w-full flex-col gap-2 border-2 border-primary bg-surface p-3">
       <p className={`line-clamp-2 break-words font-body-sm text-body-sm leading-5 ${completed ? "line-through opacity-60" : ""}`}>
         {task.title}
       </p>

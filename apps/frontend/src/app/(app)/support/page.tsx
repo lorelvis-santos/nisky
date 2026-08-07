@@ -5,8 +5,8 @@ import { MyFeedbackList } from "@/components/feedback/MyFeedbackList";
 
 const FAQS: Array<{ question: string; answer: string }> = [
   {
-    question: "¿Cómo conecto mi Moodle?",
-    answer: "Ve a Ajustes › Moodle, ingresa el dominio de tu institución y tus credenciales o un token de servicio web. Las tareas y entregas próximas aparecerán automáticamente.",
+    question: "¿Cómo conecto mi Moodle o Canvas?",
+    answer: "Ve a Ajustes › Integraciones, elige la plataforma e ingresa el dominio de tu institución y tus credenciales o un token. Las tareas y entregas próximas aparecerán automáticamente.",
   },
   {
     question: "¿Mis notas y mi diario son privados?",

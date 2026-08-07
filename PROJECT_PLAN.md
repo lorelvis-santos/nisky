@@ -750,7 +750,36 @@ bun run db:generate
 - `/health`, Dockerfiles de producción y proxy API con `BACKEND_INTERNAL_URL`.
 - Auth/UI: toggles de visibilidad de contraseña, confirmación de contraseña al registrarse y limpieza de cache de React Query al logout.
 
-## 17. Próximas iteraciones (pendientes)
+## 17. Iteración 7 implementada: Módulo de integraciones (Moodle + Canvas)
+
+Refactor del módulo Moodle a un módulo genérico `integrations` con patrón Strategy, manteniendo los datos existentes intactos.
+
+### Backend
+
+- `src/modules/integrations/strategies/`: `IntegrationStrategy` con `provider`, `source`, `prefix`, `connect(data)` (probe/validación → token) y `fetchItems(domain, token, window)` → `RemoteItem[] { key, title, description, dueDate }`.
+- Estrategias: `moodle.strategy.ts` (reusa el cliente Python `moodle.python.ts`, movido con `git mv` sin cambios) y `canvas.strategy.ts` (cliente Bun `fetch` directo, sin Python: `/users/self`, `/courses`, `/users/self/todo`).
+- `registry.ts` mapea `MOODLE`/`CANVAS` a su estrategia; `integration.service.ts` usa un delegado tipado para cuentas `MoodleAccount`/`CanvasAccount` y comparte conectividad, limpieza, listado, `setEnabled`, listado de tareas y sincronización con dedupe por `sourceRef` y skip de completadas/canceladas.
+- `TaskSource` ahora `MANUAL | MOODLE | CANVAS`; `Task.sourceRef` conserva el formato `moodle:<id>:<key>` para no romper tareas existentes; Canvas usa `canvas:<id>:<key>` con `key = <todo_type>:<courseId>:<activityId>`.
+- API nueva en `/api/v1/integrations` (con `provider` en params, sin duplicar el módulo): `GET /`, `POST /:provider` (conecta), `POST /:provider/:id/sync`, `PATCH /:provider/:id`, `DELETE /:provider/:id`, `GET|DELETE /tasks?source=&status=&limit=`.
+- Rutas viejas `/api/v1/moodle` eliminadas; datos de `MoodleAccount` intactos (retrocompatibilidad).
+- Worker integrado `src/workers/integration.worker.ts` con cron `0 */3 * * *` sincronizando todos los proveedores.
+- Migración `add_canvas_integration`: enum `TaskSource.CANVAS` y modelo `CanvasAccount` (dominio, token cifrado AES-GCM, `enabled`, `lastSyncAt`, `syncError`).
+
+### Frontend
+
+- Tipos `IntegrationProvider`, `IntegrationAccount` y `TaskSource` con CANVAS en `types/entities.ts`.
+- `features/integrations/api/integrations.ts` con llamadas a la API y tipos de filtro.
+- `components/integrations/IntegrationManager.tsx`: selector global de proveedor (`MOODLE`/`CANVAS`) en Ajustes › Integraciones; formulario condicional (Moodle: credenciales o token; Canvas: solo token), cuenta conectada con sync/desconexión, zona peligrosa y `ConfirmModal`.
+- `components/integrations/IntegrationTasksList.tsx`: lista de tareas remotas con filtros próximas/atrasadas/todas y enlaces al curso; clase de actividad derivada de `sourceRef` (Moodle: `eventtype`; Canvas: `todo_type`).
+- Pestaña Ajustes renombrada a `Integraciones` con estado `provider` compartido entre manager y lista; invalidation de `["tasks"]` y `["integration-tasks"]`.
+- Eliminados `components/moodle/*` y el módulo backend `modules/moodle/*`.
+
+### Verificación
+
+- `bun run typecheck` (backend) y `bun run lint` + `bun run build` (frontend) en verde.
+- Smoke test contra mock de Canvas en `:4555`: connect (201), sync (3 tareas CANVAS), token inválido (400), `PATCH enabled` (200), disconnect con cascade (3 tareas eliminadas) y sync Moodle retrocompatible (10 tareas).
+
+## 18. Próximas iteraciones (pendientes)
 
 ### 17.1 Gestión de clientes
 

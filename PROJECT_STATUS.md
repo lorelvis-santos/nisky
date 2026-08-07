@@ -91,6 +91,17 @@
 - [x] `/health`, Dockerfiles de producción y proxy API con `BACKEND_INTERNAL_URL`
 - [x] Mejoras de auth/UI: toggles de contraseña, confirmación al registrarse y limpieza de cache al logout
 
+## Fase 1: Gestión diaria - Iteración 7: Integraciones (Moodle + Canvas)
+
+- [x] Refactor a módulo genérico `integrations` con patrón Strategy (`IntegrationStrategy`)
+- [x] Estrategia Moodle (cliente Python) y estrategia Canvas (Bun fetch, sin Python)
+- [x] Modelo `CanvasAccount` y `TaskSource.CANVAS` con migración aplicada
+- [x] API `/api/v1/integrations` con provider en params; rutas viejas `/moodle` eliminadas con datos retrocompatibles
+- [x] Worker integrado con cron cada 3 horas para ambos proveedores
+- [x] Frontend: tab `Integraciones` con selector de proveedor, manager condicional y lista de tareas remotas
+- [x] Sync Moodle real verificado (10 tareas) y smoke test completo con mock de Canvas (connect, sync, token inválido, enabled, disconnect con cascade)
+- [x] Typecheck, lint, build en verde
+
 ## Próxima iteración
 
 - **Módulos activables por usuario**: cada cuenta activa o desactiva módulos desde Configuración; los desactivados no aparecen en la navegación (núcleo por defecto: tareas, hábitos, capturas, Pomodoro).

@@ -89,8 +89,8 @@ export class TaskService {
 
   async delete(userId: string, id: string) {
     const task = await this.getById(userId, id);
-    if (task.source === "MOODLE") {
-      throw new AppError("FORBIDDEN", "Las tareas de Moodle no se pueden eliminar. Archívalas para ocultarlas.");
+    if (task.source !== "MANUAL") {
+      throw new AppError("FORBIDDEN", "Las tareas de integración no se pueden eliminar. Archívalas para ocultarlas.");
     }
     await prisma.task.delete({ where: { id } });
   }

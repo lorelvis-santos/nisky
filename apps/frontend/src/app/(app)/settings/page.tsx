@@ -5,18 +5,19 @@ import { useAuth } from "@/context/AuthProvider";
 import { PasswordSection } from "@/components/admin/PasswordSection";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 import { UserManagement } from "@/components/admin/UserManagement";
-import { MoodleManager } from "@/components/moodle/MoodleManager";
-import { MoodleTasksList } from "@/components/moodle/MoodleTasksList";
+import { IntegrationManager } from "@/components/integrations/IntegrationManager";
+import { IntegrationTasksList } from "@/components/integrations/IntegrationTasksList";
 import { PushSubscriptionManager } from "@/components/pwa/PushSubscriptionManager";
 import { FeedbackAdminPanel } from "@/components/feedback/FeedbackAdminPanel";
+import type { IntegrationProvider } from "@/types/entities";
 
-type Tab = "profile" | "security" | "notifications" | "moodle" | "admin";
+type Tab = "profile" | "security" | "notifications" | "integrations" | "admin";
 
 const tabs: Array<{ id: Tab; label: string; adminOnly?: boolean }> = [
   { id: "profile", label: "Perfil" },
   { id: "security", label: "Seguridad" },
   { id: "notifications", label: "Notificaciones" },
-  { id: "moodle", label: "Moodle" },
+  { id: "integrations", label: "Integraciones" },
   { id: "admin", label: "Administración", adminOnly: true },
 ];
 
@@ -25,6 +26,7 @@ export default function SettingsPage() {
   const isAdmin = user?.role === "ADMIN";
   const visibleTabs = tabs.filter((tab) => !tab.adminOnly || isAdmin);
   const [active, setActive] = useState<Tab>(visibleTabs[0]?.id ?? "profile");
+  const [integrationProvider, setIntegrationProvider] = useState<IntegrationProvider>("MOODLE");
 
   return (
     <section className="flex h-full min-h-0 flex-col p-container-padding sm:p-section-gap">
@@ -66,10 +68,10 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {active === "moodle" && (
+          {active === "integrations" && (
             <div className="space-y-8">
-              <MoodleManager />
-              <MoodleTasksList />
+              <IntegrationManager provider={integrationProvider} onProviderChange={setIntegrationProvider} />
+              <IntegrationTasksList provider={integrationProvider} />
             </div>
           )}
 

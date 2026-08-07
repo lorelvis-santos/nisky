@@ -29,7 +29,22 @@ export interface Subtask {
   updatedAt: string;
 }
 
-export type TaskSource = "MANUAL" | "MOODLE";
+export type TaskSource = "MANUAL" | "MOODLE" | "CANVAS";
+
+export type IntegrationProvider = "MOODLE" | "CANVAS";
+
+export interface IntegrationAccount {
+  id: string;
+  provider: IntegrationProvider;
+  domain: string;
+  username: string | null;
+  service: string | null;
+  enabled: boolean;
+  lastSyncAt: string | null;
+  syncError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface Task {
   id: string;
@@ -125,18 +140,6 @@ export interface Reminder {
 
 export type PomodoroPhase = "WORK" | "SHORT_BREAK" | "LONG_BREAK";
 export type PomodoroSessionStatus = "ACTIVE" | "PAUSED" | "COMPLETED" | "CANCELLED";
-
-export interface MoodleAccount {
-  id: string;
-  domain: string;
-  username: string;
-  service: string;
-  enabled: boolean;
-  lastSyncAt: string | null;
-  syncError: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface PomodoroSession {
   id: string;

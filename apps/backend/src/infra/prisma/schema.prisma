@@ -35,6 +35,7 @@ model User {
   pushSubscriptions PushSubscription[]
   reminders      Reminder[]
   moodleAccounts MoodleAccount[]
+  canvasAccounts CanvasAccount[]
   feedback      Feedback[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -73,6 +74,7 @@ model Task {
 enum TaskSource {
   MANUAL
   MOODLE
+  CANVAS
 }
 
 model Subtask {
@@ -357,4 +359,23 @@ model Feedback {
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
+}
+
+model CanvasAccount {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain       String
+  username     String   @default("")
+  tokenCipher  String
+  tokenIv      String
+  tokenAuthTag String
+  enabled      Boolean  @default(true)
+  lastSyncAt   DateTime?
+  syncError    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, domain])
+  @@index([userId])
 }

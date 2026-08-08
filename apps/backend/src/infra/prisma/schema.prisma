@@ -39,6 +39,7 @@ model User {
   canvasAccounts CanvasAccount[]
   projects       Project[]
   timeBlocks     TimeBlock[]
+  notificationSettings NotificationSettings?
   feedback      Feedback[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -88,6 +89,17 @@ model TimeBlock {
   @@index([projectId])
 }
 
+model NotificationSettings {
+  userId               String   @id
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  morningDigest        Boolean  @default(true)
+  taskDueReminders     Boolean  @default(true)
+  integrationNews      Boolean  @default(true)
+  integrationErrors    Boolean  @default(true)
+  timeBlockReminders   Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
+}
+
 model TimeBlockSettings {
   userId      String   @id
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -112,6 +124,7 @@ model Task {
   projectId          String?
   project            Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
   archivedAt         DateTime?
+  lastDueWarnedAt    DateTime?
   recurrenceType        TaskRecurrenceType?
   recurrenceInterval    Int                 @default(1)
   recurrenceDaysOfWeek  Int[]               @default([])

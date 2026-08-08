@@ -3,6 +3,7 @@ import { DateTime } from "luxon";
 import { prisma } from "../infra/prisma/client";
 import { pushService } from "../modules/push/push.service";
 import { mondayInTz, weeksBetween } from "../utils/recurrence";
+import { defaultNotificationSettings } from "../utils/notifications/notification-settings";
 
 const TZ = "America/Santo_Domingo";
 
@@ -53,7 +54,14 @@ export async function processTimeBlockNotifications() {
     return true;
   });
 
+  const userIds = [...new Set(dueBlocks.map((block) => block.userId))];
+  const settingsByUser = new Map<string, { timeBlockReminders: boolean }>();
+  for (const id of userIds) {
+    settingsByUser.set(id, await defaultNotificationSettings(id));
+  }
+
   for (const block of dueBlocks) {
+    if (!settingsByUser.get(block.userId)?.timeBlockReminders) continue;
     const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
 
     try {

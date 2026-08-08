@@ -16,6 +16,7 @@ import feedbackRoutes from "../modules/feedback/feedback.routes";
 import projectRoutes from "../modules/projects/projects.routes";
 import timeBlockRoutes from "../modules/timeblocks/timeblocks.routes";
 import homeRoutes from "../modules/home/home.routes";
+import notificationRoutes from "../modules/notifications/notifications.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -35,5 +36,6 @@ router.use("/feedback", feedbackRoutes);
 router.use("/projects", projectRoutes);
 router.use("/timeblocks", timeBlockRoutes);
 router.use("/home", homeRoutes);
+router.use("/notifications", notificationRoutes);
 
 export default router;

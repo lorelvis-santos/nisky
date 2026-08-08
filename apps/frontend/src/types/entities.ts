@@ -73,6 +73,16 @@ export interface TimeBlockSettings {
   updatedAt: string;
 }
 
+export interface NotificationSettings {
+  userId: string;
+  morningDigest: boolean;
+  taskDueReminders: boolean;
+  integrationNews: boolean;
+  integrationErrors: boolean;
+  timeBlockReminders: boolean;
+  updatedAt: string;
+}
+
 export interface IntegrationAccount {
   id: string;
   provider: IntegrationProvider;

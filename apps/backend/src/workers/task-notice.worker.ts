@@ -1,0 +1,169 @@
+import cron from "node-cron";
+import { DateTime } from "luxon";
+import { prisma } from "../infra/prisma/client";
+import { pushService } from "../modules/push/push.service";
+import { defaultNotificationSettings } from "../utils/notifications/notification-settings";
+
+const TZ = "America/Santo_Domingo";
+
+function nowInTz() {
+  return DateTime.now().setZone(TZ);
+}
+
+function startOfToday() {
+  return nowInTz().startOf("day");
+}
+
+function startOfTomorrow() {
+  return startOfToday().plus({ days: 1 });
+}
+
+function startOfYesterday() {
+  return startOfToday().minus({ days: 1 });
+}
+
+function toUtc(value: DateTime) {
+  return value.toUTC().toJSDate();
+}
+
+function wasWarnedToday(value: Date | null) {
+  if (!value) return false;
+  return DateTime.fromJSDate(value).setZone(TZ).hasSame(nowInTz(), "day");
+}
+
+export interface TaskDueNoticeResult {
+  tasksNotified: number;
+  usersDigested: number;
+}
+
+const DUE_BATCH = 200;
+
+export async function processTaskDueNotices(): Promise<TaskDueNoticeResult> {
+  const today = startOfToday();
+  const tomorrow = startOfTomorrow();
+
+  const candidates = await prisma.task.findMany({
+    where: {
+      status: "PENDING",
+      archivedAt: null,
+      dueDate: { gte: toUtc(today), lt: toUtc(tomorrow.plus({ days: 1 })) },
+    },
+    include: { project: true },
+    orderBy: { dueDate: "asc" },
+    take: DUE_BATCH,
+  });
+
+  let tasksNotified = 0;
+
+  const userIds = [...new Set(candidates.map((task) => task.userId))];
+  const settingsByUser = new Map<string, { taskDueReminders: boolean }>();
+  for (const id of userIds) {
+    settingsByUser.set(id, await defaultNotificationSettings(id));
+  }
+
+  for (const task of candidates) {
+    if (!task.dueDate) continue;
+    if (!settingsByUser.get(task.userId)?.taskDueReminders) continue;
+    if (wasWarnedToday(task.lastDueWarnedAt)) continue;
+    const due = DateTime.fromJSDate(task.dueDate).setZone(TZ);
+    const label = task.project?.name ?? "proyecto";
+    const isToday = due.hasSame(today, "day");
+    const isTomorrow = due.hasSame(tomorrow, "day");
+
+    let title: string;
+    let body: string;
+    let type: string;
+    if (isToday) {
+      title = task.title;
+      body = `Vence hoy a las ${due.toFormat("HH:mm")} · ${label}`;
+      type = "task_due_today";
+    } else if (isTomorrow) {
+      title = task.title;
+      body = `Vence mañana · ${label}`;
+      type = "task_due_tomorrow";
+    } else {
+      continue;
+    }
+
+    try {
+      const result = await pushService.sendToUser(task.userId, {
+        title,
+        body,
+        url: `/tasks?taskId=${encodeURIComponent(task.id)}`,
+        tag: `task-due-${type}-${task.id}`,
+        data: { taskId: task.id, type, dueDate: task.dueDate.toISOString() },
+      });
+      if (result.total === 0) continue;
+      await prisma.task.update({ where: { id: task.id }, data: { lastDueWarnedAt: new Date() } });
+      tasksNotified += 1;
+    } catch (error) {
+      console.error(`[tasks] No se pudo notificar vencimiento de ${task.id}`, error);
+    }
+  }
+
+  return { tasksNotified, usersDigested: 0 };
+}
+
+async function sendMorningDigest() {
+  const today = startOfToday();
+  const tomorrow = startOfTomorrow();
+  const yesterday = startOfYesterday();
+
+  const users = await prisma.pushSubscription.findMany({
+    select: { userId: true },
+    distinct: ["userId"],
+  });
+
+  let digested = 0;
+
+  for (const { userId } of users) {
+    try {
+      const settings = await defaultNotificationSettings(userId);
+      if (!settings.morningDigest) continue;
+      const [dueToday, overdue, firstBlock] = await Promise.all([
+        prisma.task.count({
+          where: { userId, status: "PENDING", archivedAt: null, dueDate: { gte: toUtc(today), lt: toUtc(tomorrow) } },
+        }),
+        prisma.task.count({
+          where: { userId, status: "PENDING", archivedAt: null, dueDate: { lt: toUtc(today), gt: toUtc(yesterday) } },
+        }),
+        prisma.timeBlock.findFirst({
+          where: { userId, isActive: true, dayOfWeek: nowInTz().weekday % 7, startMin: { gte: nowInTz().hour * 60 + nowInTz().minute } },
+          orderBy: { startMin: "asc" },
+          include: { project: true },
+        }),
+      ]);
+
+      const parts: string[] = [];
+      if (dueToday > 0) parts.push(`${dueToday} ${dueToday === 1 ? "tarea vence" : "tareas vencen"} hoy`);
+      if (overdue > 0) parts.push(`${overdue} venció${overdue === 1 ? "" : "ron"} ayer`);
+      const firstBlockLabel = firstBlock?.project?.name ?? firstBlock?.name;
+      if (firstBlock && firstBlockLabel) {
+        parts.push(`primer bloque «${firstBlockLabel}» a las ${String(Math.floor(firstBlock.startMin / 60)).padStart(2, "0")}:${String(firstBlock.startMin % 60).padStart(2, "0")}`);
+      }
+      if (parts.length === 0) continue;
+
+      const result = await pushService.sendToUser(userId, {
+        title: "Buenos días ☀️",
+        body: parts.join(" · "),
+        url: "/tasks",
+        tag: `digest-${today.toISODate()}`,
+        data: { type: "morning_digest" },
+      });
+      if (result.sent > 0) digested += 1;
+    } catch (error) {
+      console.error(`[tasks] No se pudo enviar digest a ${userId}`, error);
+    }
+  }
+
+  return digested;
+}
+
+export function startTaskNoticeWorker() {
+  void processTaskDueNotices();
+  return cron.schedule("*/30 * * * *", () => void processTaskDueNotices());
+}
+
+export function startMorningDigestWorker() {
+  return cron.schedule("0 7 * * *", () => void sendMorningDigest());
+}

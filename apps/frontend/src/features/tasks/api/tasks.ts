@@ -9,6 +9,7 @@ export interface TaskQuery {
   status?: TaskStatus;
   priority?: TaskPriority;
   q?: string;
+  projectId?: string;
   sort?: "priority" | "dueDate" | "createdAt" | "title";
   order?: "asc" | "desc";
 }

@@ -126,6 +126,11 @@
     outline: none;
   }
   .field:focus { border-color: var(--color-outline); }
+  .field:where(select),
+  .field:where(input[type="date"], input[type="time"], input[type="datetime-local"]) {
+    -webkit-appearance: auto;
+    appearance: auto;
+  }
 }
 
 @layer utilities {

@@ -46,7 +46,7 @@ export function WeeklyGrid({
   }, []);
 
   return (
-    <div ref={scrollRef} className="h-[520px] min-h-[520px] flex-none overflow-auto bg-surface-container-low p-3 lg:h-auto lg:min-h-0 lg:flex-1">
+    <div ref={scrollRef} className="h-[520px] min-h-[520px] min-w-0 flex-none overflow-auto bg-surface-container-low p-3 lg:h-auto lg:min-h-0 lg:flex-1">
       <div className="grid min-w-[1798px] grid-cols-[repeat(7,minmax(250px,1fr))] gap-2">
         <div className="contents">
           {days.map((day, index) => {

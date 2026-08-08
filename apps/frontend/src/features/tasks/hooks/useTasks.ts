@@ -14,6 +14,7 @@ export function useTaskMutations() {
   const invalidate = async () => {
     await client.invalidateQueries({ queryKey: ["tasks"] });
     await client.invalidateQueries({ queryKey: ["task"] });
+    await client.invalidateQueries({ queryKey: ["home"] });
   };
   const create = useMutation({ mutationFn: createTask, onSuccess: invalidate });
   const update = useMutation({ mutationFn: ({ id, payload }: { id: string; payload: TaskUpdatePayload }) => updateTask(id, payload), onSuccess: invalidate });

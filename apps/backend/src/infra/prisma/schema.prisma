@@ -29,6 +29,7 @@ model User {
   quickNotes    QuickNote[]
   pomodoroSessions PomodoroSession[]
   pomodoroSettings PomodoroSettings?
+  timeBlockSettings TimeBlockSettings?
   journalSalt    Bytes?
   journalEntries JournalEntry[]
   notes          Note[]
@@ -36,11 +37,63 @@ model User {
   reminders      Reminder[]
   moodleAccounts MoodleAccount[]
   canvasAccounts CanvasAccount[]
+  projects       Project[]
+  timeBlocks     TimeBlock[]
   feedback      Feedback[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
   @@index([role])
+}
+
+model Project {
+  id         String      @id @default(uuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  color      String      @default("#303e51")
+  isDefault  Boolean     @default(false)
+  tasks      Task[]
+  timeBlocks TimeBlock[]
+  moodleAccounts MoodleAccount[]
+  canvasAccounts CanvasAccount[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model TimeBlock {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  name      String?
+  dayOfWeek Int
+  startMin  Int
+  endMin    Int
+  isActive  Boolean  @default(true)
+  repeatEveryWeeks Int       @default(1)
+  repeatEndsAt     DateTime?
+  remindBeforeMin  Int        @default(0)
+  lastRemindNotifiedAt DateTime?
+  lastStartNotifiedAt   DateTime?
+  lastEndWarnNotifiedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, dayOfWeek, isActive])
+  @@index([projectId])
+}
+
+model TimeBlockSettings {
+  userId      String   @id
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayStartMin Int      @default(360)
+  dayEndMin   Int      @default(1380)
+  updatedAt   DateTime @updatedAt
 }
 
 model Task {
@@ -56,7 +109,17 @@ model Task {
   order              Int          @default(0)
   source             TaskSource   @default(MANUAL)
   sourceRef          String?
+  projectId          String?
+  project            Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
   archivedAt         DateTime?
+  recurrenceType        TaskRecurrenceType?
+  recurrenceInterval    Int                 @default(1)
+  recurrenceDaysOfWeek  Int[]               @default([])
+  recurrenceDayOfMonth  Int?
+  recurrenceEndsAt      DateTime?
+  recurrenceParentId    String?
+  recurrenceParent      Task?               @relation("TaskRecurrence", fields: [recurrenceParentId], references: [id], onDelete: SetNull)
+  recurrenceOccurrences Task[]              @relation("TaskRecurrence")
   subtasks           Subtask[]
   pomodoroEstimate   Int          @default(0)
   pomodoroCount      Int          @default(0)
@@ -68,6 +131,8 @@ model Task {
   @@index([userId, dueDate])
   @@index([userId, priority])
   @@index([userId, source, sourceRef])
+  @@index([userId, recurrenceType])
+  @@index([recurrenceParentId])
   @@unique([userId, source, sourceRef])
 }
 
@@ -289,6 +354,12 @@ enum ReminderRepeatType {
   MONTHLY
 }
 
+enum TaskRecurrenceType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
 model Reminder {
   id               String             @id @default(uuid())
   userId           String
@@ -326,6 +397,8 @@ model MoodleAccount {
   enabled      Boolean  @default(true)
   lastSyncAt   DateTime?
   syncError    String?
+  projectId    String?
+  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -373,6 +446,8 @@ model CanvasAccount {
   enabled      Boolean  @default(true)
   lastSyncAt   DateTime?
   syncError    String?
+  projectId    String?
+  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

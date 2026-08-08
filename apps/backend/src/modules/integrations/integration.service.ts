@@ -4,6 +4,15 @@ import { decryptSecret, encryptSecret } from "../../utils/secrets";
 import { getStrategy } from "./strategies";
 import type { IntegrationProvider } from "./strategies";
 import type { ConnectMoodleDto, IntegrationTaskQueryDto } from "./integration.validator";
+import { projectService } from "../projects/projects.service";
+import { hostOf, universityNameFor } from "./university-catalog";
+
+async function ensureUniversityProject(userId: string, domain: string) {
+  const displayName = universityNameFor(domain) ?? hostOf(domain);
+  const existing = await prisma.project.findFirst({ where: { userId, name: displayName, isDefault: false } });
+  if (existing) return existing;
+  return prisma.project.create({ data: { userId, name: displayName } });
+}
 
 type Delegate = typeof prisma.moodleAccount;
 
@@ -63,6 +72,10 @@ export class IntegrationService {
         syncError: null,
       },
     });
+    if (!account.projectId) {
+      const project = await ensureUniversityProject(account.userId, account.domain);
+      await delegate.update({ where: { id: account.id }, data: { projectId: project.id } });
+    }
     return accountRow(account, provider);
   }
 
@@ -83,6 +96,23 @@ export class IntegrationService {
         },
       }),
     ]);
+    if (account.projectId) {
+      const otherRefs =
+        (await prisma.moodleAccount.count({ where: { userId, projectId: account.projectId } })) +
+        (await prisma.canvasAccount.count({ where: { userId, projectId: account.projectId } }));
+      if (otherRefs === 0) {
+        const project = await prisma.project.findFirst({
+          where: { id: account.projectId, userId, isDefault: false },
+        });
+        if (project) {
+          try {
+            await projectService.delete(userId, project.id);
+          } catch {
+            // La limpieza del proyecto no debe fallar la desconexión.
+          }
+        }
+      }
+    }
     return { removed: deleted[1].count };
   }
 
@@ -148,6 +178,7 @@ export class IntegrationService {
       const token = decryptSecret(account.tokenCipher, account.tokenIv, account.tokenAuthTag);
       const items = await strategy.fetchItems(account.domain, token, { daysPast: 14, daysAhead: 365 });
       const now = new Date();
+      const projectId = account.projectId ?? (await projectService.getDefaultId(account.userId));
       let synced = 0;
       for (const item of items) {
         const sourceRef = `${strategy.prefix}${accountId}:${item.key}`;
@@ -158,7 +189,7 @@ export class IntegrationService {
         if (existing) {
           await prisma.task.update({
             where: { id: existing.id },
-            data: { title: item.title, description: item.description, dueDate, priority: taskPriority(dueDate, now) },
+            data: { title: item.title, description: item.description, dueDate, priority: taskPriority(dueDate, now), projectId },
           });
         } else {
           await prisma.task.create({
@@ -170,6 +201,7 @@ export class IntegrationService {
               sourceRef,
               dueDate,
               priority: taskPriority(dueDate, now),
+              projectId,
             },
           });
         }

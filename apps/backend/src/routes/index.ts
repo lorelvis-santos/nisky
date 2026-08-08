@@ -13,6 +13,9 @@ import pushRoutes from "../modules/push/push.routes";
 import reminderRoutes from "../modules/reminders/reminders.routes";
 import integrationsRoutes from "../modules/integrations/integration.routes";
 import feedbackRoutes from "../modules/feedback/feedback.routes";
+import projectRoutes from "../modules/projects/projects.routes";
+import timeBlockRoutes from "../modules/timeblocks/timeblocks.routes";
+import homeRoutes from "../modules/home/home.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -29,5 +32,8 @@ router.use("/push", pushRoutes);
 router.use("/reminders", reminderRoutes);
 router.use("/integrations", integrationsRoutes);
 router.use("/feedback", feedbackRoutes);
+router.use("/projects", projectRoutes);
+router.use("/timeblocks", timeBlockRoutes);
+router.use("/home", homeRoutes);
 
 export default router;

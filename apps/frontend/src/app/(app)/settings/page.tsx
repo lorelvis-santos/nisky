@@ -9,7 +9,6 @@ import { IntegrationManager } from "@/components/integrations/IntegrationManager
 import { IntegrationTasksList } from "@/components/integrations/IntegrationTasksList";
 import { PushSubscriptionManager } from "@/components/pwa/PushSubscriptionManager";
 import { FeedbackAdminPanel } from "@/components/feedback/FeedbackAdminPanel";
-import type { IntegrationProvider } from "@/types/entities";
 
 type Tab = "profile" | "security" | "notifications" | "integrations" | "admin";
 
@@ -26,7 +25,6 @@ export default function SettingsPage() {
   const isAdmin = user?.role === "ADMIN";
   const visibleTabs = tabs.filter((tab) => !tab.adminOnly || isAdmin);
   const [active, setActive] = useState<Tab>(visibleTabs[0]?.id ?? "profile");
-  const [integrationProvider, setIntegrationProvider] = useState<IntegrationProvider>("MOODLE");
 
   return (
     <section className="flex h-full min-h-0 flex-col p-container-padding sm:p-section-gap">
@@ -70,8 +68,8 @@ export default function SettingsPage() {
 
           {active === "integrations" && (
             <div className="space-y-8">
-              <IntegrationManager provider={integrationProvider} onProviderChange={setIntegrationProvider} />
-              <IntegrationTasksList provider={integrationProvider} />
+              <IntegrationManager />
+              <IntegrationTasksList />
             </div>
           )}
 

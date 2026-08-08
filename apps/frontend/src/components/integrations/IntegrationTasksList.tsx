@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { getIntegrationTasks, type IntegrationTaskFilter } from "@/features/integrations/api/integrations";
-import type { IntegrationProvider, Task } from "@/types/entities";
+import type { IntegrationProvider, Task, TaskSource } from "@/types/entities";
 
 const PROVIDER_LABEL: Record<IntegrationProvider, string> = {
   MOODLE: "Moodle",
@@ -32,12 +32,12 @@ function linkFromDescription(description: string | null) {
   return match?.[1] ?? null;
 }
 
-export function IntegrationTasksList({ provider }: { provider: IntegrationProvider }) {
+export function IntegrationTasksList() {
   const [filter, setFilter] = useState<IntegrationTaskFilter>("pending");
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["integration-tasks", provider, filter],
-    queryFn: () => getIntegrationTasks(provider, filter, 100),
+    queryKey: ["integration-tasks", filter],
+    queryFn: () => getIntegrationTasks(undefined, filter, 100),
   });
 
   const tasks = data ?? [];
@@ -45,7 +45,7 @@ export function IntegrationTasksList({ provider }: { provider: IntegrationProvid
   return (
     <section className="space-y-4">
       <div className="flex max-w-2xl items-center justify-between gap-2">
-        <h2 className="font-headline-xs text-headline-xs">Tareas de {PROVIDER_LABEL[provider]}</h2>
+        <h2 className="font-headline-xs text-headline-xs">Tareas de tus integraciones</h2>
         <div className="flex gap-1">
           {(["pending", "overdue", "all"] as const).map((f) => (
             <button
@@ -66,7 +66,7 @@ export function IntegrationTasksList({ provider }: { provider: IntegrationProvid
         <p className="font-body-sm text-body-sm text-error">No se pudieron cargar las tareas.</p>
       ) : tasks.length === 0 ? (
         <p className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding font-body-sm text-body-sm text-on-surface-variant">
-          No hay tareas{filter === "overdue" ? " atrasadas" : filter === "pending" ? " próximas" : ""}. Conecta {PROVIDER_LABEL[provider].toLowerCase()} en Ajustes.
+          No hay tareas{filter === "overdue" ? " atrasadas" : filter === "pending" ? " próximas" : ""}. Conecta una integración en Ajustes.
         </p>
       ) : (
         <ul className="max-w-2xl divide-y divide-outline-variant border border-outline-variant bg-surface-container-lowest">
@@ -75,7 +75,7 @@ export function IntegrationTasksList({ provider }: { provider: IntegrationProvid
             const isOver = task.status === "PENDING" && due !== null && due < new Date();
             const link = linkFromDescription(task.description);
             const course = courseFromDescription(task.description);
-            const kind = kindFromSourceRef(provider, task.sourceRef);
+            const kind = kindFromSourceRef(task.source, task.sourceRef);
             return (
               <li className="flex items-start gap-3 p-container-padding" key={task.id}>
                 <span className={`mt-1.5 size-2 shrink-0 rounded-full ${isOver ? "bg-error" : task.priority === "URGENT" || task.priority === "HIGH" ? "bg-tertiary" : "bg-primary"}`} />
@@ -89,6 +89,7 @@ export function IntegrationTasksList({ provider }: { provider: IntegrationProvid
                   )}
                   <p className="mt-0.5 truncate font-body-sm text-body-sm text-on-surface-variant">
                     {course ?? "Curso sin nombre"}
+                    {task.source !== "MANUAL" ? ` · ${PROVIDER_LABEL[task.source]}` : ""}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
@@ -106,9 +107,10 @@ export function IntegrationTasksList({ provider }: { provider: IntegrationProvid
   );
 }
 
-function kindFromSourceRef(provider: IntegrationProvider, sourceRef: string | null): string {
+function kindFromSourceRef(source: TaskSource, sourceRef: string | null): string {
   if (!sourceRef) return "task";
   const segments = sourceRef.split(":");
-  if (provider === "CANVAS") return segments[2] ?? "todo";
-  return segments[4] ?? segments[1] ?? "task";
+  if (source === "CANVAS") return segments[2] ?? "todo";
+  if (source === "MOODLE") return segments[4] ?? segments[1] ?? "task";
+  return "task";
 }

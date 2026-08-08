@@ -33,14 +33,14 @@ export async function disconnectIntegration(provider: IntegrationProvider, id: s
   return data.data.removed;
 }
 
-export async function cleanIntegrationTasks(provider: IntegrationProvider) {
-  const { data } = await api.delete<{ data: { removed: number } }>("/integrations/tasks", { params: { source: provider } });
+export async function cleanIntegrationTasks(source?: IntegrationProvider) {
+  const { data } = await api.delete<{ data: { removed: number } }>("/integrations/tasks", { params: source ? { source } : {} });
   return data.data.removed;
 }
 
 export type IntegrationTaskFilter = "pending" | "overdue" | "all";
 
-export async function getIntegrationTasks(provider: IntegrationProvider, filter: IntegrationTaskFilter, limit = 100) {
-  const { data } = await api.get<{ data: Task[] }>("/integrations/tasks", { params: { source: provider, status: filter, limit } });
+export async function getIntegrationTasks(source: IntegrationProvider | undefined, filter: IntegrationTaskFilter, limit = 100) {
+  const { data } = await api.get<{ data: Task[] }>("/integrations/tasks", { params: { ...(source ? { source } : {}), status: filter, limit } });
   return data.data;
 }

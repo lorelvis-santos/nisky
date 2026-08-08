@@ -86,10 +86,13 @@ export class IntegrationService {
     return { removed: deleted[1].count };
   }
 
-  async cleanTasks(userId: string, provider: IntegrationProvider) {
-    const strategy = getStrategy(provider);
+  async cleanTasks(userId: string, source?: IntegrationProvider) {
     const result = await prisma.task.deleteMany({
-      where: { userId, source: strategy.source, status: { in: ["PENDING", "IN_PROGRESS"] } },
+      where: {
+        userId,
+        source: source ? source : { in: ["MOODLE", "CANVAS"] },
+        status: { in: ["PENDING", "IN_PROGRESS"] },
+      },
     });
     return { removed: result.count };
   }
@@ -114,15 +117,16 @@ export class IntegrationService {
   }
 
   async getTasks(userId: string, query: IntegrationTaskQueryDto) {
-    const strategy = getStrategy(query.source);
-    const accounts = await delegateFor(query.source).findMany({ where: { userId } });
-    if (accounts.length === 0) return [];
-    const limit = Math.min(100, Math.max(1, Number(query.limit) || 50));
     const now = new Date();
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 50));
+    if (query.source) {
+      const accounts = await delegateFor(query.source).findMany({ where: { userId } });
+      if (accounts.length === 0) return [];
+    }
     return prisma.task.findMany({
       where: {
         userId,
-        source: strategy.source,
+        source: query.source ? query.source : { in: ["MOODLE", "CANVAS"] },
         archivedAt: null,
         ...(query.status === "overdue"
           ? { status: { in: ["PENDING", "IN_PROGRESS"] }, dueDate: { lt: now } }

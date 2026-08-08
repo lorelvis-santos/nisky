@@ -31,7 +31,7 @@ export const connectCanvasSchema = z.object({
 });
 
 export const integrationTaskQuerySchema = z.object({
-  source: z.enum(["MOODLE", "CANVAS"]).default("MOODLE"),
+  source: z.enum(["MOODLE", "CANVAS"]).optional(),
   status: z.enum(["pending", "overdue", "all"]).default("pending"),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });

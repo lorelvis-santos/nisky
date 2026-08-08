@@ -89,7 +89,7 @@ export function IntegrationManager() {
     const provider = selected.provider ?? otherProvider;
     const payload = {
       domain: selected.domain ?? domain,
-      ...(provider === "CANVAS"
+      ...(provider === "CANVAS" || selected.credentialsMode === "token-only"
         ? { token }
         : connectMode === "credentials"
           ? { username, password }

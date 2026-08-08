@@ -32,6 +32,15 @@ export const UNIVERSITY_CATALOG: UniversityCatalogEntry[] = [
     helpHint: "Ingresa al enlace, regenera el token «Moodle mobile web service» y pégalo aquí.",
   },
   {
+    slug: "pucmm",
+    name: "PUCMM",
+    logoUrl: "/universities/pucmm.png",
+    domain: "https://campusvirtual.pucmm.edu.do/moodle",
+    provider: "MOODLE",
+    credentialsMode: "both",
+    helpHint: "Usuario y contraseña de PUCMM (PVA), o pega un token de Moodle.",
+  },
+  {
     slug: "unapec",
     name: "UNAPEC",
     logoUrl: "/universities/unapec.png",

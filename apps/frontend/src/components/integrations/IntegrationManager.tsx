@@ -107,16 +107,18 @@ export function IntegrationManager() {
         <p className="mt-1 max-w-2xl font-body-sm text-body-sm text-on-surface-variant">
           Elige la institución para conectar su plataforma educativa (Moodle o Canvas), o selecciona «Otra institución» si no está en la lista.
         </p>
-        <div className="mt-3 flex flex-wrap gap-1">
+        <div className="mt-3 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
           {UNIVERSITY_CATALOG.map((entry) => (
             <button
-              className={`flex items-center gap-2 px-3 py-2 font-label-caps text-label-caps uppercase ${selected?.slug === entry.slug ? "bg-primary-fixed text-on-primary-fixed" : "text-on-surface-variant hover:text-on-surface"}`}
+              className={`flex min-h-20 flex-col items-center justify-center gap-2 border px-3 py-3 font-label-caps text-label-caps uppercase ${selected?.slug === entry.slug ? "border-primary bg-primary-fixed text-on-primary-fixed" : "border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-on-surface"}`}
               key={entry.slug}
               onClick={() => setSelected(entry)}
               type="button"
             >
-              {entry.logoUrl ? <Image alt="" height={20} className="h-5 w-auto object-contain" src={entry.logoUrl} width={64} /> : null}
-              {entry.name}
+              {entry.logoUrl ? (
+                <Image alt="" className="h-8 w-auto max-w-full object-contain" height={32} src={entry.logoUrl} width={96} />
+              ) : null}
+              <span>{entry.name}</span>
             </button>
           ))}
         </div>

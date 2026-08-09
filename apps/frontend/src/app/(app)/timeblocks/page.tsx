@@ -246,7 +246,7 @@ function TimeBlocksContent() {
   );
 
   return (
-    <section className="h-full overflow-y-auto bg-background p-container-padding sm:p-section-gap">
+    <section className="h-full overflow-y-auto bg-background p-container-padding sm:p-section-gap lg:flex lg:flex-col lg:overflow-hidden">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-outline-variant pb-4">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
@@ -320,8 +320,8 @@ function TimeBlocksContent() {
         </div>
       )}
 
-      <div className="flex items-start gap-4">
-        <div className="min-w-0 flex-1 border border-outline-variant bg-surface-container-lowest">
+      <div className="flex items-start gap-4 lg:min-h-0 lg:flex-1">
+        <div className="min-w-0 flex-1 border border-outline-variant bg-surface-container-lowest lg:min-h-0 lg:overflow-y-auto">
           <TimeBlockWeekGrid
             blocks={blocks}
             dayEndMin={settings?.dayEndMin ?? 23 * 60}
@@ -334,8 +334,8 @@ function TimeBlocksContent() {
             projects={projects}
           />
         </div>
-        <aside className="hidden w-[20rem] shrink-0 flex-col border border-outline-variant bg-surface-container-lowest lg:flex">
-          <div className="flex items-center justify-between gap-2 border-b border-outline-variant bg-surface-container-low px-4 py-3">
+        <aside className="hidden w-[20rem] shrink-0 flex-col border border-outline-variant bg-surface-container-lowest lg:flex lg:max-h-full">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-outline-variant bg-surface-container-low px-4 py-3">
             <h2 className="font-headline-xs text-headline-xs">
               {editing ? "Editar bloque" : "Nuevo bloque"}
             </h2>
@@ -350,7 +350,7 @@ function TimeBlocksContent() {
               </button>
             )}
           </div>
-          <div className="flex-1 overflow-y-auto p-4">{editor}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">{editor}</div>
         </aside>
       </div>
 

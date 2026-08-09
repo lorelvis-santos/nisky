@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
 import { pushService } from "./push.service";
+import { listNotificationLogs } from "./notification-log.service";
 import type { PushSubscriptionDto, PushUnsubscribeDto } from "./push.validator";
 
 function userId(req: Request) {
@@ -27,5 +28,12 @@ export class PushController {
 
   test = async (req: Request, res: Response, next: NextFunction) => {
     try { res.success(await pushService.sendTest(userId(req))); } catch (error) { next(error); }
+  };
+
+  logs = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const limit = Number(req.query.limit ?? 50);
+      res.success(await listNotificationLogs(userId(req), Number.isFinite(limit) ? limit : 50));
+    } catch (error) { next(error); }
   };
 }

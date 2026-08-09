@@ -4,6 +4,7 @@ import { prisma } from "../infra/prisma/client";
 import { pushService } from "../modules/push/push.service";
 import { mondayInTz, weeksBetween } from "../utils/recurrence";
 import { defaultNotificationSettings } from "../utils/notifications/notification-settings";
+import { recordNotificationLog } from "../modules/push/notification-log.service";
 
 const TZ = "America/Santo_Domingo";
 
@@ -61,8 +62,17 @@ export async function processTimeBlockNotifications() {
   }
 
   for (const block of dueBlocks) {
-    if (!settingsByUser.get(block.userId)?.timeBlockReminders) continue;
     const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
+    if (!settingsByUser.get(block.userId)?.timeBlockReminders) {
+      await recordNotificationLog({
+        userId: block.userId,
+        event: "timeblock_remind",
+        title: label,
+        status: "skipped",
+        error: "Ajustes: recordatorios de agenda desactivados",
+      });
+      continue;
+    }
 
     try {
       const remindBefore = Math.max(0, block.remindBeforeMin);

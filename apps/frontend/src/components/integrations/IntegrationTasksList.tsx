@@ -44,7 +44,7 @@ export function IntegrationTasksList() {
 
   return (
     <section className="space-y-4">
-      <div className="flex max-w-2xl items-center justify-between gap-2">
+      <div className="flex max-w-2xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-headline-xs text-headline-xs">Tareas de tus integraciones</h2>
         <div className="flex gap-1">
           {(["pending", "overdue", "all"] as const).map((f) => (

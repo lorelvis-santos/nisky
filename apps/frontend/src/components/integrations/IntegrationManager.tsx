@@ -299,7 +299,7 @@ export function IntegrationManager() {
           const Icon = providerIcon(account.provider);
           return (
             <div className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding" key={account.id}>
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <Icon className="text-primary" size={18} />

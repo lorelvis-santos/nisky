@@ -5,7 +5,10 @@ import { usePushSubscription } from "@/hooks/usePushSubscription";
 
 export function PushSubscriptionManager() {
   const { isSupported, isLoading, isSubscribed, subscribe, unsubscribe, sendTest } = usePushSubscription();
+  // Solo mostramos el aviso de Brave cuando ya resolvimos el estado real de la
+  // suscripción; mientras carga no hay que parpadear el mensaje de error.
   const stuck =
+    !isLoading &&
     typeof window !== "undefined" &&
     typeof Notification !== "undefined" &&
     Notification.permission === "granted" &&

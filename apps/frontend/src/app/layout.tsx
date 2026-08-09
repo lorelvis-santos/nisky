@@ -39,7 +39,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-screen bg-background text-on-surface antialiased">
         <Providers>{children}</Providers>
         <SWRegister />
-        <Toaster position="bottom-right" />
+        <Toaster position="top-center" />
       </body>
     </html>
   );

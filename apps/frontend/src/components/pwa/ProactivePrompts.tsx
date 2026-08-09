@@ -120,18 +120,25 @@ export function ProactivePrompts() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthPage]);
 
+  const snoozeInstall = useCallback(() => {
+    writeState(INSTALL_KEY, { ...readState(INSTALL_KEY), dismissedAt: new Date().toISOString() });
+    setInstallVisible(false);
+  }, []);
+
   const dismissNotif = useCallback(() => {
     const next = { ...readState(NOTIF_KEY), dismissCount: readState(NOTIF_KEY).dismissCount + 1, dismissedAt: new Date().toISOString() };
     writeState(NOTIF_KEY, next);
     setNotifVisible(false);
     setNotifBlocked(false);
-  }, []);
+    snoozeInstall();
+  }, [snoozeInstall]);
 
   const neverAskNotif = useCallback(() => {
     writeState(NOTIF_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
     setNotifVisible(false);
     setNotifBlocked(false);
-  }, []);
+    snoozeInstall();
+  }, [snoozeInstall]);
 
   const acceptNotif = useCallback(async () => {
     const ok = await subscribe();
@@ -142,7 +149,8 @@ export function ProactivePrompts() {
     } else {
       dismissNotif();
     }
-  }, [subscribe, dismissNotif]);
+    snoozeInstall();
+  }, [subscribe, dismissNotif, snoozeInstall]);
 
   const dismissInstall = useCallback(() => {
     const next = { ...readState(INSTALL_KEY), dismissCount: readState(INSTALL_KEY).dismissCount + 1, dismissedAt: new Date().toISOString() };

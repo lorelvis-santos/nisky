@@ -93,14 +93,20 @@ export class AuthService {
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     if (existing) throw new AppError("CONFLICT", "El correo ya está registrado");
 
-    const user = await prisma.user.create({
-      data: {
-        email: data.email,
-        name: data.name,
-        passwordHash: await bcrypt.hash(data.password, 12),
-        role: "USER",
-        journalSalt: newJournalSalt(),
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email: data.email,
+          name: data.name,
+          passwordHash: await bcrypt.hash(data.password, 12),
+          role: "USER",
+          journalSalt: newJournalSalt(),
+        },
+      });
+      await tx.project.create({
+        data: { userId: created.id, name: "Personal", isDefault: true },
+      });
+      return created;
     });
     const result = await this.issue(user, metadata);
     storeJournalKey(result.refreshTokenId, user.id, deriveJournalKey(data.password, user.journalSalt as Uint8Array));

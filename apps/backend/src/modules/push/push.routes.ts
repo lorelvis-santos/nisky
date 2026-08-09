@@ -10,6 +10,7 @@ const controller = new PushController();
 router.use(requireAuth);
 router.get("/vapid-public-key", controller.publicKey);
 router.get("/subscriptions", controller.list);
+router.get("/logs", controller.logs);
 router.post("/subscribe", validateBody(pushSubscriptionSchema), controller.subscribe);
 router.delete("/unsubscribe", validateBody(pushUnsubscribeSchema), controller.unsubscribe);
 router.post("/test", controller.test);

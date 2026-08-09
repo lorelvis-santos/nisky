@@ -1,9 +1,9 @@
 "use client";
 
-import { CalendarClock, CheckIcon, XIcon } from "lucide-react";
+import { Activity, CalendarClock, CheckIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
-import { useNotificationSettingsMutation, useNotificationSettingsQuery } from "@/features/notifications/hooks/useNotifications";
-import type { NotificationSettingsPayload } from "@/features/notifications/api/notifications";
+import { useNotificationLogsQuery, useNotificationSettingsMutation, useNotificationSettingsQuery } from "@/features/notifications/hooks/useNotifications";
+import type { NotificationLog, NotificationSettingsPayload } from "@/features/notifications/api/notifications";
 import { PushSubscriptionManager } from "@/components/pwa/PushSubscriptionManager";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +35,62 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
   );
 }
 
+const STATUS_STYLES: Record<NotificationLog["status"], string> = {
+  sent: "bg-primary-container text-primary",
+  partial: "bg-tertiary-container text-tertiary",
+  failed: "bg-error-container text-error",
+  skipped: "bg-surface-container-high text-on-surface-variant",
+};
+
+const STATUS_LABELS: Record<NotificationLog["status"], string> = {
+  sent: "Enviado",
+  partial: "Parcial",
+  failed: "Fallido",
+  skipped: "Omitido",
+};
+
+function NotificationLogsPanel() {
+  const logsQuery = useNotificationLogsQuery();
+  const logs = logsQuery.data ?? [];
+  return (
+    <section className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding">
+      <div className="flex items-start gap-3">
+        <Activity className="mt-0.5 text-primary" size={20} />
+        <div>
+          <h2 className="font-headline-xs text-headline-xs">Registro de notificaciones</h2>
+          <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
+            Últimos envíos registrados (exito, fallo u omisión) para diagnosticar si están llegando.
+          </p>
+        </div>
+      </div>
+      {logsQuery.isLoading ? (
+        <p className="mt-4 font-body-sm text-body-sm text-on-surface-variant">Cargando registro...</p>
+      ) : logs.length === 0 ? (
+        <p className="mt-4 font-body-sm text-body-sm text-on-surface-variant">
+          Aún no hay envíos registrados. Pulsa «Enviar prueba» arriba o espera un recordatorio real.
+        </p>
+      ) : (
+        <ul className="mt-4 divide-y divide-outline-variant border-t border-outline-variant">
+          {logs.map((log) => (
+            <li className="flex items-start justify-between gap-3 py-3" key={log.id}>
+              <div className="min-w-0">
+                <p className="truncate font-body-md text-body-md text-on-surface">{log.title}</p>
+                <p className="mt-0.5 font-data-mono text-data-mono text-xs text-on-surface-variant">
+                  {new Date(log.createdAt).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} · {log.event} · {log.sentCount}/{log.totalCount}
+                </p>
+                {log.error && <p className="mt-0.5 truncate font-body-sm text-body-sm text-error">{log.error}</p>}
+              </div>
+              <span className={cn("mt-0.5 shrink-0 px-2 py-0.5 font-data-mono text-data-mono text-xs", STATUS_STYLES[log.status])}>
+                {STATUS_LABELS[log.status]}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function NotificationSettingsPanel() {
   const settingsQuery = useNotificationSettingsQuery();
   const mutation = useNotificationSettingsMutation();
@@ -53,6 +109,7 @@ export function NotificationSettingsPanel() {
   return (
     <div className="space-y-6">
       <PushSubscriptionManager />
+      <NotificationLogsPanel />
       {settingsQuery.isLoading ? (
         <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando preferencias...</p>
       ) : settingsQuery.isError ? (

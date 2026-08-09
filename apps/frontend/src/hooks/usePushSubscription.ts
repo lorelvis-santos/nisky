@@ -6,7 +6,6 @@ import { api } from "@/lib/api";
 import { serializePushSubscription, urlBase64ToUint8Array } from "@/lib/push";
 
 async function serviceWorkerRegistration() {
-  if (process.env.NODE_ENV !== "production") return null;
   if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return null;
   return navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" });
 }

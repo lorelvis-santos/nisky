@@ -24,7 +24,7 @@ export async function processDueReminders() {
           body: reminder.body ?? undefined,
           url: notificationUrl(reminder.payload),
           tag: `reminder-${reminder.id}`,
-          data: { reminderId: reminder.id, payload: reminder.payload },
+          data: { type: "reminder", reminderId: reminder.id, payload: reminder.payload },
         });
         if (result.total > 0 && result.sent === 0) continue;
         await reminderService.markSent(reminder);

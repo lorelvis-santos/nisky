@@ -40,6 +40,7 @@ model User {
   projects       Project[]
   timeBlocks     TimeBlock[]
   notificationSettings NotificationSettings?
+  notificationLogs NotificationLog[]
   feedback      Feedback[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -98,6 +99,23 @@ model NotificationSettings {
   integrationErrors    Boolean  @default(true)
   timeBlockReminders   Boolean  @default(true)
   updatedAt            DateTime @updatedAt
+}
+
+model NotificationLog {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event      String
+  title      String
+  body       String?
+  status     String
+  sentCount  Int      @default(0)
+  totalCount Int      @default(0)
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notification_logs")
 }
 
 model TimeBlockSettings {

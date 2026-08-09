@@ -3,6 +3,7 @@ import { DateTime } from "luxon";
 import { prisma } from "../infra/prisma/client";
 import { pushService } from "../modules/push/push.service";
 import { defaultNotificationSettings } from "../utils/notifications/notification-settings";
+import { hasSkippedLogToday, recordNotificationLog } from "../modules/push/notification-log.service";
 
 const TZ = "America/Santo_Domingo";
 
@@ -63,27 +64,36 @@ export async function processTaskDueNotices(): Promise<TaskDueNoticeResult> {
 
   for (const task of candidates) {
     if (!task.dueDate) continue;
-    if (!settingsByUser.get(task.userId)?.taskDueReminders) continue;
-    if (wasWarnedToday(task.lastDueWarnedAt)) continue;
     const due = DateTime.fromJSDate(task.dueDate).setZone(TZ);
-    const label = task.project?.name ?? "proyecto";
     const isToday = due.hasSame(today, "day");
     const isTomorrow = due.hasSame(tomorrow, "day");
+    const skipEvent = isToday ? "task_due_today" : isTomorrow ? "task_due_tomorrow" : null;
+    if (!skipEvent) continue;
+    if (!settingsByUser.get(task.userId)?.taskDueReminders) {
+      if (!(await hasSkippedLogToday(task.userId, skipEvent, task.title, startOfToday().toJSDate()))) {
+        await recordNotificationLog({
+          userId: task.userId,
+          event: skipEvent,
+          title: task.title,
+          status: "skipped",
+          error: "Ajustes: recordatorios de tareas desactivados",
+        });
+      }
+      continue;
+    }
+    if (wasWarnedToday(task.lastDueWarnedAt)) continue;
+    const label = task.project?.name ?? "proyecto";
 
     let title: string;
     let body: string;
-    let type: string;
     if (isToday) {
       title = task.title;
       body = `Vence hoy a las ${due.toFormat("HH:mm")} · ${label}`;
-      type = "task_due_today";
-    } else if (isTomorrow) {
+    } else {
       title = task.title;
       body = `Vence mañana · ${label}`;
-      type = "task_due_tomorrow";
-    } else {
-      continue;
     }
+    const type = skipEvent;
 
     try {
       const result = await pushService.sendToUser(task.userId, {

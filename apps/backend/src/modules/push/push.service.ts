@@ -1,6 +1,7 @@
 import webpush from "web-push";
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
+import { hasSkippedLogToday, recordNotificationLog } from "./notification-log.service";
 import type { PushSubscriptionDto, PushUnsubscribeDto } from "./push.validator";
 
 type NotificationPayload = {
@@ -81,7 +82,22 @@ export class PushService {
   async sendToUser(userId: string, payload: NotificationPayload) {
     configureWebPush();
     const subscriptions = await prisma.pushSubscription.findMany({ where: { userId } });
-    if (subscriptions.length === 0) return { sent: 0, total: 0 };
+    if (subscriptions.length === 0) {
+      const event = typeof payload.data?.type === "string" ? payload.data.type : "push";
+      const dayStart = new Date();
+      dayStart.setHours(0, 0, 0, 0);
+      if (!(await hasSkippedLogToday(userId, event, payload.title, dayStart, "Sin suscripciones"))) {
+        await recordNotificationLog({
+          userId,
+          event,
+          title: payload.title,
+          body: payload.body,
+          status: "skipped",
+          error: "Sin suscripciones registradas para el usuario",
+        });
+      }
+      return { sent: 0, total: 0 };
+    }
 
     const serialized = JSON.stringify({
       title: payload.title,
@@ -96,18 +112,33 @@ export class PushService {
       keys: { p256dh: subscription.p256dh, auth: subscription.auth },
     }, serialized)));
 
+    let firstError: string | null = null;
     await Promise.all(results.map(async (result, index) => {
       if (result.status !== "rejected") return;
-      const error = result.reason as { statusCode?: number };
+      const error = result.reason as { statusCode?: number; message?: string };
+      if (!firstError) firstError = `${error.statusCode ?? "ERR"}: ${error.message ?? "desconocido"}`;
       if (error.statusCode === 404 || error.statusCode === 410) {
         await removeExpiredSubscription(userId, subscriptions[index]!.endpoint);
       }
     }));
 
-    return {
-      sent: results.filter((result) => result.status === "fulfilled").length,
-      total: subscriptions.length,
-    };
+    const sent = results.filter((result) => result.status === "fulfilled").length;
+    const total = subscriptions.length;
+    const status = sent === total ? "sent" : sent > 0 ? "partial" : "failed";
+
+    await recordNotificationLog({
+      userId,
+      event: typeof payload.data?.type === "string" ? payload.data.type : "push",
+      title: payload.title,
+      body: payload.body,
+      status,
+      sentCount: sent,
+      totalCount: total,
+      error: firstError,
+    });
+    console.log(`[notif] type=${typeof payload.data?.type === "string" ? payload.data.type : "push"} status=${status} sent=${sent}/${total} "${payload.title}"`);
+
+    return { sent, total };
   }
 
   async sendTest(userId: string) {
@@ -116,6 +147,7 @@ export class PushService {
       body: "Las notificaciones de Nisky están activas.",
       url: "/settings",
       tag: "nisky-test",
+      data: { type: "test" },
     });
     if (result.total === 0) throw new AppError("CONFLICT", "No tienes dispositivos suscritos");
     return result;

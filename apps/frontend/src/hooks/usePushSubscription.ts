@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { resetPromptState, NOTIF_KEY } from "@/lib/promptState";
+import { readPromptState, resetPromptState, NOTIF_KEY } from "@/lib/promptState";
 import { serializePushSubscription, urlBase64ToUint8Array } from "@/lib/push";
 
 async function serviceWorkerRegistration() {
@@ -89,16 +89,19 @@ export function usePushSubscription() {
       const raw = `${name}: ${message}`;
       // Registrar el fallo en el panel de diagnóstico del backend para depurar.
       void api.post("/push/subscribe-error", { name, message }).catch(() => {});
-      // Un fallo no debería bloquear el flujo: olvidamos lo que el usuario eligió antes
-      // (incluido "no me preguntes más") para que el aviso vuelva a aparecer.
-      resetPromptState(NOTIF_KEY);
+      // Un fallo no debería bloquear el flujo: olvidamos el estado del prompt para que
+      // el aviso vuelva a aparecer pronto. PERO respetamos «no me preguntes más»:
+      // si el usuario lo pidió explícitamente, no lo revivimos con cada error.
+      if (!readPromptState(NOTIF_KEY).neverAsk) {
+        resetPromptState(NOTIF_KEY);
+      }
       const permissionDenied =
         raw.includes("NotAllowed") || raw.includes("AbortError") || raw.toLowerCase().includes("permission");
       let friendly: string;
       if (permissionDenied && permission === "granted") {
-        // El permiso dice "granted" pero el navegador no deja suscribirse. Puede ser un
-        // permiso solo por sesión o un navegador/servicio push bloqueado (Brave, shields).
-        friendly = "Tu navegador no dejó activar las notificaciones. Elige «Permitir» de forma permanente (no «solo esta sesión») y vuelve a intentar. Si sigue fallando, desactiva el bloqueador de la página o prueba en Chrome.";
+        // El permiso dice "granted" pero el navegador no deja suscribirse. En Brave
+        // ocurre cuando está desactivado el uso de servicios de Google para push.
+        friendly = "Tu navegador no dejó activar las notificaciones. Elige «Permitir» de forma permanente (no «solo esta sesión») y vuelve a intentar. Si usas Brave: entra a sus Ajustes, busca «usar los servicios de Google para notificaciones push» y actívalo.";
       } else if (permissionDenied) {
         friendly = "No se concedió el permiso para notificaciones en el navegador.";
       } else if (raw.includes("InvalidStateError")) {

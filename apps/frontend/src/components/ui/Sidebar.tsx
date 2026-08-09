@@ -146,16 +146,13 @@ export function Sidebar({
             <span className="font-body-sm text-body-sm">Cerrar sesión</span>
           </button>
         </div>
-        <div className="flex items-center gap-4 border-t border-outline-variant px-container-padding py-4">
-          <p className="min-w-0 font-label-caps text-label-caps uppercase leading-tight text-on-surface-variant">
-            Impulsado por
-          </p>
+        <div className="border-t border-outline-variant px-container-padding py-4">
           <Image
-            alt="Logo"
-            className="h-10 w-auto shrink-0 object-contain"
+            alt="Las"
+            className="h-10 w-full object-contain"
             height={40}
-            src="/logo-v2.png"
-            width={50}
+            src="/las-logo-2.png"
+            width={1264}
           />
         </div>
       </aside>

@@ -15,6 +15,7 @@ const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
 const titles: Record<string, string> = {
   "/": "Inicio",
   "/tasks": "Planificación y tareas",
+  "/timeblocks": "Agenda",
   "/focus": "Modo enfoque",
   "/journal": "Diario",
   "/knowledge": "Mis notas",
@@ -75,7 +76,7 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
           {notificationsOpen && <NotificationPanel notices={notices} onClose={() => setNotificationsOpen(false)} onOpen={(url, kind) => { setNotificationsOpen(false); if (kind === "pending") { window.dispatchEvent(new CustomEvent(OPEN_PENDING_EVENT)); return; } router.push(url); }} />}
         </div>
         <button aria-label="Historial" className="hidden p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary sm:block" type="button"><History size={19} /></button>
-        <button aria-label="Perfil" className="p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" type="button"><UserCircle size={20} /></button>
+        <button aria-label="Perfil" className="p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => router.push("/settings")} type="button"><UserCircle size={20} /></button>
       </div>
     </header>
   );

@@ -11,18 +11,21 @@ import {
   HelpCircle,
   LayoutDashboard,
   LogOut,
+  MessageSquarePlus,
   PencilLine,
   Settings,
   Timer,
   X,
 } from "lucide-react";
+import { useState } from "react";
+import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { useAuth } from "@/context/AuthProvider";
 import type { User } from "@/types/entities";
 
 const primaryItems = [
   { href: "/", label: "Inicio", icon: LayoutDashboard },
   { href: "/tasks", label: "Planificación y tareas", icon: CalendarDays },
-  { href: "/timeblocks", label: "Bloques de tiempo", icon: CalendarClock },
+  { href: "/timeblocks", label: "Agenda", icon: CalendarClock },
   { href: "/focus", label: "Modo enfoque", icon: Timer },
   { href: "/journal", label: "Diario", icon: PencilLine },
   { href: "/knowledge", label: "Mis notas", icon: BookOpen },
@@ -73,6 +76,7 @@ export function Sidebar({
   onClose: () => void;
 }) {
   const { logout } = useAuth();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   return (
     <>
@@ -117,6 +121,17 @@ export function Sidebar({
           ))}
         </nav>
         <div className="border-t border-outline-variant py-element-gap-xs">
+          <button
+            className="flex w-full items-center gap-element-gap-md border-l-2 border-transparent px-container-padding py-3 text-left font-body-md text-body-md text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface"
+            onClick={() => {
+              onClose();
+              setFeedbackOpen(true);
+            }}
+            type="button"
+          >
+            <MessageSquarePlus size={20} strokeWidth={1.8} />
+            Feedback
+          </button>
           {secondaryItems.map((item) => (
             <NavItem {...item} key={item.href} onNavigate={onClose} />
           ))}
@@ -131,7 +146,7 @@ export function Sidebar({
             <span className="font-body-sm text-body-sm">Cerrar sesión</span>
           </button>
         </div>
-        <div className="flex items-center gap-3 border-t border-outline-variant px-container-padding py-4">
+        <div className="flex items-center gap-4 border-t border-outline-variant px-container-padding py-4">
           <p className="min-w-0 font-label-caps text-label-caps uppercase leading-tight text-on-surface-variant">
             Desarrollado por
           </p>
@@ -144,6 +159,7 @@ export function Sidebar({
           />
         </div>
       </aside>
+      {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
     </>
   );
 }

@@ -13,7 +13,7 @@ export class HabitService {
       const today = localDateKey();
       const [todayEntry, streak] = await Promise.all([
         prisma.habitEntry.findUnique({ where: { habitId_date: { habitId: habit.id, date: habitDate(today) } } }),
-        this.streak(userId, habit.id),
+        this.streak(userId, habit.id, habit.daysOfWeek),
       ]);
       return { ...habit, todayCompleted: Boolean(todayEntry?.completed), streak };
     }));
@@ -29,26 +29,43 @@ export class HabitService {
   }
 
   async create(userId: string, data: CreateHabitDto) {
+    const frequency = data.frequency ?? "DAILY";
+    const daysOfWeek =
+      frequency === "WEEKLY" && data.daysOfWeek && data.daysOfWeek.length > 0
+        ? [...data.daysOfWeek].sort((a, b) => a - b)
+        : [0, 1, 2, 3, 4, 5, 6];
+    const targetDays =
+      data.targetDays ?? (frequency === "WEEKLY" ? daysOfWeek.length : daysOfWeek.length);
     return prisma.habit.create({
       data: {
         userId,
         name: data.name,
         color: data.color || null,
-        frequency: data.frequency ?? "DAILY",
-        targetDays: data.targetDays ?? 7,
+        frequency,
+        targetDays,
+        daysOfWeek,
       },
     });
   }
 
   async update(userId: string, id: string, data: UpdateHabitDto) {
-    await this.getById(userId, id);
+    const current = await this.getById(userId, id);
+    const frequency = data.frequency ?? current.frequency;
+    const daysOfWeek =
+      data.daysOfWeek !== undefined
+        ? frequency === "WEEKLY" && data.daysOfWeek.length > 0
+          ? [...data.daysOfWeek].sort((a, b) => a - b)
+          : [0, 1, 2, 3, 4, 5, 6]
+        : current.daysOfWeek;
+    const targetDays = data.targetDays ?? daysOfWeek.length;
     return prisma.habit.update({
       where: { id },
       data: {
         ...(data.name !== undefined ? { name: data.name } : {}),
         ...(data.color !== undefined ? { color: data.color || null } : {}),
-        ...(data.frequency !== undefined ? { frequency: data.frequency } : {}),
-        ...(data.targetDays !== undefined ? { targetDays: data.targetDays } : {}),
+        ...(data.frequency !== undefined ? { frequency } : {}),
+        ...(data.targetDays !== undefined ? { targetDays } : {}),
+        ...(data.daysOfWeek !== undefined || data.frequency !== undefined ? { daysOfWeek } : {}),
         ...(data.archived !== undefined ? { archived: data.archived } : {}),
       },
     });
@@ -92,14 +109,21 @@ export class HabitService {
     });
   }
 
-  async streak(userId: string, habitId: string) {
+  async streak(userId: string, habitId: string, daysOfWeek?: number[]) {
     const entries = await prisma.habitEntry.findMany({
       where: { userId, habitId, completed: true },
       orderBy: { date: "desc" },
       take: 366,
       select: { date: true },
     });
-    return computeStreak(entries);
+    if (!daysOfWeek) {
+      const habit = await prisma.habit.findFirst({
+        where: { id: habitId, userId },
+        select: { daysOfWeek: true },
+      });
+      daysOfWeek = habit?.daysOfWeek ?? [0, 1, 2, 3, 4, 5, 6];
+    }
+    return computeStreak(entries, localDateKey(), daysOfWeek);
   }
 }
 

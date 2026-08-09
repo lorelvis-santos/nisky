@@ -240,11 +240,12 @@ export class IntegrationService {
           const settings = await defaultNotificationSettings(account.userId);
           if (!settings.integrationNews) return synced;
           const parts: string[] = [];
-          if (created > 0) parts.push(`${created === 1 ? "1 nueva asignación" : `${created} nuevas asignaciones`}`);
+          if (created > 0) parts.push(`${created === 1 ? "1 asignación nueva" : `${created} asignaciones nuevas`}`);
           if (removed > 0) parts.push(`${removed === 1 ? "1 completada" : `${removed} completadas`}`);
+          const total = created + removed;
           await pushService.sendToUser(account.userId, {
             title: `📚 ${universityName}`,
-            body: parts.join(" · "),
+            body: `${parts.join(" y ")}, ya ${total === 1 ? "está" : "están"} en tus tareas`,
             url: `/tasks?projectId=${projectId ?? ""}`,
             tag: `integrations-sync-${account.id}-${now.toISOString().slice(0, 10)}`,
             data: { integrationAccountId: account.id, type: "integration_new_assignments", created, removed },
@@ -262,8 +263,8 @@ export class IntegrationService {
           const settings = await defaultNotificationSettings(account.userId);
           if (settings.integrationErrors) {
             await pushService.sendToUser(account.userId, {
-              title: `⚠️ Problema al sincronizar ${universityName}`,
-              body: message.slice(0, 140),
+              title: `⚠️ Sin conexión con ${universityName}`,
+              body: "No pudimos sincronizar; revisa tu cuenta en Ajustes",
               url: "/settings",
               tag: `integrations-error-${account.id}-${nowInTz().toISODate()}`,
               data: { integrationAccountId: account.id, type: "integration_sync_error" },

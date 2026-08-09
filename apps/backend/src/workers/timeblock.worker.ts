@@ -81,7 +81,7 @@ export async function processTimeBlockNotifications() {
 
       if (shouldRemindBefore && !notifiedToday(block.lastRemindNotifiedAt) && !notifiedToday(block.lastStartNotifiedAt)) {
         const result = await pushService.sendToUser(block.userId, {
-          title: `En ${block.startMin - nowMin} min: ${label}`,
+          title: `⏰ «${label}» en ${block.startMin - nowMin} min`,
           body: `Empieza a las ${formatMin(block.startMin)}`,
           url: `/tasks?projectId=${block.projectId ?? ""}&view=day`,
           tag: `timeblock-remind-${block.id}`,
@@ -94,8 +94,8 @@ export async function processTimeBlockNotifications() {
 
       if (started && !notifiedToday(block.lastStartNotifiedAt)) {
         const result = await pushService.sendToUser(block.userId, {
-          title: `Empieza: ${label}`,
-          body: `De ${formatMin(block.startMin)} a ${formatMin(block.endMin)}`,
+          title: `▶️ «${label}» ya empieza`,
+          body: `De ${formatMin(block.startMin)} a ${formatMin(block.endMin)}, a por lo que te propusiste`,
           url: `/tasks?projectId=${block.projectId ?? ""}&view=day`,
           tag: `timeblock-start-${block.id}`,
           data: { timeBlockId: block.id, type: "timeblock_start" },
@@ -108,8 +108,8 @@ export async function processTimeBlockNotifications() {
       const minsToEnd = block.endMin - nowMin;
       if (minsToEnd <= 5 && minsToEnd > 0 && !notifiedToday(block.lastEndWarnNotifiedAt)) {
         const result = await pushService.sendToUser(block.userId, {
-          title: `Quedan ${minsToEnd} min`,
-          body: `Termina ${label} a las ${formatMin(block.endMin)}`,
+          title: `⏳ Queda${minsToEnd === 1 ? "" : "n"} ${minsToEnd} min de «${label}»`,
+          body: `Cierre a las ${formatMin(block.endMin)} con todo lo hecho`,
           url: `/tasks?projectId=${block.projectId ?? ""}&view=day`,
           tag: `timeblock-endwarn-${block.id}`,
           data: { timeBlockId: block.id, type: "timeblock_endwarn" },

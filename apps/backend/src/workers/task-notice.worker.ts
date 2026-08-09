@@ -87,10 +87,10 @@ export async function processTaskDueNotices(): Promise<TaskDueNoticeResult> {
     let title: string;
     let body: string;
     if (isToday) {
-      title = task.title;
+      title = `📝 ${task.title}`;
       body = `Vence hoy a las ${due.toFormat("HH:mm")} · ${label}`;
     } else {
-      title = task.title;
+      title = `📝 ${task.title}`;
       body = `Vence mañana · ${label}`;
     }
     const type = skipEvent;
@@ -145,17 +145,18 @@ async function sendMorningDigest() {
       ]);
 
       const parts: string[] = [];
-      if (dueToday > 0) parts.push(`${dueToday} ${dueToday === 1 ? "tarea vence" : "tareas vencen"} hoy`);
-      if (overdue > 0) parts.push(`${overdue} venció${overdue === 1 ? "" : "ron"} ayer`);
+      if (dueToday > 0) parts.push(`${dueToday === 1 ? "1 tarea vence" : `${dueToday} tareas vencen`} hoy`);
+      if (overdue > 0) parts.push(`${overdue} ${overdue === 1 ? "venció" : "vencieron"} ayer`);
       const firstBlockLabel = firstBlock?.project?.name ?? firstBlock?.name;
       if (firstBlock && firstBlockLabel) {
-        parts.push(`primer bloque «${firstBlockLabel}» a las ${String(Math.floor(firstBlock.startMin / 60)).padStart(2, "0")}:${String(firstBlock.startMin % 60).padStart(2, "0")}`);
+        parts.push(`«${firstBlockLabel}» te espera a las ${String(Math.floor(firstBlock.startMin / 60)).padStart(2, "0")}:${String(firstBlock.startMin % 60).padStart(2, "0")}`);
       }
       if (parts.length === 0) continue;
+      const body = parts.length > 1 ? `${parts.slice(0, -1).join(", ")} y ${parts[parts.length - 1]!}` : parts[0]!;
 
       const result = await pushService.sendToUser(userId, {
-        title: "Buenos días ☀️",
-        body: parts.join(" · "),
+        title: "☀️ Buenos días",
+        body,
         url: "/tasks",
         tag: `digest-${today.toISODate()}`,
         data: { type: "morning_digest" },

@@ -5,6 +5,7 @@ import { startReminderWorker } from "./workers/reminder.worker";
 import { startTaskRecurrenceWorker } from "./workers/task-recurrence.worker";
 import { startTimeBlockWorker } from "./workers/timeblock.worker";
 import { startMorningDigestWorker, startTaskNoticeWorker } from "./workers/task-notice.worker";
+import { startHabitWorker } from "./workers/habit.worker";
 
 const port = Number(process.env.PORT ?? 4000);
 
@@ -16,4 +17,5 @@ app.listen(port, () => {
   startTaskRecurrenceWorker();
   startTaskNoticeWorker();
   startMorningDigestWorker();
+  startHabitWorker();
 });

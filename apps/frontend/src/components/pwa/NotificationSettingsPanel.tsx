@@ -1,20 +1,22 @@
 "use client";
 
-import { Activity, CalendarClock, CheckIcon, XIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Activity, CalendarClock, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useNotificationLogsQuery, useNotificationSettingsMutation, useNotificationSettingsQuery } from "@/features/notifications/hooks/useNotifications";
 import type { NotificationLog, NotificationSettingsPayload } from "@/features/notifications/api/notifications";
 import { PushSubscriptionManager } from "@/components/pwa/PushSubscriptionManager";
 import { cn } from "@/lib/utils";
 
-type FlagKey = "morningDigest" | "taskDueReminders" | "integrationNews" | "integrationErrors" | "timeBlockReminders";
+type FlagKey = "morningDigest" | "taskDueReminders" | "integrationNews" | "integrationErrors" | "timeBlockReminders" | "habitReminders";
 
 const OPTIONS: Array<{ key: FlagKey; title: string; description: string }> = [
   { key: "morningDigest", title: "Resumen de la mañana", description: "Un aviso a las 7:00 con lo que vence hoy, lo vencido ayer y tu primer bloque." },
   { key: "taskDueReminders", title: "Tareas por vencer", description: "Aviso puntual cuando una tarea vence hoy o mañana." },
+  { key: "timeBlockReminders", title: "Agenda", description: "Aviso al iniciar tu bloque, cuando queden 5 minutos y, si configuras aviso previo en el bloque, antes de empezar." },
+  { key: "habitReminders", title: "Hábitos", description: "Te recordamos tus hábitos pendientes y celebramos tus rachas." },
   { key: "integrationNews", title: "Nuevas asignaciones de la universidad", description: "Te avisamos cuando la plataforma de tu universidad sincroniza tareas nuevas." },
   { key: "integrationErrors", title: "Errores de sincronización", description: "Te avisamos si una cuenta de la universidad no logra sincronizar." },
-  { key: "timeBlockReminders", title: "Agenda", description: "Avisos antes de empezar, al iniciar y al quedar 5 minutos." },
 ];
 
 function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {
@@ -22,15 +24,22 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
     <button
       aria-checked={checked}
       aria-label={checked ? "Activo, pulsar para desactivar" : "Inactivo, pulsar para activar"}
-      className={cn("flex h-6 w-11 items-center rounded-full border px-0.5 transition-colors", checked ? "justify-end border-primary bg-primary" : "justify-start border-outline-variant bg-surface-container-high", disabled && "opacity-40")}
+      className={cn(
+        "relative h-6 w-11 shrink-0 rounded-full border transition-colors",
+        checked ? "border-primary bg-primary" : "border-outline-variant bg-surface-container-high",
+        disabled && "opacity-40",
+      )}
       disabled={disabled}
       onClick={() => onChange(!checked)}
       role="switch"
       type="button"
     >
-      <span className={cn("flex h-5 w-5 items-center justify-center", checked ? "bg-on-primary text-primary" : "bg-on-surface-variant text-surface-container-high")}>
-        {checked ? <CheckIcon size={12} strokeWidth={3} /> : <XIcon size={12} strokeWidth={3} />}
-      </span>
+      <span
+        className={cn(
+          "absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full transition-all",
+          checked ? "left-[calc(100%-1.25rem)] bg-on-primary" : "left-1 bg-on-surface-variant",
+        )}
+      />
     </button>
   );
 }
@@ -49,29 +58,60 @@ const STATUS_LABELS: Record<NotificationLog["status"], string> = {
   skipped: "Omitido",
 };
 
+const VISIBLE_LOGS = 6;
+const HIDE_AUDIT_KEY = "nisky:hide-notif-audit";
+
 function NotificationLogsPanel() {
   const logsQuery = useNotificationLogsQuery();
   const logs = logsQuery.data ?? [];
+  const [expanded, setExpanded] = useState(false);
+  const [hidden, setHidden] = useState(false);
+
+  const visibleLogs = expanded ? logs : logs.slice(0, VISIBLE_LOGS);
+  const hasMore = logs.length > VISIBLE_LOGS;
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(HIDE_AUDIT_KEY) === "1") setHidden(true);
+    } catch {
+      // privacidad: si el storage no está disponible, seguimos mostrando
+    }
+  }, []);
+
+  const hideForGood = () => {
+    try {
+      window.localStorage.setItem(HIDE_AUDIT_KEY, "1");
+    } catch {
+      // idem
+    }
+    setHidden(true);
+  };
+
+  if (hidden) return null;
+
   return (
     <section className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding">
       <div className="flex items-start gap-3">
         <Activity className="mt-0.5 text-primary" size={20} />
-        <div>
-          <h2 className="font-headline-xs text-headline-xs">Registro de notificaciones</h2>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-headline-xs text-headline-xs">Últimas notificaciones</h2>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-            Últimos envíos registrados (exito, fallo u omisión) para diagnosticar si están llegando.
+            Lo que Nisky ha intentado enviar últimamente, para confirmar que todo llega bien. Es solo para la etapa de pruebas.
           </p>
         </div>
+        <button aria-label="Quitar este registro" className="shrink-0 text-on-surface-variant hover:text-primary" onClick={hideForGood} type="button">
+          <XIcon size={16} />
+        </button>
       </div>
       {logsQuery.isLoading ? (
         <p className="mt-4 font-body-sm text-body-sm text-on-surface-variant">Cargando registro...</p>
-      ) : logs.length === 0 ? (
+      ) : visibleLogs.length === 0 ? (
         <p className="mt-4 font-body-sm text-body-sm text-on-surface-variant">
-          Aún no hay envíos registrados. Pulsa «Enviar prueba» arriba o espera un recordatorio real.
+          Aún no hay nada por aquí. Pulsa «Enviar prueba» arriba o espera a que llegue un recordatorio real.
         </p>
       ) : (
         <ul className="mt-4 divide-y divide-outline-variant border-t border-outline-variant">
-          {logs.map((log) => (
+          {visibleLogs.map((log) => (
             <li className="flex items-start justify-between gap-3 py-3" key={log.id}>
               <div className="min-w-0">
                 <p className="truncate font-body-md text-body-md text-on-surface">{log.title}</p>
@@ -86,6 +126,15 @@ function NotificationLogsPanel() {
             </li>
           ))}
         </ul>
+      )}
+      {hasMore && (
+        <button
+          className="mt-3 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+          onClick={() => setExpanded((value) => !value)}
+          type="button"
+        >
+          {expanded ? "Ver menos" : `Ver más (${logs.length - VISIBLE_LOGS} más)`}
+        </button>
       )}
     </section>
   );

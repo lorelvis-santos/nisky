@@ -7,6 +7,7 @@ export interface CreateHabitPayload {
   color?: string;
   frequency?: HabitFrequency;
   targetDays?: number;
+  daysOfWeek?: number[];
 }
 
 export interface UpdateHabitPayload extends Partial<CreateHabitPayload> {

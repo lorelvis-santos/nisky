@@ -149,6 +149,7 @@ export interface Habit {
   color: string | null;
   frequency: HabitFrequency;
   targetDays: number;
+  daysOfWeek: number[];
   archived: boolean;
   todayCompleted: boolean;
   streak: number;

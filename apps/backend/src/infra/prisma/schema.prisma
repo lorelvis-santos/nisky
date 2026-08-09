@@ -98,6 +98,7 @@ model NotificationSettings {
   integrationNews      Boolean  @default(true)
   integrationErrors    Boolean  @default(true)
   timeBlockReminders   Boolean  @default(true)
+  habitReminders       Boolean  @default(true)
   updatedAt            DateTime @updatedAt
 }
 
@@ -258,17 +259,19 @@ enum HabitFrequency {
 }
 
 model Habit {
-  id          String         @id @default(uuid())
-  userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  color       String?
-  frequency   HabitFrequency @default(DAILY)
-  targetDays  Int            @default(7)
-  archived    Boolean        @default(false)
-  entries     HabitEntry[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id             String         @id @default(uuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  color          String?
+  frequency      HabitFrequency @default(DAILY)
+  targetDays     Int            @default(7)
+  daysOfWeek     Int[]          @default([])
+  archived       Boolean        @default(false)
+  lastRemindedAt DateTime?
+  entries        HabitEntry[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@index([userId, archived])
 }

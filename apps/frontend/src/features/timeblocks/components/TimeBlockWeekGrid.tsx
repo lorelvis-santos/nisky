@@ -28,12 +28,13 @@ type ResizeDraft = {
   days: number[];
   dragDay: number;
   durationMin: number;
-  columns: DayColumn[];
-  container: HTMLElement;
-  grid: HTMLElement;
-  left: number;
-  width: number;
-};
+columns: DayColumn[];
+   container: HTMLElement;
+   grid: HTMLElement;
+   left: number;
+   width: number;
+   headerOffset: number;
+ };
 
 export function TimeBlockWeekGrid({
   blocks,
@@ -50,14 +51,24 @@ export function TimeBlockWeekGrid({
   projects: Project[];
   onBlockClick: (block: TimeBlock) => void;
   onSlotClick: (dayOfWeek: number, startMin: number) => void;
-  onResize: (block: TimeBlock, startMin: number, endMin: number, days: number[]) => void;
-  onResizePreview?: (block: TimeBlock, startMin: number, endMin: number, days: number[]) => void;
+  onResize: (
+    block: TimeBlock,
+    startMin: number,
+    endMin: number,
+    days: number[],
+  ) => void;
+  onResizePreview?: (
+    block: TimeBlock,
+    startMin: number,
+    endMin: number,
+    days: number[],
+  ) => void;
   moveEnabled?: boolean;
   dayStartMin?: number;
   dayEndMin?: number;
 }) {
   const totalMin = Math.max(dayEndMin - dayStartMin, 60);
-  const totalPx = totalMin * HOUR_PX / 60;
+  const totalPx = (totalMin * HOUR_PX) / 60;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<ResizeDraft | null>(null);
   const draftRef = useRef<ResizeDraft | null>(null);
@@ -81,12 +92,19 @@ export function TimeBlockWeekGrid({
   const days = DAY_ORDER.map((dayOfWeek, index) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + index);
-    return { dayOfWeek, date, key: `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` };
+    return {
+      dayOfWeek,
+      date,
+      key: `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`,
+    };
   });
-  const hourMarks = Array.from({ length: Math.floor((dayEndMin - dayStartMin) / 60) }, (_, index) => dayStartMin + (index + 1) * 60);
+  const hourMarks = Array.from(
+    { length: Math.floor((dayEndMin - dayStartMin) / 60) },
+    (_, index) => dayStartMin + (index + 1) * 60,
+  );
 
   const [initialScrollTop] = useState(() =>
-    Math.max((nowMin - (dayStartMin + 4 * 60)) * HOUR_PX / 60, 0),
+    Math.max(((nowMin - (dayStartMin + 4 * 60)) * HOUR_PX) / 60, 0),
   );
 
   useEffect(() => {
@@ -98,11 +116,17 @@ export function TimeBlockWeekGrid({
     const containerRect = el.getBoundingClientRect();
     const columnRect = todayColumn.getBoundingClientRect();
     const maxScroll = Math.max(el.scrollWidth - el.clientWidth, 0);
-    const target = el.scrollLeft + (columnRect.left - containerRect.left) - (el.clientWidth - columnRect.width) / 2;
+    const target =
+      el.scrollLeft +
+      (columnRect.left - containerRect.left) -
+      (el.clientWidth - columnRect.width) / 2;
     el.scrollLeft = Math.min(Math.max(target, 0), maxScroll);
   }, [initialScrollTop]);
 
-  const clickSlot = (event: React.MouseEvent<HTMLDivElement>, dayOfWeek: number) => {
+  const clickSlot = (
+    event: React.MouseEvent<HTMLDivElement>,
+    dayOfWeek: number,
+  ) => {
     if (blockDownRef.current) return;
     if (event.target !== event.currentTarget) return;
     const rect = event.currentTarget.getBoundingClientRect();
@@ -111,10 +135,12 @@ export function TimeBlockWeekGrid({
   };
 
   const getColumns = (grid: HTMLElement): DayColumn[] =>
-    Array.from(grid.querySelectorAll<HTMLElement>("[data-resize-col]")).map((el) => ({
-      el,
-      dayOfWeek: Number(el.getAttribute("data-day")),
-    }));
+    Array.from(grid.querySelectorAll<HTMLElement>("[data-resize-col]")).map(
+      (el) => ({
+        el,
+        dayOfWeek: Number(el.getAttribute("data-day")),
+      }),
+    );
 
   const stopAutoscroll = useCallback(() => {
     if (rafRef.current != null) {
@@ -131,11 +157,18 @@ export function TimeBlockWeekGrid({
     const vh = window.innerHeight;
     const vw = window.innerWidth;
     const rect = state.container.getBoundingClientRect();
-    const speed = (overshoot: number) => Math.min(EDGE_STEP + Math.abs(overshoot) * 2, 80);
-    const overTop = Math.max((rect.top + EDGE) - pos.y, EDGE - pos.y);
-    const overBottom = Math.max(pos.y - (rect.bottom - EDGE), pos.y - (vh - EDGE));
-    const overLeft = Math.max((rect.left + EDGE) - pos.x, EDGE - pos.x);
-    const overRight = Math.max(pos.x - (rect.right - EDGE), pos.x - (vw - EDGE));
+    const speed = (overshoot: number) =>
+      Math.min(EDGE_STEP + Math.abs(overshoot) * 2, 80);
+    const overTop = Math.max(rect.top + EDGE - pos.y, EDGE - pos.y);
+    const overBottom = Math.max(
+      pos.y - (rect.bottom - EDGE),
+      pos.y - (vh - EDGE),
+    );
+    const overLeft = Math.max(rect.left + EDGE - pos.x, EDGE - pos.x);
+    const overRight = Math.max(
+      pos.x - (rect.right - EDGE),
+      pos.x - (vw - EDGE),
+    );
     let dx = 0;
     let dy = 0;
     if (overTop > 0) dy = -speed(overTop);
@@ -149,76 +182,111 @@ export function TimeBlockWeekGrid({
     rafRef.current = requestAnimationFrame(scrollTick);
   }, []);
 
-  const moveHandle = useCallback((event: PointerEvent) => {
-    const state = draftRef.current;
-    if (!state) return;
-    event.preventDefault();
-    const down = downRef.current;
-    if (down && !movedRef.current && (Math.abs(event.clientX - down.x) > 6 || Math.abs(event.clientY - down.y) > 6)) {
-      movedRef.current = true;
-    }
-    pointerPosRef.current = { x: event.clientX, y: event.clientY };
-
-    let colRect: DOMRect | null = null;
-    let dragDay = state.dragDay;
-    if (state.kind === "move") {
-      const first = state.columns[0]?.el.getBoundingClientRect();
-      const last = state.columns[state.columns.length - 1]?.el.getBoundingClientRect();
-      if (first && last) {
-        const colWidth = (last.right - first.left) / state.columns.length;
-        const index = Math.min(Math.max(Math.floor((event.clientX - first.left) / colWidth), 0), state.columns.length - 1);
-        const column = state.columns[index];
-        dragDay = column.dayOfWeek;
-        colRect = column.el.getBoundingClientRect();
+  const moveHandle = useCallback(
+    (event: PointerEvent) => {
+      const state = draftRef.current;
+      if (!state) return;
+      event.preventDefault();
+      const down = downRef.current;
+      if (
+        down &&
+        !movedRef.current &&
+        (Math.abs(event.clientX - down.x) > 6 ||
+          Math.abs(event.clientY - down.y) > 6)
+      ) {
+        movedRef.current = true;
       }
-    } else {
-      const own = state.columns.find((column) => column.dayOfWeek === dragDay);
-      if (own) colRect = own.el.getBoundingClientRect();
-    }
-    if (!colRect) return;
-    const minute = Math.round((dayStartMin + ((event.clientY - colRect.top) / HOUR_PX) * 60) / 15) * 15;
-    const clamped = Math.min(Math.max(minute, dayStartMin), dayEndMin);
-    const next = { ...state };
-    if (state.kind === "move") {
-      next.startMin = Math.min(Math.max(clamped, dayStartMin), dayEndMin - state.durationMin);
-      next.endMin = next.startMin + state.durationMin;
-      next.days = state.days.map((day) => (day - state.dragDay + dragDay + 7) % 7);
-      next.left = colRect.left - state.grid.getBoundingClientRect().left + 4;
-      next.width = colRect.width - 8;
-    } else if (state.kind === "start") {
-      next.startMin = Math.min(clamped, state.endMin - MIN_DURATION);
-    } else {
-      next.endMin = Math.max(clamped, state.startMin + MIN_DURATION);
-    }
-    draftRef.current = next;
-    setDraft(next);
-    onResizePreviewRef.current?.(next.block, next.startMin, next.endMin, next.days);
-  }, [dayStartMin, dayEndMin]);
+      pointerPosRef.current = { x: event.clientX, y: event.clientY };
 
-  const endResize = useCallback(function endResize() {
-    stopAutoscroll();
-    pointerPosRef.current = null;
-    const state = draftRef.current;
-    draftRef.current = null;
-    downRef.current = null;
-    setDraft(null);
-    window.removeEventListener("pointermove", moveHandle);
-    window.removeEventListener("pointerup", endResize);
-    window.removeEventListener("pointercancel", endResize);
-    if (!state) return;
-    const daysChanged =
-      state.days.length !== state.block.daysOfWeek.length ||
-      state.days.some((day, index) => day !== state.block.daysOfWeek[index]);
-    const changed =
-      state.startMin !== state.block.startMin ||
-      state.endMin !== state.block.endMin ||
-      daysChanged;
-    if (changed) {
-      onResizeRef.current(state.block, state.startMin, state.endMin, state.days);
-    } else if (state.kind === "move" && !movedRef.current) {
-      onBlockClickRef.current(state.block);
-    }
-  }, [moveHandle, stopAutoscroll]);
+      let colRect: DOMRect | null = null;
+      let dragDay = state.dragDay;
+      if (state.kind === "move") {
+        const first = state.columns[0]?.el.getBoundingClientRect();
+        const last =
+          state.columns[state.columns.length - 1]?.el.getBoundingClientRect();
+        if (first && last) {
+          const colWidth = (last.right - first.left) / state.columns.length;
+          const index = Math.min(
+            Math.max(Math.floor((event.clientX - first.left) / colWidth), 0),
+            state.columns.length - 1,
+          );
+          const column = state.columns[index];
+          dragDay = column.dayOfWeek;
+          colRect = column.el.getBoundingClientRect();
+        }
+      } else {
+        const own = state.columns.find(
+          (column) => column.dayOfWeek === dragDay,
+        );
+        if (own) colRect = own.el.getBoundingClientRect();
+      }
+      if (!colRect) return;
+      const minute =
+        Math.round(
+          (dayStartMin + ((event.clientY - colRect.top) / HOUR_PX) * 60) / 15,
+        ) * 15;
+      const clamped = Math.min(Math.max(minute, dayStartMin), dayEndMin);
+      const next = { ...state };
+      if (state.kind === "move") {
+        next.startMin = Math.min(
+          Math.max(clamped, dayStartMin),
+          dayEndMin - state.durationMin,
+        );
+        next.endMin = next.startMin + state.durationMin;
+        next.days = state.block.daysOfWeek.map(
+          (day) => (day - state.dragDay + dragDay + 7) % 7,
+        );
+        next.left = colRect.left - state.grid.getBoundingClientRect().left + 4;
+        next.width = colRect.width - 8;
+      } else if (state.kind === "start") {
+        next.startMin = Math.min(clamped, state.endMin - MIN_DURATION);
+      } else {
+        next.endMin = Math.max(clamped, state.startMin + MIN_DURATION);
+      }
+      draftRef.current = next;
+      setDraft(next);
+      onResizePreviewRef.current?.(
+        next.block,
+        next.startMin,
+        next.endMin,
+        next.days,
+      );
+    },
+    [dayStartMin, dayEndMin],
+  );
+
+  const endResize = useCallback(
+    function endResize() {
+      stopAutoscroll();
+      pointerPosRef.current = null;
+      const state = draftRef.current;
+      draftRef.current = null;
+      downRef.current = null;
+      setDraft(null);
+      window.removeEventListener("pointermove", moveHandle);
+      window.removeEventListener("pointerup", endResize);
+      window.removeEventListener("pointercancel", endResize);
+      if (!state) return;
+      const daysChanged =
+        state.days.length !== state.block.daysOfWeek.length ||
+        state.days.some((day, index) => day !== state.block.daysOfWeek[index]);
+      const changed =
+        state.startMin !== state.block.startMin ||
+        state.endMin !== state.block.endMin ||
+        daysChanged;
+      if (changed) {
+        onResizeRef.current(
+          state.block,
+          state.startMin,
+          state.endMin,
+          state.days,
+        );
+      } else if (state.kind === "move" && !movedRef.current) {
+        onBlockClickRef.current(state.block);
+      }
+    },
+    [moveHandle, stopAutoscroll],
+  );
 
   const attachWindowListeners = useCallback(() => {
     window.addEventListener("pointermove", moveHandle);
@@ -227,15 +295,22 @@ export function TimeBlockWeekGrid({
     rafRef.current = requestAnimationFrame(scrollTick);
   }, [moveHandle, endResize, scrollTick]);
 
-  const startResize = (event: React.PointerEvent<HTMLDivElement>, block: TimeBlock, edge: "start" | "end") => {
+  const startResize = (
+    event: React.PointerEvent<HTMLDivElement>,
+    block: TimeBlock,
+    edge: "start" | "end",
+  ) => {
     event.preventDefault();
     event.stopPropagation();
     const grid = event.currentTarget.closest<HTMLElement>("[data-grid]");
     const container = scrollRef.current;
     if (!grid || !container) return;
     const columns = getColumns(grid);
-    const column = event.currentTarget.closest<HTMLElement>("[data-resize-col]");
-    const dragDay = column ? Number(column.getAttribute("data-day")) : block.daysOfWeek[0];
+    const column =
+      event.currentTarget.closest<HTMLElement>("[data-resize-col]");
+    const dragDay = column
+      ? Number(column.getAttribute("data-day"))
+      : block.daysOfWeek[0];
     const ownColumn = columns.find((item) => item.dayOfWeek === dragDay);
     const gridRect = grid.getBoundingClientRect();
     const colRect = ownColumn?.el.getBoundingClientRect();
@@ -256,18 +331,23 @@ export function TimeBlockWeekGrid({
       grid,
       left: colRect ? colRect.left - gridRect.left + 4 : 0,
       width: colRect ? colRect.width - 8 : 0,
+      headerOffset: colRect ? colRect.top - gridRect.top : 0,
     };
     onBlockClickRef.current(block);
     setDraft(draftRef.current);
     attachWindowListeners();
   };
 
-  const startMove = (event: React.PointerEvent<HTMLButtonElement>, block: TimeBlock) => {
+  const startMove = (
+    event: React.PointerEvent<HTMLButtonElement>,
+    block: TimeBlock,
+  ) => {
     event.preventDefault();
     event.stopPropagation();
     if (!moveEnabled) return;
     const grid = event.currentTarget.closest<HTMLElement>("[data-grid]");
-    const column = event.currentTarget.closest<HTMLElement>("[data-resize-col]");
+    const column =
+      event.currentTarget.closest<HTMLElement>("[data-resize-col]");
     const container = scrollRef.current;
     if (!grid || !column || !container) return;
     const dragDay = Number(column.getAttribute("data-day"));
@@ -291,27 +371,39 @@ export function TimeBlockWeekGrid({
       grid,
       left: colRect.left - gridRect.left + 4,
       width: colRect.width - 8,
+      headerOffset: colRect.top - gridRect.top,
     };
     onBlockClickRef.current(block);
     setDraft(draftRef.current);
     attachWindowListeners();
   };
 
-  const renderBlockButton = (block: TimeBlock, startMin: number, endMin: number, hidden: boolean) => {
+  const renderBlockButton = (
+    block: TimeBlock,
+    startMin: number,
+    endMin: number,
+    hidden: boolean,
+  ) => {
     const project = projects.find((item) => item.id === block.projectId);
     const color = project?.color ?? "#7a8494";
     const label = block.name ?? project?.name ?? "Tiempo libre";
-    const top = Math.max(startMin - dayStartMin, 0) * HOUR_PX / 60;
-    const bottom = Math.min(endMin - dayStartMin, totalMin) * HOUR_PX / 60;
+    const top = (Math.max(startMin - dayStartMin, 0) * HOUR_PX) / 60;
+    const bottom = (Math.min(endMin - dayStartMin, totalMin) * HOUR_PX) / 60;
     const height = Math.max(bottom - top, 12);
     const compact = height < 48;
     return (
       <button
-        aria-label={hidden ? undefined : `${label}: ${minToTime(startMin)} a ${minToTime(endMin)}`}
+        aria-label={
+          hidden
+            ? undefined
+            : `${label}: ${minToTime(startMin)} a ${minToTime(endMin)}`
+        }
         aria-hidden={hidden ? true : undefined}
         className={cn(
           "absolute inset-x-1 z-10 border-l-2 px-2 py-1 text-left",
-          moveEnabled ? "cursor-grab touch-none active:cursor-grabbing" : "cursor-pointer",
+          moveEnabled
+            ? "cursor-grab touch-none active:cursor-grabbing"
+            : "cursor-pointer",
           block.isActive ? "" : "opacity-40",
           hidden && "opacity-0",
         )}
@@ -321,12 +413,25 @@ export function TimeBlockWeekGrid({
           event.stopPropagation();
           if (!moveEnabled || event.detail === 0) onBlockClick(block);
         }}
-        onPointerDown={moveEnabled ? (event) => startMove(event, block) : undefined}
-        style={{ top, height, backgroundColor: hexToRgba(color, 0.14), borderColor: color }}
+        onPointerDown={
+          moveEnabled ? (event) => startMove(event, block) : undefined
+        }
+        style={{
+          top,
+          height,
+          backgroundColor: hexToRgba(color, 0.14),
+          borderColor: color,
+        }}
         title={`${label} · ${minToTime(block.startMin)}–${minToTime(block.endMin)}${block.isActive ? "" : " · Pausado"}`}
         type="button"
       >
-        <p className={cn("truncate font-body-sm text-body-sm font-semibold", compact && "leading-tight")} style={{ color }}>
+        <p
+          className={cn(
+            "truncate font-body-sm text-body-sm font-semibold",
+            compact && "leading-tight",
+          )}
+          style={{ color }}
+        >
           {label}
         </p>
         {!compact && (
@@ -350,41 +455,69 @@ export function TimeBlockWeekGrid({
     );
   };
 
-  const draftProject = draft ? projects.find((item) => item.id === draft.block.projectId) : null;
+  const draftProject = draft
+    ? projects.find((item) => item.id === draft.block.projectId)
+    : null;
   const draftColor = draftProject?.color ?? "#7a8494";
-  const draftLabel = draft ? draft.block.name ?? draftProject?.name ?? "Tiempo libre" : "";
-  const draftTop = draft ? Math.max(draft.startMin - dayStartMin, 0) * HOUR_PX / 60 : 0;
-  const draftBottom = draft ? Math.min(draft.endMin - dayStartMin, totalMin) * HOUR_PX / 60 : 0;
+  const draftLabel = draft
+    ? (draft.block.name ?? draftProject?.name ?? "Tiempo libre")
+    : "";
+  const draftTop = draft
+    ? draft.headerOffset + (Math.max(draft.startMin - dayStartMin, 0) * HOUR_PX) / 60
+    : 0;
+  const draftBottom = draft
+    ? draft.headerOffset + (Math.min(draft.endMin - dayStartMin, totalMin) * HOUR_PX) / 60
+    : 0;
 
   return (
     <div className={cn("flex min-w-0 flex-col", draft && "select-none")}>
-      <div ref={scrollRef} className="overflow-auto bg-surface-container-low p-3 lg:max-h-[calc(100vh-15rem)]">
-        <div className="min-w-[820px]">
-          <div className="grid grid-cols-[3rem_repeat(7,minmax(110px,1fr))]">
-            <div />
+      <div
+        ref={scrollRef}
+        className="max-h-[calc(100dvh-16rem)] overflow-auto bg-surface-container-low lg:max-h-[calc(100vh-15rem)]"
+      >
+        <div className="min-w-[820px] pb-3 pr-3">
+          <div
+            data-grid
+            className="relative grid grid-cols-[3rem_repeat(7,minmax(110px,1fr))]"
+          >
+            <div
+              aria-hidden="true"
+              className="sticky left-0 top-0 z-40 border-r border-b border-outline-variant bg-surface-container-low"
+            />
             {days.map((day) => (
               <div
                 className={cn(
-                  "border-b px-2 py-2 text-center",
+                  "sticky top-0 z-20 border-b bg-surface-container-low px-2 py-2 text-center",
                   day.key === todayKey
-                    ? "border-t-2 border-t-primary bg-secondary-container/40 text-primary"
+                    ? "border-t-2 border-t-primary text-primary"
                     : "border-t border-t-outline-variant text-on-surface-variant",
                 )}
                 key={day.key}
               >
-                <p className="font-data-mono text-data-mono text-xs font-semibold">{DAY_NAMES_SHORT[day.dayOfWeek]}</p>
-                <p className="mt-0.5 font-data-mono text-data-mono text-xs">{day.date.getDate()}</p>
+                <span
+                  className={cn(
+                    "flex flex-col items-center py-1",
+                    day.key === todayKey && "bg-secondary-container/40",
+                  )}
+                >
+                  <p className="font-data-mono text-data-mono text-xs font-semibold">
+                    {DAY_NAMES_SHORT[day.dayOfWeek]}
+                  </p>
+                  <p className="mt-0.5 font-data-mono text-data-mono text-xs">
+                    {day.date.getDate()}
+                  </p>
+                </span>
               </div>
             ))}
-          </div>
-
-          <div data-grid className="relative grid grid-cols-[3rem_repeat(7,minmax(110px,1fr))]">
-            <div className="relative" style={{ height: totalPx }}>
+            <div
+              className="sticky left-0 z-20 border-r border-outline-variant bg-surface-container-low"
+              style={{ height: totalPx }}
+            >
               {hourMarks.map((hour) => (
                 <span
                   className="absolute right-2 -translate-y-1/2 font-data-mono text-data-mono text-[11px] text-on-surface-variant"
                   key={hour}
-                  style={{ top: (hour - dayStartMin) * HOUR_PX / 60 }}
+                  style={{ top: ((hour - dayStartMin) * HOUR_PX) / 60 }}
                 >
                   {minToTime(hour)}
                 </span>
@@ -409,12 +542,20 @@ export function TimeBlockWeekGrid({
                   onPointerDown={() => {
                     blockDownRef.current = false;
                   }}
+                  style={{ height: totalPx }}
                 >
-                  {dayBlocks.map((block) => renderBlockButton(block, block.startMin, block.endMin, draft?.block.id === block.id))}
+                  {dayBlocks.map((block) =>
+                    renderBlockButton(
+                      block,
+                      block.startMin,
+                      block.endMin,
+                      draft?.block.id === block.id,
+                    ),
+                  )}
                   {isToday && nowMin >= dayStartMin && nowMin <= dayEndMin && (
                     <div
                       className="pointer-events-none absolute inset-x-0 z-20"
-                      style={{ top: (nowMin - dayStartMin) * HOUR_PX / 60 }}
+                      style={{ top: ((nowMin - dayStartMin) * HOUR_PX) / 60 }}
                     >
                       <div className="absolute -left-[3px] -top-[3px] h-[7px] w-[7px] rounded-full bg-error" />
                       <div className="h-px w-full bg-error" />
@@ -436,7 +577,10 @@ export function TimeBlockWeekGrid({
                   borderColor: draftColor,
                 }}
               >
-                <p className="truncate font-body-sm text-body-sm font-semibold" style={{ color: draftColor }}>
+                <p
+                  className="truncate font-body-sm text-body-sm font-semibold"
+                  style={{ color: draftColor }}
+                >
                   {draftLabel}
                 </p>
                 <p className="truncate font-data-mono text-data-mono text-[10px] text-on-surface-variant">

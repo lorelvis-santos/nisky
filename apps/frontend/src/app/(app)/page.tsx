@@ -55,7 +55,7 @@ export default function DashboardPage() {
   return (
     <section className="flex h-full flex-col bg-background">
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 p-container-padding sm:px-section-gap">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 p-container-padding pb-20 sm:px-section-gap">
           <ActiveBlockBanner
             block={activeBlock}
             onPlayPomodoro={handlePlayPomodoro}

@@ -220,7 +220,7 @@ export function ProactivePrompts() {
                     {notifBlocked ? "Tal vez después" : "No, me quiero perder mis pendientes"}
                   </button>
                 </div>
-                {!notifBlocked && !notifGranted && notifDismissCount >= 1 && (
+                {!notifBlocked && (notifGranted || notifDismissCount >= 1) && (
                   <button className="mt-2 font-body-xs text-body-xs text-on-surface-variant underline hover:text-primary" onClick={neverAskNotif} type="button">
                     No me preguntes más
                   </button>

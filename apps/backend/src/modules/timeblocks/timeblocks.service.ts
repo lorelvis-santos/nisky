@@ -111,6 +111,11 @@ export class TimeBlockService {
     const startMin = data.startMin ?? current.startMin;
     const endMin = data.endMin ?? current.endMin;
     await this.assertNoOverlap(userId, daysOfWeek, startMin, endMin, id);
+    const timingChanged =
+      data.startMin !== undefined ||
+      data.endMin !== undefined ||
+      data.daysOfWeek !== undefined ||
+      data.remindBeforeMin !== undefined;
     return prisma.timeBlock.update({
       where: { id },
       data: {
@@ -123,6 +128,9 @@ export class TimeBlockService {
         ...(data.repeatEveryWeeks !== undefined ? { repeatEveryWeeks: data.repeatEveryWeeks } : {}),
         ...(data.repeatEndsAt !== undefined ? { repeatEndsAt: data.repeatEndsAt ? new Date(data.repeatEndsAt) : null } : {}),
         ...(data.remindBeforeMin !== undefined ? { remindBeforeMin: data.remindBeforeMin } : {}),
+        ...(timingChanged
+          ? { lastRemindNotifiedAt: null, lastStartNotifiedAt: null, lastEndWarnNotifiedAt: null }
+          : {}),
       },
     });
   }

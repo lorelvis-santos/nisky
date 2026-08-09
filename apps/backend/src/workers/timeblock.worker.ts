@@ -80,37 +80,43 @@ export async function processTimeBlockNotifications() {
       const shouldRemindBefore = remindBefore > 0 && !started && nowMin >= block.startMin - remindBefore && nowMin < block.startMin;
 
       if (shouldRemindBefore && !notifiedToday(block.lastRemindNotifiedAt) && !notifiedToday(block.lastStartNotifiedAt)) {
-        await pushService.sendToUser(block.userId, {
+        const result = await pushService.sendToUser(block.userId, {
           title: `En ${block.startMin - nowMin} min: ${label}`,
           body: `Empieza a las ${formatMin(block.startMin)}`,
           url: `/tasks?projectId=${block.projectId ?? ""}&view=day`,
           tag: `timeblock-remind-${block.id}`,
-          data: { timeBlockId: block.id, type: "timeblock_remind" },
+          data: { type: "timeblock_remind" },
         });
-        await prisma.timeBlock.update({ where: { id: block.id }, data: { lastRemindNotifiedAt: new Date() } });
+        if (result.sent > 0) {
+          await prisma.timeBlock.update({ where: { id: block.id }, data: { lastRemindNotifiedAt: new Date() } });
+        }
       }
 
       if (started && !notifiedToday(block.lastStartNotifiedAt)) {
-        await pushService.sendToUser(block.userId, {
+        const result = await pushService.sendToUser(block.userId, {
           title: `Empieza: ${label}`,
           body: `De ${formatMin(block.startMin)} a ${formatMin(block.endMin)}`,
           url: `/tasks?projectId=${block.projectId ?? ""}&view=day`,
           tag: `timeblock-start-${block.id}`,
           data: { timeBlockId: block.id, type: "timeblock_start" },
         });
-        await prisma.timeBlock.update({ where: { id: block.id }, data: { lastStartNotifiedAt: new Date() } });
+        if (result.sent > 0) {
+          await prisma.timeBlock.update({ where: { id: block.id }, data: { lastStartNotifiedAt: new Date() } });
+        }
       }
 
       const minsToEnd = block.endMin - nowMin;
       if (minsToEnd <= 5 && minsToEnd > 0 && !notifiedToday(block.lastEndWarnNotifiedAt)) {
-        await pushService.sendToUser(block.userId, {
+        const result = await pushService.sendToUser(block.userId, {
           title: `Quedan ${minsToEnd} min`,
           body: `Termina ${label} a las ${formatMin(block.endMin)}`,
           url: `/tasks?projectId=${block.projectId ?? ""}&view=day`,
           tag: `timeblock-endwarn-${block.id}`,
           data: { timeBlockId: block.id, type: "timeblock_endwarn" },
         });
-        await prisma.timeBlock.update({ where: { id: block.id }, data: { lastEndWarnNotifiedAt: new Date() } });
+        if (result.sent > 0) {
+          await prisma.timeBlock.update({ where: { id: block.id }, data: { lastEndWarnNotifiedAt: new Date() } });
+        }
       }
     } catch (error) {
       console.error(`[timeblocks] No se pudo notificar el bloque ${block.id}`, error);

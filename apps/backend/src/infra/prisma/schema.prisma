@@ -72,7 +72,7 @@ model TimeBlock {
   projectId String?
   project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   name      String?
-  dayOfWeek Int
+  daysOfWeek Int[]
   startMin  Int
   endMin    Int
   isActive  Boolean  @default(true)
@@ -85,7 +85,7 @@ model TimeBlock {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId, dayOfWeek, isActive])
+  @@index([userId, isActive])
   @@index([projectId])
 }
 

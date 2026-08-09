@@ -114,7 +114,7 @@ function TimeBlocksContent() {
   const createAtSlot = async (dayOfWeek: number, startMin: number) => {
     try {
       await mutations.create.mutateAsync({
-        dayOfWeek,
+        daysOfWeek: [dayOfWeek],
         startMin,
         endMin: Math.min(startMin + 60, 24 * 60),
         projectId: defaultProject?.id,
@@ -135,10 +135,10 @@ function TimeBlocksContent() {
     if (isMobile) setMobileFormOpen(true);
   };
 
-  const previewResize = (block: TimeBlock, startMin: number, endMin: number, dayOfWeek: number) => {
+  const previewResize = (block: TimeBlock, startMin: number, endMin: number, days: number[]) => {
     setEditing((current) =>
       current?.id === block.id
-        ? { ...current, startMin, endMin, dayOfWeek }
+        ? { ...current, startMin, endMin, daysOfWeek: days }
         : current,
     );
   };
@@ -151,22 +151,27 @@ function TimeBlocksContent() {
     const current = blocks.find(
       (block) =>
         block.isActive &&
-        block.dayOfWeek === today &&
+        block.daysOfWeek.includes(today) &&
         block.startMin <= nowMin &&
         nowMin < block.endMin,
     );
     if (current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- abrir el editor con el bloque activo solo en la primera carga (comportamiento deliberado)
       setEditing(current);
       setPrefill(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- se reactiva solo cuando llega el primer lote de bloques
   }, [blocks.length]);
 
-  const resizeBlock = async (block: TimeBlock, startMin: number, endMin: number, dayOfWeek: number) => {
-    if (startMin === block.startMin && endMin === block.endMin && dayOfWeek === block.dayOfWeek) return;
+  const resizeBlock = async (block: TimeBlock, startMin: number, endMin: number, days: number[]) => {
+    const daysChanged =
+      days.length !== block.daysOfWeek.length ||
+      days.some((day, index) => day !== block.daysOfWeek[index]);
+    if (startMin === block.startMin && endMin === block.endMin && !daysChanged) return;
     try {
       await mutations.update.mutateAsync({
         id: block.id,
-        payload: { startMin, endMin, dayOfWeek },
+        payload: { startMin, endMin, daysOfWeek: days },
       });
     } catch {
       toast.error("Ups, no pudimos ajustar el bloque. Inténtalo de nuevo.");

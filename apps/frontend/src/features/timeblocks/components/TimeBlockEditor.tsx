@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Project, TimeBlock } from "@/types/entities";
 import type { CreateTimeBlockPayload } from "../api/timeblocks";
-import { DAY_NAMES, minToTime, timeToMin } from "../lib/time";
+import { DAY_NAMES, DAY_ORDER, minToTime, timeToMin } from "../lib/time";
 
 export function TimeBlockEditor({
   target,
@@ -27,7 +27,7 @@ export function TimeBlockEditor({
 }) {
   const [name, setName] = useState(target?.name ?? "");
   const [projectId, setProjectId] = useState(target?.projectId ?? defaultProjectId ?? "");
-  const [dayOfWeek, setDayOfWeek] = useState(target?.dayOfWeek ?? prefill?.dayOfWeek ?? 1);
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(target?.daysOfWeek ?? [prefill?.dayOfWeek ?? 1]);
   const [startTime, setStartTime] = useState(minToTime(target?.startMin ?? prefill?.startMin ?? 9 * 60));
   const [endTime, setEndTime] = useState(minToTime(target?.endMin ?? prefill?.endMin ?? 11 * 60));
   const [repeatEveryWeeks, setRepeatEveryWeeks] = useState(target?.repeatEveryWeeks ?? 1);
@@ -41,8 +41,18 @@ export function TimeBlockEditor({
     if (!target || !previous) return;
     if (target.startMin !== previous.startMin) setStartTime(minToTime(target.startMin));
     if (target.endMin !== previous.endMin) setEndTime(minToTime(target.endMin));
-    if (target.dayOfWeek !== previous.dayOfWeek) setDayOfWeek(target.dayOfWeek);
+    if (JSON.stringify(target.daysOfWeek) !== JSON.stringify(previous.daysOfWeek)) setDaysOfWeek(target.daysOfWeek);
   }, [target]);
+
+  const toggleDay = (day: number) => {
+    setDaysOfWeek((current) => {
+      if (current.includes(day)) {
+        if (current.length === 1) return current;
+        return current.filter((value) => value !== day);
+      }
+      return [...current, day];
+    });
+  };
 
   const save = async () => {
     const startMin = timeToMin(startTime);
@@ -54,7 +64,7 @@ export function TimeBlockEditor({
     await onSave({
       name: name.trim() || undefined,
       projectId: projectId || undefined,
-      dayOfWeek,
+      daysOfWeek: [...daysOfWeek].sort((a, b) => a - b),
       startMin,
       endMin,
       repeatEveryWeeks,
@@ -74,14 +84,22 @@ export function TimeBlockEditor({
           ))}
         </select>
       </label>
-      <label className="block">
-        <span className="font-label-caps text-label-caps text-on-surface-variant">DÍA</span>
-        <select className="field mt-1" onChange={(event) => setDayOfWeek(Number(event.target.value))} value={dayOfWeek}>
-          {DAY_NAMES.map((day, index) => (
-            <option key={day} value={index}>{day}</option>
+      <div>
+        <span className="font-label-caps text-label-caps text-on-surface-variant">DÍAS</span>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {DAY_ORDER.map((day) => (
+            <button
+              aria-pressed={daysOfWeek.includes(day)}
+              className={`border px-3 py-1.5 font-body-sm text-body-sm ${daysOfWeek.includes(day) ? "bg-primary-container text-on-primary" : "border-outline-variant hover:bg-surface-container-low hover:text-primary"}`}
+              key={day}
+              onClick={() => toggleDay(day)}
+              type="button"
+            >
+              {DAY_NAMES[day]}
+            </button>
           ))}
-        </select>
-      </label>
+        </div>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
           <span className="font-label-caps text-label-caps text-on-surface-variant">INICIO</span>

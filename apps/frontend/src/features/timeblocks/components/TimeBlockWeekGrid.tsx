@@ -25,7 +25,8 @@ type ResizeDraft = {
   kind: "start" | "end" | "move";
   startMin: number;
   endMin: number;
-  dayOfWeek: number;
+  days: number[];
+  dragDay: number;
   durationMin: number;
   columns: DayColumn[];
   container: HTMLElement;
@@ -49,8 +50,8 @@ export function TimeBlockWeekGrid({
   projects: Project[];
   onBlockClick: (block: TimeBlock) => void;
   onSlotClick: (dayOfWeek: number, startMin: number) => void;
-  onResize: (block: TimeBlock, startMin: number, endMin: number, dayOfWeek: number) => void;
-  onResizePreview?: (block: TimeBlock, startMin: number, endMin: number, dayOfWeek: number) => void;
+  onResize: (block: TimeBlock, startMin: number, endMin: number, days: number[]) => void;
+  onResizePreview?: (block: TimeBlock, startMin: number, endMin: number, days: number[]) => void;
   moveEnabled?: boolean;
   dayStartMin?: number;
   dayEndMin?: number;
@@ -159,7 +160,7 @@ export function TimeBlockWeekGrid({
     pointerPosRef.current = { x: event.clientX, y: event.clientY };
 
     let colRect: DOMRect | null = null;
-    let dayOfWeek = state.dayOfWeek;
+    let dragDay = state.dragDay;
     if (state.kind === "move") {
       const first = state.columns[0]?.el.getBoundingClientRect();
       const last = state.columns[state.columns.length - 1]?.el.getBoundingClientRect();
@@ -167,11 +168,11 @@ export function TimeBlockWeekGrid({
         const colWidth = (last.right - first.left) / state.columns.length;
         const index = Math.min(Math.max(Math.floor((event.clientX - first.left) / colWidth), 0), state.columns.length - 1);
         const column = state.columns[index];
-        dayOfWeek = column.dayOfWeek;
+        dragDay = column.dayOfWeek;
         colRect = column.el.getBoundingClientRect();
       }
     } else {
-      const own = state.columns.find((column) => column.dayOfWeek === state.dayOfWeek);
+      const own = state.columns.find((column) => column.dayOfWeek === dragDay);
       if (own) colRect = own.el.getBoundingClientRect();
     }
     if (!colRect) return;
@@ -181,7 +182,7 @@ export function TimeBlockWeekGrid({
     if (state.kind === "move") {
       next.startMin = Math.min(Math.max(clamped, dayStartMin), dayEndMin - state.durationMin);
       next.endMin = next.startMin + state.durationMin;
-      next.dayOfWeek = dayOfWeek;
+      next.days = state.days.map((day) => (day - state.dragDay + dragDay + 7) % 7);
       next.left = colRect.left - state.grid.getBoundingClientRect().left + 4;
       next.width = colRect.width - 8;
     } else if (state.kind === "start") {
@@ -191,7 +192,7 @@ export function TimeBlockWeekGrid({
     }
     draftRef.current = next;
     setDraft(next);
-    onResizePreviewRef.current?.(next.block, next.startMin, next.endMin, next.dayOfWeek);
+    onResizePreviewRef.current?.(next.block, next.startMin, next.endMin, next.days);
   }, [dayStartMin, dayEndMin]);
 
   const endResize = useCallback(function endResize() {
@@ -205,12 +206,15 @@ export function TimeBlockWeekGrid({
     window.removeEventListener("pointerup", endResize);
     window.removeEventListener("pointercancel", endResize);
     if (!state) return;
+    const daysChanged =
+      state.days.length !== state.block.daysOfWeek.length ||
+      state.days.some((day, index) => day !== state.block.daysOfWeek[index]);
     const changed =
       state.startMin !== state.block.startMin ||
       state.endMin !== state.block.endMin ||
-      state.dayOfWeek !== state.block.dayOfWeek;
+      daysChanged;
     if (changed) {
-      onResizeRef.current(state.block, state.startMin, state.endMin, state.dayOfWeek);
+      onResizeRef.current(state.block, state.startMin, state.endMin, state.days);
     } else if (state.kind === "move" && !movedRef.current) {
       onBlockClickRef.current(state.block);
     }
@@ -230,7 +234,9 @@ export function TimeBlockWeekGrid({
     const container = scrollRef.current;
     if (!grid || !container) return;
     const columns = getColumns(grid);
-    const ownColumn = columns.find((column) => column.dayOfWeek === block.dayOfWeek);
+    const column = event.currentTarget.closest<HTMLElement>("[data-resize-col]");
+    const dragDay = column ? Number(column.getAttribute("data-day")) : block.daysOfWeek[0];
+    const ownColumn = columns.find((item) => item.dayOfWeek === dragDay);
     const gridRect = grid.getBoundingClientRect();
     const colRect = ownColumn?.el.getBoundingClientRect();
     blockDownRef.current = true;
@@ -242,7 +248,8 @@ export function TimeBlockWeekGrid({
       kind: edge,
       startMin: block.startMin,
       endMin: block.endMin,
-      dayOfWeek: block.dayOfWeek,
+      days: [...block.daysOfWeek],
+      dragDay,
       durationMin: block.endMin - block.startMin,
       columns,
       container,
@@ -263,6 +270,7 @@ export function TimeBlockWeekGrid({
     const column = event.currentTarget.closest<HTMLElement>("[data-resize-col]");
     const container = scrollRef.current;
     if (!grid || !column || !container) return;
+    const dragDay = Number(column.getAttribute("data-day"));
     const columns = getColumns(grid);
     const gridRect = grid.getBoundingClientRect();
     const colRect = column.getBoundingClientRect();
@@ -275,7 +283,8 @@ export function TimeBlockWeekGrid({
       kind: "move",
       startMin: block.startMin,
       endMin: block.endMin,
-      dayOfWeek: block.dayOfWeek,
+      days: [...block.daysOfWeek],
+      dragDay,
       durationMin: block.endMin - block.startMin,
       columns,
       container,
@@ -383,7 +392,7 @@ export function TimeBlockWeekGrid({
             </div>
             {days.map((day) => {
               const dayBlocks = blocks
-                .filter((block) => block.dayOfWeek === day.dayOfWeek)
+                .filter((block) => block.daysOfWeek.includes(day.dayOfWeek))
                 .sort((a, b) => a.startMin - b.startMin);
               const isToday = day.key === todayKey;
               return (

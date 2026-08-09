@@ -67,29 +67,27 @@ export function ActivityHeatmap({ activity }: { activity: HomeActivityPoint[] | 
       </header>
 
       {hasActivity ? (
-        <div className="overflow-x-auto">
-          <div className="flex min-w-[24rem] flex-col gap-1">
-            <div className="flex gap-1.5">
-              <div className="flex w-5 flex-col gap-1">
-                {WEEK_LABELS.map((label, index) => (
-                  <span className="flex h-3 items-center font-data-mono text-data-mono text-[9px] text-on-surface-variant" key={label}>
-                    {index % 2 === 0 ? label : ""}
-                  </span>
-                ))}
-              </div>
-              {grid.map((week, weekIndex) => (
-                <div className="flex flex-1 flex-col gap-1" key={weekIndex}>
-                  {week.map((day) => (
-                    <span
-                      aria-hidden="true"
-                      className={`h-3 w-full rounded-[2px] ${levelClass(day.level)}`}
-                      key={day.date}
-                      title={day.label}
-                    />
-                  ))}
-                </div>
+        <div className="mx-auto flex w-full min-w-0 flex-col gap-1">
+          <div className="flex gap-1">
+            <div className="flex w-4 shrink-0 flex-col gap-1 sm:w-5">
+              {WEEK_LABELS.map((label, index) => (
+                <span className="flex h-3 items-center font-data-mono text-data-mono text-[9px] text-on-surface-variant" key={label}>
+                  {index % 2 === 0 ? label : ""}
+                </span>
               ))}
             </div>
+            {grid.map((week, weekIndex) => (
+              <div className="flex min-w-0 flex-1 flex-col gap-1" key={weekIndex}>
+                {week.map((day) => (
+                  <span
+                    aria-hidden="true"
+                    className={`h-3 w-full rounded-[2px] ${levelClass(day.level)}`}
+                    key={day.date}
+                    title={day.label}
+                  />
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       ) : (

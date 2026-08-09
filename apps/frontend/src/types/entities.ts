@@ -48,7 +48,7 @@ export interface TimeBlock {
   userId: string;
   projectId: string | null;
   name: string | null;
-  dayOfWeek: number;
+  daysOfWeek: number[];
   startMin: number;
   endMin: number;
   isActive: boolean;

@@ -36,7 +36,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
 }
 
 const STATUS_STYLES: Record<NotificationLog["status"], string> = {
-  sent: "bg-primary-container text-primary",
+  sent: "bg-primary text-on-primary",
   partial: "bg-tertiary-container text-tertiary",
   failed: "bg-error-container text-error",
   skipped: "bg-surface-container-high text-on-surface-variant",

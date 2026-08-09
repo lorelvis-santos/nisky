@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { resetPromptState, NOTIF_KEY } from "@/lib/promptState";
 import { serializePushSubscription, urlBase64ToUint8Array } from "@/lib/push";
 
 async function serviceWorkerRegistration() {
@@ -83,14 +84,21 @@ export function usePushSubscription() {
       toast.success("¡Notificaciones activadas!");
       return true;
     } catch (error) {
-      const raw = error instanceof Error ? `${error.name}: ${error.message}` : "Unknown error";
+      const name = error instanceof Error ? error.name : "Unknown";
+      const message = error instanceof Error ? error.message : String(error);
+      const raw = `${name}: ${message}`;
+      // Registrar el fallo en el panel de diagnóstico del backend para depurar.
+      void api.post("/push/subscribe-error", { name, message }).catch(() => {});
+      // Un fallo no debería bloquear el flujo: olvidamos lo que el usuario eligió antes
+      // (incluido "no me preguntes más") para que el aviso vuelva a aparecer.
+      resetPromptState(NOTIF_KEY);
       const permissionDenied =
         raw.includes("NotAllowed") || raw.includes("AbortError") || raw.toLowerCase().includes("permission");
       let friendly: string;
       if (permissionDenied && permission === "granted") {
-        // Permiso de sesión: Brave/Chrome "hasta que cierre el sitio" dice granted pero
-        // pushManager.subscribe se niega a usarlo.
-        friendly = "Elegiste avisar solo por esta sesión. Para recibir tus avisos elige «Permitir» de forma permanente en el diálogo del navegador y vuelve a intentar.";
+        // El permiso dice "granted" pero el navegador no deja suscribirse. Puede ser un
+        // permiso solo por sesión o un navegador/servicio push bloqueado (Brave, shields).
+        friendly = "Tu navegador no dejó activar las notificaciones. Elige «Permitir» de forma permanente (no «solo esta sesión») y vuelve a intentar. Si sigue fallando, desactiva el bloqueador de la página o prueba en Chrome.";
       } else if (permissionDenied) {
         friendly = "No se concedió el permiso para notificaciones en el navegador.";
       } else if (raw.includes("InvalidStateError")) {

@@ -13,5 +13,11 @@ export const pushUnsubscribeSchema = z.object({
   endpoint: z.url("El endpoint no es válido"),
 });
 
+export const pushSubscribeErrorSchema = z.object({
+  name: z.string().max(100).optional(),
+  message: z.string().max(500).optional(),
+});
+
 export type PushSubscriptionDto = z.infer<typeof pushSubscriptionSchema>;
 export type PushUnsubscribeDto = z.infer<typeof pushUnsubscribeSchema>;
+export type PushSubscribeErrorDto = z.infer<typeof pushSubscribeErrorSchema>;

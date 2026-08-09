@@ -10,7 +10,7 @@ import { ActivityHeatmap } from "@/components/home/ActivityHeatmap";
 import { FutureView } from "@/components/home/FutureView";
 import { HomeHabitsMatrix } from "@/components/home/HomeHabitsMatrix";
 import { QuickCaptureSheet } from "@/components/home/QuickCaptureSheet";
-import { RecadosPanel, getUrgentRecados } from "@/components/home/RecadosPanel";
+import { TodayTasksPanel, getTodayUrgentTasks } from "@/components/home/TodayTasksPanel";
 import { WeeklyStats } from "@/components/home/WeeklyStats";
 import { useHabitMutations } from "@/features/habits/hooks/useHabits";
 import { HabitManager } from "@/features/habits/components/HabitManager";
@@ -31,7 +31,11 @@ export default function DashboardPage() {
 
   const overview = overviewQuery.data;
   const activeBlock = overview?.activeBlock ?? null;
-  const urgentRecados = getUrgentRecados(overview?.recados ?? [], 5);
+  const blockTasks = overview?.blockTasks ?? [];
+  const blockTaskIds = new Set(blockTasks.map((task) => task.id));
+  const urgentTasks = getTodayUrgentTasks(overview?.urgentTasks ?? [], 10).filter(
+    (task) => !blockTaskIds.has(task.id),
+  );
 
   const toggleTask = async (task: Task) => {
     try {
@@ -59,7 +63,7 @@ export default function DashboardPage() {
             tasks={overview?.blockTasks ?? []}
           />
           <div className="border border-outline-variant bg-surface-container-lowest">
-            <RecadosPanel emptyMessage="Nada pendiente. ¡Todo al día!" limit={5} onToggle={(task) => void toggleTask(task)} tasks={urgentRecados} />
+            <TodayTasksPanel emptyMessage="Nada pendiente. ¡Todo al día!" onToggle={(task) => void toggleTask(task)} tasks={urgentTasks} />
           </div>
           <FutureView blocks={overview?.futureBlocks ?? []} tasks={overview?.futureTasks ?? []} />
           <WeeklyStats weekly={overview?.weekly} />

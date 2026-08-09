@@ -49,17 +49,24 @@ export class HomeService {
       ? await prisma.task.findMany({
           where: { userId, projectId: activeBlock.projectId, status: "PENDING", archivedAt: null },
           orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
-          take: 5,
+          take: 20,
         })
       : [];
 
-    const recados = defaultProject
-      ? await prisma.task.findMany({
-          where: { userId, projectId: defaultProject.id, status: "PENDING", archivedAt: null },
-          orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
-          take: 50,
-        })
-      : [];
+    const urgentTasks = await prisma.task.findMany({
+      where: {
+        userId,
+        status: "PENDING",
+        archivedAt: null,
+        OR: [
+          { dueDate: { lt: toUtc(todayStart) } },
+          { dueDate: { gte: toUtc(todayStart), lt: toUtc(tomorrow) } },
+          { dueDate: null, priority: "HIGH" },
+        ],
+      },
+      orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
+      take: 50,
+    });
 
     const futureTasks = await prisma.task.findMany({
       where: {
@@ -109,7 +116,7 @@ export class HomeService {
     return {
       activeBlock,
       blockTasks,
-      recados,
+      urgentTasks,
       futureTasks,
       futureBlocks,
       weekly: {

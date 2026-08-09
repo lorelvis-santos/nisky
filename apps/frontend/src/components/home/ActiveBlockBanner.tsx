@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CalendarDays, CheckCircle2, ChevronDown, Circle, ListChecks, Play } from "lucide-react";
+import { AlertCircle, CalendarDays, CheckCircle2, Circle, ListChecks, Play } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { localDateKey } from "@/lib/utils";
@@ -50,7 +50,6 @@ export function ActiveBlockBanner({
   onPlayPomodoro: (taskId?: string) => void;
   onToggleTask: (task: Task) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const nowMin = useNowMinutes();
 
   if (!block) {
@@ -81,76 +80,99 @@ export function ActiveBlockBanner({
     );
   }
 
-  const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
+  const MAX_VISIBLE_TASKS = 3;
+const visibleTasks = tasks.slice(0, MAX_VISIBLE_TASKS);
+const remainingTasks = tasks.length - visibleTasks.length;
+const nextTask = visibleTasks[0];
+
+const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
   const color = block.project?.color ?? "#303e51";
   const remaining = Math.max(0, block.endMin - nowMin);
   const firstTask = tasks[0];
+  const focusLabel = firstTask ? "Enfocarme ahora" : "Comenzar enfoque";
 
   return (
-    <div className="flex flex-col gap-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <div
+      className="flex flex-col gap-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4"
+      style={{ borderTop: `3px solid ${color}` }}
+    >
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-outline-variant pb-2">
         <div className="flex min-w-0 items-center gap-2">
           <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-          <p className="truncate font-headline-xs text-headline-xs font-bold" style={{ color }}>
+          <p
+            className="truncate font-headline-sm text-headline-sm font-bold"
+            style={{ color }}
+          >
             {label}
           </p>
           <p className="shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant">
             {minToTime(block.startMin)}–{minToTime(block.endMin)}
           </p>
         </div>
-        <p className="font-data-mono text-data-mono text-sm text-primary">Quedan {formatDuration(remaining)}</p>
-        <div className="ml-auto flex items-center gap-3">
-          <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
-            VER AGENDA
-          </Link>
-          <button
-            className="flex h-9 items-center gap-2 border border-outline-variant bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
-            onClick={() => onPlayPomodoro(firstTask?.id)}
-            type="button"
-          >
-            <Play size={15} /> {firstTask ? "Enfocarme ahora" : "Comenzar enfoque"}
-          </button>
-        </div>
+        <p className="shrink-0 border border-primary bg-primary-container px-3 py-1 font-data-mono text-data-mono text-sm font-semibold text-on-primary">
+          {formatDuration(remaining)}
+        </p>
       </div>
 
       {tasks.length > 0 && (
         <div className="border-t border-outline-variant pt-1.5">
-          <button
-            aria-expanded={open}
-            className="flex w-full items-center gap-1.5 py-1 font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface"
-            onClick={() => setOpen((value) => !value)}
-            type="button"
-          >
+          <p className="flex items-center gap-1.5 py-1 font-label-caps text-label-caps text-on-surface-variant">
             <ListChecks size={13} />
             TAREAS DEL BLOQUE ({tasks.length})
-            <ChevronDown size={13} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-          </button>
-          {open && (
-            <ul className="flex flex-col divide-y divide-outline-variant">
-              {tasks.slice(0, 5).map((task) => (
-                <li className="flex items-center gap-2 py-1.5" key={task.id}>
-                  <button
-                    aria-label={`Completar ${task.title}`}
-                    className="shrink-0 text-outline hover:text-primary"
-                    onClick={() => onToggleTask(task)}
-                    type="button"
-                  >
-                    {task.status === "COMPLETED" ? <CheckCircle2 className="text-primary" size={15} /> : <Circle size={15} />}
-                  </button>
-                  <Link
-                    className="line-clamp-1 min-w-0 flex-1 font-body-sm text-body-sm font-medium hover:text-primary"
-                    href={`/tasks?taskId=${encodeURIComponent(task.id)}`}
-                  >
-                    {task.title}
-                  </Link>
-                  <PriorityChip priority={task.priority} />
-                  {dueBadge(task)}
-                </li>
-              ))}
-            </ul>
+          </p>
+          <ul className="flex flex-col divide-y divide-outline-variant">
+            {visibleTasks.map((task) => (
+              <li
+                className="flex items-center gap-2 py-1.5"
+                key={task.id}
+              >
+                <button
+                  aria-label={`Completar ${task.title}`}
+                  className="shrink-0 text-outline hover:text-primary"
+                  onClick={() => onToggleTask(task)}
+                  type="button"
+                >
+                  {task.status === "COMPLETED" ? <CheckCircle2 className="text-primary" size={15} /> : <Circle size={15} />}
+                </button>
+                <Link
+                  className="line-clamp-1 min-w-0 flex-1 font-body-sm text-body-sm font-medium hover:text-primary"
+                  href={`/tasks?taskId=${encodeURIComponent(task.id)}`}
+                >
+                  {task.title}
+                </Link>
+                {task.id === nextTask?.id && task.status !== "COMPLETED" && (
+                  <span className="shrink-0 border border-primary px-1.5 py-0.5 font-label-caps text-label-caps text-[10px] uppercase text-primary">
+                    Siguiente
+                  </span>
+                )}
+                <PriorityChip priority={task.priority} />
+                {dueBadge(task)}
+              </li>
+            ))}
+          </ul>
+          {remainingTasks > 0 && (
+            <Link
+              className="mt-1 inline-flex items-center gap-1 font-label-caps text-label-caps text-primary hover:underline"
+              href="/tasks"
+            >
+              Ver {remainingTasks} más en Planificación y tareas
+            </Link>
           )}
         </div>
       )}
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-outline-variant pt-2">
+        <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
+          VER AGENDA
+        </Link>
+        <button
+          className="flex h-9 items-center gap-2 border border-outline-variant bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
+          onClick={() => onPlayPomodoro(firstTask?.id)}
+          type="button"
+        >
+          <Play size={15} /> {focusLabel}
+        </button>
+      </div>
     </div>
   );
 }

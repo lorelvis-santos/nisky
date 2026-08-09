@@ -635,7 +635,7 @@ function TasksPageContent() {
           tasks={tasks}
         >
           {isMobile ? (
-            <div className="min-h-0 flex-1 flex-col overflow-y-auto pb-20">
+            <div className={`min-h-0 flex-1 overflow-y-auto pb-20 ${view === "month" ? "flex flex-col" : ""}`}>
               {view === "month" ? (
                 <MonthlyCalendar
                   monthStart={monthStart}
@@ -646,6 +646,7 @@ function TasksPageContent() {
                 />
               ) : view === "list" ? (
                 <TaskList
+                  onCreate={openCreate}
                   onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
                   onOpen={openEdit}
                   onStartPomodoro={openFocus}
@@ -662,17 +663,19 @@ function TasksPageContent() {
                   weekStart={weekStart}
                 />
               )}
-              <MobileBacklog
-                onCreate={openCreate}
-                onOpen={openEdit}
-                onPriority={setPriority}
-                onSearch={setSearch}
-                onStartPomodoro={openFocus}
-                onToggle={(task) => void toggleTask(task)}
-                priority={priority}
-                search={search}
-                tasks={backlog}
-              />
+              {view !== "month" && (
+                <MobileBacklog
+                  onCreate={openCreate}
+                  onOpen={openEdit}
+                  onPriority={setPriority}
+                  onSearch={setSearch}
+                  onStartPomodoro={openFocus}
+                  onToggle={(task) => void toggleTask(task)}
+                  priority={priority}
+                  search={search}
+                  tasks={backlog}
+                />
+              )}
             </div>
           ) : (
             <div className="min-h-0 flex-1 lg:flex">
@@ -711,6 +714,7 @@ function TasksPageContent() {
                 ) : (
                   <>
                     <TaskList
+                      onCreate={openCreate}
                       onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
                       onOpen={openEdit}
                       onStartPomodoro={openFocus}

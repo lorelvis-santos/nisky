@@ -56,6 +56,7 @@ export function usePushSubscription() {
 
   const subscribe = useCallback(async () => {
     setIsLoading(true);
+    let permission: NotificationPermission | null = null;
     try {
       const registration = await serviceWorkerRegistration();
       if (!registration) throw new Error("Este navegador no soporta notificaciones push");
@@ -70,7 +71,7 @@ export function usePushSubscription() {
         toast.success("¡Notificaciones activadas!");
         return true;
       }
-      const permission = await Notification.requestPermission();
+      permission = await Notification.requestPermission();
       if (permission !== "granted") throw new Error("Permiso de notificaciones no concedido");
       const keyResponse = await api.get<{ data: { publicKey: string } }>("/push/vapid-public-key");
       const next = await active.pushManager.subscribe({
@@ -83,8 +84,14 @@ export function usePushSubscription() {
       return true;
     } catch (error) {
       const raw = error instanceof Error ? `${error.name}: ${error.message}` : "Unknown error";
+      const permissionDenied =
+        raw.includes("NotAllowed") || raw.includes("AbortError") || raw.toLowerCase().includes("permission");
       let friendly: string;
-      if (raw.includes("Permission") || raw.includes("NotAllowed") || raw.includes("AbortError")) {
+      if (permissionDenied && permission === "granted") {
+        // Permiso de sesión: Brave/Chrome "hasta que cierre el sitio" dice granted pero
+        // pushManager.subscribe se niega a usarlo.
+        friendly = "Elegiste avisar solo por esta sesión. Para recibir tus avisos elige «Permitir» de forma permanente en el diálogo del navegador y vuelve a intentar.";
+      } else if (permissionDenied) {
         friendly = "No se concedió el permiso para notificaciones en el navegador.";
       } else if (raw.includes("InvalidStateError")) {
         friendly = "Tu navegador tenía una suscripción anterior de Nisky. Actualiza la página y reinténtalo.";

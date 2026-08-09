@@ -148,7 +148,7 @@ export function Sidebar({
         </div>
         <div className="flex items-center gap-4 border-t border-outline-variant px-container-padding py-4">
           <p className="min-w-0 font-label-caps text-label-caps uppercase leading-tight text-on-surface-variant">
-            Desarrollado por
+            Impulsado por
           </p>
           <Image
             alt="Logo"

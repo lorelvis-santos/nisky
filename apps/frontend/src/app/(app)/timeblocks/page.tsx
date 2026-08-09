@@ -135,8 +135,12 @@ function TimeBlocksContent() {
     if (isMobile) setMobileFormOpen(true);
   };
 
-  const previewResize = (_block: TimeBlock, _startMin: number, _endMin: number, _days: number[]) => {
-    // El grid muestra su propio preview visual; el editor se actualiza al soltar (resizeBlock).
+  const previewResize = (block: TimeBlock, startMin: number, endMin: number, days: number[]) => {
+    setEditing((current) =>
+      current?.id === block.id
+        ? { ...current, startMin, endMin, daysOfWeek: days }
+        : current,
+    );
   };
 
   useEffect(() => {

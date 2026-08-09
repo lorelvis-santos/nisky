@@ -143,8 +143,8 @@ export class PushService {
 
   async sendTest(userId: string) {
     const result = await this.sendToUser(userId, {
-      title: "Prueba de notificaciones",
-      body: "Las notificaciones de Nisky están activas.",
+      title: "🔔 Todo listo",
+      body: "Las notificaciones de Nisky están activas",
       url: "/settings",
       tag: "nisky-test",
       data: { type: "test" },

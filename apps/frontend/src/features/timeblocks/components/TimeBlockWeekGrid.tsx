@@ -554,7 +554,7 @@ export function TimeBlockWeekGrid({
                   )}
                   {isToday && nowMin >= dayStartMin && nowMin <= dayEndMin && (
                     <div
-                      className="pointer-events-none absolute inset-x-0 z-20"
+                      className="pointer-events-none absolute inset-x-0 z-[15]"
                       style={{ top: ((nowMin - dayStartMin) * HOUR_PX) / 60 }}
                     >
                       <div className="absolute -left-[3px] -top-[3px] h-[7px] w-[7px] rounded-full bg-error" />

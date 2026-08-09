@@ -14,6 +14,7 @@ export const createHabitSchema = z.object({
   color: z.string().trim().max(20).optional(),
   frequency: habitFrequency.optional(),
   targetDays: z.number().int().min(1).max(7).optional(),
+  daysOfWeek: z.array(z.number().int().min(0).max(6)).max(7).optional(),
 });
 
 export const updateHabitSchema = createHabitSchema.partial().extend({ archived: z.boolean().optional() });

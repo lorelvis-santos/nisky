@@ -6,6 +6,7 @@ export type NotificationSettingsPayload = Partial<{
   integrationNews: boolean;
   integrationErrors: boolean;
   timeBlockReminders: boolean;
+  habitReminders: boolean;
 }>;
 
 export type NotificationSettings = NotificationSettingsPayload & {

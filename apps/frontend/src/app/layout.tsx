@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/providers";
 import { SWRegister } from "@/components/pwa/SWRegister";
+import { ProactivePrompts } from "@/components/pwa/ProactivePrompts";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-screen bg-background text-on-surface antialiased">
         <Providers>{children}</Providers>
         <SWRegister />
+        <ProactivePrompts />
         <Toaster position="top-center" />
       </body>
     </html>

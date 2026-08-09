@@ -119,7 +119,11 @@ function TimeBlocksContent() {
         endMin: Math.min(startMin + 60, 24 * 60),
         projectId: defaultProject?.id,
       });
-      toast.success("Bloque creado. Arrastra sus bordes para ajustarlo.");
+      toast.success(
+        isMobile
+          ? "Bloque creado. Tócalo para ajustarlo."
+          : "Bloque creado. Arrastra sus bordes para ajustarlo.",
+      );
     } catch {
       toast.error("Ups, no pudimos crear el bloque. Inténtalo de nuevo.");
     }
@@ -129,6 +133,14 @@ function TimeBlocksContent() {
     setEditing(block);
     setPrefill(null);
     if (isMobile) setMobileFormOpen(true);
+  };
+
+  const previewResize = (block: TimeBlock, startMin: number, endMin: number, dayOfWeek: number) => {
+    setEditing((current) =>
+      current?.id === block.id
+        ? { ...current, startMin, endMin, dayOfWeek }
+        : current,
+    );
   };
 
   useEffect(() => {
@@ -177,7 +189,7 @@ function TimeBlocksContent() {
         await mutations.create.mutateAsync(data);
         setPrefill(null);
         setFormKey((key) => key + 1);
-        toast.success("¡Bloque de tiempo creado!");
+        toast.success("¡Bloque creado!");
       }
       setMobileFormOpen(false);
     } catch {
@@ -231,7 +243,7 @@ function TimeBlocksContent() {
             TU AGENDA SEMANAL
           </p>
           <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">
-            Bloques de tiempo
+            Agenda
           </h1>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
             Reserva horas para tus proyectos. El enfoque activo las usa para
@@ -307,6 +319,7 @@ function TimeBlocksContent() {
             moveEnabled={!isMobile}
             onBlockClick={openBlock}
             onResize={resizeBlock}
+            onResizePreview={previewResize}
             onSlotClick={createAtSlot}
             projects={projects}
           />
@@ -332,7 +345,7 @@ function TimeBlocksContent() {
       </div>
 
       <button
-        aria-label="Nuevo bloque de tiempo"
+        aria-label="Nuevo bloque"
         className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center border border-outline-variant bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container lg:hidden"
         onClick={() => {
           setEditing(null);

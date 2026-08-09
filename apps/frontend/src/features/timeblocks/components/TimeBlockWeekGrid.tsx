@@ -40,6 +40,7 @@ export function TimeBlockWeekGrid({
   onBlockClick,
   onSlotClick,
   onResize,
+  onResizePreview,
   moveEnabled = true,
   dayStartMin = 6 * 60,
   dayEndMin = 23 * 60,
@@ -49,6 +50,7 @@ export function TimeBlockWeekGrid({
   onBlockClick: (block: TimeBlock) => void;
   onSlotClick: (dayOfWeek: number, startMin: number) => void;
   onResize: (block: TimeBlock, startMin: number, endMin: number, dayOfWeek: number) => void;
+  onResizePreview?: (block: TimeBlock, startMin: number, endMin: number, dayOfWeek: number) => void;
   moveEnabled?: boolean;
   dayStartMin?: number;
   dayEndMin?: number;
@@ -64,9 +66,11 @@ export function TimeBlockWeekGrid({
   const pointerPosRef = useRef<{ x: number; y: number } | null>(null);
   const rafRef = useRef<number | null>(null);
   const onResizeRef = useRef(onResize);
+  const onResizePreviewRef = useRef(onResizePreview);
   const onBlockClickRef = useRef(onBlockClick);
   useEffect(() => {
     onResizeRef.current = onResize;
+    onResizePreviewRef.current = onResizePreview;
     onBlockClickRef.current = onBlockClick;
   });
   const now = new Date();
@@ -187,6 +191,7 @@ export function TimeBlockWeekGrid({
     }
     draftRef.current = next;
     setDraft(next);
+    onResizePreviewRef.current?.(next.block, next.startMin, next.endMin, next.dayOfWeek);
   }, [dayStartMin, dayEndMin]);
 
   const endResize = useCallback(function endResize() {
@@ -245,6 +250,7 @@ export function TimeBlockWeekGrid({
       left: colRect ? colRect.left - gridRect.left + 4 : 0,
       width: colRect ? colRect.width - 8 : 0,
     };
+    onBlockClickRef.current(block);
     setDraft(draftRef.current);
     attachWindowListeners();
   };

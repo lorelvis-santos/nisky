@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Project, TimeBlock } from "@/types/entities";
 import type { CreateTimeBlockPayload } from "../api/timeblocks";
@@ -33,6 +33,16 @@ export function TimeBlockEditor({
   const [repeatEveryWeeks, setRepeatEveryWeeks] = useState(target?.repeatEveryWeeks ?? 1);
   const [repeatEndsAt, setRepeatEndsAt] = useState(target?.repeatEndsAt ? target.repeatEndsAt.slice(0, 10) : "");
   const [remindBeforeMin, setRemindBeforeMin] = useState(target?.remindBeforeMin ?? 0);
+
+  const previousTargetRef = useRef<TimeBlock | null>(target);
+  useEffect(() => {
+    const previous = previousTargetRef.current;
+    previousTargetRef.current = target;
+    if (!target || !previous) return;
+    if (target.startMin !== previous.startMin) setStartTime(minToTime(target.startMin));
+    if (target.endMin !== previous.endMin) setEndTime(minToTime(target.endMin));
+    if (target.dayOfWeek !== previous.dayOfWeek) setDayOfWeek(target.dayOfWeek);
+  }, [target]);
 
   const save = async () => {
     const startMin = timeToMin(startTime);

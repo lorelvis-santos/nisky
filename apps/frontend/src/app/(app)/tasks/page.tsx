@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import { CheckSquare, FolderKanban, List, LayoutGrid, Plus, Trash2, X } from "lucide-react";
+import { CalendarDays, CheckSquare, FolderKanban, List, LayoutGrid, Plus, Trash2, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import type { Task, TaskPriority } from "@/types/entities";
@@ -12,11 +12,14 @@ import { ProjectsSidebar } from "@/features/projects/components/ProjectsSidebar"
 import { BacklogPanel } from "@/features/tasks/components/BacklogPanel";
 import { DayList } from "@/features/tasks/components/DayList";
 import { MobileBacklog } from "@/features/tasks/components/MobileBacklog";
+import { MonthDayModal } from "@/features/tasks/components/MonthDayModal";
+import { MonthlyCalendar } from "@/features/tasks/components/MonthlyCalendar";
+import { PeriodNav } from "@/features/tasks/components/PeriodNav";
+import { TaskList } from "@/features/tasks/components/TaskList";
 import {
   TaskModal,
   type TaskForm,
 } from "@/features/tasks/components/TaskModal";
-import { WeekNavigation } from "@/features/tasks/components/WeekNavigation";
 import { WeeklyGrid } from "@/features/tasks/components/WeeklyGrid";
 import {
   useTaskMutations,
@@ -115,6 +118,19 @@ function weekLabel(start: Date) {
   return `${start.toLocaleDateString("es-CO", { day: "2-digit", month: "short" })} - ${end.toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}`;
 }
 
+function monthLabel(date: Date) {
+  const label = date.toLocaleDateString("es-CO", { month: "long", year: "numeric" });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function firstOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function mondayOfMonth(date: Date, amount: number) {
+  return monday(new Date(date.getFullYear(), date.getMonth() + amount, 1));
+}
+
 function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
   if (!value) return undefined;
   try {
@@ -134,14 +150,15 @@ function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
   }
 }
 
-type TaskView = "grid" | "list";
+type TaskView = "week" | "month" | "list";
 
 const TASK_VIEW_KEY = "nisky:task-view";
 const TASK_PROJECT_FILTER_KEY = "nisky:task-filter-project";
 
 function initialTaskView(): TaskView {
-  if (typeof window === "undefined") return "grid";
-  return localStorage.getItem(TASK_VIEW_KEY) === "list" ? "list" : "grid";
+  if (typeof window === "undefined") return "week";
+  const value = localStorage.getItem(TASK_VIEW_KEY);
+  return value === "month" || value === "list" ? value : "week";
 }
 
 function initialProjectFilter(): string | null {
@@ -153,6 +170,8 @@ function initialProjectFilter(): string | null {
 function TasksPageContent() {
   const router = useRouter();
   const [weekStart, setWeekStart] = useState(() => monday(new Date()));
+  const [monthStart, setMonthStart] = useState(() => firstOfMonth(new Date()));
+  const [selectedMonthDay, setSelectedMonthDay] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [priority, setPriority] = useState<TaskPriority | "ALL">("ALL");
   const [dayOrder, setDayOrder] = useState<Record<string, string[]>>({});
@@ -244,7 +263,31 @@ function TasksPageContent() {
     });
   };
 
+  const moveMonth = (amount: number) => {
+    setSelectedMonthDay(null);
+    setMonthStart((current) =>
+      new Date(current.getFullYear(), current.getMonth() + amount, 1),
+    );
+  };
+
+  const jumpWeekMonth = (amount: number) => {
+    setWeekStart((current) => {
+      const target = mondayOfMonth(current, amount);
+      const currentTime = current.getTime();
+      if (amount > 0 && target.getTime() <= currentTime) {
+        target.setDate(target.getDate() + 7);
+      }
+      if (amount < 0 && target.getTime() >= currentTime) {
+        target.setDate(target.getDate() - 7);
+      }
+      return target;
+    });
+  };
+
   const setTaskView = (next: TaskView) => {
+    if (next === "month") {
+      setMonthStart(firstOfMonth(weekStart));
+    }
     setView(next);
     localStorage.setItem(TASK_VIEW_KEY, next);
   };
@@ -426,7 +469,7 @@ function TasksPageContent() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-              MI SEMANA
+              {view === "month" ? "MI MES" : view === "list" ? "TODAS LAS TAREAS" : "MI SEMANA"}
             </p>
             <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">
               Mis tareas
@@ -444,22 +487,31 @@ function TasksPageContent() {
             <CheckSquare size={15} /> Seleccionar
           </button>
           <span className="font-data-mono text-data-mono text-xs text-on-surface-variant sm:hidden">
-            {weekLabel(weekStart)}
+            {view === "month" ? monthLabel(monthStart) : weekLabel(weekStart)}
           </span>
-          <div className="hidden items-center border border-outline-variant lg:flex">
+          <div className="flex items-center gap-2">
             <button
               aria-label="Vista semana"
-              aria-pressed={view === "grid"}
-              className={`flex items-center gap-1.5 border-l border-outline-variant px-3 py-1.5 font-body-sm text-body-sm ${view === "grid" ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
-              onClick={() => setTaskView("grid")}
+              aria-pressed={view === "week"}
+              className={`flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm ${view === "week" ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+              onClick={() => setTaskView("week")}
               type="button"
             >
               <LayoutGrid size={15} /> Semana
             </button>
             <button
+              aria-label="Vista mes"
+              aria-pressed={view === "month"}
+              className={`flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm ${view === "month" ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+              onClick={() => setTaskView("month")}
+              type="button"
+            >
+              <CalendarDays size={15} /> Mes
+            </button>
+            <button
               aria-label="Vista lista"
               aria-pressed={view === "list"}
-              className={`flex items-center gap-1.5 border-l border-outline-variant px-3 py-1.5 font-body-sm text-body-sm ${view === "list" ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+              className={`flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm ${view === "list" ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
               onClick={() => setTaskView("list")}
               type="button"
             >
@@ -489,12 +541,36 @@ function TasksPageContent() {
               <FolderKanban size={15} />
             </button>
           </div>
-          <WeekNavigation
-            label={weekLabel(weekStart)}
-            onNext={() => moveWeek(1)}
-            onPrevious={() => moveWeek(-1)}
-            onToday={() => setWeekStart(monday(new Date()))}
-          />
+          {view === "month" ? (
+            <PeriodNav
+              jumpNextLabel="Saltar un año adelante"
+              jumpPreviousLabel="Saltar un año atrás"
+              label={monthLabel(monthStart)}
+              nextLabel="Mes siguiente"
+              onJumpNext={() => moveMonth(12)}
+              onJumpPrevious={() => moveMonth(-12)}
+              onNext={() => moveMonth(1)}
+              onPrevious={() => moveMonth(-1)}
+              onToday={() => {
+                setSelectedMonthDay(null);
+                setMonthStart(firstOfMonth(new Date()));
+              }}
+              previousLabel="Mes anterior"
+            />
+          ) : (
+            <PeriodNav
+              jumpNextLabel="Saltar un mes adelante"
+              jumpPreviousLabel="Saltar un mes atrás"
+              label={weekLabel(weekStart)}
+              onJumpNext={() => jumpWeekMonth(1)}
+              onJumpPrevious={() => jumpWeekMonth(-1)}
+              onNext={() => moveWeek(1)}
+              onPrevious={() => moveWeek(-1)}
+              onToday={() => setWeekStart(monday(new Date()))}
+              nextLabel="Semana siguiente"
+              previousLabel="Semana anterior"
+            />
+          )}
         </div>
       </div>
       {selection.mode && (
@@ -560,14 +636,32 @@ function TasksPageContent() {
         >
           {isMobile ? (
             <div className="min-h-0 flex-1 flex-col overflow-y-auto pb-20">
-              <DayList
-                onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
-                onOpen={openEdit}
-                onStartPomodoro={openFocus}
-                onToggle={(task) => void toggleTask(task)}
-                tasks={tasks}
-                weekStart={weekStart}
-              />
+              {view === "month" ? (
+                <MonthlyCalendar
+                  monthStart={monthStart}
+                  onSelectDay={setSelectedMonthDay}
+                  projects={projectsQuery.data ?? []}
+                  selectedDayKey={selectedMonthDay}
+                  tasks={tasks}
+                />
+              ) : view === "list" ? (
+                <TaskList
+                  onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
+                  onOpen={openEdit}
+                  onStartPomodoro={openFocus}
+                  onToggle={(task) => void toggleTask(task)}
+                  tasks={tasks}
+                />
+              ) : (
+                <DayList
+                  onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
+                  onOpen={openEdit}
+                  onStartPomodoro={openFocus}
+                  onToggle={(task) => void toggleTask(task)}
+                  tasks={tasks}
+                  weekStart={weekStart}
+                />
+              )}
               <MobileBacklog
                 onCreate={openCreate}
                 onOpen={openEdit}
@@ -592,23 +686,7 @@ function TasksPageContent() {
                 />
               </aside>
               <div className="min-h-0 min-w-0 flex-1 lg:flex">
-                {view === "list" ? (
-                  <>
-                    <div className="min-h-0 flex-1 flex-col overflow-y-auto">
-                      <DayList
-                        onCreateOnDay={(key) =>
-                          modalUrl.openCreateWithDate(key)
-                        }
-                        onOpen={openEdit}
-                        onStartPomodoro={openFocus}
-                        onToggle={(task) => void toggleTask(task)}
-                        tasks={tasks}
-                        weekStart={weekStart}
-                      />
-                    </div>
-                    {rightPanel}
-                  </>
-                ) : (
+                {view === "week" ? (
                   <>
                     <WeeklyGrid
                       onOpen={openEdit}
@@ -619,11 +697,46 @@ function TasksPageContent() {
                     />
                     {rightPanel}
                   </>
+                ) : view === "month" ? (
+                  <>
+                    <MonthlyCalendar
+                      monthStart={monthStart}
+                      onSelectDay={setSelectedMonthDay}
+                      projects={projectsQuery.data ?? []}
+                      selectedDayKey={selectedMonthDay}
+                      tasks={tasks}
+                    />
+                    {rightPanel}
+                  </>
+                ) : (
+                  <>
+                    <TaskList
+                      onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
+                      onOpen={openEdit}
+                      onStartPomodoro={openFocus}
+                      onToggle={(task) => void toggleTask(task)}
+                      tasks={tasks}
+                    />
+                    {rightPanel}
+                  </>
                 )}
               </div>
             </div>
           )}
         </TasksDnDProvider>
+      )}
+      {selectedMonthDay && (
+        <MonthDayModal
+          dayKey={selectedMonthDay}
+          onClose={() => setSelectedMonthDay(null)}
+          onCreate={() => modalUrl.openCreateWithDate(selectedMonthDay)}
+          onOpen={openEdit}
+          onStartPomodoro={openFocus}
+          onToggle={(task) => void toggleTask(task)}
+          tasks={tasks.filter(
+            (task) => task.dueDate && dateKey(task.dueDate) === selectedMonthDay,
+          )}
+        />
       )}
       <button
         aria-label="Nueva tarea"

@@ -36,7 +36,7 @@ export class HomeService {
         where: {
           userId,
           isActive: true,
-          dayOfWeek: toDowIndex(now),
+          daysOfWeek: { has: toDowIndex(now) },
           startMin: { lte: currentMin },
           endMin: { gt: currentMin },
         },
@@ -84,9 +84,9 @@ export class HomeService {
       where: {
         userId,
         isActive: true,
-        dayOfWeek: { in: [toDowIndex(tomorrow), toDowIndex(dayAfter)] },
+        daysOfWeek: { hasSome: [toDowIndex(tomorrow), toDowIndex(dayAfter)] },
       },
-      orderBy: [{ dayOfWeek: "asc" }, { startMin: "asc" }],
+      orderBy: [{ startMin: "asc" }, { createdAt: "asc" }],
       include: { project: true },
     });
 

@@ -39,7 +39,7 @@ export async function processTimeBlockNotifications() {
   const dayBlocks = await prisma.timeBlock.findMany({
     where: {
       isActive: true,
-      dayOfWeek,
+      daysOfWeek: { has: dayOfWeek },
       endMin: { gt: nowMin },
     },
     include: { project: true, user: true },

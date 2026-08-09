@@ -68,21 +68,21 @@ export function ActivityHeatmap({ activity }: { activity: HomeActivityPoint[] | 
 
       {hasActivity ? (
         <div className="overflow-x-auto">
-          <div className="flex min-w-[24rem] flex-col gap-1">
-            <div className="flex gap-1.5">
-              <div className="flex w-5 flex-col gap-1">
+          <div className="flex min-w-0 flex-col gap-1 sm:min-w-[24rem]">
+            <div className="flex gap-1 sm:gap-1.5">
+              <div className="flex w-4 flex-col gap-1 sm:w-5">
                 {WEEK_LABELS.map((label, index) => (
-                  <span className="flex h-3 items-center font-data-mono text-data-mono text-[9px] text-on-surface-variant" key={label}>
+                  <span className="flex h-2.5 items-center font-data-mono text-data-mono text-[9px] text-on-surface-variant sm:h-3" key={label}>
                     {index % 2 === 0 ? label : ""}
                   </span>
                 ))}
               </div>
               {grid.map((week, weekIndex) => (
-                <div className="flex flex-1 flex-col gap-1" key={weekIndex}>
+                <div className="flex min-w-0 flex-1 flex-col gap-1" key={weekIndex}>
                   {week.map((day) => (
                     <span
                       aria-hidden="true"
-                      className={`h-3 w-full rounded-[2px] ${levelClass(day.level)}`}
+                      className={`h-2.5 w-full rounded-[2px] sm:h-3 ${levelClass(day.level)}`}
                       key={day.date}
                       title={day.label}
                     />

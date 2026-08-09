@@ -31,7 +31,7 @@ export class TimeBlockService {
   async list(userId: string) {
     return prisma.timeBlock.findMany({
       where: { userId },
-      orderBy: [{ dayOfWeek: "asc" }, { startMin: "asc" }],
+      orderBy: [{ startMin: "asc" }, { createdAt: "asc" }],
     });
   }
 
@@ -47,7 +47,7 @@ export class TimeBlockService {
       where: {
         userId,
         isActive: true,
-        dayOfWeek: now.getDay(),
+        daysOfWeek: { has: now.getDay() },
         startMin: { lte: nowMinutes(now) },
         endMin: { gt: nowMinutes(now) },
       },
@@ -59,18 +59,18 @@ export class TimeBlockService {
   async today(userId: string) {
     const now = new Date();
     return prisma.timeBlock.findMany({
-      where: { userId, dayOfWeek: now.getDay() },
-      orderBy: [{ startMin: "asc" }],
+      where: { userId, daysOfWeek: { has: now.getDay() } },
+      orderBy: [{ startMin: "asc" }, { createdAt: "asc" }],
       include: { project: true },
     });
   }
 
-  private async assertNoOverlap(userId: string, dayOfWeek: number, startMin: number, endMin: number, excludeId?: string) {
+  private async assertNoOverlap(userId: string, daysOfWeek: number[], startMin: number, endMin: number, excludeId?: string) {
     const overlapping = await prisma.timeBlock.findFirst({
       where: {
         userId,
         id: excludeId ? { not: excludeId } : undefined,
-        dayOfWeek,
+        daysOfWeek: { hasSome: daysOfWeek },
         startMin: { lt: endMin },
         endMin: { gt: startMin },
       },
@@ -85,13 +85,13 @@ export class TimeBlockService {
       const project = await prisma.project.findFirst({ where: { id: data.projectId, userId } });
       if (!project) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
     }
-    await this.assertNoOverlap(userId, data.dayOfWeek, data.startMin, data.endMin);
+    await this.assertNoOverlap(userId, data.daysOfWeek, data.startMin, data.endMin);
     return prisma.timeBlock.create({
       data: {
         userId,
         projectId: data.projectId ?? null,
         name: data.name ?? null,
-        dayOfWeek: data.dayOfWeek,
+        daysOfWeek: data.daysOfWeek,
         startMin: data.startMin,
         endMin: data.endMin,
         repeatEveryWeeks: data.repeatEveryWeeks ?? 1,
@@ -107,16 +107,16 @@ export class TimeBlockService {
       const project = await prisma.project.findFirst({ where: { id: data.projectId, userId } });
       if (!project) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
     }
-    const dayOfWeek = data.dayOfWeek ?? current.dayOfWeek;
+    const daysOfWeek = data.daysOfWeek ?? current.daysOfWeek;
     const startMin = data.startMin ?? current.startMin;
     const endMin = data.endMin ?? current.endMin;
-    await this.assertNoOverlap(userId, dayOfWeek, startMin, endMin, id);
+    await this.assertNoOverlap(userId, daysOfWeek, startMin, endMin, id);
     return prisma.timeBlock.update({
       where: { id },
       data: {
         ...(data.projectId !== undefined ? { projectId: data.projectId } : {}),
         ...(data.name !== undefined ? { name: data.name } : {}),
-        ...(data.dayOfWeek !== undefined ? { dayOfWeek: data.dayOfWeek } : {}),
+        ...(data.daysOfWeek !== undefined ? { daysOfWeek: data.daysOfWeek } : {}),
         ...(data.startMin !== undefined ? { startMin: data.startMin } : {}),
         ...(data.endMin !== undefined ? { endMin: data.endMin } : {}),
         ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),

@@ -128,7 +128,7 @@ async function sendMorningDigest() {
           where: { userId, status: "PENDING", archivedAt: null, dueDate: { lt: toUtc(today), gt: toUtc(yesterday) } },
         }),
         prisma.timeBlock.findFirst({
-          where: { userId, isActive: true, dayOfWeek: nowInTz().weekday % 7, startMin: { gte: nowInTz().hour * 60 + nowInTz().minute } },
+          where: { userId, isActive: true, daysOfWeek: { has: nowInTz().weekday % 7 }, startMin: { gte: nowInTz().hour * 60 + nowInTz().minute } },
           orderBy: { startMin: "asc" },
           include: { project: true },
         }),

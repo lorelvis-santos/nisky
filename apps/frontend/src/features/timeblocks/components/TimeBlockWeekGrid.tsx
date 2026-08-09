@@ -28,12 +28,13 @@ type ResizeDraft = {
   days: number[];
   dragDay: number;
   durationMin: number;
-  columns: DayColumn[];
-  container: HTMLElement;
-  grid: HTMLElement;
-  left: number;
-  width: number;
-};
+columns: DayColumn[];
+   container: HTMLElement;
+   grid: HTMLElement;
+   left: number;
+   width: number;
+   headerOffset: number;
+ };
 
 export function TimeBlockWeekGrid({
   blocks,
@@ -330,6 +331,7 @@ export function TimeBlockWeekGrid({
       grid,
       left: colRect ? colRect.left - gridRect.left + 4 : 0,
       width: colRect ? colRect.width - 8 : 0,
+      headerOffset: colRect ? colRect.top - gridRect.top : 0,
     };
     onBlockClickRef.current(block);
     setDraft(draftRef.current);
@@ -369,6 +371,7 @@ export function TimeBlockWeekGrid({
       grid,
       left: colRect.left - gridRect.left + 4,
       width: colRect.width - 8,
+      headerOffset: colRect.top - gridRect.top,
     };
     onBlockClickRef.current(block);
     setDraft(draftRef.current);
@@ -460,10 +463,10 @@ export function TimeBlockWeekGrid({
     ? (draft.block.name ?? draftProject?.name ?? "Tiempo libre")
     : "";
   const draftTop = draft
-    ? (Math.max(draft.startMin - dayStartMin, 0) * HOUR_PX) / 60
+    ? draft.headerOffset + (Math.max(draft.startMin - dayStartMin, 0) * HOUR_PX) / 60
     : 0;
   const draftBottom = draft
-    ? (Math.min(draft.endMin - dayStartMin, totalMin) * HOUR_PX) / 60
+    ? draft.headerOffset + (Math.min(draft.endMin - dayStartMin, totalMin) * HOUR_PX) / 60
     : 0;
 
   return (

@@ -59,10 +59,21 @@ export function usePushSubscription() {
     try {
       const registration = await serviceWorkerRegistration();
       if (!registration) throw new Error("Este navegador no soporta notificaciones push");
+      // Subscribir antes de que el SW esté activo produce "Registration failed - push service error".
+      const active = await navigator.serviceWorker.ready;
+      // Si ya existía una suscripción (p. ej. de un intento anterior), la reutilizamos en vez
+      // de fallar con InvalidStateError por llaves distintas.
+      const existing = await active.pushManager.getSubscription();
+      if (existing) {
+        await api.post("/push/subscribe", serializePushSubscription(existing));
+        setSubscription(existing);
+        toast.success("¡Notificaciones activadas!");
+        return true;
+      }
       const permission = await Notification.requestPermission();
       if (permission !== "granted") throw new Error("Permiso de notificaciones no concedido");
       const keyResponse = await api.get<{ data: { publicKey: string } }>("/push/vapid-public-key");
-      const next = await registration.pushManager.subscribe({
+      const next = await active.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(keyResponse.data.data.publicKey),
       });
@@ -71,7 +82,16 @@ export function usePushSubscription() {
       toast.success("¡Notificaciones activadas!");
       return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No pudimos activar las notificaciones.");
+      const raw = error instanceof Error ? `${error.name}: ${error.message}` : "Unknown error";
+      let friendly: string;
+      if (raw.includes("Permission") || raw.includes("NotAllowed") || raw.includes("AbortError")) {
+        friendly = "No se concedió el permiso para notificaciones en el navegador.";
+      } else if (raw.includes("InvalidStateError")) {
+        friendly = "Tu navegador tenía una suscripción anterior de Nisky. Actualiza la página y reinténtalo.";
+      } else {
+        friendly = "El servicio de notificaciones del navegador no respondió. Vuelve a intentarlo en un momento.";
+      }
+      toast.error(friendly);
       return false;
     } finally {
       setIsLoading(false);

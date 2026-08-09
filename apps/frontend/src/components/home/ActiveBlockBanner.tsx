@@ -115,7 +115,7 @@ const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
       </div>
 
       {tasks.length > 0 && (
-        <div className="border-t border-outline-variant pt-1.5">
+        <div className="pt-1.5">
           <p className="flex items-center gap-1.5 py-1 font-label-caps text-label-caps text-on-surface-variant">
             <ListChecks size={13} />
             TAREAS DEL BLOQUE ({tasks.length})

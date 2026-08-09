@@ -7,7 +7,7 @@ import { SettingsForm } from "@/components/admin/SettingsForm";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { IntegrationManager } from "@/components/integrations/IntegrationManager";
 import { IntegrationTasksList } from "@/components/integrations/IntegrationTasksList";
-import { PushSubscriptionManager } from "@/components/pwa/PushSubscriptionManager";
+import { NotificationSettingsPanel } from "@/components/pwa/NotificationSettingsPanel";
 import { FeedbackAdminPanel } from "@/components/feedback/FeedbackAdminPanel";
 
 type Tab = "profile" | "security" | "notifications" | "integrations" | "admin";
@@ -62,7 +62,7 @@ export default function SettingsPage() {
 
           {active === "notifications" && (
             <div className="max-w-2xl">
-              <PushSubscriptionManager />
+              <NotificationSettingsPanel />
             </div>
           )}
 

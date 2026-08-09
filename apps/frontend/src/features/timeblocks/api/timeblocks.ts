@@ -1,0 +1,55 @@
+import { api } from "@/lib/api";
+import type { TimeBlock, TimeBlockSettings, TimeBlockWithProject } from "@/types/entities";
+
+export async function getTimeBlocks() {
+  const { data } = await api.get<{ data: TimeBlock[] }>("/timeblocks");
+  return data.data;
+}
+
+export async function getActiveBlock() {
+  const { data } = await api.get<{ data: TimeBlockWithProject | null }>("/timeblocks/active");
+  return data.data;
+}
+
+export async function getTodayBlocks() {
+  const { data } = await api.get<{ data: TimeBlockWithProject[] }>("/timeblocks/today");
+  return data.data;
+}
+
+export async function getTimeBlockSettings() {
+  const { data } = await api.get<{ data: TimeBlockSettings }>("/timeblocks/settings");
+  return data.data;
+}
+
+export async function updateTimeBlockSettings(payload: { dayStartMin: number; dayEndMin: number }) {
+  const { data } = await api.patch<{ data: TimeBlockSettings }>("/timeblocks/settings", payload);
+  return data.data;
+}
+
+export type CreateTimeBlockPayload = {
+  projectId?: string | null;
+  name?: string | null;
+  dayOfWeek: number;
+  startMin: number;
+  endMin: number;
+  repeatEveryWeeks?: number;
+  repeatEndsAt?: string | null;
+  remindBeforeMin?: number;
+};
+
+export type UpdateTimeBlockPayload = Partial<CreateTimeBlockPayload> & { isActive?: boolean };
+
+export async function createTimeBlock(payload: CreateTimeBlockPayload) {
+  const { data } = await api.post<{ data: TimeBlock }>("/timeblocks", payload);
+  return data.data;
+}
+
+export async function updateTimeBlock(id: string, payload: UpdateTimeBlockPayload) {
+  const { data } = await api.patch<{ data: TimeBlock }>(`/timeblocks/${id}`, payload);
+  return data.data;
+}
+
+export async function deleteTimeBlock(id: string) {
+  const { data } = await api.delete<{ data: { success: boolean } }>(`/timeblocks/${id}`);
+  return data.data;
+}

@@ -9,6 +9,7 @@
     "db:migrate": "bunx prisma migrate dev",
     "db:push": "bunx prisma db push",
     "db:seed": "bunx prisma db seed",
+    "db:backfill-projects": "bun scripts/backfill-projects.ts",
     "db:studio": "bunx prisma studio",
     "typecheck": "tsc --noEmit"
   },

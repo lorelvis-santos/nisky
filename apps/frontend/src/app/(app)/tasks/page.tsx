@@ -1,22 +1,44 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import { LayoutGrid, List, Plus } from "lucide-react";
+import { CheckSquare, FolderKanban, List, LayoutGrid, Plus, Trash2, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import type { Task, TaskPriority } from "@/types/entities";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { archiveQuickNote } from "@/features/quicknotes/api/quicknotes";
+import { ProjectsModal } from "@/features/projects/components/ProjectsModal";
+import { ProjectsSidebar } from "@/features/projects/components/ProjectsSidebar";
 import { BacklogPanel } from "@/features/tasks/components/BacklogPanel";
 import { DayList } from "@/features/tasks/components/DayList";
 import { MobileBacklog } from "@/features/tasks/components/MobileBacklog";
-import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
+import {
+  TaskModal,
+  type TaskForm,
+} from "@/features/tasks/components/TaskModal";
 import { WeekNavigation } from "@/features/tasks/components/WeekNavigation";
 import { WeeklyGrid } from "@/features/tasks/components/WeeklyGrid";
-import { useTaskMutations, useTaskQuery, useTasksQuery } from "@/features/tasks/hooks/useTasks";
-import { BACKLOG_CONTAINER, TasksDnDProvider, dayKeyFromContainerId } from "@/features/tasks/dnd/TasksDnDProvider";
+import {
+  useTaskMutations,
+  useTaskQuery,
+  useTasksQuery,
+} from "@/features/tasks/hooks/useTasks";
+import {
+  useProjectMutations,
+  useProjectsQuery,
+} from "@/features/projects/hooks/useProjects";
+import {
+  BACKLOG_CONTAINER,
+  TasksDnDProvider,
+  dayKeyFromContainerId,
+} from "@/features/tasks/dnd/TasksDnDProvider";
 import { dateKey } from "@/lib/tasks";
 import { localDateKey } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import {
+  TaskSelectionProvider,
+  useTaskSelection,
+} from "@/features/tasks/selection/TaskSelectionContext";
 
 const emptyTasks: Task[] = [];
 
@@ -60,7 +82,10 @@ function useModalUrl() {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("taskId");
       params.set("modal", "create");
-      params.set("prefill", encodeURIComponent(JSON.stringify({ title: "", dueDate })));
+      params.set(
+        "prefill",
+        encodeURIComponent(JSON.stringify({ title: "", dueDate })),
+      );
       navigateWithModal(params);
     },
     close: () => {
@@ -71,7 +96,8 @@ function useModalUrl() {
       params.delete("quickNoteId");
       navigateWithModal(params, true);
     },
-    openFocus: (taskId: string) => router.push(`/focus?taskId=${encodeURIComponent(taskId)}`),
+    openFocus: (taskId: string) =>
+      router.push(`/focus?taskId=${encodeURIComponent(taskId)}`),
   };
 }
 
@@ -111,10 +137,17 @@ function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
 type TaskView = "grid" | "list";
 
 const TASK_VIEW_KEY = "nisky:task-view";
+const TASK_PROJECT_FILTER_KEY = "nisky:task-filter-project";
 
 function initialTaskView(): TaskView {
   if (typeof window === "undefined") return "grid";
   return localStorage.getItem(TASK_VIEW_KEY) === "list" ? "list" : "grid";
+}
+
+function initialProjectFilter(): string | null {
+  if (typeof window === "undefined") return null;
+  const value = localStorage.getItem(TASK_PROJECT_FILTER_KEY);
+  return value || null;
 }
 
 function TasksPageContent() {
@@ -124,18 +157,62 @@ function TasksPageContent() {
   const [priority, setPriority] = useState<TaskPriority | "ALL">("ALL");
   const [dayOrder, setDayOrder] = useState<Record<string, string[]>>({});
   const [backlogOrder, setBacklogOrder] = useState<string[]>([]);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    initialProjectFilter,
+  );
   const [view, setView] = useState<TaskView>(initialTaskView);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const isMobile = useIsMobile(1023);
+  const selection = useTaskSelection();
   const modalUrl = useModalUrl();
-  const query = useTasksQuery({ q: search || undefined, priority: priority === "ALL" ? undefined : priority });
+  const query = useTasksQuery({
+    q: search || undefined,
+    priority: priority === "ALL" ? undefined : priority,
+  });
   const urlTaskQuery = useTaskQuery(modalUrl.state.taskId);
   const mutations = useTaskMutations();
-  const tasks = query.data?.data ?? emptyTasks;
+  const projectMutations = useProjectMutations();
+  const projectsQuery = useProjectsQuery();
+  const allTasks = query.data?.data ?? emptyTasks;
+  const tasks = useMemo(
+    () =>
+      selectedProjectId
+        ? allTasks.filter((task) => task.projectId === selectedProjectId)
+        : allTasks,
+    [allTasks, selectedProjectId],
+  );
+  const taskCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const task of allTasks) {
+      if (
+        !task.projectId ||
+        task.status === "COMPLETED" ||
+        task.status === "CANCELLED"
+      )
+        continue;
+      counts[task.projectId] = (counts[task.projectId] ?? 0) + 1;
+    }
+    return counts;
+  }, [allTasks]);
   const backlog = useMemo(() => tasks.filter((task) => !task.dueDate), [tasks]);
-  const taskFromUrl = urlTaskQuery.data ?? tasks.find((task) => task.id === modalUrl.state.taskId) ?? null;
+  const selectedTasks = useMemo(
+    () => tasks.filter((task) => selection.selectedIds.has(task.id)),
+    [tasks, selection.selectedIds],
+  );
+  const isBulkMoveNoop = (projectId: string | null) =>
+    selectedTasks.length > 0 &&
+    selectedTasks.every((task) => (task.projectId ?? null) === projectId);
+  const taskFromUrl =
+    urlTaskQuery.data ??
+    tasks.find((task) => task.id === modalUrl.state.taskId) ??
+    null;
   const editingTask = taskFromUrl;
   const modalOpen = Boolean(modalUrl.state.taskId || modalUrl.state.create);
   const initialForm = parsePrefill(modalUrl.state.prefill);
+  const taskDefaultProjectId =
+    selectedProjectId ??
+    projectsQuery.data?.find((project) => project.isDefault)?.id;
 
   const visibleDayOrder = useMemo(() => {
     const next = { ...dayOrder };
@@ -145,10 +222,16 @@ function TasksPageContent() {
       const key = dateKey(currentDate);
       const currentIds = tasks
         .filter((task) => task.dueDate && dateKey(task.dueDate) === key)
-        .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
+        .sort(
+          (a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt),
+        )
         .map((task) => task.id);
-      const existing = dayOrder[key]?.filter((id) => currentIds.includes(id)) ?? [];
-      next[key] = [...existing, ...currentIds.filter((id) => !existing.includes(id))];
+      const existing =
+        dayOrder[key]?.filter((id) => currentIds.includes(id)) ?? [];
+      next[key] = [
+        ...existing,
+        ...currentIds.filter((id) => !existing.includes(id)),
+      ];
     }
     return next;
   }, [dayOrder, tasks, weekStart]);
@@ -170,7 +253,9 @@ function TasksPageContent() {
     try {
       await mutations.update.mutateAsync({
         id: task.id,
-        payload: { status: task.status === "COMPLETED" ? "PENDING" : "COMPLETED" },
+        payload: {
+          status: task.status === "COMPLETED" ? "PENDING" : "COMPLETED",
+        },
       });
     } catch {
       toast.error("Ups, no pudimos actualizar la tarea.");
@@ -185,12 +270,18 @@ function TasksPageContent() {
     if (currentDueDate) {
       setDayOrder((current) => ({
         ...current,
-        [currentDueDate]: (current[currentDueDate] ?? []).filter((id) => id !== taskId),
+        [currentDueDate]: (current[currentDueDate] ?? []).filter(
+          (id) => id !== taskId,
+        ),
       }));
     }
     try {
       await mutations.update.mutateAsync({ id: taskId, payload: { dueDate } });
-      toast.success(dueDate ? "¡Listo, fecha actualizada!" : "¡Listo, la devolvimos a pendientes!");
+      toast.success(
+        dueDate
+          ? "¡Listo, fecha actualizada!"
+          : "¡Listo, la devolvimos a pendientes!",
+      );
     } catch {
       setDayOrder(previousDayOrder);
       toast.error("Ups, no pudimos mover la tarea. Inténtalo de nuevo.");
@@ -201,7 +292,9 @@ function TasksPageContent() {
     const previous = dayOrder;
     setDayOrder((current) => ({ ...current, [key]: taskIds }));
     try {
-      await mutations.reorder.mutateAsync(taskIds.map((id, order) => ({ id, order })));
+      await mutations.reorder.mutateAsync(
+        taskIds.map((id, order) => ({ id, order })),
+      );
     } catch {
       setDayOrder(previous);
       toast.error("Ups, no pudimos guardar el orden.");
@@ -212,7 +305,9 @@ function TasksPageContent() {
     const previous = backlogOrder;
     setBacklogOrder(taskIds);
     try {
-      await mutations.reorder.mutateAsync(taskIds.map((id, order) => ({ id, order })));
+      await mutations.reorder.mutateAsync(
+        taskIds.map((id, order) => ({ id, order })),
+      );
     } catch {
       setBacklogOrder(previous);
       toast.error("Ups, no pudimos guardar el orden.");
@@ -229,22 +324,37 @@ function TasksPageContent() {
       ...form,
       description: form.description || undefined,
       dueDate: form.dueDate || undefined,
+      recurrence: {
+        repeatType: form.recurrence?.repeatType,
+        repeatInterval: form.recurrence?.repeatInterval ?? 1,
+        repeatDaysOfWeek: form.recurrence?.repeatDaysOfWeek ?? [],
+        repeatDayOfMonth: form.recurrence?.repeatDayOfMonth,
+        repeatEndsAt: form.recurrence?.repeatEndsAt || null,
+      },
     };
     try {
       if (editingTask) {
-        await mutations.update.mutateAsync({ id: editingTask.id, payload });
+        const updatePayload = { ...payload } as Partial<typeof payload>;
+        await mutations.update.mutateAsync({
+          id: editingTask.id,
+          payload: updatePayload,
+        });
       } else {
         await mutations.create.mutateAsync(payload);
         if (modalUrl.state.quickNoteId) {
           try {
             await archiveQuickNote(modalUrl.state.quickNoteId);
           } catch {
-            toast.warning("La tarea se creó, pero no pudimos guardar tu nota original.");
+            toast.warning(
+              "La tarea se creó, pero no pudimos guardar tu nota original.",
+            );
           }
         }
       }
       modalUrl.close();
-      toast.success(editingTask ? "¡Listo, tarea actualizada!" : "¡Listo, tarea creada!");
+      toast.success(
+        editingTask ? "¡Listo, tarea actualizada!" : "¡Listo, tarea creada!",
+      );
     } catch {
       toast.error("Ups, no pudimos guardar la tarea. Inténtalo de nuevo.");
     }
@@ -255,22 +365,92 @@ function TasksPageContent() {
   const openFocus = (task: Task) => modalUrl.openFocus(task.id);
   const closeModal = () => modalUrl.close();
 
+  const selectProject = (projectId: string | null) => {
+    setSelectedProjectId(projectId);
+    if (projectId === null) localStorage.removeItem(TASK_PROJECT_FILTER_KEY);
+    else localStorage.setItem(TASK_PROJECT_FILTER_KEY, projectId);
+  };
+
+  const toggleSelectionMode = () => {
+    if (selection.mode) selection.clear();
+    else selection.setMode(true);
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await mutations.bulkRemove.mutateAsync(Array.from(selection.selectedIds));
+      selection.clear();
+      setConfirmBulkDelete(false);
+      toast.success("¡Listo, tareas eliminadas!");
+    } catch (error) {
+      const message =
+        (error as { message?: string } | null)?.message ??
+        "Ups, no pudimos eliminar las tareas. Inténtalo de nuevo.";
+      toast.error(message);
+    }
+  };
+
+  const handleBulkMove = async (projectId: string | null) => {
+    try {
+      await mutations.bulkMove.mutateAsync({
+        ids: Array.from(selection.selectedIds),
+        projectId,
+      });
+      selection.clear();
+      toast.success("¡Listo, tareas movidas!");
+    } catch (error) {
+      const message =
+        (error as { message?: string } | null)?.message ??
+        "Ups, no pudimos mover las tareas. Inténtalo de nuevo.";
+      toast.error(message);
+    }
+  };
+
+  const rightPanel = (
+    <BacklogPanel
+      onCreate={openCreate}
+      onOpen={openEdit}
+      onPriority={setPriority}
+      onSearch={setSearch}
+      onStartPomodoro={openFocus}
+      onToggle={(task) => void toggleTask(task)}
+      priority={priority}
+      search={search}
+      tasks={backlog}
+    />
+  );
+
   return (
     <section className="flex h-full min-h-0 flex-col bg-surface">
       <div className="flex shrink-0 flex-col gap-3 border-b border-outline-variant bg-surface-bright p-container-padding sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">MI SEMANA</p>
-            <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">Mis tareas</h1>
+            <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+              MI SEMANA
+            </p>
+            <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">
+              Mis tareas
+            </h1>
           </div>
         </div>
-        <div className="flex items-center justify-between gap-3 sm:justify-end">
-          <span className="font-data-mono text-data-mono text-xs text-on-surface-variant sm:hidden">{weekLabel(weekStart)}</span>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+          <button
+            aria-label="Seleccionar tareas"
+            aria-pressed={selection.mode}
+            className={`flex h-9 items-center gap-1.5 border border-outline-variant px-3 font-body-sm text-body-sm ${selection.mode ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+            onClick={toggleSelectionMode}
+            type="button"
+          >
+            <CheckSquare size={15} /> Seleccionar
+          </button>
+          <span className="font-data-mono text-data-mono text-xs text-on-surface-variant sm:hidden">
+            {weekLabel(weekStart)}
+          </span>
           <div className="hidden items-center border border-outline-variant lg:flex">
             <button
               aria-label="Vista semana"
               aria-pressed={view === "grid"}
-              className={`flex items-center gap-1.5 px-3 py-1.5 font-body-sm text-body-sm ${view === "grid" ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+              className={`flex items-center gap-1.5 border-l border-outline-variant px-3 py-1.5 font-body-sm text-body-sm ${view === "grid" ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
               onClick={() => setTaskView("grid")}
               type="button"
             >
@@ -286,13 +466,89 @@ function TasksPageContent() {
               <List size={15} /> Lista
             </button>
           </div>
-          <WeekNavigation label={weekLabel(weekStart)} onNext={() => moveWeek(1)} onPrevious={() => moveWeek(-1)} onToday={() => setWeekStart(monday(new Date()))} />
+          <div className="flex items-center gap-2 lg:hidden">
+            <select
+              aria-label="Filtrar por proyecto"
+              className="field h-9 min-w-0 flex-1"
+              onChange={(event) => selectProject(event.target.value || null)}
+              value={selectedProjectId ?? ""}
+            >
+              <option value="">Todos</option>
+              {projectsQuery.data?.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+            <button
+              aria-label="Gestionar proyectos"
+              className="flex h-9 items-center gap-1.5 border border-outline-variant px-3 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+              onClick={() => setManageOpen(true)}
+              type="button"
+            >
+              <FolderKanban size={15} />
+            </button>
+          </div>
+          <WeekNavigation
+            label={weekLabel(weekStart)}
+            onNext={() => moveWeek(1)}
+            onPrevious={() => moveWeek(-1)}
+            onToday={() => setWeekStart(monday(new Date()))}
+          />
         </div>
       </div>
+      {selection.mode && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-outline-variant bg-secondary-container/30 px-container-padding py-2">
+          <span className="mr-1 font-body-sm text-body-sm font-bold text-on-surface">
+            {selection.selectedIds.size}{" "}
+            {selection.selectedIds.size === 1 ? "tarea seleccionada" : "tareas seleccionadas"}
+          </span>
+          <select
+            aria-label="Mover selección a proyecto"
+            className="field h-8 min-w-0 flex-1 text-xs sm:flex-none"
+            disabled={selection.selectedIds.size === 0 || mutations.bulkMove.isPending}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (!value) return;
+              void handleBulkMove(value === "__none__" ? null : value);
+            }}
+            value=""
+          >
+            <option value="">Mover a proyecto...</option>
+            <option disabled={isBulkMoveNoop(null)} value="__none__">Sin proyecto</option>
+            {projectsQuery.data?.map((project) => (
+              <option disabled={isBulkMoveNoop(project.id)} key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+          <button
+            aria-label="Eliminar tareas seleccionadas"
+            className="flex h-8 items-center gap-1.5 border border-outline-variant px-3 font-body-sm text-body-sm text-error hover:bg-error hover:text-error-foreground disabled:opacity-50"
+            disabled={selection.selectedIds.size === 0}
+            onClick={() => setConfirmBulkDelete(true)}
+            type="button"
+          >
+            <Trash2 size={14} /> Eliminar
+          </button>
+          <button
+            aria-label="Salir del modo selección"
+            className="flex h-8 items-center gap-1.5 border border-outline-variant px-3 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+            onClick={selection.clear}
+            type="button"
+          >
+            <X size={14} /> Salir
+          </button>
+        </div>
+      )}
       {query.isLoading ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando tus tareas...</div>
+        <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-on-surface-variant">
+          Cargando tus tareas...
+        </div>
       ) : query.isError ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus tareas. Inténtalo de nuevo.</div>
+        <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-error">
+          Ups, no pudimos cargar tus tareas. Inténtalo de nuevo.
+        </div>
       ) : (
         <TasksDnDProvider
           backlogOrder={backlogOrder}
@@ -326,52 +582,45 @@ function TasksPageContent() {
             </div>
           ) : (
             <div className="min-h-0 flex-1 lg:flex">
-              {view === "list" ? (
-                <>
-                  <div className="min-h-0 flex-1 flex-col overflow-y-auto">
-                    <DayList
-                      onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
+              <aside className="hidden w-60 shrink-0 flex-col border-r border-outline-variant bg-surface lg:flex">
+                <ProjectsSidebar
+                  onManage={() => setManageOpen(true)}
+                  onSelect={selectProject}
+                  projects={projectsQuery.data ?? []}
+                  selectedProjectId={selectedProjectId}
+                  taskCounts={taskCounts}
+                />
+              </aside>
+              <div className="min-h-0 min-w-0 flex-1 lg:flex">
+                {view === "list" ? (
+                  <>
+                    <div className="min-h-0 flex-1 flex-col overflow-y-auto">
+                      <DayList
+                        onCreateOnDay={(key) =>
+                          modalUrl.openCreateWithDate(key)
+                        }
+                        onOpen={openEdit}
+                        onStartPomodoro={openFocus}
+                        onToggle={(task) => void toggleTask(task)}
+                        tasks={tasks}
+                        weekStart={weekStart}
+                      />
+                    </div>
+                    {rightPanel}
+                  </>
+                ) : (
+                  <>
+                    <WeeklyGrid
                       onOpen={openEdit}
                       onStartPomodoro={openFocus}
                       onToggle={(task) => void toggleTask(task)}
                       tasks={tasks}
                       weekStart={weekStart}
                     />
-                  </div>
-                  <BacklogPanel
-                    onCreate={openCreate}
-                    onOpen={openEdit}
-                    onPriority={setPriority}
-                    onSearch={setSearch}
-                    onStartPomodoro={openFocus}
-                    onToggle={(task) => void toggleTask(task)}
-                    priority={priority}
-                    search={search}
-                    tasks={backlog}
-                  />
-                </>
-              ) : (
-                <>
-                  <WeeklyGrid
-                    onOpen={openEdit}
-                    onStartPomodoro={openFocus}
-                    onToggle={(task) => void toggleTask(task)}
-                    tasks={tasks}
-                    weekStart={weekStart}
-                  />
-                  <BacklogPanel
-                    onCreate={openCreate}
-                    onOpen={openEdit}
-                    onPriority={setPriority}
-                    onSearch={setSearch}
-                    onStartPomodoro={openFocus}
-                    onToggle={(task) => void toggleTask(task)}
-                    priority={priority}
-                    search={search}
-                    tasks={backlog}
-                  />
-                </>
-              )}
+                    {rightPanel}
+                  </>
+                )}
+              </div>
             </div>
           )}
         </TasksDnDProvider>
@@ -384,31 +633,72 @@ function TasksPageContent() {
       >
         <Plus size={22} />
       </button>
+      <ProjectsModal
+        onClose={() => setManageOpen(false)}
+        onCreate={async (name, color) => {
+          await projectMutations.create.mutateAsync({ name, color });
+        }}
+        onDelete={async (id) => {
+          await projectMutations.remove.mutateAsync(id);
+        }}
+        onSetDefault={async (id) => {
+          await projectMutations.setDefault.mutateAsync(id);
+        }}
+        onUpdate={async (id, data) => {
+          await projectMutations.update.mutateAsync({ id, payload: data });
+        }}
+        open={manageOpen}
+        projects={projectsQuery.data ?? []}
+      />
+      {confirmBulkDelete && (
+        <ConfirmModal
+          confirmLabel="Eliminar"
+          danger
+          loading={mutations.bulkRemove.isPending}
+          message={`Se eliminarán ${selection.selectedIds.size} ${selection.selectedIds.size === 1 ? "tarea" : "tareas"}. Esta acción no se puede deshacer.`}
+          onClose={() => setConfirmBulkDelete(false)}
+          onConfirm={() => void handleBulkDelete()}
+          title="¿Eliminar tareas seleccionadas?"
+        />
+      )}
       {modalOpen && (!modalUrl.state.taskId || editingTask) && (
         <TaskModal
+          defaultProjectId={taskDefaultProjectId}
           initialForm={initialForm}
           key={editingTask?.id ?? modalUrl.state.prefill ?? "new"}
           onAddSubtask={async (taskId, title) => {
             await mutations.addSubtask.mutateAsync({ taskId, title });
           }}
           onClose={closeModal}
-            onDelete={editingTask ? async () => {
-            try {
-              await mutations.remove.mutateAsync(editingTask.id);
-              modalUrl.close();
-              toast.success("¡Listo, tarea eliminada!");
-            } catch {
-              toast.error("Ups, no pudimos eliminarla. Inténtalo de nuevo.");
-            }
-          } : undefined}
+          projects={projectsQuery.data ?? []}
+          onDelete={
+            editingTask
+              ? async () => {
+                  try {
+                    await mutations.remove.mutateAsync(editingTask.id);
+                    modalUrl.close();
+                    toast.success("¡Listo, tarea eliminada!");
+                  } catch {
+                    toast.error(
+                      "Ups, no pudimos eliminarla. Inténtalo de nuevo.",
+                    );
+                  }
+                }
+              : undefined
+          }
           onDeleteSubtask={async (taskId, subtaskId) => {
             await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
           }}
           onSave={saveTask}
-          onCreateReminder={editingTask ? () => router.push(`/reminders?taskId=${encodeURIComponent(editingTask.id)}&title=${encodeURIComponent(editingTask.title)}`) : undefined}
-          onStartPomodoro={editingTask ? () => modalUrl.openFocus(editingTask.id) : undefined}
+          onStartPomodoro={
+            editingTask ? () => modalUrl.openFocus(editingTask.id) : undefined
+          }
           onToggleSubtask={async (taskId, subtaskId, completed) => {
-            await mutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed });
+            await mutations.toggleSubtask.mutateAsync({
+              taskId,
+              subtaskId,
+              completed,
+            });
           }}
           task={editingTask}
         />
@@ -419,8 +709,16 @@ function TasksPageContent() {
 
 export default function TasksPage() {
   return (
-    <Suspense fallback={<div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando tus tareas...</div>}>
-      <TasksPageContent />
-    </Suspense>
+    <TaskSelectionProvider>
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">
+            Cargando tus tareas...
+          </div>
+        }
+      >
+        <TasksPageContent />
+      </Suspense>
+    </TaskSelectionProvider>
   );
 }

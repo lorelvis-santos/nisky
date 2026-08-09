@@ -6,8 +6,9 @@ let processing = false;
 
 function notificationUrl(payload: unknown) {
   if (!payload || typeof payload !== "object") return "/";
-  const value = payload as { taskId?: string; habitId?: string };
+  const value = payload as { taskId?: string; habitId?: string; timeBlockId?: string };
   if (value.taskId) return `/tasks?taskId=${encodeURIComponent(value.taskId)}`;
+  if (value.timeBlockId) return "/timeblocks";
   return "/";
 }
 
@@ -31,6 +32,7 @@ export async function processDueReminders() {
         console.error(`[reminders] No se pudo enviar ${reminder.id}`, error);
       }
     }
+    await reminderService.advanceOverdueRepeats();
   } finally {
     processing = false;
   }

@@ -1,9 +1,21 @@
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
+import { DateTime } from "luxon";
 import { decryptSecret, encryptSecret } from "../../utils/secrets";
 import { getStrategy } from "./strategies";
 import type { IntegrationProvider } from "./strategies";
 import type { ConnectMoodleDto, IntegrationTaskQueryDto } from "./integration.validator";
+import { projectService } from "../projects/projects.service";
+import { pushService } from "../push/push.service";
+import { defaultNotificationSettings } from "../../utils/notifications/notification-settings";
+import { hostOf, universityNameFor } from "./university-catalog";
+
+async function ensureUniversityProject(userId: string, domain: string) {
+  const displayName = universityNameFor(domain) ?? hostOf(domain);
+  const existing = await prisma.project.findFirst({ where: { userId, name: displayName, isDefault: false } });
+  if (existing) return existing;
+  return prisma.project.create({ data: { userId, name: displayName } });
+}
 
 type Delegate = typeof prisma.moodleAccount;
 
@@ -63,6 +75,10 @@ export class IntegrationService {
         syncError: null,
       },
     });
+    if (!account.projectId) {
+      const project = await ensureUniversityProject(account.userId, account.domain);
+      await delegate.update({ where: { id: account.id }, data: { projectId: project.id } });
+    }
     return accountRow(account, provider);
   }
 
@@ -83,6 +99,23 @@ export class IntegrationService {
         },
       }),
     ]);
+    if (account.projectId) {
+      const otherRefs =
+        (await prisma.moodleAccount.count({ where: { userId, projectId: account.projectId } })) +
+        (await prisma.canvasAccount.count({ where: { userId, projectId: account.projectId } }));
+      if (otherRefs === 0) {
+        const project = await prisma.project.findFirst({
+          where: { id: account.projectId, userId, isDefault: false },
+        });
+        if (project) {
+          try {
+            await projectService.delete(userId, project.id);
+          } catch {
+            // La limpieza del proyecto no debe fallar la desconexión.
+          }
+        }
+      }
+    }
     return { removed: deleted[1].count };
   }
 
@@ -144,11 +177,16 @@ export class IntegrationService {
     const strategy = getStrategy(provider);
     const account = await delegate.findUnique({ where: { id: accountId } });
     if (!account || !account.enabled) return 0;
+    const universityName = universityNameFor(account.domain) ?? hostOf(account.domain);
+    const wasFailing = Boolean(account.syncError);
     try {
       const token = decryptSecret(account.tokenCipher, account.tokenIv, account.tokenAuthTag);
       const items = await strategy.fetchItems(account.domain, token, { daysPast: 14, daysAhead: 365 });
       const now = new Date();
+      const projectId = account.projectId ?? (await projectService.getDefaultId(account.userId));
       let synced = 0;
+      let created = 0;
+      let removed = 0;
       for (const item of items) {
         const sourceRef = `${strategy.prefix}${accountId}:${item.key}`;
         const existing = await prisma.task.findUnique({ where: { userId_source_sourceRef: { userId: account.userId, source: strategy.source, sourceRef } } });
@@ -158,7 +196,7 @@ export class IntegrationService {
         if (existing) {
           await prisma.task.update({
             where: { id: existing.id },
-            data: { title: item.title, description: item.description, dueDate, priority: taskPriority(dueDate, now) },
+            data: { title: item.title, description: item.description, dueDate, priority: taskPriority(dueDate, now), projectId },
           });
         } else {
           await prisma.task.create({
@@ -170,16 +208,71 @@ export class IntegrationService {
               sourceRef,
               dueDate,
               priority: taskPriority(dueDate, now),
+              projectId,
             },
           });
+          created += 1;
         }
         synced += 1;
       }
       await delegate.update({ where: { id: accountId }, data: { lastSyncAt: now, syncError: null } });
+
+      const currentlyPresent = new Set(items.map((item) => `${strategy.prefix}${accountId}:${item.key}`));
+      const stale = currentlyPresent.size > 0
+        ? await prisma.task.findMany({
+            where: {
+              userId: account.userId,
+              source: strategy.source,
+              sourceRef: { startsWith: `${strategy.prefix}${accountId}:` },
+              status: { in: ["PENDING", "IN_PROGRESS"] },
+              NOT: { sourceRef: { in: [...currentlyPresent] } },
+            },
+            select: { id: true },
+          })
+        : [];
+      if (stale.length > 0) {
+        await prisma.task.updateMany({ where: { id: { in: stale.map((s) => s.id) } }, data: { status: "COMPLETED" } });
+        removed = stale.length;
+      }
+
+      if (created > 0 || removed > 0) {
+        try {
+          const settings = await defaultNotificationSettings(account.userId);
+          if (!settings.integrationNews) return synced;
+          const parts: string[] = [];
+          if (created > 0) parts.push(`${created === 1 ? "1 nueva asignación" : `${created} nuevas asignaciones`}`);
+          if (removed > 0) parts.push(`${removed === 1 ? "1 completada" : `${removed} completadas`}`);
+          await pushService.sendToUser(account.userId, {
+            title: `📚 ${universityName}`,
+            body: parts.join(" · "),
+            url: `/tasks?projectId=${projectId ?? ""}`,
+            tag: `integrations-sync-${account.id}-${now.toISOString().slice(0, 10)}`,
+            data: { integrationAccountId: account.id, type: "integration_new_assignments", created, removed },
+          });
+        } catch (error) {
+          console.error(`[integrations] No se pudo notificar nueva tarea de ${account.id}`, error);
+        }
+      }
       return synced;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await delegate.update({ where: { id: accountId }, data: { syncError: message.slice(0, 500) } });
+      if (!wasFailing) {
+        try {
+          const settings = await defaultNotificationSettings(account.userId);
+          if (settings.integrationErrors) {
+            await pushService.sendToUser(account.userId, {
+              title: `⚠️ Problema al sincronizar ${universityName}`,
+              body: message.slice(0, 140),
+              url: "/settings",
+              tag: `integrations-error-${account.id}-${nowInTz().toISODate()}`,
+              data: { integrationAccountId: account.id, type: "integration_sync_error" },
+            });
+          }
+        } catch {
+          // El aviso de error no debe romper el sync.
+        }
+      }
       throw error;
     }
   }
@@ -212,6 +305,12 @@ export class IntegrationService {
   }
 }
 
+export const integrationService = new IntegrationService();
+
+function nowInTz() {
+  return DateTime.now().setZone("America/Santo_Domingo");
+}
+
 function taskPriority(due: Date | null, now: Date): "LOW" | "NORMAL" | "HIGH" | "URGENT" {
   if (!due) return "NORMAL";
   const days = (due.getTime() - now.getTime()) / 86_400_000;
@@ -221,5 +320,3 @@ function taskPriority(due: Date | null, now: Date): "LOW" | "NORMAL" | "HIGH" | 
   if (days < 7) return "NORMAL";
   return "LOW";
 }
-
-export const integrationService = new IntegrationService();

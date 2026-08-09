@@ -33,6 +33,56 @@ export type TaskSource = "MANUAL" | "MOODLE" | "CANVAS";
 
 export type IntegrationProvider = "MOODLE" | "CANVAS";
 
+export interface Project {
+  id: string;
+  userId: string;
+  name: string;
+  color: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimeBlock {
+  id: string;
+  userId: string;
+  projectId: string | null;
+  name: string | null;
+  dayOfWeek: number;
+  startMin: number;
+  endMin: number;
+  isActive: boolean;
+  repeatEveryWeeks: number;
+  repeatEndsAt: string | null;
+  remindBeforeMin: number;
+  lastRemindNotifiedAt: string | null;
+  lastStartNotifiedAt: string | null;
+  lastEndWarnNotifiedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimeBlockWithProject extends TimeBlock {
+  project: Project | null;
+}
+
+export interface TimeBlockSettings {
+  userId: string;
+  dayStartMin: number;
+  dayEndMin: number;
+  updatedAt: string;
+}
+
+export interface NotificationSettings {
+  userId: string;
+  morningDigest: boolean;
+  taskDueReminders: boolean;
+  integrationNews: boolean;
+  integrationErrors: boolean;
+  timeBlockReminders: boolean;
+  updatedAt: string;
+}
+
 export interface IntegrationAccount {
   id: string;
   provider: IntegrationProvider;
@@ -46,6 +96,8 @@ export interface IntegrationAccount {
   updatedAt: string;
 }
 
+export type TaskRecurrenceType = "DAILY" | "WEEKLY" | "MONTHLY";
+
 export interface Task {
   id: string;
   userId: string;
@@ -58,9 +110,16 @@ export interface Task {
   archivedAt: string | null;
   source: TaskSource;
   sourceRef: string | null;
+  projectId: string | null;
   order: number;
   pomodoroEstimate: number;
   pomodoroCount: number;
+  recurrenceType: TaskRecurrenceType | null;
+  recurrenceInterval: number;
+  recurrenceDaysOfWeek: number[];
+  recurrenceDayOfMonth: number | null;
+  recurrenceEndsAt: string | null;
+  recurrenceParentId: string | null;
   subtaskCount?: number;
   completedSubtasks?: number;
   subtasks?: Subtask[];
@@ -130,7 +189,7 @@ export interface Reminder {
   repeatInterval: number;
   repeatDaysOfWeek: number[];
   repeatDayOfMonth: number | null;
-  payload: { type?: string; taskId?: string; habitId?: string } | null;
+  payload: { type?: string; taskId?: string; habitId?: string; timeBlockId?: string } | null;
   isActive: boolean;
   sentAt: string | null;
   resolvedAt: string | null;
@@ -225,4 +284,40 @@ export interface Feedback {
 
 export interface FeedbackWithAuthor extends Feedback {
   user: { id: string; email: string; name: string | null };
+}
+
+export interface HomeWeeklyStats {
+  totalWorkSec: number;
+  completedWorkSessions: number;
+  completedTasks: number;
+  dueTasks: number;
+  weekStart: string;
+  weekEnd: string;
+}
+
+export interface HomeOverview {
+  activeBlock: TimeBlockWithProject | null;
+  blockTasks: Task[];
+  urgentTasks: Task[];
+  futureTasks: (Task & { project: Project | null })[];
+  futureBlocks: TimeBlockWithProject[];
+  weekly: HomeWeeklyStats;
+}
+
+export interface HomeActivityPoint {
+  date: string;
+  tasks: number;
+  habits: number;
+  pomodoro: number;
+}
+
+export interface HabitMatrixEntry {
+  habitId: string;
+  date: string;
+  completed: boolean;
+}
+
+export interface HabitsMatrix {
+  habits: Habit[];
+  entries: HabitMatrixEntry[];
 }

@@ -1,12 +1,63 @@
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { buildPaginatedResponse, getPaginationArgs } from "../../utils/pagination/handler";
+import { nextOccurrence } from "../../utils/recurrence";
+import { projectService } from "../projects/projects.service";
 import type { CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
+
+const TASKS_TZ = "America/Santo_Domingo";
 
 function taskDate(value: string | null | undefined) {
   if (value === undefined || value === null) return value;
   // Date-only values represent a local calendar day, not midnight UTC.
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00.000Z`) : new Date(value);
+}
+
+type RecurrenceSource = {
+  dueDate: Date | null;
+  recurrenceType: "DAILY" | "WEEKLY" | "MONTHLY" | null;
+  recurrenceInterval: number;
+  recurrenceDaysOfWeek: number[];
+  recurrenceDayOfMonth: number | null;
+  recurrenceEndsAt: Date | null;
+};
+
+function nextTaskOccurrence(task: RecurrenceSource): Date | null {
+  if (!task.dueDate || !task.recurrenceType) return null;
+  let next = nextOccurrence(
+    task.dueDate,
+    TASKS_TZ,
+    task.recurrenceType,
+    task.recurrenceInterval,
+    task.recurrenceDaysOfWeek,
+    task.recurrenceDayOfMonth ?? null,
+  );
+  let guard = 0;
+  while (next < new Date() && guard < 365) {
+    next = nextOccurrence(
+      next,
+      TASKS_TZ,
+      task.recurrenceType,
+      task.recurrenceInterval,
+      task.recurrenceDaysOfWeek,
+      task.recurrenceDayOfMonth ?? null,
+    );
+    guard += 1;
+  }
+  if (guard === 365) return null;
+  if (task.recurrenceEndsAt && next > task.recurrenceEndsAt) return null;
+  return next;
+}
+
+function recurrenceData(data: { recurrence?: { repeatType?: "DAILY" | "WEEKLY" | "MONTHLY"; repeatInterval?: number; repeatDaysOfWeek?: number[]; repeatDayOfMonth?: number; repeatEndsAt?: string | null } }) {
+  const recurrence = data.recurrence;
+  return {
+    recurrenceType: recurrence?.repeatType ?? null,
+    recurrenceInterval: recurrence?.repeatInterval ?? 1,
+    recurrenceDaysOfWeek: recurrence?.repeatDaysOfWeek ?? [],
+    recurrenceDayOfMonth: recurrence?.repeatDayOfMonth ?? null,
+    recurrenceEndsAt: recurrence?.repeatEndsAt ? new Date(recurrence.repeatEndsAt) : null,
+  };
 }
 
 function taskProgress<T extends { subtasks?: Array<{ completed: boolean }> }>(task: T) {
@@ -28,6 +79,7 @@ export class TaskService {
       archivedAt: null,
       ...(query.status ? { status: query.status } : {}),
       ...(query.priority ? { priority: query.priority } : {}),
+      ...(query.projectId ? { projectId: query.projectId } : {}),
       ...(query.q ? { OR: [{ title: { contains: query.q } }, { description: { contains: query.q } }] } : {}),
     };
 
@@ -54,6 +106,11 @@ export class TaskService {
   }
 
   async create(userId: string, data: CreateTaskDto) {
+    const projectId = data.projectId ?? (await projectService.getDefaultId(userId));
+    if (projectId) {
+      const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
+      if (!project) throw new AppError("BAD_REQUEST", "El proyecto no existe");
+    }
     return prisma.task.create({
       data: {
         userId,
@@ -63,8 +120,10 @@ export class TaskService {
         priority: data.priority,
         dueDate: taskDate(data.dueDate),
         source: "MANUAL",
+        projectId,
         pomodoroEstimate: data.pomodoroEstimate ?? 0,
         completedAt: data.status === "COMPLETED" ? new Date() : null,
+        ...recurrenceData(data),
       },
       include: { subtasks: true },
     }).then(taskProgress);
@@ -72,8 +131,13 @@ export class TaskService {
 
   async update(userId: string, id: string, data: UpdateTaskDto) {
     await this.getById(userId, id);
+    if (data.projectId !== undefined && data.projectId !== null) {
+      const project = await prisma.project.findFirst({ where: { id: data.projectId, userId } });
+      if (!project) throw new AppError("BAD_REQUEST", "El proyecto no existe");
+    }
     const completedAt = data.status === undefined ? undefined : data.status === "COMPLETED" ? new Date() : null;
-    return prisma.task.update({
+    const recurrence = data.recurrence;
+    const updated = await prisma.task.update({
       where: { id },
       data: {
         ...(data.title !== undefined ? { title: data.title } : {}),
@@ -82,17 +146,94 @@ export class TaskService {
         ...(data.priority !== undefined ? { priority: data.priority } : {}),
         ...(data.dueDate !== undefined ? { dueDate: taskDate(data.dueDate) } : {}),
         ...(data.pomodoroEstimate !== undefined ? { pomodoroEstimate: data.pomodoroEstimate } : {}),
+        ...(data.projectId !== undefined ? { projectId: data.projectId } : {}),
+        ...(recurrence !== undefined ? {
+          recurrenceType: recurrence.repeatType ?? null,
+          recurrenceInterval: recurrence.repeatInterval ?? 1,
+          recurrenceDaysOfWeek: recurrence.repeatDaysOfWeek ?? [],
+          recurrenceDayOfMonth: recurrence.repeatDayOfMonth ?? null,
+          recurrenceEndsAt: recurrence.repeatEndsAt ? new Date(recurrence.repeatEndsAt) : null,
+        } : {}),
       },
       include: { subtasks: { orderBy: { order: "asc" } } },
-    }).then(taskProgress);
+    });
+
+    if ((data.status === "COMPLETED" || data.status === "CANCELLED") && updated.recurrenceType) {
+      const next = nextTaskOccurrence(updated);
+      if (next) {
+        const templateId = updated.recurrenceParentId ?? updated.id;
+        const existing = await prisma.task.findFirst({ where: { recurrenceParentId: templateId, dueDate: next } });
+        if (!existing) {
+          await prisma.task.create({
+            data: {
+              userId,
+              title: updated.title,
+              description: updated.description,
+              priority: updated.priority,
+              projectId: updated.projectId,
+              pomodoroEstimate: updated.pomodoroEstimate,
+              dueDate: next,
+              source: "MANUAL",
+              status: "PENDING",
+              recurrenceType: updated.recurrenceType,
+              recurrenceInterval: updated.recurrenceInterval,
+              recurrenceDaysOfWeek: updated.recurrenceDaysOfWeek,
+              recurrenceDayOfMonth: updated.recurrenceDayOfMonth,
+              recurrenceEndsAt: updated.recurrenceEndsAt,
+              recurrenceParentId: templateId,
+            },
+          });
+        }
+      }
+    }
+    return taskProgress(updated);
   }
 
   async delete(userId: string, id: string) {
     const task = await this.getById(userId, id);
-    if (task.source !== "MANUAL") {
-      throw new AppError("FORBIDDEN", "Las tareas de integración no se pueden eliminar. Archívalas para ocultarlas.");
+    if (task.source === "MANUAL") {
+      await prisma.task.deleteMany({ where: { recurrenceParentId: id, status: { in: ["PENDING", "IN_PROGRESS"] } } });
+      await prisma.task.delete({ where: { id } });
+      return "deleted";
     }
-    await prisma.task.delete({ where: { id } });
+    await prisma.task.update({ where: { id }, data: { archivedAt: new Date() } });
+    return "archived";
+  }
+
+  async bulkDelete(userId: string, ids: string[]) {
+    const tasks = await prisma.task.findMany({
+      where: { id: { in: ids }, userId },
+      select: { id: true, source: true },
+    });
+    if (tasks.length !== new Set(ids).size) {
+      throw new AppError("NOT_FOUND", "Tarea no encontrada");
+    }
+    const manualIds = tasks.filter((task) => task.source === "MANUAL").map((task) => task.id);
+    const integrationIds = tasks.filter((task) => task.source !== "MANUAL").map((task) => task.id);
+    if (integrationIds.length > 0) {
+      await prisma.task.updateMany({ where: { id: { in: integrationIds } }, data: { archivedAt: new Date() } });
+    }
+    if (manualIds.length > 0) {
+      await prisma.task.deleteMany({ where: { recurrenceParentId: { in: manualIds }, status: { in: ["PENDING", "IN_PROGRESS"] } } });
+      await prisma.task.deleteMany({ where: { id: { in: manualIds } } });
+    }
+    return { deleted: manualIds.length, archived: integrationIds.length };
+  }
+
+  async bulkMove(userId: string, ids: string[], projectId: string | null) {
+    const tasks = await prisma.task.findMany({
+      where: { id: { in: ids }, userId },
+      select: { id: true },
+    });
+    if (tasks.length !== new Set(ids).size) {
+      throw new AppError("NOT_FOUND", "Tarea no encontrada");
+    }
+    if (projectId) {
+      const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
+      if (!project) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
+    }
+    await prisma.task.updateMany({ where: { id: { in: ids }, userId }, data: { projectId } });
+    return { moved: ids.length };
   }
 
   async archive(userId: string, id: string, archived: boolean) {

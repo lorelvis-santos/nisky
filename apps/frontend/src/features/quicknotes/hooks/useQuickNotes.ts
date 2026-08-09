@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { archiveQuickNote, createQuickNote, deleteQuickNote, fetchQuickNotes, updateQuickNote } from "../api/quicknotes";
 import type { QuickNoteStatus } from "@/types/entities";
 
-export function useQuickNotesQuery(status: QuickNoteStatus = "INBOX") {
-  return useQuery({ queryKey: ["quick-notes", status], queryFn: () => fetchQuickNotes(status) });
+export function useQuickNotesQuery(status: QuickNoteStatus = "INBOX", limit = 8) {
+  return useQuery({ queryKey: ["quick-notes", status, limit], queryFn: () => fetchQuickNotes(status, limit) });
 }
 
 export function useQuickNoteMutations() {

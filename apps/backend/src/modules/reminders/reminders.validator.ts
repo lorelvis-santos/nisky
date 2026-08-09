@@ -14,9 +14,10 @@ const timezoneSchema = z.string().trim().min(1).max(100).refine((value) => {
 }, "La zona horaria no es válida");
 
 const payloadSchema = z.object({
-  type: z.enum(["CUSTOM", "TASK_DUE", "HABIT"]).default("CUSTOM"),
+  type: z.enum(["CUSTOM", "TASK_DUE", "HABIT", "TIME_BLOCK_START"]).default("CUSTOM"),
   taskId: z.uuid().optional(),
   habitId: z.uuid().optional(),
+  timeBlockId: z.uuid().optional(),
 }).optional();
 
 const reminderFieldsSchema = z.object({

@@ -11,6 +11,7 @@ export function useHabitMutations() {
   const invalidate = async () => {
     await client.invalidateQueries({ queryKey: ["habits"] });
     await client.invalidateQueries({ queryKey: ["habit-entries"] });
+    await client.invalidateQueries({ queryKey: ["home"] });
   };
   const create = useMutation({ mutationFn: (payload: CreateHabitPayload) => createHabit(payload), onSuccess: invalidate });
   const update = useMutation({ mutationFn: ({ id, payload }: { id: string; payload: UpdateHabitPayload }) => updateHabit(id, payload), onSuccess: invalidate });

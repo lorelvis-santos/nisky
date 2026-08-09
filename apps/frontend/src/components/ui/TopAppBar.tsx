@@ -1,6 +1,6 @@
 "use client";
 
-import { AlarmClock, Bell, CalendarClock, ChevronRight, History, ListTodo, Menu, Pause, Play, Square, UserCircle, X } from "lucide-react";
+import { AlarmClock, Bell, CalendarClock, ChevronRight, History, ListTodo, Menu, Pause, Play, Square, StickyNote, UserCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -13,8 +13,9 @@ import type { Reminder, Task } from "@/types/entities";
 const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
 
 const titles: Record<string, string> = {
-  "/": "Mi día",
+  "/": "Inicio",
   "/tasks": "Planificación y tareas",
+  "/timeblocks": "Agenda",
   "/focus": "Modo enfoque",
   "/journal": "Diario",
   "/knowledge": "Mis notas",
@@ -23,7 +24,7 @@ const titles: Record<string, string> = {
   "/support": "Ayuda",
 };
 
-export function TopAppBar({ onMenu }: { onMenu: () => void }) {
+export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpenCapture: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const pomodoro = usePomodoro();
@@ -48,13 +49,24 @@ export function TopAppBar({ onMenu }: { onMenu: () => void }) {
       <div className="flex items-center gap-element-gap-sm">
         <div className="flex items-center gap-element-gap-md md:hidden">
           <button aria-label="Abrir menú" className="text-on-surface-variant hover:text-primary" onClick={onMenu} type="button"><Menu size={20} /></button>
-          <Link aria-label="Ir a Mi día" className="font-headline-sm text-headline-sm font-bold text-primary hover:underline" href="/">Nisky</Link>
+          <Link aria-label="Ir a Inicio" className="font-headline-sm text-headline-sm font-bold text-primary hover:underline" href="/">Nisky</Link>
         </div>
         {pomodoro.activeSession && pomodoro.remainingSec !== null && <div className="flex items-center gap-1 border border-outline-variant bg-surface-container-lowest px-2 py-1"><button aria-label={pomodoro.activeSession.status === "PAUSED" ? "Reanudar Pomodoro" : "Pausar Pomodoro"} className="text-primary hover:text-primary-container" onClick={() => void togglePause()} type="button">{pomodoro.activeSession.status === "PAUSED" ? <Play size={14} /> : <Pause size={14} />}</button><button aria-label="Abrir Pomodoro" className="font-data-mono text-data-mono text-xs text-primary hover:underline" onClick={() => router.push(`/focus${pomodoro.activeSession?.taskId ? `?taskId=${encodeURIComponent(pomodoro.activeSession.taskId)}` : ""}`)} type="button">{formatPomodoroTime(pomodoro.remainingSec)}</button><button aria-label="Cancelar Pomodoro" className="text-on-surface-variant hover:text-error" onClick={() => void cancel()} type="button"><Square size={13} /></button></div>}
       </div>
       <div className="hidden flex-1 md:block" />
       <h2 className="absolute left-1/2 hidden -translate-x-1/2 font-headline-sm text-headline-sm font-bold text-on-surface lg:block">{title}</h2>
       <div className="ml-auto flex items-center gap-element-gap-sm">
+        <button
+          aria-label="Nueva nota rápida"
+          className="hidden items-center gap-1.5 border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary lg:flex"
+          onClick={onOpenCapture}
+          title="Nueva nota rápida (Alt+N)"
+          type="button"
+        >
+          <StickyNote size={15} />
+          Nota
+          <kbd className="font-data-mono text-data-mono text-[10px] text-on-surface-variant">Alt+N</kbd>
+        </button>
         <div className="relative">
           <button aria-expanded={notificationsOpen} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setNotificationsOpen((open) => !open)} type="button">
             <Bell size={19} />
@@ -64,7 +76,7 @@ export function TopAppBar({ onMenu }: { onMenu: () => void }) {
           {notificationsOpen && <NotificationPanel notices={notices} onClose={() => setNotificationsOpen(false)} onOpen={(url, kind) => { setNotificationsOpen(false); if (kind === "pending") { window.dispatchEvent(new CustomEvent(OPEN_PENDING_EVENT)); return; } router.push(url); }} />}
         </div>
         <button aria-label="Historial" className="hidden p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary sm:block" type="button"><History size={19} /></button>
-        <button aria-label="Perfil" className="p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" type="button"><UserCircle size={20} /></button>
+        <button aria-label="Perfil" className="p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => router.push("/settings")} type="button"><UserCircle size={20} /></button>
       </div>
     </header>
   );

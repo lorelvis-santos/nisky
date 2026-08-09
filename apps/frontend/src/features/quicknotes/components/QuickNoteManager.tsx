@@ -11,16 +11,16 @@ import { QuickNoteItem } from "./QuickNoteItem";
 import type { DetectedDate } from "../utils/detectDate";
 
 export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }: { onClose: () => void; view?: "inbox" | "archived"; onConvertToTask?: (note: QuickNote, detected: DetectedDate | null) => void }) {
-  const query = useQuickNotesQuery(view === "inbox" ? "INBOX" : "ARCHIVED");
+  const query = useQuickNotesQuery(view === "inbox" ? "INBOX" : "ARCHIVED", 50);
   const mutations = useQuickNoteMutations();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const restore = async (note: QuickNote) => {
     try {
       await mutations.update.mutateAsync({ id: note.id, payload: { status: "INBOX" } });
-      toast.success("¡Captura restaurada!");
+      toast.success("¡Nota restaurada!");
     } catch {
-      toast.error("Ups, no pudimos restaurar la captura. Inténtalo de nuevo.");
+      toast.error("Ups, no pudimos restaurar la nota. Inténtalo de nuevo.");
     }
   };
 
@@ -32,9 +32,9 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
     try {
       await mutations.remove.mutateAsync(note.id);
       setDeleteId(null);
-      toast.success("¡Captura eliminada!");
+      toast.success("¡Nota eliminada!");
     } catch {
-      toast.error("Ups, no pudimos eliminar la captura. Inténtalo de nuevo.");
+      toast.error("Ups, no pudimos eliminar la nota. Inténtalo de nuevo.");
     }
   };
 
@@ -49,12 +49,12 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
         <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
           <div>
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{inbox ? "BANDEJA DE ENTRADA" : "BANDEJA"}</p>
-            <h2 className="mt-1 font-headline-xs text-headline-xs font-bold text-primary">{inbox ? "Todas mis capturas" : "Capturas archivadas"}</h2>
+            <h2 className="mt-1 font-headline-xs text-headline-xs font-bold text-primary">{inbox ? "Todas mis notas" : "Notas archivadas"}</h2>
           </div>
           <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button"><X size={19} /></button>
         </div>
         <div className="overflow-y-auto p-5" data-modal-scroll>
-          {query.isLoading ? <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando capturas...</p> : query.isError ? <p className="font-body-sm text-body-sm text-error">{inbox ? "Ups, no pudimos cargar tus capturas. Inténtalo de nuevo." : "Ups, no pudimos cargar las capturas archivadas. Inténtalo de nuevo."}</p> : notes.length === 0 ? <p className="font-body-sm text-body-sm text-on-surface-variant">{inbox ? "Aún no tienes capturas." : "Aún no hay capturas archivadas."}</p> : inbox && onConvertToTask ? (
+          {query.isLoading ? <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando notas...</p> : query.isError ? <p className="font-body-sm text-body-sm text-error">{inbox ? "Ups, no pudimos cargar tus notas. Inténtalo de nuevo." : "Ups, no pudimos cargar las notas archivadas. Inténtalo de nuevo."}</p> : notes.length === 0 ? <p className="font-body-sm text-body-sm text-on-surface-variant">{inbox ? "Aún no tienes notas." : "Aún no hay notas archivadas."}</p> : inbox && onConvertToTask ? (
             notes.map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)
           ) : (
             <div className="divide-y divide-outline-variant border-y border-outline-variant">

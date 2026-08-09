@@ -14,12 +14,12 @@ export function QuickNoteItem({ note, onConvertToTask }: { note: QuickNote; onCo
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const archive = async () => {
-    try { await mutations.archive.mutateAsync(note.id); toast.success("¡Captura archivada!"); } catch { toast.error("Ups, no pudimos archivar la captura. Inténtalo de nuevo."); }
+    try { await mutations.archive.mutateAsync(note.id); toast.success("¡Nota archivada!"); } catch { toast.error("Ups, no pudimos archivar la nota. Inténtalo de nuevo."); }
   };
 
   const remove = async () => {
     if (!confirmDelete) { setConfirmDelete(true); return; }
-    try { await mutations.remove.mutateAsync(note.id); toast.success("¡Captura eliminada!"); } catch { toast.error("Ups, no pudimos eliminar la captura. Inténtalo de nuevo."); }
+    try { await mutations.remove.mutateAsync(note.id); toast.success("¡Nota eliminada!"); } catch { toast.error("Ups, no pudimos eliminar la nota. Inténtalo de nuevo."); }
   };
 
   return (
@@ -30,8 +30,8 @@ export function QuickNoteItem({ note, onConvertToTask }: { note: QuickNote; onCo
       <div className="mt-2 flex items-center justify-between gap-3 pt-2">
         <button className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => onConvertToTask(note, detected)} type="button"><ArrowRight size={13} /> Convertir en tarea</button>
         <div className="flex items-center gap-3">
-          <button aria-label="Archivar captura" className="text-on-surface-variant hover:text-primary" onClick={() => void archive()} type="button"><Archive size={14} /></button>
-          <button aria-label="Eliminar captura" className={confirmDelete ? "bg-error px-2 py-1 text-error-foreground" : "text-on-surface-variant hover:text-error"} onClick={() => void remove()} type="button"><Trash2 className={confirmDelete ? "text-on-primary" : undefined} size={14} /></button>
+          <button aria-label="Archivar nota" className="text-on-surface-variant hover:text-primary" onClick={() => void archive()} type="button"><Archive size={14} /></button>
+          <button aria-label="Eliminar nota" className={confirmDelete ? "bg-error px-2 py-1 text-error-foreground" : "text-on-surface-variant hover:text-error"} onClick={() => void remove()} type="button"><Trash2 className={confirmDelete ? "text-on-primary" : undefined} size={14} /></button>
         </div>
       </div>
     </div>

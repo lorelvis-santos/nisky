@@ -37,7 +37,7 @@ export class TimeBlockService {
 
   async getById(userId: string, id: string) {
     const block = await prisma.timeBlock.findFirst({ where: { id, userId } });
-    if (!block) throw new AppError("NOT_FOUND", "Bloque de tiempo no encontrado");
+    if (!block) throw new AppError("NOT_FOUND", "Bloque no encontrado");
     return block;
   }
 

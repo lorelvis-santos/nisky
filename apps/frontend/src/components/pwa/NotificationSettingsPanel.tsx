@@ -12,9 +12,9 @@ type FlagKey = "morningDigest" | "taskDueReminders" | "integrationNews" | "integ
 const OPTIONS: Array<{ key: FlagKey; title: string; description: string }> = [
   { key: "morningDigest", title: "Resumen de la mañana", description: "Un aviso a las 7:00 con lo que vence hoy, lo vencido ayer y tu primer bloque." },
   { key: "taskDueReminders", title: "Tareas por vencer", description: "Aviso puntual cuando una tarea vence hoy o mañana." },
-  { key: "integrationNews", title: "Nuevas asignaciones de la universidad", description: "Te avisamos cuando Moodle o Canvas sincronizan tareas nuevas." },
+  { key: "integrationNews", title: "Nuevas asignaciones de la universidad", description: "Te avisamos cuando la plataforma de tu universidad sincroniza tareas nuevas." },
   { key: "integrationErrors", title: "Errores de sincronización", description: "Te avisamos si una cuenta de la universidad no logra sincronizar." },
-  { key: "timeBlockReminders", title: "Bloques de tiempo", description: "Avisos antes de empezar, al iniciar y al quedar 5 minutos." },
+  { key: "timeBlockReminders", title: "Agenda", description: "Avisos antes de empezar, al iniciar y al quedar 5 minutos." },
 ];
 
 function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {

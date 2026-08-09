@@ -59,7 +59,7 @@ function ModalBody({
       } else {
         await mutations.create.mutateAsync(data);
         setFormKey((key) => key + 1);
-        toast.success("¡Bloque de tiempo creado!");
+        toast.success("¡Bloque creado!");
       }
       onClose();
     } catch {

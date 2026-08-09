@@ -53,9 +53,9 @@ export function DayList({
   });
 
   return (
-    <div className="flex-1 space-y-4 p-container-padding">
+    <div className="flex-1 p-container-padding">
       {currentWeek && overdueTasks.length > 0 && (
-        <section>
+        <section className="pb-4">
           <header className="sticky top-0 z-10 flex items-center justify-between border-b border-outline-variant border-t-2 border-t-error bg-surface px-3 py-2">
             <span className="font-data-mono text-data-mono text-xs font-bold uppercase text-error">
               Vencidas ({overdueTasks.length})
@@ -84,7 +84,7 @@ export function DayList({
         const isEmpty = dayTasks.length === 0;
         const isHighlight = overContainerId === dayContainerId(key);
         return (
-          <section data-day-key={key} key={key}>
+          <section className="pb-4" data-day-key={key} key={key}>
             <header className={cn("sticky top-0 z-10 flex items-center justify-between border-b px-3 py-2", isToday ? "border-t-2 border-t-primary bg-secondary-container text-primary" : "border-outline-variant bg-surface")}>
               <span className={cn("font-data-mono text-data-mono text-xs uppercase", isToday ? "font-bold" : "text-on-surface-variant")}>
                 {isToday ? `HOY · ${dayLabel(day)}` : dayLabel(day)}

@@ -48,19 +48,21 @@ export function MonthlyCalendar({
   });
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-surface-container-low p-3">
-      <div
-        className="grid h-full min-w-[600px] grid-cols-7 gap-2"
-        style={{ gridTemplateRows: `auto repeat(${weekRows}, minmax(0, 1fr))` }}
-      >
+    <div className="flex min-h-0 flex-1 flex-col overflow-auto max-lg:overflow-visible bg-surface-container-low">
+      <div className="sticky top-0 z-10 flex min-w-[600px] items-center gap-2 bg-surface-container-low px-3 pb-1.5 pt-3">
         {dayNames.map((name) => (
           <div
-            className="border-b border-outline-variant py-1 text-center font-data-mono text-data-mono text-xs text-on-surface-variant"
+            className="min-w-0 flex-1 border-b border-outline-variant py-1 text-center font-data-mono text-data-mono text-xs text-on-surface-variant"
             key={name}
           >
             {name}
           </div>
         ))}
+      </div>
+      <div
+        className="grid min-h-0 min-w-[600px] flex-1 grid-cols-7 gap-2 px-3 pb-3"
+        style={{ gridTemplateRows: `repeat(${weekRows}, minmax(88px, 1fr))` }}
+      >
         {cells.map(({ date, key, inMonth, dayTasks }) => {
           const isToday = key === today;
           const isSelected = key === selectedDayKey;

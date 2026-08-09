@@ -1,8 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
 import { pushService } from "./push.service";
-import { listNotificationLogs } from "./notification-log.service";
-import type { PushSubscriptionDto, PushUnsubscribeDto } from "./push.validator";
+import { listNotificationLogs, recordNotificationLog } from "./notification-log.service";
+import type { PushSubscribeErrorDto, PushSubscriptionDto, PushUnsubscribeDto } from "./push.validator";
 
 function userId(req: Request) {
   if (!req.user) throw new AppError("UNAUTHORIZED");
@@ -34,6 +34,21 @@ export class PushController {
     try {
       const limit = Number(req.query.limit ?? 50);
       res.success(await listNotificationLogs(userId(req), Number.isFinite(limit) ? limit : 50));
+    } catch (error) { next(error); }
+  };
+
+  subscribeError = async (req: Request<{}, {}, PushSubscribeErrorDto>, res: Response, next: NextFunction) => {
+    try {
+      const { name, message } = req.body;
+      await recordNotificationLog({
+        userId: userId(req),
+        event: "subscribe_error",
+        title: "Error al activar notificaciones",
+        body: message ?? undefined,
+        status: "failed",
+        error: name ? `${name}: ${message ?? ""}` : (message ?? "Error desconocido"),
+      });
+      res.success({ recorded: true });
     } catch (error) { next(error); }
   };
 }

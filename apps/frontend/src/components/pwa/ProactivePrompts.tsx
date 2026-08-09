@@ -5,44 +5,18 @@ import { Bell, Download } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
-
-type PromptState = {
-  dismissCount: number;
-  dismissedAt: string | null;
-  neverAsk: boolean;
-};
+import { INSTALL_KEY, NOTIF_KEY, readPromptState, resetPromptState, writePromptState } from "@/lib/promptState";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
-const NOTIF_KEY = "nisky:prompt-notif";
-const INSTALL_KEY = "nisky:prompt-install";
 const REASK_DAYS = 7;
 const MAX_DISMISS = 2;
 
-function readState(key: string): PromptState {
-  if (typeof window === "undefined") return { dismissCount: 0, dismissedAt: null, neverAsk: false };
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return { dismissCount: 0, dismissedAt: null, neverAsk: false };
-    return { dismissCount: 0, dismissedAt: null, neverAsk: false, ...(JSON.parse(raw) as Partial<PromptState>) };
-  } catch {
-    return { dismissCount: 0, dismissedAt: null, neverAsk: false };
-  }
-}
-
-function writeState(key: string, state: PromptState) {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(state));
-  } catch {
-    // privacidad: si el storage no está disponible, no rompemos nada
-  }
-}
-
 function shouldShow(key: string): boolean {
-  const state = readState(key);
+  const state = readPromptState(key);
   if (state.neverAsk) return false;
   if (state.dismissCount >= MAX_DISMISS) return false;
   if (state.dismissedAt) {
@@ -62,6 +36,7 @@ export function ProactivePrompts() {
   const isAuthPage = pathname === "/login" || pathname === "/register" || pathname.startsWith("/auth/");
   const [notifVisible, setNotifVisible] = useState(false);
   const [notifBlocked, setNotifBlocked] = useState(false);
+  const [notifGranted, setNotifGranted] = useState(false);
   const [notifDismissCount, setNotifDismissCount] = useState(0);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [installVisible, setInstallVisible] = useState(false);
@@ -79,15 +54,19 @@ export function ProactivePrompts() {
 
     if (typeof Notification === "undefined") return;
 
-    // Tarjeta de permisos: solo preguntar si nunca se pidió (default) o guiar si está bloqueado.
+    // Tarjeta de permisos: preguntar si nunca se pidió (default), guiar si está
+    // bloqueado, o recordar activar si el permiso ya existe pero no hay suscripción
+    // (p. ej. tras un fallo de registro como el permiso temporal de Brave).
     const showNotifAfter = () => {
       if (!shouldShow(NOTIF_KEY)) return;
       const permission = Notification.permission;
-      setNotifDismissCount(readState(NOTIF_KEY).dismissCount);
+      setNotifDismissCount(readPromptState(NOTIF_KEY).dismissCount);
       if (permission === "default") {
         setNotifVisible(true);
       } else if (permission === "denied") {
         setNotifBlocked(true);
+      } else if (permission === "granted" && !isSubscribed) {
+        setNotifGranted(true);
       }
     };
     timerRef.current = setTimeout(showNotifAfter, 3000);
@@ -95,11 +74,11 @@ export function ProactivePrompts() {
     const onBeforeInstall = (event: Event) => {
       event.preventDefault();
       if (!installEvent) setInstallEvent(event as BeforeInstallPromptEvent);
-      setInstallDismissCount(readState(INSTALL_KEY).dismissCount);
+      setInstallDismissCount(readPromptState(INSTALL_KEY).dismissCount);
       setInstallVisible(!isStandalone.current && shouldShow(INSTALL_KEY));
     };
     const onInstalled = () => {
-      writeState(INSTALL_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
+      writePromptState(INSTALL_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
       setInstallVisible(false);
     };
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
@@ -108,7 +87,7 @@ export function ProactivePrompts() {
     const isApple = /iPhone|iPad|iPod/.test(navigator.userAgent);
     if (isApple && !isStandalone.current && installEvent === null && shouldShow(INSTALL_KEY)) {
       setIsIos(true);
-      setInstallDismissCount(readState(INSTALL_KEY).dismissCount);
+      setInstallDismissCount(readPromptState(INSTALL_KEY).dismissCount);
       setInstallVisible(true);
     }
 
@@ -118,48 +97,55 @@ export function ProactivePrompts() {
       window.removeEventListener("appinstalled", onInstalled);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthPage]);
+  }, [isAuthPage, isSubscribed]);
 
   const snoozeInstall = useCallback(() => {
-    writeState(INSTALL_KEY, { ...readState(INSTALL_KEY), dismissedAt: new Date().toISOString() });
+    writePromptState(INSTALL_KEY, { ...readPromptState(INSTALL_KEY), dismissedAt: new Date().toISOString() });
     setInstallVisible(false);
   }, []);
 
   const dismissNotif = useCallback(() => {
-    const next = { ...readState(NOTIF_KEY), dismissCount: readState(NOTIF_KEY).dismissCount + 1, dismissedAt: new Date().toISOString() };
-    writeState(NOTIF_KEY, next);
+    const next = { ...readPromptState(NOTIF_KEY), dismissCount: readPromptState(NOTIF_KEY).dismissCount + 1, dismissedAt: new Date().toISOString() };
+    writePromptState(NOTIF_KEY, next);
     setNotifVisible(false);
     setNotifBlocked(false);
     snoozeInstall();
   }, [snoozeInstall]);
 
   const neverAskNotif = useCallback(() => {
-    writeState(NOTIF_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
+    writePromptState(NOTIF_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
     setNotifVisible(false);
     setNotifBlocked(false);
+    setNotifGranted(false);
     snoozeInstall();
   }, [snoozeInstall]);
 
   const acceptNotif = useCallback(async () => {
     const ok = await subscribe();
     if (ok) {
-      writeState(NOTIF_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
+      writePromptState(NOTIF_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
       setNotifVisible(false);
+      setNotifBlocked(false);
+      setNotifGranted(false);
       toast.success("¡Listo! Aquí estaremos en cada vencimiento y bloque.");
     } else {
-      dismissNotif();
+      // El hook ya reseteó el estado del prompt (localStorage): no contamos esto
+      // como rechazo y cerramos el modal para que vuelva a ofrecerse.
+      setNotifVisible(false);
+      setNotifBlocked(false);
+      setNotifGranted(false);
+      snoozeInstall();
     }
-    snoozeInstall();
-  }, [subscribe, dismissNotif, snoozeInstall]);
+  }, [subscribe, snoozeInstall]);
 
   const dismissInstall = useCallback(() => {
-    const next = { ...readState(INSTALL_KEY), dismissCount: readState(INSTALL_KEY).dismissCount + 1, dismissedAt: new Date().toISOString() };
-    writeState(INSTALL_KEY, next);
+    const next = { ...readPromptState(INSTALL_KEY), dismissCount: readPromptState(INSTALL_KEY).dismissCount + 1, dismissedAt: new Date().toISOString() };
+    writePromptState(INSTALL_KEY, next);
     setInstallVisible(false);
   }, []);
 
   const neverAskInstall = useCallback(() => {
-    writeState(INSTALL_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
+    writePromptState(INSTALL_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
     setInstallVisible(false);
   }, []);
 
@@ -169,7 +155,7 @@ export function ProactivePrompts() {
       await installEvent.prompt();
       const { outcome } = await installEvent.userChoice;
       if (outcome === "accepted") {
-        writeState(INSTALL_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
+        writePromptState(INSTALL_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
         setInstallVisible(false);
       } else {
         dismissInstall();
@@ -180,28 +166,33 @@ export function ProactivePrompts() {
   }, [installEvent, dismissInstall]);
 
   // Prioridad: notificaciones > instalación. Nunca dos a la vez.
-  const showInstall = installVisible && !notifVisible && !notifBlocked;
+  const showInstall = installVisible && !notifVisible && !notifBlocked && !notifGranted;
+  const notifPromptOpen = notifVisible || notifBlocked || notifGranted;
 
   useEffect(() => {
     if (isSubscribed) {
-      writeState(NOTIF_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
+      writePromptState(NOTIF_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
       setNotifVisible(false);
     }
   }, [isSubscribed]);
 
   return (
     <>
-      {(notifVisible || notifBlocked) && (
+      {(notifPromptOpen) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4">
           <div className="w-full max-w-md border border-outline-variant bg-surface-container-lowest p-6">
             <div className="flex items-start gap-3">
               <Bell className="mt-0.5 shrink-0 text-primary" size={20} />
               <div className="min-w-0 flex-1">
                 <p className="font-headline-sm font-bold text-on-surface">
-                  {notifBlocked ? "Nisky está en silencio" : "¿Quieres que te avisemos?"}
+                  {notifBlocked ? "Nisky está en silencio" : notifGranted ? "Un último paso" : "¿Quieres que te avisemos?"}
                 </p>
                 <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-                  {notifBlocked ? "Las notificaciones están apagadas en tu navegador. Para reactivarlas entra a Ajustes." : NOTIF_BODY}
+                  {notifBlocked
+                    ? "Las notificaciones están apagadas en tu navegador. Para reactivarlas entra a Ajustes."
+                    : notifGranted
+                      ? "Ya diste permiso en tu navegador; confirma aquí para recibir tus avisos."
+                      : NOTIF_BODY}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {notifBlocked ? (
@@ -218,7 +209,7 @@ export function ProactivePrompts() {
                       onClick={() => void acceptNotif()}
                       type="button"
                     >
-                      Sí, quiero avisos
+                      {notifGranted ? "Activar avisos" : "Sí, quiero avisos"}
                     </button>
                   )}
                   <button
@@ -229,7 +220,7 @@ export function ProactivePrompts() {
                     {notifBlocked ? "Tal vez después" : "No, me quiero perder mis pendientes"}
                   </button>
                 </div>
-                {!notifBlocked && notifDismissCount >= 1 && (
+                {!notifBlocked && !notifGranted && notifDismissCount >= 1 && (
                   <button className="mt-2 font-body-xs text-body-xs text-on-surface-variant underline hover:text-primary" onClick={neverAskNotif} type="button">
                     No me preguntes más
                   </button>

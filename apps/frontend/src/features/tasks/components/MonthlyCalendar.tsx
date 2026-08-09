@@ -48,7 +48,7 @@ export function MonthlyCalendar({
   });
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-auto max-lg:overflow-visible bg-surface-container-low">
+    <div className="flex min-h-0 flex-1 flex-col overflow-auto bg-surface-container-low">
       <div className="sticky top-0 z-10 flex min-w-[600px] items-center gap-2 bg-surface-container-low px-3 pb-1.5 pt-3">
         {dayNames.map((name) => (
           <div

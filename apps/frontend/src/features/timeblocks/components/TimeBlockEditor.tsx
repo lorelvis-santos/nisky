@@ -63,7 +63,7 @@ export function TimeBlockEditor({
     }
     await onSave({
       name: name.trim() || undefined,
-      projectId: projectId || undefined,
+      projectId: projectId || null,
       daysOfWeek: [...daysOfWeek].sort((a, b) => a - b),
       startMin,
       endMin,

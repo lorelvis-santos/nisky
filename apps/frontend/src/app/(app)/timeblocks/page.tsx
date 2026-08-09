@@ -117,7 +117,6 @@ function TimeBlocksContent() {
         daysOfWeek: [dayOfWeek],
         startMin,
         endMin: Math.min(startMin + 60, 24 * 60),
-        projectId: defaultProject?.id,
       });
       toast.success(
         isMobile

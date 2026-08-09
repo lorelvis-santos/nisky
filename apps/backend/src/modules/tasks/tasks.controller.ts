@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
 import { taskService } from "./tasks.service";
-import type { ArchiveTaskDto, CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
+import type { ArchiveTaskDto, BulkMoveTasksDto, BulkTaskIdsDto, CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
 
 type IdParams = { id: string };
 type SubtaskParams = { id: string; subtaskId: string };
@@ -38,6 +38,14 @@ export class TaskController {
 
   reorder = async (req: Request<{}, {}, ReorderTasksDto>, res: Response, next: NextFunction) => {
     try { await taskService.reorder(userId(req), req.body); res.success({ success: true }); } catch (error) { next(error); }
+  };
+
+  bulkDelete = async (req: Request<{}, {}, BulkTaskIdsDto>, res: Response, next: NextFunction) => {
+    try { res.success(await taskService.bulkDelete(userId(req), req.body.ids)); } catch (error) { next(error); }
+  };
+
+  bulkMove = async (req: Request<{}, {}, BulkMoveTasksDto>, res: Response, next: NextFunction) => {
+    try { res.success(await taskService.bulkMove(userId(req), req.body.ids, req.body.projectId)); } catch (error) { next(error); }
   };
 
   listSubtasks = async (req: Request<IdParams>, res: Response, next: NextFunction) => {

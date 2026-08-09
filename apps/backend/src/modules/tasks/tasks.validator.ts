@@ -61,6 +61,14 @@ export const reorderTasksSchema = z.object({
   })).min(1, "Debe enviar al menos una tarea"),
 });
 
+export const bulkTaskIdsSchema = z.object({
+  ids: z.array(z.uuid("El identificador no es válido")).min(1, "Selecciona al menos una tarea").max(100),
+});
+
+export const bulkMoveTasksSchema = bulkTaskIdsSchema.extend({
+  projectId: z.uuid("El proyecto no es válido").nullable(),
+});
+
 export const archiveTaskSchema = z.object({
   archived: z.boolean(),
 });
@@ -87,6 +95,8 @@ export const taskQuerySchema = z.object({
 export type CreateTaskDto = z.infer<typeof createTaskSchema>;
 export type UpdateTaskDto = z.infer<typeof updateTaskSchema>;
 export type ReorderTasksDto = z.infer<typeof reorderTasksSchema>;
+export type BulkTaskIdsDto = z.infer<typeof bulkTaskIdsSchema>;
+export type BulkMoveTasksDto = z.infer<typeof bulkMoveTasksSchema>;
 export type CreateSubtaskDto = z.infer<typeof createSubtaskSchema>;
 export type UpdateSubtaskDto = z.infer<typeof updateSubtaskSchema>;
 export type TaskQueryDto = z.infer<typeof taskQuerySchema>;

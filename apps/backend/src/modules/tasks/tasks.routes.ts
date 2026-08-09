@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../../middlewares/auth.middleware";
 import { validateBody, validateParams, validateQuery } from "../../middlewares/validate.middleware";
 import { TaskController } from "./tasks.controller";
-import { createSubtaskSchema, createTaskSchema, idParamSchema, reorderTasksSchema, subtaskParamsSchema, taskQuerySchema, updateSubtaskSchema, updateTaskSchema, archiveTaskSchema } from "./tasks.validator";
+import { archiveTaskSchema, bulkMoveTasksSchema, bulkTaskIdsSchema, createSubtaskSchema, createTaskSchema, idParamSchema, reorderTasksSchema, subtaskParamsSchema, taskQuerySchema, updateSubtaskSchema, updateTaskSchema } from "./tasks.validator";
 
 const router = Router();
 const controller = new TaskController();
@@ -11,6 +11,8 @@ router.use(requireAuth);
 router.get("/", validateQuery(taskQuerySchema), controller.list);
 router.post("/", validateBody(createTaskSchema), controller.create);
 router.patch("/reorder", validateBody(reorderTasksSchema), controller.reorder);
+router.post("/bulk-delete", validateBody(bulkTaskIdsSchema), controller.bulkDelete);
+router.patch("/bulk-move", validateBody(bulkMoveTasksSchema), controller.bulkMove);
 router.get("/:id", validateParams(idParamSchema), controller.getById);
 router.patch("/:id", validateParams(idParamSchema), validateBody(updateTaskSchema), controller.update);
 router.patch("/:id/archive", validateParams(idParamSchema), validateBody(archiveTaskSchema), controller.archive);

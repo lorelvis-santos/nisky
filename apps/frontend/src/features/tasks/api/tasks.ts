@@ -41,6 +41,14 @@ export async function deleteTask(id: string) {
   await api.delete(`/tasks/${id}`);
 }
 
+export async function bulkDeleteTasks(ids: string[]) {
+  await api.post("/tasks/bulk-delete", { ids });
+}
+
+export async function bulkMoveTasks(ids: string[], projectId: string | null) {
+  await api.patch("/tasks/bulk-move", { ids, projectId });
+}
+
 export async function reorderTasks(items: { id: string; order: number }[]) {
   await api.patch("/tasks/reorder", { items });
 }

@@ -191,11 +191,49 @@ export class TaskService {
 
   async delete(userId: string, id: string) {
     const task = await this.getById(userId, id);
-    if (task.source !== "MANUAL") {
-      throw new AppError("FORBIDDEN", "Las tareas de integración no se pueden eliminar. Archívalas para ocultarlas.");
+    if (task.source === "MANUAL") {
+      await prisma.task.deleteMany({ where: { recurrenceParentId: id, status: { in: ["PENDING", "IN_PROGRESS"] } } });
+      await prisma.task.delete({ where: { id } });
+      return "deleted";
     }
-    await prisma.task.deleteMany({ where: { recurrenceParentId: id, status: { in: ["PENDING", "IN_PROGRESS"] } } });
-    await prisma.task.delete({ where: { id } });
+    await prisma.task.update({ where: { id }, data: { archivedAt: new Date() } });
+    return "archived";
+  }
+
+  async bulkDelete(userId: string, ids: string[]) {
+    const tasks = await prisma.task.findMany({
+      where: { id: { in: ids }, userId },
+      select: { id: true, source: true },
+    });
+    if (tasks.length !== new Set(ids).size) {
+      throw new AppError("NOT_FOUND", "Tarea no encontrada");
+    }
+    const manualIds = tasks.filter((task) => task.source === "MANUAL").map((task) => task.id);
+    const integrationIds = tasks.filter((task) => task.source !== "MANUAL").map((task) => task.id);
+    if (integrationIds.length > 0) {
+      await prisma.task.updateMany({ where: { id: { in: integrationIds } }, data: { archivedAt: new Date() } });
+    }
+    if (manualIds.length > 0) {
+      await prisma.task.deleteMany({ where: { recurrenceParentId: { in: manualIds }, status: { in: ["PENDING", "IN_PROGRESS"] } } });
+      await prisma.task.deleteMany({ where: { id: { in: manualIds } } });
+    }
+    return { deleted: manualIds.length, archived: integrationIds.length };
+  }
+
+  async bulkMove(userId: string, ids: string[], projectId: string | null) {
+    const tasks = await prisma.task.findMany({
+      where: { id: { in: ids }, userId },
+      select: { id: true },
+    });
+    if (tasks.length !== new Set(ids).size) {
+      throw new AppError("NOT_FOUND", "Tarea no encontrada");
+    }
+    if (projectId) {
+      const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
+      if (!project) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
+    }
+    await prisma.task.updateMany({ where: { id: { in: ids }, userId }, data: { projectId } });
+    return { moved: ids.length };
   }
 
   async archive(userId: string, id: string, archived: boolean) {

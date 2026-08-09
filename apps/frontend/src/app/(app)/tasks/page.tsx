@@ -1,10 +1,11 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import { LayoutGrid, List, FolderKanban, Plus } from "lucide-react";
+import { CheckSquare, FolderKanban, List, LayoutGrid, Plus, Trash2, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import type { Task, TaskPriority } from "@/types/entities";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { archiveQuickNote } from "@/features/quicknotes/api/quicknotes";
 import { ProjectsModal } from "@/features/projects/components/ProjectsModal";
 import { ProjectsSidebar } from "@/features/projects/components/ProjectsSidebar";
@@ -34,6 +35,10 @@ import {
 import { dateKey } from "@/lib/tasks";
 import { localDateKey } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import {
+  TaskSelectionProvider,
+  useTaskSelection,
+} from "@/features/tasks/selection/TaskSelectionContext";
 
 const emptyTasks: Task[] = [];
 
@@ -157,7 +162,9 @@ function TasksPageContent() {
     initialProjectFilter,
   );
   const [view, setView] = useState<TaskView>(initialTaskView);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const isMobile = useIsMobile(1023);
+  const selection = useTaskSelection();
   const modalUrl = useModalUrl();
   const query = useTasksQuery({
     q: search || undefined,
@@ -189,6 +196,13 @@ function TasksPageContent() {
     return counts;
   }, [allTasks]);
   const backlog = useMemo(() => tasks.filter((task) => !task.dueDate), [tasks]);
+  const selectedTasks = useMemo(
+    () => tasks.filter((task) => selection.selectedIds.has(task.id)),
+    [tasks, selection.selectedIds],
+  );
+  const isBulkMoveNoop = (projectId: string | null) =>
+    selectedTasks.length > 0 &&
+    selectedTasks.every((task) => (task.projectId ?? null) === projectId);
   const taskFromUrl =
     urlTaskQuery.data ??
     tasks.find((task) => task.id === modalUrl.state.taskId) ??
@@ -357,6 +371,41 @@ function TasksPageContent() {
     else localStorage.setItem(TASK_PROJECT_FILTER_KEY, projectId);
   };
 
+  const toggleSelectionMode = () => {
+    if (selection.mode) selection.clear();
+    else selection.setMode(true);
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await mutations.bulkRemove.mutateAsync(Array.from(selection.selectedIds));
+      selection.clear();
+      setConfirmBulkDelete(false);
+      toast.success("¡Listo, tareas eliminadas!");
+    } catch (error) {
+      const message =
+        (error as { message?: string } | null)?.message ??
+        "Ups, no pudimos eliminar las tareas. Inténtalo de nuevo.";
+      toast.error(message);
+    }
+  };
+
+  const handleBulkMove = async (projectId: string | null) => {
+    try {
+      await mutations.bulkMove.mutateAsync({
+        ids: Array.from(selection.selectedIds),
+        projectId,
+      });
+      selection.clear();
+      toast.success("¡Listo, tareas movidas!");
+    } catch (error) {
+      const message =
+        (error as { message?: string } | null)?.message ??
+        "Ups, no pudimos mover las tareas. Inténtalo de nuevo.";
+      toast.error(message);
+    }
+  };
+
   const rightPanel = (
     <BacklogPanel
       onCreate={openCreate}
@@ -385,6 +434,15 @@ function TasksPageContent() {
           </div>
         </div>
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+          <button
+            aria-label="Seleccionar tareas"
+            aria-pressed={selection.mode}
+            className={`flex h-9 items-center gap-1.5 border border-outline-variant px-3 font-body-sm text-body-sm ${selection.mode ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+            onClick={toggleSelectionMode}
+            type="button"
+          >
+            <CheckSquare size={15} /> Seleccionar
+          </button>
           <span className="font-data-mono text-data-mono text-xs text-on-surface-variant sm:hidden">
             {weekLabel(weekStart)}
           </span>
@@ -439,6 +497,50 @@ function TasksPageContent() {
           />
         </div>
       </div>
+      {selection.mode && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-outline-variant bg-secondary-container/30 px-container-padding py-2">
+          <span className="mr-1 font-body-sm text-body-sm font-bold text-on-surface">
+            {selection.selectedIds.size}{" "}
+            {selection.selectedIds.size === 1 ? "tarea seleccionada" : "tareas seleccionadas"}
+          </span>
+          <select
+            aria-label="Mover selección a proyecto"
+            className="field h-8 min-w-0 flex-1 text-xs sm:flex-none"
+            disabled={selection.selectedIds.size === 0 || mutations.bulkMove.isPending}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (!value) return;
+              void handleBulkMove(value === "__none__" ? null : value);
+            }}
+            value=""
+          >
+            <option value="">Mover a proyecto...</option>
+            <option disabled={isBulkMoveNoop(null)} value="__none__">Sin proyecto</option>
+            {projectsQuery.data?.map((project) => (
+              <option disabled={isBulkMoveNoop(project.id)} key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+          <button
+            aria-label="Eliminar tareas seleccionadas"
+            className="flex h-8 items-center gap-1.5 border border-outline-variant px-3 font-body-sm text-body-sm text-error hover:bg-error hover:text-error-foreground disabled:opacity-50"
+            disabled={selection.selectedIds.size === 0}
+            onClick={() => setConfirmBulkDelete(true)}
+            type="button"
+          >
+            <Trash2 size={14} /> Eliminar
+          </button>
+          <button
+            aria-label="Salir del modo selección"
+            className="flex h-8 items-center gap-1.5 border border-outline-variant px-3 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+            onClick={selection.clear}
+            type="button"
+          >
+            <X size={14} /> Salir
+          </button>
+        </div>
+      )}
       {query.isLoading ? (
         <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-on-surface-variant">
           Cargando tus tareas...
@@ -548,6 +650,17 @@ function TasksPageContent() {
         open={manageOpen}
         projects={projectsQuery.data ?? []}
       />
+      {confirmBulkDelete && (
+        <ConfirmModal
+          confirmLabel="Eliminar"
+          danger
+          loading={mutations.bulkRemove.isPending}
+          message={`Se eliminarán ${selection.selectedIds.size} ${selection.selectedIds.size === 1 ? "tarea" : "tareas"}. Esta acción no se puede deshacer.`}
+          onClose={() => setConfirmBulkDelete(false)}
+          onConfirm={() => void handleBulkDelete()}
+          title="¿Eliminar tareas seleccionadas?"
+        />
+      )}
       {modalOpen && (!modalUrl.state.taskId || editingTask) && (
         <TaskModal
           defaultProjectId={taskDefaultProjectId}
@@ -596,14 +709,16 @@ function TasksPageContent() {
 
 export default function TasksPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">
-          Cargando tus tareas...
-        </div>
-      }
-    >
-      <TasksPageContent />
-    </Suspense>
+    <TaskSelectionProvider>
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">
+            Cargando tus tareas...
+          </div>
+        }
+      >
+        <TasksPageContent />
+      </Suspense>
+    </TaskSelectionProvider>
   );
 }

@@ -101,14 +101,19 @@ export class HomeService {
         select: { actualSec: true, plannedSec: true },
       }),
       prisma.task.count({
-        where: { userId, status: "COMPLETED", completedAt: { gte: toUtc(weekStart), lte: toUtc(weekEnd) } },
+        where: {
+          userId,
+          status: "COMPLETED",
+          archivedAt: null,
+          dueDate: { gte: toUtc(weekStart), lte: toUtc(weekEnd) },
+        },
       }),
       prisma.task.count({
         where: {
           userId,
-          status: "PENDING",
           archivedAt: null,
           dueDate: { gte: toUtc(weekStart), lte: toUtc(weekEnd) },
+          status: { in: ["PENDING", "COMPLETED"] },
         },
       }),
     ]);

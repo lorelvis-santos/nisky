@@ -5,6 +5,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import type { Project, Task, TaskPriority, TaskStatus } from "@/types/entities";
+import { useProjectMembers } from "@/features/projects/hooks/useProjects";
+import { CommentThread } from "@/features/comments/CommentThread";
 import { useReminderMutations, useRemindersQuery } from "@/features/reminders/hooks/useReminders";
 import { useTaskQuery } from "../hooks/useTasks";
 import { taskSchema, type TaskRecurrenceFormData } from "../schemas/task.schema";
@@ -18,6 +20,7 @@ export type TaskForm = {
   dueDate?: string;
   pomodoroEstimate: number;
   projectId?: string;
+  assigneeId?: string | null;
   recurrence?: TaskRecurrenceFormData;
 };
 
@@ -96,6 +99,7 @@ export function TaskModal({
           dueDate: task.dueDate ? localDateKey(task.dueDate) : "",
           pomodoroEstimate: task.pomodoroEstimate,
           projectId: task.projectId ?? defaultProjectId ?? defaultProject?.id ?? "",
+          assigneeId: task.assigneeId ?? null,
           recurrence: task.recurrenceType
             ? {
                 repeatType: task.recurrenceType,
@@ -113,6 +117,9 @@ export function TaskModal({
   const [subtaskTitle, setSubtaskTitle] = useState("");
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const currentProjectId = form.projectId && form.projectId !== "" ? form.projectId : null;
+  const membersQuery = useProjectMembers(currentProjectId);
+  const members = membersQuery.data ?? [];
   const reminderQuery = useRemindersQuery();
   const reminderMutations = useReminderMutations();
   const [reminderLead, setReminderLead] = useState(1440);
@@ -251,13 +258,33 @@ export function TaskModal({
               <select
                 className="field mt-1"
                 onChange={(event) =>
-                  setForm({ ...form, projectId: event.target.value })
+                  setForm({ ...form, projectId: event.target.value, assigneeId: null })
                 }
                 value={form.projectId ?? ""}
               >
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="font-label-caps text-label-caps text-on-surface-variant">
+                ASIGNADO A
+              </span>
+              <select
+                className="field mt-1"
+                disabled={!currentProjectId}
+                onChange={(event) =>
+                  setForm({ ...form, assigneeId: event.target.value || null })
+                }
+                value={form.assigneeId ?? ""}
+              >
+                <option value="">Sin asignar</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.userId}>
+                    {member.user.name ?? member.user.email}
                   </option>
                 ))}
               </select>
@@ -535,6 +562,18 @@ export function TaskModal({
                     </button>
                   </div>
                 ))}
+              </div>
+            </section>
+          )}
+          {task && current && (
+            <section className="border-t border-outline-variant pt-4">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-label-caps text-label-caps text-on-surface-variant">
+                  COMENTARIOS
+                </span>
+              </div>
+              <div className="h-64">
+                <CommentThread kind="task" id={current.id} />
               </div>
             </section>
           )}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pin, X } from "lucide-react";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { useAccessibleProjects } from "@/features/projects/hooks/useProjects";
 import type { Note } from "@/types/entities";
 import { noteFormSchema, type NoteForm } from "../schemas/knowledge.schema";
 
@@ -32,10 +33,13 @@ export function NoteEditorModal({
     category: note?.category ?? undefined,
     tags: note?.tags ?? [],
     pinned: note?.pinned ?? false,
+    projectId: note?.projectId ?? undefined,
   });
   const [tagsText, setTagsText] = useState((note?.tags ?? []).join(", "));
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const projectsQuery = useAccessibleProjects();
+  const projects = projectsQuery.data ?? [];
 
   useModalScrollLock();
 
@@ -76,6 +80,28 @@ export function NoteEditorModal({
             <span className="font-label-caps text-label-caps text-on-surface-variant">TÍTULO</span>
             <input autoFocus className="field mt-1" maxLength={200} onChange={(event) => set("title", event.target.value)} value={form.title} />
           </label>
+          <div className="grid grid-cols-1 gap-3 border-y border-outline-variant py-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="font-label-caps text-label-caps text-on-surface-variant">PROYECTO (OPCIONAL)</span>
+              <select
+                className="field mt-1"
+                onChange={(event) => {
+                  set("projectId", event.target.value || undefined);
+                }}
+                value={form.projectId ?? ""}
+              >
+                <option value="">Sin proyecto</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>{project.name}</option>
+                ))}
+              </select>
+              {form.projectId && (
+                <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
+                  Nota personal vinculada a {projects.find((project) => project.id === form.projectId)?.name ?? "un proyecto"}
+                </p>
+              )}
+            </label>
+          </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block">
               <span className="font-label-caps text-label-caps text-on-surface-variant">CATEGORÍA (OPCIONAL)</span>

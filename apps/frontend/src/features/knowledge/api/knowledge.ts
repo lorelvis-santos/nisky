@@ -17,6 +17,7 @@ export interface NotePayload {
   category?: string;
   tags?: string[];
   pinned?: boolean;
+  projectId?: string;
 }
 
 export async function fetchNotes(params: NoteQueryParams) {

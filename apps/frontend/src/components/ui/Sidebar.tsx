@@ -8,6 +8,7 @@ import {
   BookOpen,
   CalendarClock,
   CalendarDays,
+  FolderKanban,
   HelpCircle,
   LayoutDashboard,
   LogOut,
@@ -24,6 +25,7 @@ import type { User } from "@/types/entities";
 
 const primaryItems = [
   { href: "/", label: "Inicio", icon: LayoutDashboard },
+  { href: "/projects", label: "Proyectos", icon: FolderKanban },
   { href: "/tasks", label: "Planificación y tareas", icon: CalendarDays },
   { href: "/timeblocks", label: "Agenda", icon: CalendarClock },
   { href: "/focus", label: "Modo enfoque", icon: Timer },

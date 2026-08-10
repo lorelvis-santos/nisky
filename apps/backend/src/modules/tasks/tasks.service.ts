@@ -2,6 +2,7 @@ import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { buildPaginatedResponse, getPaginationArgs } from "../../utils/pagination/handler";
 import { nextOccurrence } from "../../utils/recurrence";
+import { assertTaskAccess, getAccessibleProjectIds } from "../projects/access";
 import { projectService } from "../projects/projects.service";
 import type { CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
 
@@ -74,13 +75,14 @@ export class TaskService {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
     const { skip, take } = getPaginationArgs(page, limit);
+    const accessible = await getAccessibleProjectIds(userId);
     const where = {
-      userId,
+      OR: [{ userId }, { projectId: { in: accessible } }],
       archivedAt: null,
       ...(query.status ? { status: query.status } : {}),
       ...(query.priority ? { priority: query.priority } : {}),
       ...(query.projectId ? { projectId: query.projectId } : {}),
-      ...(query.q ? { OR: [{ title: { contains: query.q } }, { description: { contains: query.q } }] } : {}),
+      ...(query.q ? { AND: [{ OR: [{ title: { contains: query.q } }, { description: { contains: query.q } }] }] } : {}),
     };
 
     const orderBy = query.sort === "priority"
@@ -90,16 +92,17 @@ export class TaskService {
         : { [query.sort]: query.order };
 
     const [data, totalItems] = await Promise.all([
-      prisma.task.findMany({ where, skip, take, orderBy, include: { subtasks: { orderBy: { order: "asc" } } } }),
+      prisma.task.findMany({ where, skip, take, orderBy, include: { subtasks: { orderBy: { order: "asc" } }, assignee: { select: { id: true, email: true, name: true, avatarUrl: true } } } }),
       prisma.task.count({ where }),
     ]);
     return buildPaginatedResponse(data.map(taskProgress), totalItems, page, limit);
   }
 
   async getById(userId: string, id: string) {
+    const accessible = await getAccessibleProjectIds(userId);
     const task = await prisma.task.findFirst({
-      where: { id, userId },
-      include: { subtasks: { orderBy: { order: "asc" } } },
+      where: { id, OR: [{ userId }, { projectId: { in: accessible } }] },
+      include: { subtasks: { orderBy: { order: "asc" } }, assignee: { select: { id: true, email: true, name: true, avatarUrl: true } } },
     });
     if (!task) throw new AppError("NOT_FOUND", "Tarea no encontrada");
     return taskProgress(task);
@@ -111,6 +114,15 @@ export class TaskService {
       const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
       if (!project) throw new AppError("BAD_REQUEST", "El proyecto no existe");
     }
+    if (data.assigneeId) {
+      if (!projectId) throw new AppError("BAD_REQUEST", "La tarea debe pertenecer a un proyecto para asignarla");
+      const member = await prisma.projectMember.findUnique({
+        where: { projectId_userId: { projectId, userId: data.assigneeId } },
+      });
+      // También verificar si es el owner del proyecto
+      const project = await prisma.project.findFirst({ where: { id: projectId, userId: data.assigneeId } });
+      if (!member && !project) throw new AppError("BAD_REQUEST", "El asignado debe ser miembro del proyecto");
+    }
     return prisma.task.create({
       data: {
         userId,
@@ -121,6 +133,7 @@ export class TaskService {
         dueDate: taskDate(data.dueDate),
         source: "MANUAL",
         projectId,
+        assigneeId: data.assigneeId ?? null,
         pomodoroEstimate: data.pomodoroEstimate ?? 0,
         completedAt: data.status === "COMPLETED" ? new Date() : null,
         ...recurrenceData(data),
@@ -130,7 +143,33 @@ export class TaskService {
   }
 
   async update(userId: string, id: string, data: UpdateTaskDto) {
-    await this.getById(userId, id);
+    await assertTaskAccess(userId, id);
+    const existing = await prisma.task.findUnique({ where: { id }, select: { projectId: true, assigneeId: true } });
+    if (!existing) throw new AppError("NOT_FOUND", "Tarea no encontrada");
+
+    // Validar assigneeId
+    if (data.assigneeId !== undefined) {
+      if (data.assigneeId) {
+        const targetProjectId = data.projectId ?? existing.projectId;
+        if (!targetProjectId) throw new AppError("BAD_REQUEST", "La tarea debe pertenecer a un proyecto para asignarla");
+        const member = await prisma.projectMember.findUnique({
+          where: { projectId_userId: { projectId: targetProjectId, userId: data.assigneeId } },
+        });
+        const owner = await prisma.project.findFirst({ where: { id: targetProjectId, userId: data.assigneeId } });
+        if (!member && !owner) throw new AppError("BAD_REQUEST", "El asignado debe ser miembro del proyecto");
+      }
+    }
+
+    // Si cambia projectId, validar assigneeId
+    if (data.projectId !== undefined && data.projectId !== null && existing.assigneeId && data.assigneeId === undefined) {
+      const member = await prisma.projectMember.findUnique({
+        where: { projectId_userId: { projectId: data.projectId, userId: existing.assigneeId } },
+      });
+      if (!member) {
+        data.assigneeId = null; // Auto-null si el assignee no es miembro del nuevo proyecto
+      }
+    }
+
     if (data.projectId !== undefined && data.projectId !== null) {
       const project = await prisma.project.findFirst({ where: { id: data.projectId, userId } });
       if (!project) throw new AppError("BAD_REQUEST", "El proyecto no existe");
@@ -147,6 +186,7 @@ export class TaskService {
         ...(data.dueDate !== undefined ? { dueDate: taskDate(data.dueDate) } : {}),
         ...(data.pomodoroEstimate !== undefined ? { pomodoroEstimate: data.pomodoroEstimate } : {}),
         ...(data.projectId !== undefined ? { projectId: data.projectId } : {}),
+        ...(data.assigneeId !== undefined ? { assigneeId: data.assigneeId } : {}),
         ...(recurrence !== undefined ? {
           recurrenceType: recurrence.repeatType ?? null,
           recurrenceInterval: recurrence.repeatInterval ?? 1,
@@ -190,7 +230,9 @@ export class TaskService {
   }
 
   async delete(userId: string, id: string) {
-    const task = await this.getById(userId, id);
+    await assertTaskAccess(userId, id);
+    const task = await prisma.task.findUnique({ where: { id }, select: { source: true } });
+    if (!task) throw new AppError("NOT_FOUND", "Tarea no encontrada");
     if (task.source === "MANUAL") {
       await prisma.task.deleteMany({ where: { recurrenceParentId: id, status: { in: ["PENDING", "IN_PROGRESS"] } } });
       await prisma.task.delete({ where: { id } });
@@ -221,23 +263,33 @@ export class TaskService {
   }
 
   async bulkMove(userId: string, ids: string[], projectId: string | null) {
-    const tasks = await prisma.task.findMany({
-      where: { id: { in: ids }, userId },
-      select: { id: true },
-    });
-    if (tasks.length !== new Set(ids).size) {
-      throw new AppError("NOT_FOUND", "Tarea no encontrada");
+    for (const id of ids) {
+      await assertTaskAccess(userId, id);
     }
     if (projectId) {
       const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
       if (!project) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
+      const tasks = await prisma.task.findMany({
+        where: { id: { in: ids }, assigneeId: { not: null } },
+        select: { id: true, assigneeId: true },
+      });
+      for (const task of tasks) {
+        if (!task.assigneeId) continue;
+        const member = await prisma.projectMember.findUnique({
+          where: { projectId_userId: { projectId, userId: task.assigneeId } },
+        });
+        const owner = await prisma.project.findFirst({ where: { id: projectId, userId: task.assigneeId } });
+        if (!member && !owner) {
+          await prisma.task.update({ where: { id: task.id }, data: { assigneeId: null } });
+        }
+      }
     }
     await prisma.task.updateMany({ where: { id: { in: ids }, userId }, data: { projectId } });
     return { moved: ids.length };
   }
 
   async archive(userId: string, id: string, archived: boolean) {
-    await this.getById(userId, id);
+    await assertTaskAccess(userId, id);
     return prisma.task.update({
       where: { id },
       data: { archivedAt: archived ? new Date() : null },
@@ -247,12 +299,8 @@ export class TaskService {
 
   async reorder(userId: string, data: ReorderTasksDto) {
     const ids = data.items.map((item) => item.id);
-    const owned = await prisma.task.findMany({
-      where: { id: { in: ids }, userId },
-      select: { id: true },
-    });
-    if (owned.length !== new Set(ids).size) {
-      throw new AppError("NOT_FOUND", "Tarea no encontrada");
+    for (const id of ids) {
+      await assertTaskAccess(userId, id);
     }
     await prisma.$transaction(
       data.items.map((item) => prisma.task.update({
@@ -263,18 +311,18 @@ export class TaskService {
   }
 
   async listSubtasks(userId: string, taskId: string) {
-    await this.getById(userId, taskId);
+    await assertTaskAccess(userId, taskId);
     return prisma.subtask.findMany({ where: { userId, taskId }, orderBy: { order: "asc" } });
   }
 
   async createSubtask(userId: string, taskId: string, data: CreateSubtaskDto) {
-    await this.getById(userId, taskId);
+    await assertTaskAccess(userId, taskId);
     const last = await prisma.subtask.findFirst({ where: { userId, taskId }, orderBy: { order: "desc" }, select: { order: true } });
     return prisma.subtask.create({ data: { userId, taskId, title: data.title, order: (last?.order ?? -1) + 1 } });
   }
 
   async updateSubtask(userId: string, taskId: string, subtaskId: string, data: UpdateSubtaskDto) {
-    await this.getById(userId, taskId);
+    await assertTaskAccess(userId, taskId);
     const subtask = await prisma.subtask.findFirst({ where: { id: subtaskId, taskId, userId } });
     if (!subtask) throw new AppError("NOT_FOUND", "Subtarea no encontrada");
     return prisma.subtask.update({
@@ -287,7 +335,7 @@ export class TaskService {
   }
 
   async deleteSubtask(userId: string, taskId: string, subtaskId: string) {
-    await this.getById(userId, taskId);
+    await assertTaskAccess(userId, taskId);
     const result = await prisma.subtask.deleteMany({ where: { id: subtaskId, taskId, userId } });
     if (result.count !== 1) throw new AppError("NOT_FOUND", "Subtarea no encontrada");
   }

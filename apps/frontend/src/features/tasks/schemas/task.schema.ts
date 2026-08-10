@@ -22,6 +22,7 @@ export const taskSchema = z.object({
   dueDate: z.string().optional(),
   pomodoroEstimate: z.number().int().min(0).max(100),
   projectId: z.string().optional(),
+  assigneeId: z.string().nullable().optional(),
   recurrence: taskRecurrenceSchema.optional(),
 });
 

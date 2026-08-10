@@ -6,6 +6,7 @@ export const noteFormSchema = z.object({
   category: z.string().trim().min(1).max(60).optional(),
   tags: z.array(z.string().trim().min(1).max(50)).max(20).optional(),
   pinned: z.boolean().optional(),
+  projectId: z.string().optional(),
 });
 
 export type NoteForm = z.infer<typeof noteFormSchema>;

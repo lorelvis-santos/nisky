@@ -1,13 +1,12 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import { CalendarDays, CheckSquare, FolderKanban, List, LayoutGrid, Plus, Trash2, X } from "lucide-react";
+import { CalendarDays, CheckSquare, List, LayoutGrid, Plus, Trash2, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import type { Task, TaskPriority } from "@/types/entities";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { archiveQuickNote } from "@/features/quicknotes/api/quicknotes";
-import { ProjectsModal } from "@/features/projects/components/ProjectsModal";
 import { ProjectsSidebar } from "@/features/projects/components/ProjectsSidebar";
 import { BacklogPanel } from "@/features/tasks/components/BacklogPanel";
 import { DayList } from "@/features/tasks/components/DayList";
@@ -27,7 +26,7 @@ import {
   useTasksQuery,
 } from "@/features/tasks/hooks/useTasks";
 import {
-  useProjectMutations,
+  useAccessibleProjects,
   useProjectsQuery,
 } from "@/features/projects/hooks/useProjects";
 import {
@@ -176,7 +175,6 @@ function TasksPageContent() {
   const [priority, setPriority] = useState<TaskPriority | "ALL">("ALL");
   const [dayOrder, setDayOrder] = useState<Record<string, string[]>>({});
   const [backlogOrder, setBacklogOrder] = useState<string[]>([]);
-  const [manageOpen, setManageOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     initialProjectFilter,
   );
@@ -191,8 +189,15 @@ function TasksPageContent() {
   });
   const urlTaskQuery = useTaskQuery(modalUrl.state.taskId);
   const mutations = useTaskMutations();
-  const projectMutations = useProjectMutations();
   const projectsQuery = useProjectsQuery();
+  const accessibleProjectsQuery = useAccessibleProjects();
+  const allProjects = useMemo(() => {
+    const merged = [...(projectsQuery.data ?? [])];
+    for (const project of accessibleProjectsQuery.data ?? []) {
+      if (!merged.some((item) => item.id === project.id)) merged.push(project);
+    }
+    return merged;
+  }, [projectsQuery.data, accessibleProjectsQuery.data]);
   const allTasks = query.data?.data ?? emptyTasks;
   const tasks = useMemo(
     () =>
@@ -526,20 +531,12 @@ function TasksPageContent() {
               value={selectedProjectId ?? ""}
             >
               <option value="">Todos</option>
-              {projectsQuery.data?.map((project) => (
+              {allProjects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
                 </option>
               ))}
             </select>
-            <button
-              aria-label="Gestionar proyectos"
-              className="flex h-9 items-center gap-1.5 border border-outline-variant px-3 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
-              onClick={() => setManageOpen(true)}
-              type="button"
-            >
-              <FolderKanban size={15} />
-            </button>
           </div>
           {view === "month" ? (
             <PeriodNav
@@ -640,7 +637,7 @@ function TasksPageContent() {
                 <MonthlyCalendar
                   monthStart={monthStart}
                   onSelectDay={setSelectedMonthDay}
-                  projects={projectsQuery.data ?? []}
+                  projects={allProjects}
                   selectedDayKey={selectedMonthDay}
                   tasks={tasks}
                 />
@@ -681,9 +678,8 @@ function TasksPageContent() {
             <div className="min-h-0 flex-1 lg:flex">
               <aside className="hidden w-60 shrink-0 flex-col border-r border-outline-variant bg-surface lg:flex">
                 <ProjectsSidebar
-                  onManage={() => setManageOpen(true)}
                   onSelect={selectProject}
-                  projects={projectsQuery.data ?? []}
+                  projects={allProjects}
                   selectedProjectId={selectedProjectId}
                   taskCounts={taskCounts}
                 />
@@ -705,7 +701,7 @@ function TasksPageContent() {
                     <MonthlyCalendar
                       monthStart={monthStart}
                       onSelectDay={setSelectedMonthDay}
-                      projects={projectsQuery.data ?? []}
+                      projects={allProjects}
                       selectedDayKey={selectedMonthDay}
                       tasks={tasks}
                     />
@@ -750,23 +746,6 @@ function TasksPageContent() {
       >
         <Plus size={22} />
       </button>
-      <ProjectsModal
-        onClose={() => setManageOpen(false)}
-        onCreate={async (name, color) => {
-          await projectMutations.create.mutateAsync({ name, color });
-        }}
-        onDelete={async (id) => {
-          await projectMutations.remove.mutateAsync(id);
-        }}
-        onSetDefault={async (id) => {
-          await projectMutations.setDefault.mutateAsync(id);
-        }}
-        onUpdate={async (id, data) => {
-          await projectMutations.update.mutateAsync({ id, payload: data });
-        }}
-        open={manageOpen}
-        projects={projectsQuery.data ?? []}
-      />
       {confirmBulkDelete && (
         <ConfirmModal
           confirmLabel="Eliminar"
@@ -787,7 +766,7 @@ function TasksPageContent() {
             await mutations.addSubtask.mutateAsync({ taskId, title });
           }}
           onClose={closeModal}
-          projects={projectsQuery.data ?? []}
+          projects={allProjects}
           onDelete={
             editingTask
               ? async () => {

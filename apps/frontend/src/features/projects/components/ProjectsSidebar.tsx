@@ -1,36 +1,40 @@
 "use client";
 
 import { Inbox, Plus, Settings } from "lucide-react";
+import Link from "next/link";
 import type { Project } from "@/types/entities";
+import { useAccessibleProjects } from "../hooks/useProjects";
 
 export function ProjectsSidebar({
   projects,
   selectedProjectId,
   onSelect,
-  onManage,
   taskCounts,
 }: {
   projects: Project[];
   selectedProjectId: string | null;
   onSelect: (projectId: string | null) => void;
-  onManage: () => void;
   taskCounts: Record<string, number>;
 }) {
-  const pendingCount = projects.reduce((sum, project) => sum + (taskCounts[project.id] ?? 0), 0);
+  const accessibleQuery = useAccessibleProjects();
+  const merged = [...projects];
+  for (const project of accessibleQuery.data ?? []) {
+    if (!merged.some((item) => item.id === project.id)) merged.push(project);
+  }
+  const pendingCount = merged.reduce((sum, project) => sum + (taskCounts[project.id] ?? 0), 0);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-outline-variant px-4 py-3">
         <h2 className="font-label-caps text-label-caps text-on-surface-variant">PROYECTOS</h2>
-        <button
-          aria-label="Gestionar proyectos"
+        <Link
+          aria-label="Ver todos los proyectos"
           className="p-1 text-on-surface-variant hover:text-primary"
-          onClick={onManage}
-          title="Gestionar proyectos"
-          type="button"
+          href="/projects"
+          title="Ver todos los proyectos"
         >
           <Settings size={15} />
-        </button>
+        </Link>
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto py-2">
@@ -45,7 +49,7 @@ export function ProjectsSidebar({
           <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{pendingCount}</span>
         </button>
 
-        {projects.map((project) => {
+        {merged.map((project) => {
           const active = selectedProjectId === project.id;
           return (
             <button
@@ -62,12 +66,12 @@ export function ProjectsSidebar({
           );
         })}
 
-        {projects.length === 0 && (
+        {merged.length === 0 && (
           <p className="px-4 py-3 font-body-sm text-body-sm text-on-surface-variant">
             Solo tienes &quot;Personal&quot;.{" "}
-            <button className="inline-flex items-center gap-1 text-primary hover:underline" onClick={onManage} type="button">
+            <Link className="inline-flex items-center gap-1 text-primary hover:underline" href="/projects">
               <Plus size={13} /> Crear proyecto
-            </button>
+            </Link>
           </p>
         )}
       </nav>

@@ -1,6 +1,5 @@
 "use client";
 
-import { Inbox } from "lucide-react";
 import Link from "next/link";
 import { localDateKey } from "@/lib/utils";
 import { minToTime } from "@/features/timeblocks/lib/time";
@@ -88,11 +87,6 @@ export function FutureView({
           );
         })}
       </div>
-      {tasks.length === 0 && blocks.length === 0 && (
-        <p className="mt-3 flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
-          <Inbox size={14} /> Nada programado para los próximos días.
-        </p>
-      )}
     </section>
   );
 }

@@ -9,5 +9,16 @@ export const createProjectSchema = z.object({
 
 export const updateProjectSchema = createProjectSchema.partial();
 
+export const projectIdParamSchema = z.object({ projectId: z.uuid("El proyecto no es válido") });
+export const invitationIdParamSchema = z.object({ invitationId: z.uuid("La invitación no es válida") });
+export const memberIdParamSchema = z.object({
+  projectId: z.uuid("El proyecto no es válido"),
+  memberId: z.uuid("El miembro no es válido"),
+});
+export const inviteMemberSchema = z.object({ email: z.email("Email inválido") });
+export const updateMemberRoleSchema = z.object({ role: z.enum(["OWNER", "MEMBER"]) });
+
 export type CreateProjectDto = z.infer<typeof createProjectSchema>;
 export type UpdateProjectDto = z.infer<typeof updateProjectSchema>;
+export type InviteMemberDto = z.infer<typeof inviteMemberSchema>;
+export type UpdateMemberRoleDto = z.infer<typeof updateMemberRoleSchema>;

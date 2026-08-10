@@ -1,6 +1,7 @@
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { buildPaginatedResponse, getPaginationArgs } from "../../utils/pagination/handler";
+import { getAccessibleProjectIds } from "../projects/access";
 import type { CreateNoteDto, NoteQueryDto, UpdateNoteDto } from "./knowledge.validator";
 
 function countByName(items: Array<{ name: string }>) {
@@ -21,7 +22,7 @@ export class KnowledgeService {
       ...(query.category ? { category: query.category } : {}),
       ...(query.tag ? { tags: { has: query.tag } } : {}),
       ...(query.pinned !== undefined ? { pinned: query.pinned } : {}),
-      ...(query.q ? { OR: [{ title: { contains: query.q } }, { content: { contains: query.q } }] } : {}),
+      ...(query.q ? { AND: [{ OR: [{ title: { contains: query.q } }, { content: { contains: query.q } }] }] } : {}),
     };
 
     const [data, totalItems] = await Promise.all([
@@ -43,6 +44,10 @@ export class KnowledgeService {
   }
 
   async create(userId: string, data: CreateNoteDto) {
+    if (data.projectId) {
+      const accessible = await getAccessibleProjectIds(userId);
+      if (!accessible.includes(data.projectId)) throw new AppError("FORBIDDEN", "No tienes acceso a este proyecto");
+    }
     return prisma.note.create({
       data: {
         userId,
@@ -50,6 +55,7 @@ export class KnowledgeService {
         content: data.content,
         category: data.category ?? null,
         tags: data.tags ?? [],
+        projectId: data.projectId ?? null,
       },
     });
   }
@@ -57,6 +63,10 @@ export class KnowledgeService {
   async update(userId: string, id: string, data: UpdateNoteDto) {
     const note = await prisma.note.findFirst({ where: { id, userId } });
     if (!note) throw new AppError("NOT_FOUND", "Nota no encontrada");
+    if (data.projectId !== undefined && data.projectId) {
+      const accessible = await getAccessibleProjectIds(userId);
+      if (!accessible.includes(data.projectId)) throw new AppError("FORBIDDEN", "No tienes acceso a este proyecto");
+    }
     return prisma.note.update({
       where: { id },
       data: {
@@ -65,6 +75,7 @@ export class KnowledgeService {
         ...(data.category !== undefined ? { category: data.category } : {}),
         ...(data.tags !== undefined ? { tags: data.tags } : {}),
         ...(data.pinned !== undefined ? { pinned: data.pinned } : {}),
+        ...(data.projectId !== undefined ? { projectId: data.projectId } : {}),
       },
     });
   }
@@ -72,16 +83,18 @@ export class KnowledgeService {
   async delete(userId: string, id: string) {
     const result = await prisma.note.deleteMany({ where: { id, userId } });
     if (result.count !== 1) throw new AppError("NOT_FOUND", "Nota no encontrada");
+    return { success: true };
   }
 
   async facets(userId: string) {
+    const where = { userId };
     const [categories, tags] = await Promise.all([
       prisma.note.groupBy({
         by: ["category"],
-        where: { userId, category: { not: null } },
+        where: { ...where, category: { not: null } },
         _count: { _all: true },
       }),
-      prisma.note.findMany({ where: { userId }, select: { tags: true } }),
+      prisma.note.findMany({ where, select: { tags: true } }),
     ]);
 
     return {

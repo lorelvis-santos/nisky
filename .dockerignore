@@ -1,0 +1,14 @@
+node_modules
+.git
+.next
+out
+dist
+*.log
+.env
+.env.*
+!.env.example
+apps/frontend/node_modules
+apps/frontend/.next
+apps/backend/node_modules
+apps/backend/src/infra/prisma/generated
+prisma/migrations

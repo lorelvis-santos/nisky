@@ -73,7 +73,7 @@ export function PatSection() {
         ¿Cómo conectar un asistente de IA?{" "}
         <a
           className="text-primary underline"
-          href="https://github.com/lorelvis-santos/nisky/blob/main/apps/mcp/README.md"
+          href="https://github.com/lorelvis-santos/nisky/blob/main/apps/mcp/GUIA-INTEGRACION.md"
           rel="noopener noreferrer"
           target="_blank"
         >

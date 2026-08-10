@@ -5,6 +5,7 @@ import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { deriveJournalKey, newJournalSalt, decryptJournalContent, encryptJournalContent } from "../../utils/journal/crypto";
 import { dropJournalKey, dropJournalKeysForUser, migrateJournalKey, storeJournalKey } from "../../utils/journal/keyStore";
+import { patService } from "./pat.service";
 import type { LoginDto, RegisterDto } from "./auth.validator";
 
 const MAX_ACTIVE_REFRESH_TOKENS = 5;
@@ -194,6 +195,7 @@ export class AuthService {
       ...reEncrypted,
     ]);
 
+    await patService.revokeAllForUser(userId);
     dropJournalKeysForUser(userId, refreshTokenId);
     if (refreshTokenId) storeJournalKey(refreshTokenId, userId, newKey);
   }

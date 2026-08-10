@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { AppError } from "../utils/errors/handler";
+import { patService } from "../modules/auth/pat.service";
 
 type UserRole = "ADMIN" | "USER";
 
@@ -19,10 +20,16 @@ interface AccessPayload extends JwtPayload {
   role: UserRole;
 }
 
-function decodeAccessToken(req: Request) {
+async function decodeAccessToken(req: Request) {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) throw new AppError("UNAUTHORIZED", "Acceso denegado");
   const token = header.slice("Bearer ".length).trim();
+
+  if (token.startsWith("nisky_pat_")) {
+    const user = await patService.verify(token);
+    return { id: user.id, email: user.email, role: user.role };
+  }
+
   const secret = process.env.JWT_ACCESS_SECRET;
   if (!secret) throw new AppError("INTERNAL", "JWT_ACCESS_SECRET no está configurado");
 
@@ -33,9 +40,9 @@ function decodeAccessToken(req: Request) {
   return { id: payload.sub, email: payload.email, role: payload.role };
 }
 
-export function requireAuth(req: Request, _res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, _res: Response, next: NextFunction) {
   try {
-    req.user = decodeAccessToken(req);
+    req.user = await decodeAccessToken(req);
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {

@@ -22,6 +22,7 @@ model User {
   isActive      Boolean        @default(true)
   lastLoginAt   DateTime?
   refreshTokens RefreshToken[]
+  personalAccessTokens PersonalAccessToken[]
   tasks         Task[]
   subtasks      Subtask[]
   habits        Habit[]
@@ -354,6 +355,22 @@ model RefreshToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model PersonalAccessToken {
+  id         String     @id @default(uuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  tokenHash  String     @unique
+  prefix     String
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime   @default(now())
+
+  @@index([userId])
+  @@index([prefix])
 }
 
 model Setting {

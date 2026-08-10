@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
 import { PasswordSection } from "@/components/admin/PasswordSection";
+import { PatSection } from "@/components/admin/PatSection";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { IntegrationManager } from "@/components/integrations/IntegrationManager";
@@ -55,8 +56,9 @@ export default function SettingsPage() {
           )}
 
           {active === "security" && (
-            <div className="max-w-2xl">
+            <div className="max-w-2xl space-y-6">
               <PasswordSection />
+              <PatSection />
             </div>
           )}
 

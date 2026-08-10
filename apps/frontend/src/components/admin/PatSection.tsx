@@ -69,6 +69,17 @@ export function PatSection() {
       <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
         Usa tokens para conectar herramientas externas (como asistentes de IA) a tu cuenta sin exponer tu contraseña.
       </p>
+      <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
+        ¿Cómo conectar un asistente de IA?{" "}
+        <a
+          className="text-primary underline"
+          href="https://github.com/lorelvis-santos/nisky/blob/main/apps/mcp/README.md"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Guía de configuración del MCP
+        </a>
+      </p>
 
       <form className="mt-4 max-w-sm space-y-4" onSubmit={handleSubmit((values) => createMutation.mutate({
         name: values.name,

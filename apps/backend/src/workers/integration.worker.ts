@@ -1,5 +1,5 @@
-import cron from "node-cron";
 import { integrationService } from "../modules/integrations/integration.service";
+import { scheduleInTimezone } from "../utils/cron-timezone";
 
 let processing = false;
 
@@ -25,5 +25,5 @@ export async function processIntegrationSync() {
 
 export function startIntegrationsWorker() {
   void processIntegrationSync();
-  return cron.schedule("0 */3 * * *", () => void processIntegrationSync());
+  return scheduleInTimezone("0 */3 * * *", () => void processIntegrationSync());
 }

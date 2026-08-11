@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import type { Prisma } from "../../infra/prisma/generated/prisma/client";
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
@@ -19,8 +20,17 @@ const taskInclude = {
 
 function taskDate(value: string | null | undefined) {
   if (value === undefined || value === null) return value;
-  // Date-only values represent a local calendar day, not midnight UTC.
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00.000Z`) : new Date(value);
+  const TZ = "America/Santo_Domingo";
+  // Date-only (YYYY-MM-DD): treat as local calendar day → noon UTC
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T12:00:00.000Z`);
+  }
+  // datetime-local (YYYY-MM-DDTHH:mm) without timezone: interpret as local TZ
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
+    return DateTime.fromISO(value, { zone: TZ }).toUTC().toJSDate();
+  }
+  // Full ISO or other: parse normally
+  return new Date(value);
 }
 
 type RecurrenceSource = {

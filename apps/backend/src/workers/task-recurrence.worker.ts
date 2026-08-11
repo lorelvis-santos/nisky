@@ -1,9 +1,9 @@
-import cron from "node-cron";
 import { DateTime } from "luxon";
 import { prisma } from "../infra/prisma/client";
 import { nextOccurrence } from "../utils/recurrence";
 import { getProjectAudience } from "../modules/projects/access";
 import { emitToUsers } from "../config/socket.emit";
+import { scheduleInTimezone } from "../utils/cron-timezone";
 
 const TZ = "America/Santo_Domingo";
 
@@ -77,5 +77,5 @@ export async function processRecurringTasks() {
 
 export function startTaskRecurrenceWorker() {
   void processRecurringTasks();
-  return cron.schedule("7 5 * * *", () => void processRecurringTasks());
+  return scheduleInTimezone("7 5 * * *", () => void processRecurringTasks());
 }

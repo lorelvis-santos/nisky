@@ -1,6 +1,6 @@
-import cron from "node-cron";
 import { pushService } from "../modules/push/push.service";
 import { reminderService } from "../modules/reminders/reminders.service";
+import { scheduleInTimezone } from "../utils/cron-timezone";
 
 let processing = false;
 
@@ -40,5 +40,5 @@ export async function processDueReminders() {
 
 export function startReminderWorker() {
   void processDueReminders();
-  return cron.schedule("* * * * *", () => void processDueReminders());
+  return scheduleInTimezone("* * * * *", () => void processDueReminders());
 }

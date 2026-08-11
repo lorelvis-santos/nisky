@@ -1,10 +1,10 @@
-import cron from "node-cron";
 import { DateTime } from "luxon";
 import { prisma } from "../infra/prisma/client";
 import { pushService } from "../modules/push/push.service";
 import { mondayInTz, weeksBetween } from "../utils/recurrence";
 import { defaultNotificationSettings } from "../utils/notifications/notification-settings";
 import { recordNotificationLog } from "../modules/push/notification-log.service";
+import { scheduleInTimezone } from "../utils/cron-timezone";
 
 const TZ = "America/Santo_Domingo";
 
@@ -126,5 +126,5 @@ export async function processTimeBlockNotifications() {
 
 export function startTimeBlockWorker() {
   void processTimeBlockNotifications();
-  return cron.schedule("* * * * *", () => void processTimeBlockNotifications());
+  return scheduleInTimezone("* * * * *", () => void processTimeBlockNotifications());
 }

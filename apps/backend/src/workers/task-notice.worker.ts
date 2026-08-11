@@ -1,4 +1,3 @@
-import cron from "node-cron";
 import { DateTime } from "luxon";
 import { prisma } from "../infra/prisma/client";
 import { pushService } from "../modules/push/push.service";
@@ -6,6 +5,7 @@ import { defaultNotificationSettings } from "../utils/notifications/notification
 import { hasSkippedLogToday, recordNotificationLog } from "../modules/push/notification-log.service";
 import { getProjectAudience } from "../modules/projects/access";
 import { emitToUsers } from "../config/socket.emit";
+import { scheduleInTimezone } from "../utils/cron-timezone";
 
 const TZ = "America/Santo_Domingo";
 
@@ -179,9 +179,9 @@ async function sendMorningDigest() {
 
 export function startTaskNoticeWorker() {
   void processTaskDueNotices();
-  return cron.schedule("*/30 * * * *", () => void processTaskDueNotices());
+  return scheduleInTimezone("*/30 * * * *", () => void processTaskDueNotices());
 }
 
 export function startMorningDigestWorker() {
-  return cron.schedule("0 7 * * *", () => void sendMorningDigest());
+  return scheduleInTimezone("0 7 * * *", () => void sendMorningDigest());
 }

@@ -1,9 +1,9 @@
-import cron from "node-cron";
 import { DateTime } from "luxon";
 import { prisma } from "../infra/prisma/client";
 import { pushService } from "../modules/push/push.service";
 import { computeStreak, localDateKey } from "../modules/habits/habit-stats";
 import { defaultNotificationSettings } from "../utils/notifications/notification-settings";
+import { scheduleInTimezone } from "../utils/cron-timezone";
 
 const TZ = "America/Santo_Domingo";
 
@@ -62,5 +62,5 @@ export async function processHabitReminders() {
 
 export function startHabitWorker() {
   void processHabitReminders();
-  return cron.schedule("*/30 * * * *", () => void processHabitReminders());
+  return scheduleInTimezone("*/30 * * * *", () => void processHabitReminders());
 }

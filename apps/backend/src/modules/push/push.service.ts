@@ -2,6 +2,7 @@ import webpush from "web-push";
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { hasSkippedLogToday, recordNotificationLog } from "./notification-log.service";
+import { isUserInChat } from "../../infra/redis/client";
 import type { PushSubscriptionDto, PushUnsubscribeDto } from "./push.validator";
 
 type NotificationPayload = {
@@ -80,6 +81,18 @@ export class PushService {
   }
 
   async sendToUser(userId: string, payload: NotificationPayload) {
+    if (payload.data?.type === "COMMENT" && typeof payload.data.projectId === "string") {
+      try {
+        const inChat = await isUserInChat(
+          userId,
+          payload.data.projectId,
+          typeof payload.data.taskId === "string" ? payload.data.taskId : null,
+        );
+        if (inChat) return { sent: 0, total: 0 };
+      } catch {
+        /* best effort: si Redis falla, se envía el push */
+      }
+    }
     configureWebPush();
     const subscriptions = await prisma.pushSubscription.findMany({ where: { userId } });
     if (subscriptions.length === 0) {

@@ -573,7 +573,7 @@ export function TaskModal({
                 </span>
               </div>
               <div className="h-64">
-                <CommentThread kind="task" id={current.id} />
+                <CommentThread kind="task" id={current.id} projectId={current.projectId ?? form.projectId} />
               </div>
             </section>
           )}

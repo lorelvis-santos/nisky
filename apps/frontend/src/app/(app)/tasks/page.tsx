@@ -168,6 +168,7 @@ function initialProjectFilter(): string | null {
 
 function TasksPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [weekStart, setWeekStart] = useState(() => monday(new Date()));
   const [monthStart, setMonthStart] = useState(() => firstOfMonth(new Date()));
   const [selectedMonthDay, setSelectedMonthDay] = useState<string | null>(null);
@@ -176,7 +177,7 @@ function TasksPageContent() {
   const [dayOrder, setDayOrder] = useState<Record<string, string[]>>({});
   const [backlogOrder, setBacklogOrder] = useState<string[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    initialProjectFilter,
+    () => searchParams.get("projectId") ?? initialProjectFilter(),
   );
   const [view, setView] = useState<TaskView>(initialTaskView);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);

@@ -2,8 +2,9 @@ import type { Prisma } from "../../infra/prisma/generated/prisma/client";
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { pushService } from "../push/push.service";
-import { assertProjectAccess, assertProjectOwner, getUserRoleInProject } from "./access";
+import { assertProjectAccess, assertProjectOwner, getProjectAudience, getUserRoleInProject } from "./access";
 import type { CreateProjectDto, UpdateProjectDto } from "./projects.validator";
+import { emitToUsers } from "../../config/socket.emit";
 
 const DEFAULT_COLOR = "#303e51";
 
@@ -198,6 +199,8 @@ export class ProjectService {
       data: { type: "PROJECT_INVITATION", projectId: project.id },
     });
 
+    emitToUsers([invitee.id, ...(await getProjectAudience(projectId))], "projects", { kind: "invitation", projectId });
+
     return invitation;
   }
 
@@ -236,6 +239,7 @@ export class ProjectService {
         data: { type: "PROJECT_INVITATION_ACCEPTED", projectId },
       });
     }
+    emitToUsers([...(await getProjectAudience(projectId))], "projects", { kind: "invitation_accepted", projectId });
     return { success: true };
   }
 
@@ -264,6 +268,7 @@ export class ProjectService {
       prisma.task.updateMany({ where: { projectId, userId: member.userId }, data: { userId } }),
       prisma.projectMember.delete({ where: { id: member.id } }),
     ]);
+    emitToUsers([member.userId, ...(await getProjectAudience(projectId))], "projects", { kind: "member_removed", projectId, userId: member.userId });
     return { success: true };
   }
 
@@ -292,6 +297,7 @@ export class ProjectService {
         data: { role: "MEMBER" },
       });
     }
+    emitToUsers(await getProjectAudience(projectId), "projects", { kind: "member_role_changed", projectId, userId: member.userId, role });
     return { success: true };
   }
 }

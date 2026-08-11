@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, FolderKanban, ListTodo, MessageSquare, Pencil, Star, Trash2, Users, X } from "lucide-react";
+import { ArrowUpRight, CalendarDays, FolderKanban, ListTodo, MessageSquare, Pencil, Plus, Star, Trash2, Users, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -125,28 +125,30 @@ export default function ProjectDetailPage() {
                 </p>
               </div>
             </div>
-            {isOwner && (
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  className="flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
-                  onClick={() => {
-                    setEditName(project.name);
-                    setEditColor(project.color);
-                    setEditOpen(true);
-                  }}
-                  type="button"
-                >
-                  <Pencil size={14} /> Editar
-                </button>
-                <button
-                  className="flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-error hover:bg-error hover:text-error-foreground"
-                  onClick={() => setConfirmDelete(true)}
-                  type="button"
-                >
-                  <Trash2 size={14} /> Eliminar
-                </button>
-              </div>
-            )}
+            <div className="flex shrink-0 items-center gap-2">
+              {isOwner && (
+                <>
+                  <button
+                    className="flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+                    onClick={() => {
+                      setEditName(project.name);
+                      setEditColor(project.color);
+                      setEditOpen(true);
+                    }}
+                    type="button"
+                  >
+                    <Pencil size={14} /> Editar
+                  </button>
+                  <button
+                    className="flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-error hover:bg-error hover:text-error-foreground"
+                    onClick={() => setConfirmDelete(true)}
+                    type="button"
+                  >
+                    <Trash2 size={14} /> Eliminar
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -184,25 +186,36 @@ export default function ProjectDetailPage() {
           {activeTab === "general" && (
             <div className="mx-auto max-w-3xl space-y-section-gap">
               <div className={`grid grid-cols-1 gap-section-gap ${project.isDefault ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
-                <div className="flex flex-col gap-2 border border-outline-variant bg-surface-container-low p-4">
-                  <span className="flex items-center justify-between gap-2">
-                    <p className="font-label-caps text-label-caps text-on-surface-variant">TAREAS ACTIVAS</p>
-                    <ListTodo size={14} className="text-primary" />
-                  </span>
-                  <p className="font-headline-md text-headline-md font-bold text-primary">{activeTasks.length}</p>
-                  {projectTasks.length > 0 && (
-                    <div className="mt-auto flex flex-col gap-1">
-                      <div className="h-1.5 w-full overflow-hidden rounded-[2px] border border-outline-variant bg-surface-container-high">
-                        <div className="h-full bg-primary" style={{ width: `${Math.round((projectTasks.filter((task) => task.status === "COMPLETED").length / projectTasks.length) * 100)}%` }} />
-                      </div>
-                      <span className="font-data-mono text-data-mono text-[11px] text-on-surface-variant">
-                        {projectTasks.filter((task) => task.status === "COMPLETED").length}/{projectTasks.length} completadas
+                <button
+                    className="group flex cursor-pointer flex-col gap-2 border border-outline-variant bg-surface-container-low p-4 text-left transition-colors hover:border-primary/60 hover:bg-surface-container-high"
+                    onClick={() => router.push(`/tasks?projectId=${encodeURIComponent(project.id)}`)}
+                    title="Ver planificación y tareas de este proyecto"
+                    type="button"
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <p className="font-label-caps text-label-caps text-on-surface-variant">TAREAS ACTIVAS</p>
+                      <span className="flex shrink-0 items-center gap-1">
+                        <ListTodo size={14} className="text-primary" />
+                        <ArrowUpRight size={14} className="text-primary opacity-0 transition-opacity group-hover:opacity-100" />
                       </span>
-                    </div>
-                  )}
-                </div>
+                    </span>
+                    <p className="font-headline-md text-headline-md font-bold text-primary">{activeTasks.length}</p>
+                    <span className="font-label-caps text-[11px] uppercase tracking-wide text-on-surface-variant opacity-0 transition-opacity group-hover:opacity-100">
+                      Ver planificación →
+                    </span>
+                    {projectTasks.length > 0 && (
+                      <div className="mt-auto flex flex-col gap-1">
+                        <div className="h-1.5 w-full overflow-hidden rounded-[2px] border border-outline-variant bg-surface-container-high">
+                          <div className="h-full bg-primary" style={{ width: `${Math.round((projectTasks.filter((task) => task.status === "COMPLETED").length / projectTasks.length) * 100)}%` }} />
+                        </div>
+                        <span className="font-data-mono text-data-mono text-[11px] text-on-surface-variant">
+                          {projectTasks.filter((task) => task.status === "COMPLETED").length}/{projectTasks.length} completadas
+                        </span>
+                      </div>
+                    )}
+                  </button>
                 {!project.isDefault && (
-                  <button className="flex flex-col gap-2 border border-outline-variant bg-surface-container-low p-4 text-left hover:border-primary/60 hover:bg-surface-container-high" onClick={() => setTab("members")} type="button">
+                  <button className="flex cursor-pointer flex-col gap-2 border border-outline-variant bg-surface-container-low p-4 text-left transition-colors hover:border-primary/60 hover:bg-surface-container-high" onClick={() => setTab("members")} type="button">
                     <span className="flex items-center justify-between gap-2">
                       <p className="font-label-caps text-label-caps text-on-surface-variant">MIEMBROS</p>
                       <Users size={14} className="text-primary" />
@@ -211,7 +224,7 @@ export default function ProjectDetailPage() {
                     {members.length > 0 && <AvatarStack members={members} max={5} size="sm" />}
                   </button>
                 )}
-                <button className="flex flex-col gap-2 border border-outline-variant bg-surface-container-low p-4 text-left hover:border-primary/60 hover:bg-surface-container-high" onClick={() => setTab("comments")} type="button">
+                <button className="flex cursor-pointer flex-col gap-2 border border-outline-variant bg-surface-container-low p-4 text-left transition-colors hover:border-primary/60 hover:bg-surface-container-high" onClick={() => setTab("comments")} type="button">
                   <span className="flex items-center justify-between gap-2">
                     <p className="font-label-caps text-label-caps text-on-surface-variant">CONVERSACIÓN</p>
                     <MessageSquare size={14} className="text-primary" />
@@ -237,16 +250,25 @@ export default function ProjectDetailPage() {
               <div className="border border-outline-variant bg-surface p-4">
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-label-caps text-label-caps text-on-surface-variant">PRÓXIMAS TAREAS</p>
-                  {projectTasks.length > 6 && (
-                    <button className="font-label-caps text-[11px] uppercase tracking-wide text-primary hover:underline" onClick={() => router.push("/tasks")} type="button">
+                  {projectTasks.length > 0 && (
+                    <button className="font-label-caps text-[11px] uppercase tracking-wide text-primary hover:underline" onClick={() => router.push(`/tasks?projectId=${encodeURIComponent(project.id)}`)} type="button">
                       Ver todas
                     </button>
                   )}
                 </div>
                 {projectTasks.length === 0 ? (
-                  <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">
-                    No hay tareas en este proyecto todavía. Crea una desde Planificación y tareas.
-                  </p>
+                  <div className="mt-4 flex flex-col items-center gap-3 text-center">
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">
+                      No hay tareas en este proyecto todavía.
+                    </p>
+                    <button
+                      className="inline-flex items-center gap-2 border border-primary bg-transparent px-4 py-2 font-body-sm text-body-sm text-primary hover:bg-primary-fixed/50 hover:border-primary/60"
+                      onClick={() => router.push(`/tasks?modal=create&projectId=${encodeURIComponent(project.id)}`)}
+                      type="button"
+                    >
+                      <Plus size={15} /> Crear primera tarea
+                    </button>
+                  </div>
                 ) : (
                   <ul className="mt-2 divide-y divide-outline-variant">
                     {projectTasks.slice(0, 6).map((task) => {

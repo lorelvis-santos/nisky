@@ -1,6 +1,60 @@
-import { CheckCircle2, Pause, Play, Square } from "lucide-react";
+import { CheckCircle2, Pause, Play, SkipForward, Square } from "lucide-react";
+import type { PomodoroPhase } from "@/types/entities";
 
-export function Controls({ running, paused, onStart, onPause, onResume, onStop, onCompletePomodoro }: { running: boolean; paused: boolean; onStart: () => void; onPause: () => void; onResume: () => void; onStop: () => void; onCompletePomodoro: () => void }) {
-  if (!running) return <button className="flex w-full max-w-md items-center justify-center gap-2 bg-primary-container px-6 py-4 font-body-md text-body-md text-on-primary hover:bg-primary" onClick={onStart} type="button"><Play size={18} /> Iniciar Pomodoro</button>;
-  return <div className="flex w-full max-w-md flex-wrap items-center gap-3"><button aria-label={paused ? "Reanudar Pomodoro" : "Pausar Pomodoro"} className="flex min-w-[130px] flex-1 items-center justify-center gap-2 border border-outline-variant bg-surface-container-lowest px-5 py-4 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high" onClick={paused ? onResume : onPause} title={paused ? "Continuar este Pomodoro" : "Pausar temporalmente; podrás continuar después"} type="button">{paused ? <Play size={18} /> : <Pause size={18} />} {paused ? "Reanudar" : "Pausar"}</button><button aria-label="Cancelar Pomodoro" className="flex min-w-[130px] flex-1 items-center justify-center gap-2 border border-outline-variant bg-surface-container-lowest px-5 py-4 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high" onClick={onStop} title="Cancelar este Pomodoro; no contará como completado" type="button"><Square size={18} /> Cancelar Pomodoro</button><button className="flex w-full items-center justify-center gap-2 bg-primary-container px-5 py-4 font-body-md text-body-md text-on-primary hover:bg-primary" onClick={onCompletePomodoro} type="button"><CheckCircle2 size={18} /> Completar Pomodoro</button></div>;
+const PRIMARY: Record<PomodoroPhase, string> = {
+  WORK: "bg-primary-container text-on-primary hover:bg-primary",
+  SHORT_BREAK: "bg-secondary-container text-on-secondary-container hover:opacity-90",
+  LONG_BREAK: "bg-tertiary-fixed text-on-tertiary-fixed hover:opacity-90",
+};
+
+const SECONDARY = "border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high";
+
+export function Controls({ running, paused, phase, onStart, onPause, onResume, onStop, onCompletePomodoro }: { running: boolean; paused: boolean; phase: PomodoroPhase; onStart: () => void; onPause: () => void; onResume: () => void; onStop: () => void; onCompletePomodoro: () => void }) {
+  const breakPhase = phase !== "WORK";
+  if (!running) {
+    const startLabel = phase === "SHORT_BREAK" ? "Iniciar descanso corto" : phase === "LONG_BREAK" ? "Iniciar descanso largo" : "Iniciar Pomodoro";
+    return (
+      <button
+        className={`flex w-full max-w-md items-center justify-center gap-2 px-6 py-4 font-body-md text-body-md ${PRIMARY[phase]}`}
+        onClick={onStart}
+        type="button"
+      >
+        <Play size={18} /> {startLabel}
+      </button>
+    );
+  }
+  const pauseResumeLabel = paused ? (breakPhase ? "Reanudar descanso" : "Reanudar") : (breakPhase ? "Pausar descanso" : "Pausar");
+  const cancelLabel = breakPhase ? "Saltar descanso" : "Cancelar Pomodoro";
+  const cancelTitle = breakPhase ? "Saltar este descanso; pasar al siguiente" : "Cancelar este Pomodoro; no contará como completado";
+  const completeLabel = breakPhase ? "Empezar a trabajar" : "Completar Pomodoro";
+  const CompleteIcon = breakPhase ? SkipForward : CheckCircle2;
+  return (
+    <div className="flex w-full max-w-md flex-wrap items-center gap-3">
+      <button
+        aria-label={pauseResumeLabel}
+        className={`flex min-w-[130px] flex-1 items-center justify-center gap-2 border px-5 py-4 font-body-md text-body-md ${SECONDARY}`}
+        onClick={paused ? onResume : onPause}
+        title={paused ? (breakPhase ? "Continuar este descanso" : "Continuar este Pomodoro") : (breakPhase ? "Pausar este descanso temporalmente" : "Pausar temporalmente; podrás continuar después")}
+        type="button"
+      >
+        {paused ? <Play size={18} /> : <Pause size={18} />} {pauseResumeLabel}
+      </button>
+      <button
+        aria-label={cancelLabel}
+        className={`flex min-w-[130px] flex-1 items-center justify-center gap-2 border px-5 py-4 font-body-md text-body-md ${SECONDARY}`}
+        onClick={onStop}
+        title={cancelTitle}
+        type="button"
+      >
+        <Square size={18} /> {cancelLabel}
+      </button>
+      <button
+        className={`flex w-full items-center justify-center gap-2 px-5 py-4 font-body-md text-body-md ${PRIMARY[phase]}`}
+        onClick={onCompletePomodoro}
+        type="button"
+      >
+        <CompleteIcon size={18} /> {completeLabel}
+      </button>
+    </div>
+  );
 }

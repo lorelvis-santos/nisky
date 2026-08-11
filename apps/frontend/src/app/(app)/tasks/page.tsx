@@ -98,8 +98,11 @@ function useModalUrl() {
       params.delete("quickNoteId");
       navigateWithModal(params, true);
     },
-    openFocus: (taskId: string) =>
-      router.push(`/focus?taskId=${encodeURIComponent(taskId)}`),
+    openFocus: (taskId: string, projectId?: string) => {
+      const params = new URLSearchParams({ taskId });
+      if (projectId) params.set("projectId", projectId);
+      router.push(`/focus?${params.toString()}`);
+    },
   };
 }
 
@@ -412,7 +415,7 @@ function TasksPageContent() {
 
   const openCreate = () => modalUrl.openCreate();
   const openEdit = (task: Task) => modalUrl.openTask(task.id);
-  const openFocus = (task: Task) => modalUrl.openFocus(task.id);
+  const openFocus = (task: Task) => modalUrl.openFocus(task.id, task.projectId ?? undefined);
   const closeModal = () => modalUrl.close();
 
   const selectProject = (projectId: string | null) => {
@@ -789,7 +792,7 @@ function TasksPageContent() {
           }}
           onSave={saveTask}
           onStartPomodoro={
-            editingTask ? () => modalUrl.openFocus(editingTask.id) : undefined
+            editingTask ? () => modalUrl.openFocus(editingTask.id, editingTask.projectId ?? undefined) : undefined
           }
           onToggleSubtask={async (taskId, subtaskId, completed) => {
             await mutations.toggleSubtask.mutateAsync({

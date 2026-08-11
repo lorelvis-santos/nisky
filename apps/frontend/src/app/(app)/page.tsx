@@ -48,8 +48,11 @@ export default function DashboardPage() {
     }
   };
 
-  const handlePlayPomodoro = (taskId?: string) => {
-    router.push(taskId ? `/focus?taskId=${encodeURIComponent(taskId)}` : "/focus");
+  const handlePlayPomodoro = (taskId?: string, projectId?: string) => {
+    const params = new URLSearchParams();
+    if (taskId) params.set("taskId", taskId);
+    if (projectId) params.set("projectId", projectId);
+    router.push(params.toString() ? `/focus?${params.toString()}` : "/focus");
   };
 
   return (

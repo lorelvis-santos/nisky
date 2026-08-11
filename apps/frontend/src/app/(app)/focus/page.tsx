@@ -11,6 +11,8 @@ import type {
 } from "@/types/entities";
 import { TaskFocusDetails } from "@/features/pomodoro/components/TaskFocusDetails";
 import { useTaskMutations, useTaskQuery, useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
+import { useActiveBlockQuery } from "@/features/timeblocks/hooks/useTimeBlocks";
 import { Controls } from "@/features/pomodoro/components/Controls";
 import { SessionList } from "@/features/pomodoro/components/SessionList";
 import { SettingsModal } from "@/features/pomodoro/components/SettingsModal";
@@ -32,6 +34,8 @@ const fallbackSettings: PomodoroSettings = {
   soundEnabled: true,
 };
 
+const FOCUS_PROJECT_KEY = "nisky:focus-project";
+
 function secondsForPhase(phase: PomodoroPhase, settings: PomodoroSettings) {
   if (phase === "SHORT_BREAK") return settings.shortBreakSec;
   if (phase === "LONG_BREAK") return settings.longBreakSec;
@@ -42,14 +46,26 @@ function FocusPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const taskIdFromUrl = searchParams.get("taskId");
+  const projectIdFromUrl = searchParams.get("projectId");
   const settingsQuery = usePomodoroSettingsQuery();
   const sessionsQuery = usePomodoroSessionsQuery({ limit: 8 });
-  const tasksQuery = useTasksQuery({ limit: 100 });
+  const projectsQuery = useProjectsQuery();
+  const activeBlockQuery = useActiveBlockQuery();
+  const [selectedProjectId, setSelectedProjectId] = useState(
+    projectIdFromUrl ?? "",
+  );
+  const [showAllTasks, setShowAllTasks] = useState(false);
+  const tasksQuery = useTasksQuery(
+    showAllTasks
+      ? { status: "PENDING", limit: 100 }
+      : { projectId: selectedProjectId || undefined, status: "PENDING", limit: 100 },
+  );
   const selectedTaskQuery = useTaskQuery(taskIdFromUrl);
   const mutations = usePomodoroMutations();
   const taskMutations = useTaskMutations();
   const globalPomodoro = usePomodoro();
   const settings = settingsQuery.data ?? fallbackSettings;
+  const projects = projectsQuery.data ?? [];
   const [phase, setPhase] = useState<PomodoroPhase>("WORK");
   const [cycleIndex, setCycleIndex] = useState(1);
   const [selectedTaskId, setSelectedTaskId] = useState(taskIdFromUrl ?? "");
@@ -59,9 +75,50 @@ function FocusPageContent() {
   const [now, setNow] = useState(() => Date.now());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const completionInFlight = useRef(false);
+  const lastCompletedIdRef = useRef<string | null>(null);
+  const initializedRef = useRef(false);
   const tasks = (tasksQuery.data?.data ?? []).filter(
     (task) => task.status !== "COMPLETED" && task.status !== "CANCELLED",
   );
+
+  useEffect(() => {
+    if (initializedRef.current) return;
+    const candidates = [
+      projectIdFromUrl ?? undefined,
+      activeBlockQuery.data?.projectId ?? undefined,
+      typeof window !== "undefined"
+        ? (localStorage.getItem(FOCUS_PROJECT_KEY) ?? undefined)
+        : undefined,
+      (projectsQuery.data ?? []).find((project) => project.isDefault)?.id,
+    ].filter(Boolean) as string[];
+    const initial = candidates[0];
+    if (initial) {
+      initializedRef.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- fijar el proyecto inicial solo en la primera carga (comportamiento deliberado)
+      setSelectedProjectId(initial);
+    }
+  }, [projectIdFromUrl, activeBlockQuery.data?.projectId, projectsQuery.data, selectedProjectId]);
+
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    localStorage.setItem(FOCUS_PROJECT_KEY, selectedProjectId);
+  }, [selectedProjectId]);
+
+  useEffect(() => {
+    if (selectedTaskId) return;
+    if (!lastCompletedIdRef.current) return;
+    const list = tasksQuery.data?.data ?? [];
+    const pending = list.filter(
+      (task) => task.id !== lastCompletedIdRef.current,
+    );
+    if (pending.length === 0) return;
+    const next = pending[0];
+    setSelectedTaskId(next.id);
+    const params = new URLSearchParams();
+    if (selectedProjectId) params.set("projectId", selectedProjectId);
+    params.set("taskId", next.id);
+    router.replace(`/focus?${params.toString()}`);
+  }, [tasksQuery.data, selectedProjectId, router, selectedTaskId]);
   const selectedTask =
     tasks.find((task) => task.id === selectedTaskId) ??
     (taskIdFromUrl ? selectedTaskQuery.data : null) ??
@@ -192,16 +249,36 @@ function FocusPageContent() {
     }
   };
 
+  const handleProjectChange = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setSelectedTaskId("");
+    setShowAllTasks(false);
+    const params = new URLSearchParams();
+    if (projectId) params.set("projectId", projectId);
+    router.replace(params.toString() ? `/focus?${params.toString()}` : "/focus");
+  };
+
+  const handleToggleShowAll = () => {
+    setShowAllTasks((value) => !value);
+    setSelectedTaskId("");
+  };
+
   const completeTask = async () => {
     if (!selectedTask) return;
+    const completedId = selectedTask.id;
     try {
       await taskMutations.update.mutateAsync({
-        id: selectedTask.id,
+        id: completedId,
         payload: { status: "COMPLETED" },
       });
+      lastCompletedIdRef.current = completedId;
       toast.success("¡Tarea completada!");
       setSelectedTaskId("");
-      if (taskIdFromUrl) router.replace("/focus");
+      if (taskIdFromUrl) {
+        const params = new URLSearchParams();
+        if (selectedProjectId) params.set("projectId", selectedProjectId);
+        router.replace(params.toString() ? `/focus?${params.toString()}` : "/focus");
+      }
     } catch {
       toast.error("Ups, no pudimos completar la tarea. Inténtalo de nuevo.");
     }
@@ -225,24 +302,64 @@ function FocusPageContent() {
         <Settings size={17} />
       </button>
       <div className="flex w-full max-w-2xl flex-col items-center gap-8 pt-16 sm:gap-12 sm:pt-10">
-        <div className="flex w-full flex-col items-center border border-outline-variant bg-surface-container-lowest p-4 text-center sm:p-5">
-          <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-            ¿EN QUÉ VAS A TRABAJAR?
-          </span>
-          <select
-            aria-label="Seleccionar tarea"
-            className="field mt-3 w-full max-w-xl"
-            disabled={running}
-            onChange={(event) => setSelectedTaskId(event.target.value)}
-            value={selectedTaskId}
-          >
-            <option value="">Elige una tarea para empezar</option>
-            {tasks.map((task) => (
-              <option key={task.id} value={task.id}>
-                {task.title}
+        <div className="flex w-full flex-col gap-3 border border-outline-variant bg-surface-container-lowest p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+              ENFOQUE
+            </span>
+            {activeBlockQuery.data?.projectId &&
+              activeBlockQuery.data.projectId === selectedProjectId &&
+              !showAllTasks && (
+                <span className="border border-outline-variant bg-surface-container-low px-2 py-0.5 font-label-caps text-[10px] uppercase text-primary">
+                  Bloque activo
+                </span>
+              )}
+          </div>
+          <label className="block">
+            <span className="font-label-caps text-label-caps text-on-surface-variant">PROYECTO</span>
+            <select
+              aria-label="Seleccionar proyecto"
+              className="field mt-1 w-full"
+              disabled={running}
+              onChange={(event) => handleProjectChange(event.target.value)}
+              value={selectedProjectId}
+            >
+              {projects.length === 0 && <option value="">Sin proyectos</option>}
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="font-label-caps text-label-caps text-on-surface-variant">TAREA</span>
+            <select
+              aria-label="Seleccionar tarea"
+              className="field mt-1 w-full"
+              disabled={running}
+              onChange={(event) => setSelectedTaskId(event.target.value)}
+              value={selectedTaskId}
+            >
+              <option value="">
+                {tasks.length === 0 ? "No hay tareas en este proyecto" : "Elige una tarea para empezar"}
               </option>
-            ))}
-          </select>
+              {tasks.map((task) => (
+                <option key={task.id} value={task.id}>
+                  {task.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            aria-pressed={showAllTasks}
+            className={`flex items-center gap-2 self-start border px-3 py-1.5 font-body-sm text-body-sm ${showAllTasks ? "border-primary bg-primary-container text-on-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-container-low hover:text-primary"}`}
+            disabled={running}
+            onClick={handleToggleShowAll}
+            type="button"
+          >
+            {showAllTasks ? "Mostrando todas las tareas" : "Ver todas las tareas"}
+          </button>
         </div>
         {selectedTask && (
           <TaskFocusDetails
@@ -265,6 +382,7 @@ function FocusPageContent() {
           onStart={() => void startPhase(phase, cycleIndex)}
           onStop={() => void stop()}
           paused={Boolean(paused)}
+          phase={displayPhase}
           running={running}
         />
         <div className="flex w-full max-w-2xl flex-col gap-4">

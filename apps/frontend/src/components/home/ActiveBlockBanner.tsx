@@ -47,7 +47,7 @@ export function ActiveBlockBanner({
 }: {
   block: TimeBlockWithProject | null;
   tasks: Task[];
-  onPlayPomodoro: (taskId?: string) => void;
+  onPlayPomodoro: (taskId?: string, projectId?: string) => void;
   onToggleTask: (task: Task) => void;
 }) {
   const nowMin = useNowMinutes();
@@ -167,7 +167,7 @@ const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
         </Link>
         <button
           className="flex h-9 items-center gap-2 border border-outline-variant bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
-          onClick={() => onPlayPomodoro(firstTask?.id)}
+          onClick={() => onPlayPomodoro(firstTask?.id, block.projectId ?? undefined)}
           type="button"
         >
           <Play size={15} /> {focusLabel}

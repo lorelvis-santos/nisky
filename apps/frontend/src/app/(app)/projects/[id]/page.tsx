@@ -1,20 +1,42 @@
 "use client";
 
-import { FolderKanban, MessageSquare, Pencil, Star, Trash2, Users, X } from "lucide-react";
+import { CalendarDays, FolderKanban, ListTodo, MessageSquare, Pencil, Star, Trash2, Users, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthProvider";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { CommentThread } from "@/features/comments/CommentThread";
 import { useProjectComments } from "@/features/comments/hooks/useComments";
+import { PriorityChip } from "@/features/tasks/components/PriorityChip";
 import { MembersPanel } from "@/features/projects/components/MembersPanel";
 import { useProjectMembers, useProjectMutations, useProjectQuery } from "@/features/projects/hooks/useProjects";
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { formatRelativeDate, isTaskOverdue } from "@/lib/utils";
 
 type Tab = "general" | "members" | "comments";
+
+function timeAgo(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value);
+  const diffMs = Date.now() - date.getTime();
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 60) return "hace un momento";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `hace ${min} min`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `hace ${hr} h`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `hace ${day} d`;
+  const wk = Math.floor(day / 7);
+  if (wk < 4) return `hace ${wk} sem`;
+  const month = Math.floor(day / 30);
+  if (month < 12) return `hace ${month} mes${month > 1 ? "es" : ""}`;
+  const yr = Math.floor(day / 365);
+  return `hace ${yr} año${yr > 1 ? "s" : ""}`;
+}
 
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
@@ -23,7 +45,7 @@ export default function ProjectDetailPage() {
   const { user } = useAuth();
   const projectQuery = useProjectQuery(projectId);
   const membersQuery = useProjectMembers(projectId);
-  const commentsQuery = useProjectComments(projectId);
+  const commentsQuery = useProjectComments(projectId, { order: "desc", limit: 1 });
   const tasksQuery = useTasksQuery({ limit: 100 });
   const projectMutations = useProjectMutations();
   const [tab, setTab] = useState<Tab>("general");
@@ -46,6 +68,8 @@ export default function ProjectDetailPage() {
   const activeTasks = projectTasks.filter((task) => task.status === "PENDING" || task.status === "IN_PROGRESS");
   const members = membersQuery.data ?? [];
   const commentsCount = commentsQuery.data?.meta.totalItems ?? 0;
+  const lastComment = commentsQuery.data?.data[0];
+  const activeTab = project.isDefault && tab === "members" ? "general" : tab;
 
   const saveEdit = async () => {
     try {
@@ -78,10 +102,10 @@ export default function ProjectDetailPage() {
         <div className="shrink-0 border-b border-outline-variant bg-surface-container-low px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <span aria-hidden="true" className="h-9 w-9 shrink-0 rounded-lg border border-outline-variant" style={{ backgroundColor: project.color }} />
+              <span aria-hidden="true" className="h-9 w-9 shrink-0 rounded-full border border-black/10" style={{ backgroundColor: project.color }} />
               <div className="min-w-0">
                 <h1 className="truncate font-headline-sm text-headline-sm">{project.name}</h1>
-                <p className="flex items-center gap-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant">
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
                   {project.isDefault ? (
                     <>
                       <Star size={11} className="text-primary" /> Proyecto personal
@@ -90,6 +114,13 @@ export default function ProjectDetailPage() {
                     "Eres el dueño"
                   ) : (
                     "Eres miembro"
+                  )}
+                  {!project.isDefault && members.length > 0 && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <AvatarStack members={members} max={4} size="xs" />
+                      <span>{members.length} {members.length === 1 ? "miembro" : "miembros"}</span>
+                    </>
                   )}
                 </p>
               </div>
@@ -121,14 +152,14 @@ export default function ProjectDetailPage() {
 
         {/* Tabs */}
         <div className="shrink-0 border-b border-outline-variant bg-surface-container-low px-2 pt-2">
-          <div className="flex gap-1 overflow-x-auto">
+          <div className="no-scrollbar flex gap-1 overflow-x-auto">
             {(
               [
-                ["general", "Vista general", FolderKanban],
-                ["members", "Miembros", Users],
-                ["comments", "Comentarios", MessageSquare],
+                { id: "general", label: "Vista general", Icon: FolderKanban },
+                ...(project.isDefault ? [] : [{ id: "members" as const, label: "Miembros", Icon: Users }]),
+                { id: "comments", label: "Conversación", Icon: MessageSquare },
               ] as const
-            ).map(([id, label, Icon]) => (
+            ).map(({ id, label, Icon }) => (
               <button
                 className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 font-label-caps text-label-caps uppercase ${tab === id ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"}`}
                 key={id}
@@ -150,63 +181,128 @@ export default function ProjectDetailPage() {
 
         {/* Contenido */}
         <div className="min-h-0 flex-1 overflow-y-auto p-container-padding">
-          {tab === "general" && (
+          {activeTab === "general" && (
             <div className="mx-auto max-w-3xl space-y-section-gap">
-              <div className="grid grid-cols-1 gap-section-gap sm:grid-cols-3">
-                <div className="border border-outline-variant bg-surface-container-low p-4">
-                  <p className="font-label-caps text-label-caps text-on-surface-variant">TAREAS ACTIVAS</p>
-                  <p className="mt-1 font-headline-md text-headline-md font-bold text-primary">{activeTasks.length}</p>
+              <div className={`grid grid-cols-1 gap-section-gap ${project.isDefault ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+                <div className="flex flex-col gap-2 border border-outline-variant bg-surface-container-low p-4">
+                  <span className="flex items-center justify-between gap-2">
+                    <p className="font-label-caps text-label-caps text-on-surface-variant">TAREAS ACTIVAS</p>
+                    <ListTodo size={14} className="text-primary" />
+                  </span>
+                  <p className="font-headline-md text-headline-md font-bold text-primary">{activeTasks.length}</p>
+                  {projectTasks.length > 0 && (
+                    <div className="mt-auto flex flex-col gap-1">
+                      <div className="h-1.5 w-full overflow-hidden rounded-[2px] border border-outline-variant bg-surface-container-high">
+                        <div className="h-full bg-primary" style={{ width: `${Math.round((projectTasks.filter((task) => task.status === "COMPLETED").length / projectTasks.length) * 100)}%` }} />
+                      </div>
+                      <span className="font-data-mono text-data-mono text-[11px] text-on-surface-variant">
+                        {projectTasks.filter((task) => task.status === "COMPLETED").length}/{projectTasks.length} completadas
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <button className="border border-outline-variant bg-surface-container-low p-4 text-left hover:bg-surface-container-high" onClick={() => setTab("members")} type="button">
-                  <p className="font-label-caps text-label-caps text-on-surface-variant">MIEMBROS</p>
-                  <p className="mt-1 font-headline-md text-headline-md font-bold text-primary">{members.length}</p>
-                </button>
-                <button className="border border-outline-variant bg-surface-container-low p-4 text-left hover:bg-surface-container-high" onClick={() => setTab("comments")} type="button">
-                  <p className="font-label-caps text-label-caps text-on-surface-variant">COMENTARIOS</p>
-                  <p className="mt-1 font-headline-md text-headline-md font-bold text-primary">{commentsCount}</p>
+                {!project.isDefault && (
+                  <button className="flex flex-col gap-2 border border-outline-variant bg-surface-container-low p-4 text-left hover:border-primary/60 hover:bg-surface-container-high" onClick={() => setTab("members")} type="button">
+                    <span className="flex items-center justify-between gap-2">
+                      <p className="font-label-caps text-label-caps text-on-surface-variant">MIEMBROS</p>
+                      <Users size={14} className="text-primary" />
+                    </span>
+                    <p className="font-headline-md text-headline-md font-bold text-primary">{members.length}</p>
+                    {members.length > 0 && <AvatarStack members={members} max={5} size="sm" />}
+                  </button>
+                )}
+                <button className="flex flex-col gap-2 border border-outline-variant bg-surface-container-low p-4 text-left hover:border-primary/60 hover:bg-surface-container-high" onClick={() => setTab("comments")} type="button">
+                  <span className="flex items-center justify-between gap-2">
+                    <p className="font-label-caps text-label-caps text-on-surface-variant">CONVERSACIÓN</p>
+                    <MessageSquare size={14} className="text-primary" />
+                  </span>
+                  {lastComment ? (
+                    <div className="flex flex-col gap-0.5">
+                      <p className="font-headline-sm text-headline-sm font-bold text-primary truncate">
+                        {lastComment.author.name ?? lastComment.author.email}
+                      </p>
+                      <p className="font-body-sm text-body-sm text-on-surface-variant">{timeAgo(lastComment.createdAt)}</p>
+                    </div>
+                  ) : (
+                    <p className="font-headline-md text-headline-md font-bold text-primary">—</p>
+                  )}
+                  {commentsCount > 0 && (
+                    <span className="mt-auto font-body-sm text-body-sm text-on-surface-variant">
+                      {commentsCount} mensaje{commentsCount > 1 ? "s" : ""}
+                    </span>
+                  )}
                 </button>
               </div>
 
               <div className="border border-outline-variant bg-surface p-4">
-                <p className="font-label-caps text-label-caps text-on-surface-variant">PRÓXIMAS TAREAS</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-label-caps text-label-caps text-on-surface-variant">PRÓXIMAS TAREAS</p>
+                  {projectTasks.length > 6 && (
+                    <button className="font-label-caps text-[11px] uppercase tracking-wide text-primary hover:underline" onClick={() => router.push("/tasks")} type="button">
+                      Ver todas
+                    </button>
+                  )}
+                </div>
                 {projectTasks.length === 0 ? (
                   <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">
                     No hay tareas en este proyecto todavía. Crea una desde Planificación y tareas.
                   </p>
                 ) : (
                   <ul className="mt-2 divide-y divide-outline-variant">
-                    {projectTasks.slice(0, 6).map((task) => (
-                      <li key={task.id}>
-                        <button
-                          className="flex w-full items-center gap-2 py-2 text-left font-body-sm text-body-sm hover:text-primary"
-                          onClick={() => router.push(`/tasks?taskId=${encodeURIComponent(task.id)}`)}
-                          type="button"
-                        >
-                          <span className={`h-2 w-2 shrink-0 rounded-full ${task.status === "COMPLETED" ? "bg-primary" : "bg-on-surface-variant"}`} />
-                          <span className={`min-w-0 flex-1 truncate ${task.status === "COMPLETED" ? "text-on-surface-variant line-through" : ""}`}>
-                            {task.title}
-                          </span>
-                          {task.assignee && (
-                            <span className="shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant">
-                              {task.assignee.name ?? task.assignee.email}
+                    {projectTasks.slice(0, 6).map((task) => {
+                      const overdue = isTaskOverdue(task);
+                      return (
+                        <li key={task.id}>
+                          <button
+                            className="flex w-full items-center gap-2.5 py-2.5 text-left font-body-sm text-body-sm hover:bg-surface-container-low"
+                            onClick={() => router.push(`/tasks?taskId=${encodeURIComponent(task.id)}`)}
+                            type="button"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={`h-2 w-2 shrink-0 rounded-full ${task.status === "COMPLETED" ? "bg-primary" : task.status === "IN_PROGRESS" ? "bg-tertiary" : task.status === "CANCELLED" ? "bg-outline" : "bg-on-surface-variant"}`}
+                            />
+                            <span className={`min-w-0 flex-1 truncate ${task.status === "COMPLETED" ? "text-on-surface-variant line-through" : "text-on-surface"}`}>
+                              {task.title}
                             </span>
-                          )}
-                        </button>
-                      </li>
-                    ))}
+                            <PriorityChip priority={task.priority} />
+                            {(task.commentCount ?? 0) > 0 && (
+                              <span className="flex shrink-0 items-center gap-1 font-data-mono text-data-mono text-[11px] text-on-surface-variant" title="Comentarios">
+                                <MessageSquare size={11} /> {task.commentCount}
+                              </span>
+                            )}
+                            {task.dueDate && (
+                              <span className={`flex shrink-0 items-center gap-1 font-data-mono text-data-mono text-[11px] ${overdue ? "text-error" : "text-on-surface-variant"}`}>
+                                <CalendarDays size={11} />
+                                {formatRelativeDate(task.dueDate, true)}
+                              </span>
+                            )}
+                            {task.assignee && (
+                              <Avatar
+                                avatarUrl={task.assignee.avatarUrl}
+                                className="ring-2 ring-surface"
+                                email={task.assignee.email}
+                                name={task.assignee.name}
+                                size="xs"
+                              />
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
             </div>
           )}
 
-          {tab === "members" && (
+          {activeTab === "members" && (
             <div className="mx-auto max-w-2xl">
               <MembersPanel project={project} />
             </div>
           )}
 
-          {tab === "comments" && (
+          {activeTab === "comments" && (
             <div className="mx-auto flex h-full max-w-2xl flex-col">
               <CommentThread kind="project" id={project.id} />
             </div>

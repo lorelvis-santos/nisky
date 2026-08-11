@@ -48,3 +48,13 @@ export async function assertNoteAccess(userId: string, noteId: string): Promise<
   if (note.userId === userId) return;
   throw new AppError("FORBIDDEN", "No tienes acceso a esta nota");
 }
+
+export async function getProjectAudience(projectId: string): Promise<string[]> {
+  const [project, members] = await Promise.all([
+    prisma.project.findUnique({ where: { id: projectId }, select: { userId: true } }),
+    prisma.projectMember.findMany({ where: { projectId }, select: { userId: true } }),
+  ]);
+  const ids = members.map((member) => member.userId);
+  if (project?.userId) ids.push(project.userId);
+  return [...new Set(ids)];
+}

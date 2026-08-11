@@ -1,3 +1,4 @@
+import type { Prisma } from "../../infra/prisma/generated/prisma/client";
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { pushService } from "../push/push.service";
@@ -102,11 +103,19 @@ export class ProjectService {
   }
 
   async listUserProjects(userId: string) {
+    const projectInclude = {
+      _count: { select: { tasks: { where: { archivedAt: null } } } },
+      members: {
+        take: 4,
+        include: { user: { select: { id: true, email: true, name: true, avatarUrl: true } } },
+        orderBy: [{ role: "desc" }, { createdAt: "asc" }],
+      },
+    } satisfies Prisma.ProjectInclude;
     const [owned, memberships] = await Promise.all([
-      prisma.project.findMany({ where: { userId }, orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }] }),
+      prisma.project.findMany({ where: { userId }, include: projectInclude, orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }] }),
       prisma.projectMember.findMany({
         where: { userId },
-        include: { project: true },
+        include: { project: { include: projectInclude } },
         orderBy: { createdAt: "asc" },
       }),
     ]);
@@ -243,6 +252,8 @@ export class ProjectService {
 
   async removeMember(userId: string, projectId: string, memberId: string) {
     await assertProjectOwner(userId, projectId);
+    const project = await prisma.project.findFirst({ where: { id: projectId }, select: { isDefault: true } });
+    if (project?.isDefault) throw new AppError("FORBIDDEN", "El proyecto por defecto es personal y no tiene miembros");
     const member = await prisma.projectMember.findFirst({
       where: { id: memberId, projectId },
     });
@@ -250,6 +261,7 @@ export class ProjectService {
     if (member.userId === userId) throw new AppError("FORBIDDEN", "No puedes eliminarte a ti mismo");
     await prisma.$transaction([
       prisma.task.updateMany({ where: { projectId, assigneeId: member.userId }, data: { assigneeId: null } }),
+      prisma.task.updateMany({ where: { projectId, userId: member.userId }, data: { userId } }),
       prisma.projectMember.delete({ where: { id: member.id } }),
     ]);
     return { success: true };
@@ -257,6 +269,8 @@ export class ProjectService {
 
   async updateMemberRole(userId: string, projectId: string, memberId: string, role: "OWNER" | "MEMBER") {
     await assertProjectOwner(userId, projectId);
+    const project = await prisma.project.findFirst({ where: { id: projectId }, select: { isDefault: true } });
+    if (project?.isDefault) throw new AppError("FORBIDDEN", "El proyecto por defecto es personal y no tiene miembros");
     const member = await prisma.projectMember.findFirst({
       where: { id: memberId, projectId },
     });

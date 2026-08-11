@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createComment, deleteComment, listProjectComments, listTaskComments, updateComment } from "../api";
 
-export function useProjectComments(projectId: string | null, params: { page?: number; limit?: number } = {}) {
+export function useProjectComments(projectId: string | null, params: { page?: number; limit?: number; order?: "asc" | "desc" } = {}) {
   return useQuery({
     queryKey: ["comments", "project", projectId, params],
     queryFn: () => listProjectComments(projectId as string, params),
@@ -9,7 +9,7 @@ export function useProjectComments(projectId: string | null, params: { page?: nu
   });
 }
 
-export function useTaskComments(taskId: string | null, params: { page?: number; limit?: number } = {}) {
+export function useTaskComments(taskId: string | null, params: { page?: number; limit?: number; order?: "asc" | "desc" } = {}) {
   return useQuery({
     queryKey: ["comments", "task", taskId, params],
     queryFn: () => listTaskComments(taskId as string, params),

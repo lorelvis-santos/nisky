@@ -2,12 +2,12 @@ import { api } from "@/lib/api";
 import type { ApiResponse } from "@/types/api.types";
 import type { Comment, Paginated } from "@/types/entities";
 
-export async function listProjectComments(projectId: string, params: { page?: number; limit?: number } = {}) {
+export async function listProjectComments(projectId: string, params: { page?: number; limit?: number; order?: "asc" | "desc" } = {}) {
   const { data } = await api.get<ApiResponse<Paginated<Comment>>>(`/projects/${projectId}/comments`, { params });
   return data.data as Paginated<Comment>;
 }
 
-export async function listTaskComments(taskId: string, params: { page?: number; limit?: number } = {}) {
+export async function listTaskComments(taskId: string, params: { page?: number; limit?: number; order?: "asc" | "desc" } = {}) {
   const { data } = await api.get<ApiResponse<Paginated<Comment>>>(`/tasks/${taskId}/comments`, { params });
   return data.data as Paginated<Comment>;
 }

@@ -3,10 +3,28 @@
 import { Mail, ShieldCheck, UserMinus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Avatar } from "@/components/ui/Avatar";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthProvider";
-import type { Project, ProjectMember } from "@/types/entities";
+import { cn } from "@/lib/utils";
+import type { Project } from "@/types/entities";
 import { useProjectMemberMutations, useProjectMembers } from "../hooks/useProjects";
+
+function MembersSkeleton() {
+  return (
+    <div aria-hidden="true" className="space-y-2">
+      {[0, 1, 2].map((row) => (
+        <div className="flex items-center gap-3 px-2 py-2.5" key={row}>
+          <span className="h-8 w-8 shrink-0 animate-pulse rounded-full border border-outline-variant bg-surface-container-high" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <span className="block h-2.5 w-1/3 animate-pulse rounded-sm bg-surface-container-high" />
+            <span className="block h-2.5 w-1/2 animate-pulse rounded-sm bg-surface-container-high" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function MembersPanel({ project }: { project: Project }) {
   const { user } = useAuth();
@@ -14,9 +32,11 @@ export function MembersPanel({ project }: { project: Project }) {
   const mutations = useProjectMemberMutations(project.id);
   const [email, setEmail] = useState("");
   const [confirmTransferId, setConfirmTransferId] = useState<string | null>(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const isOwner = user?.id === project.userId;
   const members = membersQuery.data ?? [];
   const transferTarget = members.find((member) => member.id === confirmTransferId) ?? null;
+  const removeTarget = members.find((member) => member.id === confirmRemoveId) ?? null;
 
   const invite = async () => {
     const trimmed = email.trim();
@@ -33,6 +53,7 @@ export function MembersPanel({ project }: { project: Project }) {
   const remove = async (memberId: string) => {
     try {
       await mutations.remove.mutateAsync(memberId);
+      setConfirmRemoveId(null);
       toast.success("Miembro eliminado");
     } catch {
       toast.error("Ups, no pudimos eliminar al miembro.");
@@ -50,67 +71,82 @@ export function MembersPanel({ project }: { project: Project }) {
   };
 
   return (
-    <div className="space-y-2">
-      <p className="font-label-caps text-label-caps text-on-surface-variant">MIEMBROS</p>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-label-caps text-label-caps text-on-surface-variant">MIEMBROS</p>
+        {!membersQuery.isLoading && members.length > 0 && (
+          <span className="font-data-mono text-data-mono text-[11px] text-on-surface-variant">{members.length}</span>
+        )}
+      </div>
+
       {membersQuery.isLoading ? (
-        <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando miembros...</p>
+        <MembersSkeleton />
       ) : (
         <div className="divide-y divide-outline-variant">
           {members.map((member) => {
             const isSelf = member.userId === user?.id;
+            const canManage = isOwner && !isSelf;
             return (
-              <div className="flex items-center gap-2 py-2" key={member.id}>
-                {member.user.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img alt={member.user.name ?? member.user.email} className="h-6 w-6 shrink-0 rounded-full border border-outline-variant object-cover" src={member.user.avatarUrl} />
-                ) : (
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-outline-variant bg-surface-container-high font-data-mono text-data-mono text-xs text-primary">
-                    {(member.user.name ?? member.user.email).charAt(0).toUpperCase()}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-2 py-2.5 -mx-2 hover:bg-surface-container-low" key={member.id}>
+                <Avatar avatarUrl={member.user.avatarUrl} email={member.user.email} name={member.user.name} size="md" />
+                <span className="min-w-0 flex-1 basis-40">
+                  <span className="block truncate font-body-sm text-body-sm text-on-surface">
+                    {member.user.name ?? member.user.email}
+                    {isSelf && <span className="ml-1 font-label-caps text-[10px] uppercase tracking-wide text-on-surface-variant">· tú</span>}
                   </span>
-                )}
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-body-sm text-body-sm text-on-surface">{member.user.name ?? member.user.email}</span>
                   <span className="block truncate font-data-mono text-data-mono text-[11px] text-on-surface-variant">
-                    {member.user.email}{isSelf ? " · tú" : ""}
+                    {member.user.email}
                   </span>
                 </span>
-                <span className="flex shrink-0 items-center gap-1">
-                  <span className={`font-data-mono text-data-mono text-[11px] ${member.role === "OWNER" ? "text-primary" : "text-on-surface-variant"}`}>
-                    {member.role === "OWNER" ? "Dueño" : "Miembro"}
-                  </span>
-                  {isOwner && !isSelf && member.role === "MEMBER" && (
-                    <button
-                      aria-label={`Hacer dueño a ${member.user.name ?? member.user.email}`}
-                      className="p-1 text-on-surface-variant hover:text-primary"
-                      onClick={() => setConfirmTransferId(member.id)}
-                      title="Transferir propiedad"
-                      type="button"
-                    >
-                      <ShieldCheck size={14} />
-                    </button>
+
+                <span
+                  className={cn(
+                    "inline-flex shrink-0 items-center rounded-[2px] border px-1.5 py-0.5 font-label-caps text-[11px] uppercase tracking-wide",
+                    member.role === "OWNER"
+                      ? "border-primary/25 bg-primary-fixed/50 text-primary"
+                      : "border-outline-variant bg-surface-container-high text-on-surface-variant",
                   )}
-                  {isOwner && !isSelf && (
+                >
+                  {member.role === "OWNER" ? "Dueño" : "Miembro"}
+                </span>
+
+                {canManage && (
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    {member.role === "MEMBER" && (
+                      <button
+                        aria-label={`Hacer dueño a ${member.user.name ?? member.user.email}`}
+                        className="flex h-9 items-center gap-1.5 border border-outline-variant px-2.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+                        onClick={() => setConfirmTransferId(member.id)}
+                        title="Transferir propiedad"
+                        type="button"
+                      >
+                        <ShieldCheck size={15} />
+                        <span className="hidden sm:inline">Transferir</span>
+                      </button>
+                    )}
                     <button
                       aria-label={`Eliminar a ${member.user.name ?? member.user.email}`}
-                      className="p-1 text-on-surface-variant hover:text-error"
-                      onClick={() => void remove(member.id)}
+                      className="flex h-9 items-center gap-1.5 border border-outline-variant px-2.5 font-body-sm text-body-sm text-on-surface-variant hover:border-error/50 hover:bg-surface-container-high hover:text-error"
+                      onClick={() => setConfirmRemoveId(member.id)}
                       title="Eliminar miembro"
                       type="button"
                     >
-                      <UserMinus size={14} />
+                      <UserMinus size={15} />
+                      <span className="hidden sm:inline">Eliminar</span>
                     </button>
-                  )}
-                </span>
+                  </span>
+                )}
               </div>
             );
           })}
         </div>
       )}
+
       {isOwner && (
         <div className="flex gap-2 pt-1">
           <input
             aria-label="Email del nuevo miembro"
-            className="field h-8 min-w-0 flex-1"
+            className="field h-9 min-w-0 flex-1"
             onChange={(event) => setEmail(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") void invite();
@@ -120,14 +156,30 @@ export function MembersPanel({ project }: { project: Project }) {
             value={email}
           />
           <button
-            className="flex items-center gap-1 border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:opacity-50"
+            className="flex h-9 shrink-0 items-center gap-1.5 border border-outline-variant px-2.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:opacity-50"
             disabled={!email.trim()}
             onClick={() => void invite()}
             type="button"
           >
-            <Mail size={13} /> Invitar
+            <Mail size={15} /> Invitar
           </button>
         </div>
+      )}
+
+      {confirmRemoveId && removeTarget && (
+        <ConfirmModal
+          confirmLabel="Eliminar"
+          danger
+          loading={mutations.remove.isPending}
+          message={
+            <>
+              ¿Eliminar a <strong>{removeTarget.user.name ?? removeTarget.user.email}</strong> de <strong>{project.name}</strong>? Perderá el acceso al proyecto y a sus tareas y comentarios. Podrás volver a invitarlo en cualquier momento.
+            </>
+          }
+          onClose={() => setConfirmRemoveId(null)}
+          onConfirm={() => void remove(removeTarget.id)}
+          title="¿Eliminar miembro?"
+        />
       )}
 
       {confirmTransferId && transferTarget && (

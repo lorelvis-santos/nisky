@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
+import { Avatar } from "@/components/ui/Avatar";
 import { useAuth } from "@/context/AuthProvider";
 import type { User } from "@/types/entities";
 
@@ -109,13 +110,16 @@ export function Sidebar({
             <X size={20} />
           </button>
         </div>
-        <div className="border-b border-outline-variant px-container-padding py-3">
-          <p className="truncate font-body-md text-body-md font-semibold">
-            {user?.name ?? "Usuario"}
-          </p>
-          <p className="truncate font-data-mono text-data-mono text-on-surface-variant">
-            {user?.email}
-          </p>
+        <div className="flex items-center gap-element-gap-md border-b border-outline-variant px-container-padding py-3">
+          <Avatar avatarUrl={user?.avatarUrl} email={user?.email} name={user?.name} size="md" />
+          <div className="min-w-0">
+            <p className="truncate font-body-md text-body-md font-semibold">
+              {user?.name ?? "Usuario"}
+            </p>
+            <p className="truncate font-data-mono text-data-mono text-on-surface-variant">
+              {user?.email}
+            </p>
+          </div>
         </div>
         <nav className="flex flex-1 flex-col gap-element-gap-xs overflow-y-auto py-element-gap-md">
           {primaryItems.map((item) => (
@@ -148,7 +152,7 @@ export function Sidebar({
             <span className="font-body-sm text-body-sm">Cerrar sesión</span>
           </button>
         </div>
-        <div className="border-t border-outline-variant px-container-padding py-4">
+        <div className="border-t border-outline-variant py-4 pl-0 pr-container-padding">
           <Image
             alt="Las"
             className="h-10 w-full object-contain"

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { AuthProvider } from "@/context/AuthProvider";
 import { PomodoroProvider } from "@/context/PomodoroProvider";
+import { RealtimeSync } from "@/features/realtime/RealtimeSync";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -12,7 +13,10 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider><PomodoroProvider>{children}</PomodoroProvider></AuthProvider>
+      <AuthProvider>
+        <RealtimeSync />
+        <PomodoroProvider>{children}</PomodoroProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

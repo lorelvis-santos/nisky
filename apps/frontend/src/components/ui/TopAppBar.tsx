@@ -1,11 +1,13 @@
 "use client";
 
-import { AlarmClock, Bell, CalendarClock, ChevronRight, History, ListTodo, Menu, Pause, Play, Square, StickyNote, UserCircle, X } from "lucide-react";
+import { AlarmClock, Bell, CalendarClock, ChevronRight, ListTodo, LogOut, Menu, Pause, Play, Settings, Square, StickyNote, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatPomodoroTime, usePomodoro } from "@/context/PomodoroProvider";
+import { useAuth } from "@/context/AuthProvider";
+import { Avatar } from "@/components/ui/Avatar";
 import { useRemindersQuery, usePendingRemindersQuery } from "@/features/reminders/hooks/useReminders";
 import { InvitationsPanel } from "@/features/projects/components/InvitationsPanel";
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
@@ -29,7 +31,9 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   const pathname = usePathname();
   const router = useRouter();
   const pomodoro = usePomodoro();
+  const { user, logout } = useAuth();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const remindersQuery = useRemindersQuery();
   const pendingQuery = usePendingRemindersQuery();
   const tasksQuery = useTasksQuery({ limit: 100, sort: "dueDate", order: "asc" });
@@ -77,8 +81,25 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
           </button>
           {notificationsOpen && <NotificationPanel notices={notices} onClose={() => setNotificationsOpen(false)} onOpen={(url, kind) => { setNotificationsOpen(false); if (kind === "pending") { window.dispatchEvent(new CustomEvent(OPEN_PENDING_EVENT)); return; } router.push(url); }} />}
         </div>
-        <button aria-label="Historial" className="hidden p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary sm:block" type="button"><History size={19} /></button>
-        <button aria-label="Perfil" className="p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => router.push("/settings")} type="button"><UserCircle size={20} /></button>
+        <div className="relative">
+          <button aria-expanded={profileOpen} aria-label="Perfil" className="rounded-full p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setProfileOpen((open) => !open)} type="button"><Avatar avatarUrl={user?.avatarUrl} email={user?.email} name={user?.name} size="sm" /></button>
+          {profileOpen && (
+            <>
+              <button aria-label="Cerrar menú de perfil" className="fixed inset-0 z-40 cursor-default" onClick={() => setProfileOpen(false)} type="button" />
+              <div className="fixed inset-x-4 top-14 z-50 border border-outline-variant bg-surface-container-lowest p-3 text-left sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-56">
+                <div className="flex items-center gap-3 border-b border-outline-variant pb-3">
+                  <Avatar avatarUrl={user?.avatarUrl} email={user?.email} name={user?.name} size="md" />
+                  <div className="min-w-0">
+                    <p className="truncate font-body-md text-body-md font-semibold">{user?.name ?? "Usuario"}</p>
+                    <p className="truncate font-data-mono text-data-mono text-xs text-on-surface-variant">{user?.email}</p>
+                  </div>
+                </div>
+                <button className="mt-2 flex w-full items-center gap-2 py-2 font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low hover:text-primary" onClick={() => { setProfileOpen(false); router.push("/settings"); }} type="button"><Settings size={16} /> Ajustes</button>
+                <button className="flex w-full items-center gap-2 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-error" onClick={() => { setProfileOpen(false); void logout(); }} type="button"><LogOut size={16} /> Cerrar sesión</button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

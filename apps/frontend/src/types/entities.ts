@@ -41,6 +41,8 @@ export interface Project {
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
+  members?: ProjectMember[];
+  _count?: { tasks: number };
 }
 
 export type ProjectRole = "OWNER" | "MEMBER";
@@ -146,6 +148,8 @@ export interface Task {
   subtaskCount?: number;
   completedSubtasks?: number;
   subtasks?: Subtask[];
+  commentCount?: number;
+  project?: { id: string; name: string; color: string } | null;
   createdAt: string;
   updatedAt: string;
 }

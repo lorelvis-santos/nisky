@@ -1,23 +1,34 @@
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { buildPaginatedResponse, getPaginationArgs } from "../../utils/pagination/handler";
-import { assertProjectAccess, assertTaskAccess } from "../projects/access";
+import { assertProjectAccess, assertTaskAccess, getProjectAudience } from "../projects/access";
 import { pushService } from "../push/push.service";
+import { emitToUsers } from "../../config/socket.emit";
 
 const COMMENT_AUTHOR_SELECT = { id: true, email: true, name: true, avatarUrl: true };
 
 export class CommentService {
-  async listProjectComments(userId: string, projectId: string, query: { page?: number; limit?: number }) {
+  private async emitCommentsChanged(projectId: string | null, taskId: string | null): Promise<void> {
+    let resolvedProjectId = projectId;
+    if (!resolvedProjectId && taskId) {
+      const task = await prisma.task.findUnique({ where: { id: taskId }, select: { projectId: true } });
+      resolvedProjectId = task?.projectId ?? null;
+    }
+    if (!resolvedProjectId) return;
+    emitToUsers(await getProjectAudience(resolvedProjectId), "comments");
+  }
+  async listProjectComments(userId: string, projectId: string, query: { page?: number; limit?: number; order?: "asc" | "desc" }) {
     await assertProjectAccess(userId, projectId);
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
+    const order = query.order === "desc" ? "desc" : "asc";
     const { skip, take } = getPaginationArgs(page, limit);
     const where = { projectId };
 
     const [data, totalItems] = await Promise.all([
       prisma.comment.findMany({
         where,
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: order },
         skip,
         take,
         include: { author: { select: COMMENT_AUTHOR_SELECT } },
@@ -34,20 +45,22 @@ export class CommentService {
       include: { author: { select: COMMENT_AUTHOR_SELECT } },
     });
     await this.notifyProjectMembers(projectId, userId, comment);
+    emitToUsers(await getProjectAudience(projectId), "comments");
     return comment;
   }
 
-  async listTaskComments(userId: string, taskId: string, query: { page?: number; limit?: number }) {
+  async listTaskComments(userId: string, taskId: string, query: { page?: number; limit?: number; order?: "asc" | "desc" }) {
     await assertTaskAccess(userId, taskId);
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
+    const order = query.order === "desc" ? "desc" : "asc";
     const { skip, take } = getPaginationArgs(page, limit);
     const where = { taskId };
 
     const [data, totalItems] = await Promise.all([
       prisma.comment.findMany({
         where,
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: order },
         skip,
         take,
         include: { author: { select: COMMENT_AUTHOR_SELECT } },
@@ -66,28 +79,32 @@ export class CommentService {
     const task = await prisma.task.findUnique({ where: { id: taskId }, select: { projectId: true } });
     if (task?.projectId) {
       await this.notifyProjectMembers(task.projectId, userId, comment, taskId);
+      emitToUsers(await getProjectAudience(task.projectId), "comments");
     }
     return comment;
   }
 
   async updateComment(userId: string, id: string, body: string) {
-    const comment = await prisma.comment.findUnique({ where: { id }, select: { authorId: true } });
+    const comment = await prisma.comment.findUnique({ where: { id }, select: { authorId: true, projectId: true, taskId: true } });
     if (!comment) throw new AppError("NOT_FOUND", "Comentario no encontrado");
     if (comment.authorId !== userId) throw new AppError("FORBIDDEN", "No puedes editar este comentario");
 
-    return prisma.comment.update({
+    const updated = await prisma.comment.update({
       where: { id },
       data: { body },
       include: { author: { select: COMMENT_AUTHOR_SELECT } },
     });
+    await this.emitCommentsChanged(comment.projectId, comment.taskId);
+    return updated;
   }
 
   async deleteComment(userId: string, id: string) {
-    const comment = await prisma.comment.findUnique({ where: { id }, select: { authorId: true } });
+    const comment = await prisma.comment.findUnique({ where: { id }, select: { authorId: true, projectId: true, taskId: true } });
     if (!comment) throw new AppError("NOT_FOUND", "Comentario no encontrado");
     if (comment.authorId !== userId) throw new AppError("FORBIDDEN", "No puedes borrar este comentario");
 
     await prisma.comment.delete({ where: { id } });
+    await this.emitCommentsChanged(comment.projectId, comment.taskId);
     return { success: true };
   }
 

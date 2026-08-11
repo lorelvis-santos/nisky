@@ -2,6 +2,8 @@ import cron from "node-cron";
 import { DateTime } from "luxon";
 import { prisma } from "../infra/prisma/client";
 import { nextOccurrence } from "../utils/recurrence";
+import { getProjectAudience } from "../modules/projects/access";
+import { emitToUsers } from "../config/socket.emit";
 
 const TZ = "America/Santo_Domingo";
 
@@ -46,7 +48,7 @@ export async function processRecurringTasks() {
     });
     if (existing) continue;
 
-    await prisma.task.create({
+    const created = await prisma.task.create({
       data: {
         userId: task.userId,
         title: task.title,
@@ -65,6 +67,11 @@ export async function processRecurringTasks() {
         recurrenceParentId: templateId,
       },
     });
+    const audience = [created.userId];
+    if (created.projectId) {
+      audience.push(...(await getProjectAudience(created.projectId)));
+    }
+    emitToUsers([...new Set(audience)], "tasks");
   }
 }
 

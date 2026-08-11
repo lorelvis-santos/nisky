@@ -1,12 +1,14 @@
 "use client";
 
-import { Check, FolderKanban, Plus, Star, Users, X } from "lucide-react";
+import { Check, FolderKanban, ListTodo, Plus, Star, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AvatarStack } from "@/components/ui/Avatar";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { useAuth } from "@/context/AuthProvider";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { formatCreatedAt } from "@/lib/utils";
 import { useAccessibleProjects, useProjectMutations } from "@/features/projects/hooks/useProjects";
 
 export default function ProjectsPage() {
@@ -26,35 +28,53 @@ export default function ProjectsPage() {
       </p>
     ) : (
       <div className="grid grid-cols-1 gap-section-gap sm:grid-cols-2 xl:grid-cols-3">
-        {items.map((project) => (
-          <Link
-            className="group flex flex-col border border-outline-variant bg-surface p-section-gap hover:bg-surface-container-low"
-            href={`/projects/${project.id}`}
-            key={project.id}
-          >
-            <div className="flex items-center gap-2">
-              <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: project.color }} />
-              <span className="min-w-0 flex-1 truncate font-body-md text-body-md font-medium group-hover:text-primary">
-                {project.name}
-              </span>
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2 font-data-mono text-data-mono text-xs text-on-surface-variant">
-              {project.isDefault ? (
-                <span className="flex items-center gap-1 text-primary">
-                  <Star size={11} /> Predeterminado
+        {items.map((project) => {
+          const isShared = project.userId !== user?.id;
+          const memberUsers = project.members ?? [];
+          const people = memberUsers.some((member) => member.user.id === user?.id)
+            ? memberUsers
+            : [{ user: { id: user?.id ?? "", email: user?.email ?? "", name: user?.name ?? null, avatarUrl: user?.avatarUrl ?? null } }, ...memberUsers];
+          const taskCount = project._count?.tasks ?? 0;
+          return (
+            <Link
+              className="group flex flex-col gap-3 border border-outline-variant bg-surface p-section-gap transition-colors hover:border-primary/60 hover:bg-surface-container-low"
+              href={`/projects/${project.id}`}
+              key={project.id}
+            >
+              <div className="flex items-center gap-2">
+                <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-full border border-black/10" style={{ backgroundColor: project.color }} />
+                <span className="min-w-0 flex-1 truncate font-body-md text-body-md font-medium group-hover:text-primary">
+                  {project.name}
                 </span>
-              ) : project.userId === user?.id ? (
-                <span className="flex items-center gap-1">
-                  <Users size={11} /> Propio
+                {project.isDefault ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 border border-primary/25 bg-primary-fixed/50 px-1.5 py-0.5 font-label-caps text-[10px] uppercase tracking-wide text-primary">
+                    <Star size={10} /> Predeterminado
+                  </span>
+                ) : isShared ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 border border-secondary-container bg-secondary-container/60 px-1.5 py-0.5 font-label-caps text-[10px] uppercase tracking-wide text-on-secondary-container">
+                    <Users size={10} /> Compartido
+                  </span>
+                ) : (
+                  <span className="inline-flex shrink-0 items-center gap-1 border border-outline-variant bg-surface-container-high px-1.5 py-0.5 font-label-caps text-[10px] uppercase tracking-wide text-on-surface-variant">
+                    Propio
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-auto flex items-center justify-between gap-2">
+                <AvatarStack members={people} max={3} size="sm" />
+                <span className="flex shrink-0 items-center gap-3 font-data-mono text-data-mono text-[11px] text-on-surface-variant">
+                  <span className="flex items-center gap-1" title="Tareas activas">
+                    <ListTodo size={12} /> {taskCount}
+                  </span>
+                  <span className="hidden sm:inline" title="Creado el">
+                    {formatCreatedAt(project.createdAt)}
+                  </span>
                 </span>
-              ) : (
-                <span className="flex items-center gap-1 text-primary">
-                  <Users size={11} /> Compartido contigo
-                </span>
-              )}
-            </div>
-          </Link>
-        ))}
+              </div>
+            </Link>
+          );
+        })}
       </div>
     );
 

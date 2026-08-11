@@ -340,6 +340,8 @@ export interface HomeOverview {
   urgentTasks: Task[];
   futureTasks: (Task & { project: Project | null })[];
   futureBlocks: TimeBlockWithProject[];
+  nextBlock: TimeBlockWithProject | null;
+  nextBlockStart: string | null;
   weekly: HomeWeeklyStats;
 }
 

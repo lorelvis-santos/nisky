@@ -57,6 +57,15 @@ export function formatCreatedAt(value: string | Date) {
   }).format(date);
 }
 
+export function formatShortDate(value: string | Date) {
+  const date = value instanceof Date ? value : new Date(value);
+  return new Intl.DateTimeFormat("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
 export function isTaskOverdue(task: { dueDate: string | null; status: string }) {
   if (!task.dueDate || task.status === "COMPLETED" || task.status === "CANCELLED") return false;
   const dueDate = calendarDate(task.dueDate);

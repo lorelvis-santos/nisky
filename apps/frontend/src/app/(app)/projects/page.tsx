@@ -8,7 +8,7 @@ import { AvatarStack } from "@/components/ui/Avatar";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { useAuth } from "@/context/AuthProvider";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
-import { formatCreatedAt } from "@/lib/utils";
+import { formatShortDate } from "@/lib/utils";
 import { useAccessibleProjects, useProjectMutations } from "@/features/projects/hooks/useProjects";
 
 export default function ProjectsPage() {
@@ -72,8 +72,8 @@ export default function ProjectsPage() {
                   <span className="flex items-center gap-1" title="Tareas activas">
                     <ListTodo size={12} /> {taskCount}
                   </span>
-                  <span className="hidden sm:inline" title="Creado el">
-                    {formatCreatedAt(project.createdAt)}
+                  <span title="Creado el">
+                    {formatShortDate(project.createdAt)}
                   </span>
                 </span>
               </div>

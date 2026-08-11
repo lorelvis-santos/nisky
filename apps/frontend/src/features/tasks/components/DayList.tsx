@@ -5,9 +5,10 @@ import type { Task } from "@/types/entities";
 import { dateKey } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { SortableTaskCard, TaskCardShell } from "./TaskCard";
+import { SortableBacklogItem } from "./BacklogItem";
+import { SortableTaskCard } from "./TaskCard";
 import { DroppableColumn } from "../dnd/DroppableColumn";
-import { dayContainerId, taskDragId, useTasksDnd } from "../dnd/TasksDnDProvider";
+import { OVERDUE_CONTAINER, dayContainerId, taskDragId, useTasksDnd } from "../dnd/TasksDnDProvider";
 
 const dayNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
 
@@ -43,6 +44,8 @@ export function DayList({
   const overdueTasks = tasks
     .filter((task) => task.status !== "COMPLETED" && task.status !== "CANCELLED" && task.dueDate && dateKey(task.dueDate) < today)
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.order - b.order);
+  const overdueIds = overdueTasks.map((task) => taskDragId(task.id));
+  const isOverdueHighlight = overContainerId === OVERDUE_CONTAINER;
 
   const visibleDays = (currentWeek
     ? [weekDays.find((day) => dateKey(day) === today)!, ...weekDays.filter((day) => dateKey(day) > today)]
@@ -61,17 +64,26 @@ export function DayList({
               Vencidas ({overdueTasks.length})
             </span>
           </header>
-          <div className="flex flex-col gap-3 border border-outline-variant bg-surface-container-lowest p-3">
-            {overdueTasks.map((task) => (
-              <TaskCardShell
-                key={task.id}
-                onOpen={() => onOpen(task)}
-                onStartPomodoro={() => onStartPomodoro(task)}
-                onToggle={() => onToggle(task)}
-                task={task}
-              />
-            ))}
-          </div>
+          <DroppableColumn
+            className={cn(
+              "flex flex-col gap-3 border border-outline-variant bg-surface-container-lowest p-3",
+              isOverdueHighlight && "border-2 border-dashed border-primary bg-primary-container/10",
+            )}
+            highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
+            id={OVERDUE_CONTAINER}
+          >
+            <SortableContext items={overdueIds} strategy={verticalListSortingStrategy}>
+              {overdueTasks.map((task) => (
+                <SortableBacklogItem
+                  key={task.id}
+                  onOpen={() => onOpen(task)}
+                  onStartPomodoro={() => onStartPomodoro(task)}
+                  onToggle={() => onToggle(task)}
+                  task={task}
+                />
+              ))}
+            </SortableContext>
+          </DroppableColumn>
         </section>
       )}
       {visibleDays.map((day) => {

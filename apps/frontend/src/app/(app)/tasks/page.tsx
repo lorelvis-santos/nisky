@@ -13,6 +13,7 @@ import { DayList } from "@/features/tasks/components/DayList";
 import { MobileBacklog } from "@/features/tasks/components/MobileBacklog";
 import { MonthDayModal } from "@/features/tasks/components/MonthDayModal";
 import { MonthlyCalendar } from "@/features/tasks/components/MonthlyCalendar";
+import { OverduePanel } from "@/features/tasks/components/OverduePanel";
 import { PeriodNav } from "@/features/tasks/components/PeriodNav";
 import { TaskList } from "@/features/tasks/components/TaskList";
 import {
@@ -31,6 +32,7 @@ import {
 } from "@/features/projects/hooks/useProjects";
 import {
   BACKLOG_CONTAINER,
+  OVERDUE_CONTAINER,
   TasksDnDProvider,
   dayKeyFromContainerId,
 } from "@/features/tasks/dnd/TasksDnDProvider";
@@ -225,6 +227,25 @@ function TasksPageContent() {
     return counts;
   }, [allTasks]);
   const backlog = useMemo(() => tasks.filter((task) => !task.dueDate), [tasks]);
+  const todayKey = localDateKey(new Date());
+  const overdueTasks = useMemo(
+    () =>
+      tasks
+        .filter(
+          (task) =>
+            task.status !== "COMPLETED" &&
+            task.status !== "CANCELLED" &&
+            task.dueDate &&
+            dateKey(task.dueDate) < todayKey,
+        )
+        .sort(
+          (a, b) =>
+            (a.dueDate ?? "").localeCompare(b.dueDate ?? "") ||
+            a.order - b.order ||
+            a.createdAt.localeCompare(b.createdAt),
+        ),
+    [tasks, todayKey],
+  );
   const selectedTasks = useMemo(
     () => tasks.filter((task) => selection.selectedIds.has(task.id)),
     [tasks, selection.selectedIds],
@@ -368,7 +389,9 @@ function TasksPageContent() {
   };
 
   const handleReorderDispatch = (containerId: string, taskIds: string[]) => {
-    if (containerId === BACKLOG_CONTAINER) return handleReorderBacklog(taskIds);
+    if (containerId === BACKLOG_CONTAINER || containerId === OVERDUE_CONTAINER) {
+      return handleReorderBacklog(taskIds);
+    }
     return handleReorder(dayKeyFromContainerId(containerId), taskIds);
   };
 
@@ -692,6 +715,14 @@ function TasksPageContent() {
               <div className="min-h-0 min-w-0 flex-1 lg:flex">
                 {view === "week" ? (
                   <>
+                    {overdueTasks.length > 0 && (
+                      <OverduePanel
+                        onOpen={openEdit}
+                        onStartPomodoro={openFocus}
+                        onToggle={(task) => void toggleTask(task)}
+                        tasks={overdueTasks}
+                      />
+                    )}
                     <WeeklyGrid
                       onOpen={openEdit}
                       onStartPomodoro={openFocus}

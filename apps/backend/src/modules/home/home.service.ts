@@ -2,6 +2,7 @@ import type { Prisma } from "../../infra/prisma/generated/prisma/client";
 import { DateTime } from "luxon";
 import { prisma } from "../../infra/prisma/client";
 import { computeStreak, dateKey, localDateKey } from "../habits/habit-stats";
+import { mondayInTz, weeksBetween } from "../../utils/recurrence";
 
 const TZ = "America/Santo_Domingo";
 
@@ -26,6 +27,50 @@ function dayKey(value: Date) {
   return DateTime.fromJSDate(value).setZone(TZ).toISODate()!;
 }
 
+type BlockCandidate = {
+  id: string;
+  startMin: number;
+  endMin: number;
+  daysOfWeek: number[];
+  repeatEveryWeeks: number;
+  repeatEndsAt: Date | null;
+  createdAt: Date;
+};
+
+function blockAppliesOn(block: BlockCandidate, day: DateTime) {
+  const dow = toDowIndex(day);
+  if (!block.daysOfWeek.includes(dow)) return false;
+  const dayUtc = day.toUTC().toJSDate();
+  if (block.repeatEndsAt && mondayInTz(dayUtc, TZ) > mondayInTz(block.repeatEndsAt, TZ)) return false;
+  if (block.repeatEveryWeeks > 1) {
+    const weeks = weeksBetween(block.createdAt, dayUtc, TZ);
+    if (weeks % block.repeatEveryWeeks !== 0) return false;
+  }
+  return true;
+}
+
+function nextBlockOccurrence(blocks: Array<BlockCandidate & { project?: unknown }>, now: DateTime) {
+  let best: BlockCandidate | null = null;
+  let bestDay: DateTime | null = null;
+  for (let offset = 0; offset < 30; offset += 1) {
+    const day = now.plus({ days: offset }).startOf("day");
+    for (const block of blocks) {
+      if (!blockAppliesOn(block, day)) continue;
+      if (offset === 0 && block.startMin <= now.hour * 60 + now.minute) continue;
+      if (!best || day < bestDay! || (day.equals(bestDay!) && block.startMin < best.startMin)) {
+        best = block;
+        bestDay = day;
+      }
+    }
+    if (best && offset === 0) break;
+  }
+  if (!best || !bestDay) return null;
+  return {
+    block: best,
+    start: bestDay.set({ hour: Math.floor(best.startMin / 60), minute: best.startMin % 60 }).toUTC().toISO()!,
+  };
+}
+
 export class HomeService {
   async overview(userId: string) {
     const now = nowInTz();
@@ -37,7 +82,7 @@ export class HomeService {
     const weekEnd = weekStart.endOf("week");
     const toUtc = (value: DateTime) => value.toUTC().toJSDate();
 
-    const [activeBlock, defaultProject] = await Promise.all([
+    const [activeBlock, defaultProject, allBlocks] = await Promise.all([
       prisma.timeBlock.findFirst({
         where: {
           userId,
@@ -49,7 +94,16 @@ export class HomeService {
         include: { project: true },
       }),
       prisma.project.findFirst({ where: { userId, isDefault: true } }),
+      prisma.timeBlock.findMany({
+        where: { userId, isActive: true },
+        orderBy: [{ startMin: "asc" }, { createdAt: "asc" }],
+        include: { project: true },
+      }),
     ]);
+
+    const occurrence = nextBlockOccurrence(allBlocks, now);
+    const nextBlock = occurrence ? allBlocks.find((block) => block.id === occurrence.block.id) ?? null : null;
+    const nextBlockStart = occurrence?.start ?? null;
 
     const blockTasks = activeBlock?.projectId
       ? await prisma.task.findMany({
@@ -132,6 +186,8 @@ export class HomeService {
       urgentTasks,
       futureTasks,
       futureBlocks,
+      nextBlock,
+      nextBlockStart,
       weekly: {
         totalWorkSec: workSessions.reduce((sum, session) => sum + (session.actualSec ?? session.plannedSec), 0),
         completedWorkSessions: workSessions.length,

@@ -19,6 +19,7 @@ import { dateKey } from "@/lib/tasks";
 import { BacklogItemGhost, TaskCardGhost } from "./ghosts";
 
 export const BACKLOG_CONTAINER = "backlog";
+export const OVERDUE_CONTAINER = "overdue";
 const DAY_PREFIX = "day:";
 
 export function dayContainerId(dayKey: string) {
@@ -26,6 +27,7 @@ export function dayContainerId(dayKey: string) {
 }
 
 export function dayKeyFromContainerId(id: string) {
+  if (id === OVERDUE_CONTAINER || id === BACKLOG_CONTAINER) return id;
   return id.slice(DAY_PREFIX.length);
 }
 
@@ -55,7 +57,16 @@ function findTask(tasks: Task[], id: string): Task | null {
 }
 
 function containerOf(task: Task): string {
-  return task.dueDate ? dayContainerId(dateKey(task.dueDate)) : BACKLOG_CONTAINER;
+  if (!task.dueDate) return BACKLOG_CONTAINER;
+  const key = dateKey(task.dueDate);
+  if (isTaskOverdue(task)) return OVERDUE_CONTAINER;
+  return dayContainerId(key);
+}
+
+function isTaskOverdue(task: Task): boolean {
+  if (task.status === "COMPLETED" || task.status === "CANCELLED") return false;
+  if (!task.dueDate) return false;
+  return dateKey(task.dueDate) < dateKey(new Date());
 }
 
 const pointerFirstCollision: CollisionDetection = (args) => {
@@ -105,6 +116,12 @@ export function TasksDnDProvider({
         const existing = backlogOrder.filter((id) => currentIds.includes(id));
         return [...existing, ...currentIds.filter((id) => !existing.includes(id))];
       }
+      if (containerId === OVERDUE_CONTAINER) {
+        return tasks
+          .filter((task) => isTaskOverdue(task))
+          .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.order - b.order || a.createdAt.localeCompare(b.createdAt))
+          .map((task) => task.id);
+      }
       const dayKey = dayKeyFromContainerId(containerId);
       const currentIds = tasks
         .filter((task) => task.dueDate && dateKey(task.dueDate) === dayKey)
@@ -122,7 +139,7 @@ export function TasksDnDProvider({
         const task = findTask(tasks, taskIdFromDragId(id));
         return task ? containerOf(task) : null;
       }
-      if (id.startsWith(DAY_PREFIX) || id === BACKLOG_CONTAINER) return id;
+      if (id.startsWith(DAY_PREFIX) || id === BACKLOG_CONTAINER || id === OVERDUE_CONTAINER) return id;
       return null;
     },
     [tasks],
@@ -177,7 +194,7 @@ export function TasksDnDProvider({
         void onReorder(sourceContainer, buildOrder(sourceContainer));
         return;
       }
-      const targetDueDate = targetContainer === BACKLOG_CONTAINER ? null : dayKeyFromContainerId(targetContainer);
+      const targetDueDate = targetContainer === BACKLOG_CONTAINER || targetContainer === OVERDUE_CONTAINER ? null : dayKeyFromContainerId(targetContainer);
       void onMoveTask(activeTaskId, targetDueDate);
       if (targetIndex != null) void onReorder(targetContainer, buildOrder(targetContainer));
     },

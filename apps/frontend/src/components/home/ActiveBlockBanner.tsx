@@ -26,6 +26,15 @@ function useNowMinutes() {
   return nowMin;
 }
 
+function useNowTimestamp() {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
+  return now;
+}
+
 function dueBadge(task: Task) {
   const todayKey = localDateKey(new Date());
   const overdue = task.dueDate && localDateKey(task.dueDate) < todayKey;
@@ -41,18 +50,63 @@ function dueBadge(task: Task) {
 
 export function ActiveBlockBanner({
   block,
+  nextBlock,
+  nextBlockStart,
   tasks,
   onPlayPomodoro,
   onToggleTask,
 }: {
   block: TimeBlockWithProject | null;
+  nextBlock: TimeBlockWithProject | null;
+  nextBlockStart: string | null;
   tasks: Task[];
   onPlayPomodoro: (taskId?: string, projectId?: string) => void;
   onToggleTask: (task: Task) => void;
 }) {
   const nowMin = useNowMinutes();
+  const nowTimestamp = useNowTimestamp();
 
   if (!block) {
+    if (nextBlock && nextBlockStart) {
+      const diffMs = new Date(nextBlockStart).getTime() - nowTimestamp;
+      const diffMin = Math.max(0, Math.round(diffMs / 60_000));
+      const dayDiff = Math.floor(diffMs / 86_400_000);
+      const whenLabel =
+        dayDiff >= 1
+          ? `Mañana ${minToTime(nextBlock.startMin)}`
+          : `En ${formatDuration(diffMin)}`;
+      const label = nextBlock.project?.name ?? nextBlock.name ?? "Bloque de enfoque";
+      const color = nextBlock.project?.color ?? "#303e51";
+      return (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+            <p className="truncate font-headline-xs text-headline-xs font-bold" style={{ color }}>
+              {label}
+            </p>
+            <p className="shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant">
+              {minToTime(nextBlock.startMin)}–{minToTime(nextBlock.endMin)}
+            </p>
+          </div>
+          <p className="flex shrink-0 items-center gap-1.5 border border-primary bg-primary-container px-3 py-1 font-data-mono text-data-mono text-sm font-semibold text-on-primary">
+            <CalendarDays size={14} />
+            {whenLabel}
+          </p>
+          <div className="ml-auto flex items-center gap-3">
+            <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
+              VER AGENDA
+            </Link>
+            <button
+              className="flex h-9 items-center gap-2 border border-outline-variant bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
+              onClick={() => onPlayPomodoro()}
+              type="button"
+            >
+              <Play size={15} /> Comenzar enfoque
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4">
         <div className="flex min-w-0 items-center gap-2">

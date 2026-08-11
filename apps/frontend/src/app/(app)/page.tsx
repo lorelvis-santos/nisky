@@ -61,6 +61,8 @@ export default function DashboardPage() {
         <div className="mx-auto flex max-w-5xl flex-col gap-3 p-container-padding pb-20 sm:px-section-gap">
           <ActiveBlockBanner
             block={activeBlock}
+            nextBlock={overview?.nextBlock ?? null}
+            nextBlockStart={overview?.nextBlockStart ?? null}
             onPlayPomodoro={handlePlayPomodoro}
             onToggleTask={(task) => void toggleTask(task)}
             tasks={overview?.blockTasks ?? []}

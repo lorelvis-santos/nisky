@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, FolderKanban, ListTodo, Plus, Star, Users, X } from "lucide-react";
+import { Check, FolderKanban, ListTodo, Plus, Search, Star, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -16,10 +16,15 @@ export default function ProjectsPage() {
   const accessibleQuery = useAccessibleProjects();
   const projectMutations = useProjectMutations();
   const [createOpen, setCreateOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const projects = accessibleQuery.data ?? [];
-  const owned = projects.filter((project) => project.userId === user?.id);
-  const shared = projects.filter((project) => project.userId !== user?.id);
+  const query = search.trim().toLowerCase();
+  const filtered = query
+    ? projects.filter((project) => project.name.toLowerCase().includes(query))
+    : projects;
+  const owned = filtered.filter((project) => project.userId === user?.id);
+  const shared = filtered.filter((project) => project.userId !== user?.id);
 
   const renderGrid = (items: typeof projects, emptyLabel: string) =>
     items.length === 0 ? (
@@ -87,19 +92,40 @@ export default function ProjectsPage() {
               <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">PROYECTOS</p>
               <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">Organiza y comparte</h1>
             </div>
-            <button
-              className="flex items-center gap-1.5 bg-primary px-3.5 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
-              onClick={() => setCreateOpen(true)}
-              type="button"
-            >
-              <Plus size={15} /> Nuevo proyecto
-            </button>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <div className="relative min-w-0 sm:w-64">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                <input
+                  aria-label="Buscar proyectos"
+                  className="field h-9 w-full pl-8"
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Buscar proyectos..."
+                  type="search"
+                  value={search}
+                />
+              </div>
+              <button
+                className="flex shrink-0 items-center gap-1.5 bg-primary px-3.5 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
+                onClick={() => setCreateOpen(true)}
+                type="button"
+              >
+                <Plus size={15} /> Nuevo proyecto
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="min-h-0 flex-1 space-y-section-gap overflow-y-auto p-container-padding">
           {accessibleQuery.isLoading ? (
             <p className="py-10 text-center font-body-sm text-body-sm text-on-surface-variant">Cargando proyectos...</p>
+          ) : query && filtered.length === 0 ? (
+            <div className="flex min-h-[16rem] flex-col items-center justify-center gap-2 border border-outline-variant bg-surface-container-lowest p-section-gap text-center">
+              <Search className="text-primary" size={28} />
+              <p className="font-label-caps text-label-caps text-on-surface-variant">SIN RESULTADOS</p>
+              <p className="max-w-xl font-body-sm text-body-sm text-on-surface-variant">
+                No encontramos proyectos que coincidan con “{search.trim()}”.
+              </p>
+            </div>
           ) : projects.length === 0 ? (
             <div className="flex min-h-[16rem] flex-col items-center justify-center gap-2 border border-outline-variant bg-surface-container-lowest p-section-gap text-center">
               <FolderKanban className="text-primary" size={28} />

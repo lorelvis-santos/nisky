@@ -1,14 +1,15 @@
 "use client";
 
-import { Mail, ShieldCheck, UserMinus } from "lucide-react";
+import { LogOut, Mail, ShieldCheck, UserMinus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthProvider";
 import { cn } from "@/lib/utils";
 import type { Project } from "@/types/entities";
-import { useProjectMemberMutations, useProjectMembers } from "../hooks/useProjects";
+import { useLeaveProjectMutation, useProjectMemberMutations, useProjectMembers } from "../hooks/useProjects";
 
 function MembersSkeleton() {
   return (
@@ -28,11 +29,14 @@ function MembersSkeleton() {
 
 export function MembersPanel({ project }: { project: Project }) {
   const { user } = useAuth();
+  const router = useRouter();
   const membersQuery = useProjectMembers(project.id);
   const mutations = useProjectMemberMutations(project.id);
+  const leaveMutation = useLeaveProjectMutation();
   const [email, setEmail] = useState("");
   const [confirmTransferId, setConfirmTransferId] = useState<string | null>(null);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const isOwner = user?.id === project.userId;
   const members = membersQuery.data ?? [];
   const transferTarget = members.find((member) => member.id === confirmTransferId) ?? null;
@@ -67,6 +71,18 @@ export function MembersPanel({ project }: { project: Project }) {
       toast.success("¡Se transfirió la propiedad del proyecto!");
     } catch {
       toast.error("Ups, no pudimos cambiar el rol.");
+    }
+  };
+
+  const leave = async () => {
+    try {
+      await leaveMutation.mutateAsync(project.id);
+      setConfirmLeave(false);
+      toast.success("Te saliste del proyecto");
+      router.push("/projects");
+    } catch (error) {
+      setConfirmLeave(false);
+      toast.error((error as { message?: string })?.message ?? "Ups, no pudimos salir del proyecto.");
     }
   };
 
@@ -164,6 +180,34 @@ export function MembersPanel({ project }: { project: Project }) {
             <Mail size={15} /> Invitar
           </button>
         </div>
+      )}
+
+      {!isOwner && (
+        <div className="border-t border-outline-variant pt-3">
+          <button
+            className="flex h-9 w-full items-center justify-center gap-1.5 border border-outline-variant px-3 font-body-sm text-body-sm text-on-surface-variant hover:border-error/50 hover:bg-surface-container-high hover:text-error"
+            onClick={() => setConfirmLeave(true)}
+            type="button"
+          >
+            <LogOut size={15} /> Salirme del proyecto
+          </button>
+        </div>
+      )}
+
+      {confirmLeave && (
+        <ConfirmModal
+          confirmLabel="Salirme"
+          danger
+          loading={leaveMutation.isPending}
+          message={
+            <>
+              ¿Salirte de <strong>{project.name}</strong>? Perderás el acceso al proyecto y a sus tareas y comentarios. El dueño podrá volver a invitarte en cualquier momento.
+            </>
+          }
+          onClose={() => setConfirmLeave(false)}
+          onConfirm={() => void leave()}
+          title="¿Salir del proyecto?"
+        />
       )}
 
       {confirmRemoveId && removeTarget && (

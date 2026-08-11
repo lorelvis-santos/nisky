@@ -3,7 +3,7 @@ import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { buildPaginatedResponse, getPaginationArgs } from "../../utils/pagination/handler";
 import { nextOccurrence } from "../../utils/recurrence";
-import { assertTaskAccess, getAccessibleProjectIds, getProjectAudience } from "../projects/access";
+import { assertTaskAccess, getAccessibleProjectIds, getProjectAudience, getUserRoleInProject } from "../projects/access";
 import { projectService } from "../projects/projects.service";
 import { emitToUsers } from "../../config/socket.emit";
 import type { CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
@@ -127,8 +127,8 @@ export class TaskService {
   async create(userId: string, data: CreateTaskDto) {
     const projectId = data.projectId ?? (await projectService.getDefaultId(userId));
     if (projectId) {
-      const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
-      if (!project) throw new AppError("BAD_REQUEST", "El proyecto no existe");
+      const role = await getUserRoleInProject(userId, projectId);
+      if (!role) throw new AppError("BAD_REQUEST", "El proyecto no existe");
     }
     if (data.assigneeId) {
       if (!projectId) throw new AppError("BAD_REQUEST", "La tarea debe pertenecer a un proyecto para asignarla");
@@ -189,8 +189,8 @@ export class TaskService {
     }
 
     if (data.projectId !== undefined && data.projectId !== null) {
-      const project = await prisma.project.findFirst({ where: { id: data.projectId, userId } });
-      if (!project) throw new AppError("BAD_REQUEST", "El proyecto no existe");
+      const role = await getUserRoleInProject(userId, data.projectId);
+      if (!role) throw new AppError("BAD_REQUEST", "El proyecto no existe");
     }
     const completedAt = data.status === undefined ? undefined : data.status === "COMPLETED" ? new Date() : null;
     const recurrence = data.recurrence;
@@ -297,8 +297,8 @@ export class TaskService {
       await assertTaskAccess(userId, id);
     }
     if (projectId) {
-      const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
-      if (!project) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
+      const role = await getUserRoleInProject(userId, projectId);
+      if (!role) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
       const tasks = await prisma.task.findMany({
         where: { id: { in: ids }, assigneeId: { not: null } },
         select: { id: true, assigneeId: true },

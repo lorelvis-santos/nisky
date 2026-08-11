@@ -10,6 +10,7 @@ import {
   getProjectMembers,
   getProjects,
   inviteProjectMember,
+  leaveProject,
   removeAvatar,
   removeProjectMember,
   setDefaultProject,
@@ -87,6 +88,19 @@ export function useInvitationMutations() {
   const accept = useMutation({ mutationFn: acceptInvitation, onSuccess: invalidate });
   const decline = useMutation({ mutationFn: declineInvitation, onSuccess: invalidate });
   return { accept, decline };
+}
+
+export function useLeaveProjectMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: leaveProject,
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ["projects"] });
+      await client.invalidateQueries({ queryKey: ["projects", "accessible"] });
+      await client.invalidateQueries({ queryKey: ["tasks"] });
+      await client.invalidateQueries({ queryKey: ["home"] });
+    },
+  });
 }
 
 export function useProfileMutations() {

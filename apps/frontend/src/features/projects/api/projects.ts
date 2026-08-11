@@ -33,6 +33,11 @@ export async function deleteProject(id: string) {
   return data.data;
 }
 
+export async function leaveProject(id: string) {
+  const { data } = await api.post<{ data: { success: boolean } }>(`/projects/${id}/leave`);
+  return data.data;
+}
+
 export async function setDefaultProject(id: string) {
   const { data } = await api.patch<{ data: Project }>(`/projects/${id}/default`);
   return data.data;

@@ -38,6 +38,10 @@ export class ProjectController {
     try { res.success(await projectService.delete(userId(req), req.params.id)); } catch (error) { next(error); }
   };
 
+  leave = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
+    try { res.success(await projectService.leave(userId(req), req.params.id)); } catch (error) { next(error); }
+  };
+
   listUserProjects = async (req: Request, res: Response, next: NextFunction) => {
     try { res.success(await projectService.listUserProjects(userId(req))); } catch (error) { next(error); }
   };

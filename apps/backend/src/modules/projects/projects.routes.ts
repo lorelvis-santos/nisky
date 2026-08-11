@@ -17,6 +17,7 @@ router.get("/invitations/pending", controller.listPendingInvitations);
 router.post("/invitations/:invitationId/accept", validateParams(invitationIdParamSchema), controller.acceptInvitation);
 router.post("/invitations/:invitationId/decline", validateParams(invitationIdParamSchema), controller.declineInvitation);
 router.post("/", validateBody(createProjectSchema), controller.create);
+router.post("/:id/leave", validateParams(idParamSchema), controller.leave);
 router.get("/:id", validateParams(idParamSchema), controller.getById);
 router.patch("/:id", validateParams(idParamSchema), validateBody(updateProjectSchema), controller.update);
 router.patch("/:id/default", validateParams(idParamSchema), controller.setDefault);

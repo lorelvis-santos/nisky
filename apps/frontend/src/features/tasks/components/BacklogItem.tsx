@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare2, GripVertical, MoreHorizontal, Play, Square, Timer } from "lucide-react";
+import { CheckSquare2, GripVertical, MessageSquare, MoreHorizontal, Play, Square, Timer } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
@@ -119,10 +119,17 @@ export function BacklogItemShell({
         </div>
       </div>
       <div className="flex items-center justify-between gap-2 text-on-surface-variant">
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {task.project && (
+            <span className="inline-flex min-w-0 max-w-[10rem] items-center gap-1.5 border border-outline-variant bg-surface-container-low px-1.5 py-0.5 font-label-caps text-[10px] tracking-wide text-on-surface-variant" title={task.project.name}>
+              <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: task.project.color }} />
+              <span className="truncate">{task.project.name}</span>
+            </span>
+          )}
           <PriorityChip priority={task.priority} />
           <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
           {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
+          {(task.commentCount ?? 0) > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs" title="Comentarios"><MessageSquare size={13} /> {task.commentCount}</span>}
         </div>
         {!isSelecting && (
           <button

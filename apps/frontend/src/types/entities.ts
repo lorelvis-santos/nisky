@@ -41,6 +41,29 @@ export interface Project {
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
+  members?: ProjectMember[];
+  _count?: { tasks: number };
+}
+
+export type ProjectRole = "OWNER" | "MEMBER";
+
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string;
+  user: { id: string; email: string; name: string | null; avatarUrl: string | null };
+  role: ProjectRole;
+  createdAt: string;
+}
+
+export interface ProjectInvitation {
+  id: string;
+  projectId: string;
+  project: Project;
+  invitedBy: { id: string; email: string; name: string | null };
+  email: string;
+  status: "PENDING" | "ACCEPTED" | "DECLINED";
+  createdAt: string;
 }
 
 export interface TimeBlock {
@@ -114,6 +137,8 @@ export interface Task {
   order: number;
   pomodoroEstimate: number;
   pomodoroCount: number;
+  assigneeId: string | null;
+  assignee?: { id: string; email: string; name: string | null; avatarUrl: string | null } | null;
   recurrenceType: TaskRecurrenceType | null;
   recurrenceInterval: number;
   recurrenceDaysOfWeek: number[];
@@ -123,6 +148,8 @@ export interface Task {
   subtaskCount?: number;
   completedSubtasks?: number;
   subtasks?: Subtask[];
+  commentCount?: number;
+  project?: { id: string; name: string; color: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -255,6 +282,17 @@ export interface Note {
   category: string | null;
   tags: string[];
   pinned: boolean;
+  projectId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Comment {
+  id: string;
+  body: string;
+  projectId: string | null;
+  taskId: string | null;
+  author: { id: string; email: string; name: string | null; avatarUrl: string | null };
   createdAt: string;
   updatedAt: string;
 }

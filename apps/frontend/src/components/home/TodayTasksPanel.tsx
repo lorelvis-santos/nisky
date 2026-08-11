@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Circle,
   Inbox,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { localDateKey } from "@/lib/utils";
@@ -86,7 +87,20 @@ function TodayTaskRow({
         <p className="line-clamp-2 break-words font-body-md text-body-md font-medium hover:text-primary">
           {task.title}
         </p>
-        {dueBadge(task)}
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {dueBadge(task)}
+          {task.project && (
+            <span className="inline-flex max-w-[8rem] items-center gap-1 font-data-mono text-data-mono text-[11px] text-on-surface-variant" title={task.project.name}>
+              <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: task.project.color }} />
+              <span className="truncate">{task.project.name}</span>
+            </span>
+          )}
+          {(task.commentCount ?? 0) > 0 && (
+            <span className="flex items-center gap-1 font-data-mono text-data-mono text-[11px] text-on-surface-variant" title="Comentarios">
+              <MessageSquare size={11} /> {task.commentCount}
+            </span>
+          )}
+        </div>
       </Link>
     </div>
   );

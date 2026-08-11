@@ -12,6 +12,11 @@ enum UserRole {
   USER
 }
 
+enum ProjectRole {
+  OWNER
+  MEMBER
+}
+
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
@@ -34,12 +39,16 @@ model User {
   journalSalt    Bytes?
   journalEntries JournalEntry[]
   notes          Note[]
+  comments       Comment[]
   pushSubscriptions PushSubscription[]
   reminders      Reminder[]
   moodleAccounts MoodleAccount[]
   canvasAccounts CanvasAccount[]
   projects       Project[]
   timeBlocks     TimeBlock[]
+  projectMemberships ProjectMember[] @relation("UserProjectMemberships")
+  sentProjectInvitations ProjectInvitation[] @relation("UserProjectInvitations")
+  assignedTasks  Task[]              @relation("TaskAssignee")
   notificationSettings NotificationSettings?
   notificationLogs NotificationLog[]
   feedback      Feedback[]
@@ -60,11 +69,44 @@ model Project {
   timeBlocks TimeBlock[]
   moodleAccounts MoodleAccount[]
   canvasAccounts CanvasAccount[]
+  members    ProjectMember[]
+  invitations ProjectInvitation[]
+  notes      Note[]
+  comments   Comment[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
   @@unique([userId, name])
   @@index([userId])
+}
+
+model ProjectMember {
+  id        String      @id @default(uuid())
+  projectId String
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation("UserProjectMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  role      ProjectRole @default(MEMBER)
+  createdAt DateTime    @default(now())
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+model ProjectInvitation {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invitedById  String
+  invitedBy    User     @relation("UserProjectInvitations", fields: [invitedById], references: [id], onDelete: Cascade)
+  email        String
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now())
+
+  @@unique([projectId, email])
+  @@index([projectId])
+  @@index([email])
+  @@index([invitedById])
 }
 
 model TimeBlock {
@@ -154,6 +196,9 @@ model Task {
   recurrenceParent      Task?               @relation("TaskRecurrence", fields: [recurrenceParentId], references: [id], onDelete: SetNull)
   recurrenceOccurrences Task[]              @relation("TaskRecurrence")
   subtasks           Subtask[]
+  assigneeId         String?
+  assignee           User?                  @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  comments           Comment[]
   pomodoroEstimate   Int          @default(0)
   pomodoroCount      Int          @default(0)
   pomodoroSessions   PomodoroSession[]
@@ -166,6 +211,7 @@ model Task {
   @@index([userId, source, sourceRef])
   @@index([userId, recurrenceType])
   @@index([recurrenceParentId])
+  @@index([assigneeId])
   @@unique([userId, source, sourceRef])
 }
 
@@ -335,11 +381,31 @@ model Note {
   category  String?
   tags      String[]
   pinned    Boolean   @default(false)
+  projectId String?
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   @@index([userId, createdAt])
   @@index([userId, category])
+  @@index([projectId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  body      String   @db.Text
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId, createdAt])
+  @@index([taskId, createdAt])
+  @@index([authorId])
 }
 
 model RefreshToken {

@@ -1,8 +1,14 @@
+import type { Prisma } from "../../infra/prisma/generated/prisma/client";
 import { DateTime } from "luxon";
 import { prisma } from "../../infra/prisma/client";
 import { computeStreak, dateKey, localDateKey } from "../habits/habit-stats";
 
 const TZ = "America/Santo_Domingo";
+
+const taskInclude = {
+  project: { select: { id: true, name: true, color: true } },
+  _count: { select: { comments: true } },
+} satisfies Prisma.TaskInclude;
 
 function nowInTz() {
   return DateTime.now().setZone(TZ);
@@ -50,6 +56,7 @@ export class HomeService {
           where: { userId, projectId: activeBlock.projectId, status: "PENDING", archivedAt: null },
           orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
           take: 20,
+          include: taskInclude,
         })
       : [];
 
@@ -66,6 +73,7 @@ export class HomeService {
       },
       orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
       take: 50,
+      include: taskInclude,
     });
 
     const futureTasks = await prisma.task.findMany({
@@ -77,7 +85,7 @@ export class HomeService {
       },
       orderBy: [{ dueDate: "asc" }, { priority: "desc" }],
       take: 20,
-      include: { project: true },
+      include: taskInclude,
     });
 
     const futureBlocks = await prisma.timeBlock.findMany({

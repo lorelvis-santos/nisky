@@ -9,6 +9,7 @@ import { UserManagement } from "@/components/admin/UserManagement";
 import { IntegrationManager } from "@/components/integrations/IntegrationManager";
 import { IntegrationTasksList } from "@/components/integrations/IntegrationTasksList";
 import { NotificationSettingsPanel } from "@/components/pwa/NotificationSettingsPanel";
+import { ProfileSection } from "@/features/projects/components/ProfileSection";
 import { FeedbackAdminPanel } from "@/components/feedback/FeedbackAdminPanel";
 
 type Tab = "profile" | "security" | "notifications" | "integrations" | "admin";
@@ -48,11 +49,13 @@ export default function SettingsPage() {
 
         <div className="min-h-0 flex-1 overflow-y-auto p-container-padding">
           {active === "profile" && (
-            <dl className="grid max-w-2xl gap-4 sm:grid-cols-2">
-              <div><dt className="font-label-caps text-label-caps uppercase text-on-surface-variant">Nombre</dt><dd className="mt-1 font-body-md text-body-md">{user?.name ?? "-"}</dd></div>
-              <div><dt className="font-label-caps text-label-caps uppercase text-on-surface-variant">Email</dt><dd className="mt-1 font-data-mono text-data-mono">{user?.email}</dd></div>
-              <div><dt className="font-label-caps text-label-caps uppercase text-on-surface-variant">Rol</dt><dd className="mt-1 font-data-mono text-data-mono">{user?.role === "ADMIN" ? "Administrador" : "Miembro"}</dd></div>
-            </dl>
+            <div className="space-y-6">
+              <ProfileSection />
+              <div>
+                <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Rol</span>
+                <p className="mt-1 font-data-mono text-data-mono">{user?.role === "ADMIN" ? "Administrador" : "Miembro"}</p>
+              </div>
+            </div>
           )}
 
           {active === "security" && (

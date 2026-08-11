@@ -33,12 +33,16 @@ const taskFields = {
   dueDate: dateValue.optional(),
   pomodoroEstimate: pomodoroEstimate.optional(),
   projectId: z.uuid("El proyecto no es válido").nullable().optional(),
+  assigneeId: z.uuid("El asignado no es válido").nullable().optional(),
   recurrence: taskRecurrenceSchema.optional(),
 };
 
 export const createTaskSchema = z.object(taskFields).superRefine((value, context) => {
   if (value.recurrence?.repeatType && !value.dueDate) {
     context.addIssue({ code: "custom", path: ["dueDate"], message: "Necesita fecha para repetirse" });
+  }
+  if (value.assigneeId && !value.projectId) {
+    context.addIssue({ code: "custom", path: ["projectId"], message: "La tarea debe pertenecer a un proyecto para asignarla" });
   }
 });
 
@@ -51,6 +55,9 @@ export const updateTaskSchema = z
   .superRefine((value, context) => {
     if (value.recurrence?.repeatType && !value.dueDate) {
       context.addIssue({ code: "custom", path: ["dueDate"], message: "Necesita fecha para repetirse" });
+    }
+    if (value.assigneeId && !value.projectId) {
+      context.addIssue({ code: "custom", path: ["projectId"], message: "La tarea debe pertenecer a un proyecto para asignarla" });
     }
   });
 

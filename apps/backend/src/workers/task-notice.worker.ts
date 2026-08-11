@@ -4,6 +4,8 @@ import { prisma } from "../infra/prisma/client";
 import { pushService } from "../modules/push/push.service";
 import { defaultNotificationSettings } from "../utils/notifications/notification-settings";
 import { hasSkippedLogToday, recordNotificationLog } from "../modules/push/notification-log.service";
+import { getProjectAudience } from "../modules/projects/access";
+import { emitToUsers } from "../config/socket.emit";
 
 const TZ = "America/Santo_Domingo";
 
@@ -105,6 +107,11 @@ export async function processTaskDueNotices(): Promise<TaskDueNoticeResult> {
       });
       if (result.total === 0) continue;
       await prisma.task.update({ where: { id: task.id }, data: { lastDueWarnedAt: new Date() } });
+      const audience = [task.userId];
+      if (task.projectId) {
+        audience.push(...(await getProjectAudience(task.projectId)));
+      }
+      emitToUsers([...new Set(audience)], "tasks");
       tasksNotified += 1;
     } catch (error) {
       console.error(`[tasks] No se pudo notificar vencimiento de ${task.id}`, error);

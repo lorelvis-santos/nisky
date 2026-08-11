@@ -3,7 +3,7 @@
 import { Plus } from "lucide-react";
 import type { Project, Task } from "@/types/entities";
 import { dateKey } from "@/lib/tasks";
-import { cn, isTaskOverdue } from "@/lib/utils";
+import { cn, formatDateTime, isTaskOverdue } from "@/lib/utils";
 
 const dayNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
 const priorityDot: Record<string, string> = {
@@ -111,7 +111,7 @@ export function MonthlyCalendar({
                       key={task.id}
                       onClick={() => onSelectDay(key)}
                       style={project ? { borderLeftColor: project.color, borderLeftWidth: "3px" } : undefined}
-                      title={project ? `${task.title} · ${project.name}` : task.title}
+                      title={project ? `${task.title} · ${project.name}${task.dueDate ? ` · ${formatDateTime(task.dueDate)}` : ""}` : `${task.title}${task.dueDate ? ` · ${formatDateTime(task.dueDate)}` : ""}`}
                       type="button"
                     >
                       {overdue || !project ? (

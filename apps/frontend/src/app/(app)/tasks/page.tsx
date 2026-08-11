@@ -136,9 +136,10 @@ function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
     const parsed: unknown = JSON.parse(decodeURIComponent(value));
     if (!parsed || typeof parsed !== "object") return undefined;
     const source = parsed as Record<string, unknown>;
+    const rawDueDate = typeof source.dueDate === "string" ? source.dueDate : "";
     return {
       title: typeof source.title === "string" ? source.title.trim() : "",
-      dueDate: typeof source.dueDate === "string" ? source.dueDate : "",
+      dueDate: /^\d{4}-\d{2}-\d{2}$/.test(rawDueDate) ? `${rawDueDate}T23:59` : rawDueDate,
       status: "PENDING",
       priority: "NORMAL",
       description: "",

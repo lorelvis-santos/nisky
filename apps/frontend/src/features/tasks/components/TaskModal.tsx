@@ -10,7 +10,7 @@ import { CommentThread } from "@/features/comments/CommentThread";
 import { useReminderMutations, useRemindersQuery } from "@/features/reminders/hooks/useReminders";
 import { useTaskQuery } from "../hooks/useTasks";
 import { taskSchema, type TaskRecurrenceFormData } from "../schemas/task.schema";
-import { localDateKey } from "@/lib/utils";
+import { localDateKey, toDatetimeLocal } from "@/lib/utils";
 
 export type TaskForm = {
   title: string;
@@ -96,7 +96,7 @@ export function TaskModal({
           description: task.description ?? "",
           status: task.status,
           priority: task.priority,
-          dueDate: task.dueDate ? localDateKey(task.dueDate) : "",
+          dueDate: task.dueDate ? toDatetimeLocal(task.dueDate) : "",
           pomodoroEstimate: task.pomodoroEstimate,
           projectId: task.projectId ?? defaultProjectId ?? defaultProject?.id ?? "",
           assigneeId: task.assigneeId ?? null,
@@ -311,14 +311,14 @@ export function TaskModal({
             </label>
             <label className="block">
               <span className="font-label-caps text-label-caps text-on-surface-variant">
-                FECHA LÍMITE
+                FECHA Y HORA LÍMITE
               </span>
               <input
                 className="field mt-1"
                 onChange={(event) =>
                   setForm({ ...form, dueDate: event.target.value })
                 }
-                type="date"
+                type="datetime-local"
                 value={form.dueDate}
               />
             </label>

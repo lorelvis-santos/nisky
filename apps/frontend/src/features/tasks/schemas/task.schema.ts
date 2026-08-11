@@ -14,12 +14,17 @@ export const taskRecurrenceSchema = z
     }
   });
 
+const dueDateValue = z
+  .string()
+  .refine((value) => /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(value), "Formato de fecha inválido")
+  .optional();
+
 export const taskSchema = z.object({
   title: z.string().trim().min(1, "Ponle un nombre a la tarea").max(200, "Que sea un poco más corto (máximo 200 caracteres)"),
   description: z.string().trim().max(2000, "Que sea un poco más corto (máximo 2000 caracteres)").optional(),
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
   priority: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]),
-  dueDate: z.string().optional(),
+  dueDate: dueDateValue,
   pomodoroEstimate: z.number().int().min(0).max(100),
   projectId: z.string().optional(),
   assigneeId: z.string().nullable().optional(),

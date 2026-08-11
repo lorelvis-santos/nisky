@@ -1,39 +1,8 @@
+import { parseExpression } from "cron-parser";
 import { DateTime } from "luxon";
 
 export interface ScheduledJob {
   stop: () => void;
-}
-
-const TZ = "America/Santo_Domingo";
-
-function nextCron(cronExpr: string, from: DateTime): DateTime {
-  const parts = cronExpr.split(" ");
-  if (parts.length !== 5) throw new Error(`Invalid cron expression: ${cronExpr}`);
-  const [minute, hour, dayOfMonth, month, dayOfWeek] = parts as [string, string, string, string, string];
-
-  let candidate = from.startOf("minute").plus({ minutes: 1 });
-
-  while (true) {
-    const cHour = candidate.hour;
-    const cMinute = candidate.minute;
-    const cDay = candidate.day;
-    const cMonth = candidate.month;
-    const cWeekday = candidate.weekday % 7;
-
-    const matchMinute = minute === "*" || minute.split(",").map(Number).includes(cMinute);
-    const matchHour = hour === "*" || hour.split(",").map(Number).includes(cHour);
-    const matchDay = dayOfMonth === "*" || dayOfMonth.split(",").map(Number).includes(cDay);
-    const matchMonth = month === "*" || month.split(",").map(Number).includes(cMonth);
-    const matchWeekday = dayOfWeek === "*" || dayOfWeek.split(",").map(Number).includes(cWeekday);
-
-    if (matchMinute && matchHour && matchDay && matchMonth && matchWeekday) {
-      return candidate;
-    }
-    candidate = candidate.plus({ minutes: 1 });
-    if (candidate.diff(from, "days").days > 366) {
-      throw new Error("Cron next run not found within a year");
-    }
-  }
 }
 
 export function scheduleInTimezone(cronExpr: string, fn: () => void, zone: string = "America/Santo_Domingo"): ScheduledJob {
@@ -42,23 +11,26 @@ export function scheduleInTimezone(cronExpr: string, fn: () => void, zone: strin
 
   const tick = async () => {
     if (stopped) return;
-    const now = DateTime.now().setZone(zone);
-    const next = nextCron(cronExpr, now);
-    const ms = next.diff(now).milliseconds;
-    if (ms <= 0) {
-      await fn();
-      timeout = setTimeout(tick, 1000);
-    } else {
+    try {
+      const now = DateTime.now().setZone(zone);
+      const interval = parseExpression(cronExpr, {
+        tz: zone,
+        currentDate: now.toISO() ?? undefined,
+      });
+      const next = interval.next().toDate();
+      const ms = next.getTime() - Date.now();
       timeout = setTimeout(() => {
         if (!stopped) {
           fn();
-          tick();
+          void tick();
         }
-      }, ms);
+      }, Math.max(0, ms));
+    } catch (error) {
+      console.error(`[cron] Failed to schedule "${cronExpr}" in ${zone}:`, error);
     }
   };
 
-  tick();
+  void tick();
 
   return {
     stop: () => {

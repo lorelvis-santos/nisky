@@ -276,38 +276,42 @@ export default function ProjectDetailPage() {
                       return (
                         <li key={task.id}>
                           <button
-                            className="flex w-full items-center gap-2.5 py-2.5 text-left font-body-sm text-body-sm hover:bg-surface-container-low"
+                            className="flex w-full flex-col gap-1 py-2.5 text-left font-body-sm text-body-sm hover:bg-surface-container-low"
                             onClick={() => router.push(`/tasks?taskId=${encodeURIComponent(task.id)}`)}
                             type="button"
                           >
-                            <span
-                              aria-hidden="true"
-                              className={`h-2 w-2 shrink-0 rounded-full ${task.status === "COMPLETED" ? "bg-primary" : task.status === "IN_PROGRESS" ? "bg-tertiary" : task.status === "CANCELLED" ? "bg-outline" : "bg-on-surface-variant"}`}
-                            />
-                            <span className={`min-w-0 flex-1 truncate ${task.status === "COMPLETED" ? "text-on-surface-variant line-through" : "text-on-surface"}`}>
-                              {task.title}
-                            </span>
-                            <PriorityChip priority={task.priority} />
-                            {(task.commentCount ?? 0) > 0 && (
-                              <span className="flex shrink-0 items-center gap-1 font-data-mono text-data-mono text-[11px] text-on-surface-variant" title="Comentarios">
-                                <MessageSquare size={11} /> {task.commentCount}
-                              </span>
-                            )}
-                            {task.dueDate && (
-                              <span className={`flex shrink-0 items-center gap-1 font-data-mono text-data-mono text-[11px] ${overdue ? "text-error" : "text-on-surface-variant"}`}>
-                                <CalendarDays size={11} />
-                                {formatRelativeDate(task.dueDate, true)}
-                              </span>
-                            )}
-                            {task.assignee && (
-                              <Avatar
-                                avatarUrl={task.assignee.avatarUrl}
-                                className="ring-2 ring-surface"
-                                email={task.assignee.email}
-                                name={task.assignee.name}
-                                size="xs"
+                            <span className="flex min-w-0 items-center gap-2.5">
+                              <span
+                                aria-hidden="true"
+                                className={`h-2 w-2 shrink-0 rounded-full ${task.status === "COMPLETED" ? "bg-primary" : task.status === "IN_PROGRESS" ? "bg-tertiary" : task.status === "CANCELLED" ? "bg-outline" : "bg-on-surface-variant"}`}
                               />
-                            )}
+                              <span className={`min-w-0 flex-1 truncate ${task.status === "COMPLETED" ? "text-on-surface-variant line-through" : "text-on-surface"}`}>
+                                {task.title}
+                              </span>
+                              {task.assignee && (
+                                <Avatar
+                                  avatarUrl={task.assignee.avatarUrl}
+                                  className="shrink-0 ring-2 ring-surface"
+                                  email={task.assignee.email}
+                                  name={task.assignee.name}
+                                  size="xs"
+                                />
+                              )}
+                            </span>
+                            <span className="flex flex-wrap items-center gap-2 pl-[17px]">
+                              <PriorityChip priority={task.priority} />
+                              {(task.commentCount ?? 0) > 0 && (
+                                <span className="flex shrink-0 items-center gap-1 font-data-mono text-data-mono text-[11px] text-on-surface-variant" title="Comentarios">
+                                  <MessageSquare size={11} /> {task.commentCount}
+                                </span>
+                              )}
+                              {task.dueDate && (
+                                <span className={`flex shrink-0 items-center gap-1 font-data-mono text-data-mono text-[11px] ${overdue ? "text-error" : "text-on-surface-variant"}`}>
+                                  <CalendarDays size={11} />
+                                  {formatRelativeDate(task.dueDate, true)}
+                                </span>
+                              )}
+                            </span>
                           </button>
                         </li>
                       );

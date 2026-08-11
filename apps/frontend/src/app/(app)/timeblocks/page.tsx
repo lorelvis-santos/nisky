@@ -192,14 +192,14 @@ function TimeBlocksContent() {
     try {
       if (editing) {
         await mutations.update.mutateAsync({ id: editing.id, payload: data });
-        setEditing(null);
+        setEditing({ ...editing, ...data, daysOfWeek: data.daysOfWeek });
         toast.success("¡Listo, bloque actualizado!");
-      } else {
-        await mutations.create.mutateAsync(data);
-        setPrefill(null);
-        setFormKey((key) => key + 1);
-        toast.success("¡Bloque creado!");
+        return;
       }
+      await mutations.create.mutateAsync(data);
+      setPrefill(null);
+      setFormKey((key) => key + 1);
+      toast.success("¡Bloque creado!");
       setMobileFormOpen(false);
     } catch {
       toast.error("Ups, no pudimos guardar el bloque. Inténtalo de nuevo.");

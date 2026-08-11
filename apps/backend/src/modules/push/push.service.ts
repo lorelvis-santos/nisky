@@ -154,7 +154,15 @@ export class PushService {
       totalCount: total,
       error: firstError,
     });
-    console.log(`[notif] result type=${type} status=${status} sent=${sent}/${total} user=${userId.slice(0, 8)} "${payload.title}"${firstError ? ` error=${firstError}` : ""}`);
+    const taskId = typeof payload.data?.taskId === "string" ? payload.data.taskId : undefined;
+    const projectId = typeof payload.data?.projectId === "string" ? payload.data.projectId : undefined;
+    const context =
+      taskId !== undefined
+        ? ` kind=task task=${taskId.slice(0, 8)}`
+        : projectId !== undefined
+          ? ` kind=project project=${projectId.slice(0, 8)}`
+          : "";
+    console.log(`[notif] result type=${type} status=${status} sent=${sent}/${total} user=${userId.slice(0, 8)}${context} "${payload.title}"${firstError ? ` error=${firstError}` : ""}`);
 
     return { sent, total };
   }

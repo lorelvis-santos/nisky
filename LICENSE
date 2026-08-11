@@ -1,0 +1,62 @@
+Business Source License 1.1
+
+License text copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
+"Business Source License" is a trademark of MariaDB Corporation Ab.
+
+-----------------------------------------------------------------------------
+
+Parameters
+
+Licensor:             lorelvis-santos (Nisky)
+
+Licensed Work:        Nisky
+                      The Licensed Work is (c) 2026 lorelvis-santos.
+
+Additional Use Grant: Any person may use, run, copy, modify and deploy the
+                      Licensed Work for their own personal, educational or
+                      internal use, including self-hosted deployments on
+                      infrastructure they control, free of charge and without
+                      the Licensor's prior permission, as long as they do not
+                      offer the Licensed Work to third parties as a managed
+                      service or hosted platform (SaaS) or sell products or
+                      services based on it. Only the Licensor (or parties
+                      explicitly authorized by the Licensor in writing) may
+                      offer the Licensed Work as a managed, hosted or cloud
+                      service to third parties.
+
+Change License:       Apache License, Version 2.0 (or later)
+                      http://www.apache.org/licenses/LICENSE-2.0
+
+Change Date:          2030-08-11
+
+-----------------------------------------------------------------------------
+
+Terms
+
+The Licensor hereby grants you the right to copy, modify, create derivative
+works, redistribute, and make non-production use of the Licensed Work. The
+Licensor may make an Additional Use Grant, above, permitting limited
+production use.
+
+Effective on the Change Date, or the fourth anniversary of the first public
+availability of the Licensed Work, whichever is later, the Licensed Work
+will be made available under the terms of the Change License, and the
+restrictions set out herein will no longer apply.
+
+You may not make commercial use of the Licensed Work other than as allowed
+by the Additional Use Grant, unless the Licensor grants you written
+permission. Commercial use includes, but is not limited to, offering the
+Licensed Work to third parties as a managed service or hosted platform,
+selling or distributing the Licensed Work or derivative works thereof for a
+fee, or using the Licensed Work in a way that provides revenue to you by
+granting access to it to third parties.
+
+THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT OF
+THIRD PARTY RIGHTS. IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE
+OR OTHER DEALINGS IN THE WORK.
+
+-----------------------------------------------------------------------------

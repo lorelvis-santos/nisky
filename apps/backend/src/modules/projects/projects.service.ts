@@ -272,6 +272,24 @@ export class ProjectService {
     return { success: true };
   }
 
+  async leave(userId: string, projectId: string) {
+    const project = await prisma.project.findFirst({ where: { id: projectId }, select: { userId: true, isDefault: true } });
+    if (!project) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
+    if (project.userId === userId) throw new AppError("FORBIDDEN", "El propietario no puede salirse del proyecto");
+    if (project.isDefault) throw new AppError("FORBIDDEN", "El proyecto por defecto es personal");
+    const member = await prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId, userId } },
+    });
+    if (!member) throw new AppError("NOT_FOUND", "No eres miembro de este proyecto");
+    await prisma.$transaction([
+      prisma.task.updateMany({ where: { projectId, assigneeId: userId }, data: { assigneeId: null } }),
+      prisma.task.updateMany({ where: { projectId, userId }, data: { userId: project.userId } }),
+      prisma.projectMember.delete({ where: { id: member.id } }),
+    ]);
+    emitToUsers(await getProjectAudience(projectId), "projects", { kind: "member_removed", projectId, userId });
+    return { success: true };
+  }
+
   async updateMemberRole(userId: string, projectId: string, memberId: string, role: "OWNER" | "MEMBER") {
     await assertProjectOwner(userId, projectId);
     const project = await prisma.project.findFirst({ where: { id: projectId }, select: { isDefault: true } });

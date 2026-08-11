@@ -81,6 +81,7 @@ export class PushService {
   }
 
   async sendToUser(userId: string, payload: NotificationPayload) {
+    const type = typeof payload.data?.type === "string" ? payload.data.type : "push";
     if (payload.data?.type === "COMMENT" && typeof payload.data.projectId === "string") {
       try {
         const inChat = await isUserInChat(
@@ -88,8 +89,12 @@ export class PushService {
           payload.data.projectId,
           typeof payload.data.taskId === "string" ? payload.data.taskId : null,
         );
+        console.log(
+          `[notif] comment-suppress=${inChat ? "yes" : "no"} type=${type} user=${userId.slice(0, 8)} project=${payload.data.projectId.slice(0, 8)}${payload.data.taskId ? ` task=${String(payload.data.taskId).slice(0, 8)}` : ""} title="${payload.title}"`,
+        );
         if (inChat) return { sent: 0, total: 0 };
-      } catch {
+      } catch (error) {
+        console.error(`[notif] comment-presence-check-error: ${(error as Error).message}`);
         /* best effort: si Redis falla, se envía el push */
       }
     }
@@ -149,7 +154,7 @@ export class PushService {
       totalCount: total,
       error: firstError,
     });
-    console.log(`[notif] type=${typeof payload.data?.type === "string" ? payload.data.type : "push"} status=${status} sent=${sent}/${total} "${payload.title}"`);
+    console.log(`[notif] result type=${type} status=${status} sent=${sent}/${total} user=${userId.slice(0, 8)} "${payload.title}"${firstError ? ` error=${firstError}` : ""}`);
 
     return { sent, total };
   }

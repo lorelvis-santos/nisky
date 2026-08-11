@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { corsConfig } from "./cors";
 import { SocketEvents, SocketRooms, type DataChangedPayload } from "./socket.constants";
 import { patService } from "../modules/auth/pat.service";
+import { socketPresence, trackPresence } from "../infra/redis/client";
 
 interface ServerToClientEvents {
   [SocketEvents.DATA_CHANGED]: (payload: DataChangedPayload) => void;
@@ -11,7 +12,10 @@ interface ServerToClientEvents {
   [SocketEvents.FORCE_UPDATE]: () => void;
 }
 
-interface ClientToServerEvents {}
+interface ClientToServerEvents {
+  [SocketEvents.PRESENCE_JOIN]: (payload: { projectId: string; taskId?: string | null }) => void;
+  [SocketEvents.PRESENCE_LEAVE]: (payload: { projectId: string; taskId?: string | null }) => void;
+}
 
 interface InterServerEvents {}
 
@@ -50,6 +54,39 @@ export function initSocket(httpServer: HttpServer): TypedServer {
 
   io.on("connection", (socket: TypedSocket) => {
     socket.join(SocketRooms.USER(socket.data.user.id));
+
+    const presenceIntervals = new Map<string, NodeJS.Timeout>();
+
+    socket.on(SocketEvents.PRESENCE_JOIN, ({ projectId, taskId }: { projectId: string; taskId?: string | null }) => {
+      trackPresence(socket.data.user.id, projectId, taskId ?? null, true).catch(() => undefined);
+      const key = `${projectId}:${taskId ?? ""}`;
+      const existing = presenceIntervals.get(key);
+      if (existing) clearInterval(existing);
+      const interval = setInterval(() => {
+        trackPresence(socket.data.user.id, projectId, taskId ?? null, true).catch(() => undefined);
+      }, socketPresence.refreshIntervalMs);
+      presenceIntervals.set(key, interval);
+      socket.on(SocketEvents.PRESENCE_LEAVE, () => {
+        const current = presenceIntervals.get(key);
+        if (current) clearInterval(current);
+        presenceIntervals.delete(key);
+        trackPresence(socket.data.user.id, projectId, taskId ?? null, false).catch(() => undefined);
+      });
+    });
+
+    socket.on(SocketEvents.PRESENCE_LEAVE, ({ projectId, taskId }: { projectId: string; taskId?: string | null }) => {
+      const key = `${projectId}:${taskId ?? ""}`;
+      const current = presenceIntervals.get(key);
+      if (current) clearInterval(current);
+      presenceIntervals.delete(key);
+      trackPresence(socket.data.user.id, projectId, taskId ?? null, false).catch(() => undefined);
+    });
+
+    socket.on("disconnect", () => {
+      for (const interval of presenceIntervals.values()) clearInterval(interval);
+      presenceIntervals.clear();
+    });
+
     socket.emit(SocketEvents.SERVER_BOOT_VERSION, { version: SERVER_BOOT_VERSION });
   });
 

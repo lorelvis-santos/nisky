@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthProvider";
+import { sendPresence } from "@/lib/socket";
 import type { Comment } from "@/types/entities";
 import { listProjectComments, listTaskComments } from "./api";
 import { useCommentMutations, useProjectComments, useTaskComments } from "./hooks/useComments";
@@ -41,7 +42,7 @@ function CommentSkeleton() {
   );
 }
 
-export function CommentThread({ kind, id }: { kind: "project" | "task"; id: string }) {
+export function CommentThread({ kind, id, projectId }: { kind: "project" | "task"; id: string; projectId?: string | null }) {
   const { user } = useAuth();
   const projectQuery = useProjectComments(kind === "project" ? id : null, { order: "desc", limit: PAGE_SIZE });
   const taskQuery = useTaskComments(kind === "task" ? id : null, { order: "desc", limit: PAGE_SIZE });
@@ -55,6 +56,14 @@ export function CommentThread({ kind, id }: { kind: "project" | "task"; id: stri
   const [loadingOlder, setLoadingOlder] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const prevNewestLength = useRef<number>(0);
+
+  const presenceProjectId = kind === "project" ? id : (projectId ?? null);
+  const presenceTaskId = kind === "task" ? id : null;
+
+  useEffect(() => {
+    sendPresence(presenceProjectId ?? "", presenceTaskId ?? null, true);
+    return () => sendPresence(presenceProjectId ?? "", presenceTaskId ?? null, false);
+  }, [presenceProjectId, presenceTaskId]);
 
   useEffect(() => {
     setOlderAsc([]);

@@ -15,7 +15,11 @@ export class CommentService {
       resolvedProjectId = task?.projectId ?? null;
     }
     if (!resolvedProjectId) return;
-    emitToUsers(await getProjectAudience(resolvedProjectId), "comments");
+    emitToUsers(await getProjectAudience(resolvedProjectId), "comments", {
+      kind: taskId ? "task" : "project",
+      projectId: resolvedProjectId,
+      taskId: taskId ?? undefined,
+    });
   }
   async listProjectComments(userId: string, projectId: string, query: { page?: number; limit?: number; order?: "asc" | "desc" }) {
     await assertProjectAccess(userId, projectId);
@@ -45,7 +49,7 @@ export class CommentService {
       include: { author: { select: COMMENT_AUTHOR_SELECT } },
     });
     await this.notifyProjectMembers(projectId, userId, comment);
-    emitToUsers(await getProjectAudience(projectId), "comments");
+    emitToUsers(await getProjectAudience(projectId), "comments", { kind: "project", projectId });
     return comment;
   }
 
@@ -79,7 +83,7 @@ export class CommentService {
     const task = await prisma.task.findUnique({ where: { id: taskId }, select: { projectId: true } });
     if (task?.projectId) {
       await this.notifyProjectMembers(task.projectId, userId, comment, taskId);
-      emitToUsers(await getProjectAudience(task.projectId), "comments");
+      emitToUsers(await getProjectAudience(task.projectId), "comments", { kind: "task", projectId: task.projectId, taskId });
     }
     return comment;
   }
@@ -118,7 +122,9 @@ export class CommentService {
       where: { projectId },
       select: { userId: true },
     });
-    const pushTargets = members.map((member) => member.userId); // Sin excluir al autor
+    const pushTargets = members
+      .filter((member) => member.userId !== authorId)
+      .map((member) => member.userId);
 
     const authorName = comment.author.name ?? comment.author.email;
     const preview = comment.body.length > 80 ? `${comment.body.slice(0, 80)}…` : comment.body;

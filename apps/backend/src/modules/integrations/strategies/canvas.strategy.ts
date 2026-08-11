@@ -1,4 +1,5 @@
 import { AppError } from "../../../utils/errors/handler";
+import { sanitizeDomain } from "../domain";
 import type { IntegrationStrategy, RemoteItem } from "./types";
 
 const TIMEOUT_MS = 30_000;
@@ -48,7 +49,7 @@ export const canvasStrategy: IntegrationStrategy = {
   prefix: "canvas:",
 
   async connect(data) {
-    const domain = data.domain.replace(/\/+$/, "");
+    const domain = sanitizeDomain(data.domain);
     const token = data.token ?? "";
     if (!token) throw new AppError("BAD_REQUEST", "Canvas requiere un token de acceso");
     await canvasGet(domain, token, "/users/self");

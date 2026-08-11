@@ -1,4 +1,5 @@
 import { AppError } from "../../../utils/errors/handler";
+import { sanitizeDomain } from "../domain";
 import { moodleEvents, moodleToken } from "./moodle.python";
 import type { ConnectInput, IntegrationStrategy, RemoteItem } from "./types";
 
@@ -36,7 +37,7 @@ export const moodleStrategy: IntegrationStrategy = {
   prefix: "moodle:",
 
   async connect(data) {
-    const domain = data.domain.replace(/\/+$/, "");
+    const domain = sanitizeDomain(data.domain);
     let token = data.token ?? "";
     if (token) {
       const probe = moodleEvents(domain, token, 0, 30);

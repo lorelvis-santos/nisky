@@ -9,6 +9,7 @@ const HOUR_PX = 56;
 const MIN_DURATION = 15;
 const EDGE = 48;
 const EDGE_STEP = 24;
+const MOVE_THRESHOLD = 8;
 
 function monday(date: Date) {
   const result = new Date(date);
@@ -186,16 +187,20 @@ export function TimeBlockWeekGrid({
     (event: PointerEvent) => {
       const state = draftRef.current;
       if (!state) return;
-      event.preventDefault();
       const down = downRef.current;
-      if (
-        down &&
-        !movedRef.current &&
-        (Math.abs(event.clientX - down.x) > 6 ||
-          Math.abs(event.clientY - down.y) > 6)
-      ) {
-        movedRef.current = true;
+      if (!movedRef.current && down) {
+        const dx = event.clientX - down.x;
+        const dy = event.clientY - down.y;
+        if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) {
+          if (state.kind === "move" && Math.abs(dy) > Math.abs(dx)) {
+            return;
+          }
+          movedRef.current = true;
+          rafRef.current = requestAnimationFrame(scrollTick);
+        }
       }
+      if (!movedRef.current) return;
+      event.preventDefault();
       pointerPosRef.current = { x: event.clientX, y: event.clientY };
 
       let colRect: DOMRect | null = null;
@@ -252,7 +257,7 @@ export function TimeBlockWeekGrid({
         next.days,
       );
     },
-    [dayStartMin, dayEndMin],
+    [dayStartMin, dayEndMin, scrollTick],
   );
 
   const endResize = useCallback(
@@ -281,7 +286,7 @@ export function TimeBlockWeekGrid({
           state.endMin,
           state.days,
         );
-      } else if (state.kind === "move" && !movedRef.current) {
+      } else if (!movedRef.current) {
         onBlockClickRef.current(state.block);
       }
     },
@@ -292,8 +297,7 @@ export function TimeBlockWeekGrid({
     window.addEventListener("pointermove", moveHandle);
     window.addEventListener("pointerup", endResize);
     window.addEventListener("pointercancel", endResize);
-    rafRef.current = requestAnimationFrame(scrollTick);
-  }, [moveHandle, endResize, scrollTick]);
+  }, [moveHandle, endResize]);
 
   const startResize = (
     event: React.PointerEvent<HTMLDivElement>,
@@ -333,7 +337,6 @@ export function TimeBlockWeekGrid({
       width: colRect ? colRect.width - 8 : 0,
       headerOffset: colRect ? colRect.top - gridRect.top : 0,
     };
-    onBlockClickRef.current(block);
     setDraft(draftRef.current);
     attachWindowListeners();
   };
@@ -373,7 +376,6 @@ export function TimeBlockWeekGrid({
       width: colRect.width - 8,
       headerOffset: colRect.top - gridRect.top,
     };
-    onBlockClickRef.current(block);
     setDraft(draftRef.current);
     attachWindowListeners();
   };

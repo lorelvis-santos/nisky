@@ -1,11 +1,11 @@
 "use client";
 
-import { CheckSquare2, GripVertical, MessageSquare, MoreHorizontal, Play, Square, Timer } from "lucide-react";
+import { CalendarDays, CheckSquare2, GripVertical, MessageSquare, MoreHorizontal, Play, Square, Timer } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import type { Task } from "@/types/entities";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime, isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "./PriorityChip";
 import { taskDragId } from "../dnd/TasksDnDProvider";
 import { useTaskSelection } from "../selection/TaskSelectionContext";
@@ -35,6 +35,7 @@ export function BacklogItemShell({
 }) {
   const subtaskTotal = task.subtaskCount ?? task.subtasks?.length ?? 0;
   const completedSubtasks = task.completedSubtasks ?? task.subtasks?.filter((subtask) => subtask.completed).length ?? 0;
+  const overdue = isTaskOverdue(task);
   const selection = useTaskSelection();
   const isSelecting = selection.mode;
   const selected = selection.isSelected(task.id);
@@ -127,6 +128,18 @@ export function BacklogItemShell({
             </span>
           )}
           <PriorityChip priority={task.priority} />
+          {task.dueDate && (
+            <span
+              className={cn(
+                "flex items-center gap-1 font-data-mono text-data-mono text-[11px]",
+                overdue ? "text-error" : "text-on-surface-variant",
+              )}
+              title={task.dueDate}
+            >
+              <CalendarDays size={12} />
+              {formatDateTime(task.dueDate)}
+            </span>
+          )}
           <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
           {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
           {(task.commentCount ?? 0) > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs" title="Comentarios"><MessageSquare size={13} /> {task.commentCount}</span>}

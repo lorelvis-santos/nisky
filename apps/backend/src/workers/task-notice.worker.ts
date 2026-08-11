@@ -90,7 +90,8 @@ export async function processTaskDueNotices(): Promise<TaskDueNoticeResult> {
     let body: string;
     if (isToday) {
       title = `📝 ${task.title}`;
-      body = `Vence hoy a las ${due.toFormat("HH:mm")} · ${label}`;
+      const isEndOfDay = due.hour === 23 && due.minute === 59;
+      body = isEndOfDay ? `Vence hoy · ${label}` : `Vence hoy a las ${due.toFormat("HH:mm")} · ${label}`;
     } else {
       title = `📝 ${task.title}`;
       body = `Vence mañana · ${label}`;

@@ -21,9 +21,9 @@ const taskInclude = {
 function taskDate(value: string | null | undefined) {
   if (value === undefined || value === null) return value;
   const TZ = "America/Santo_Domingo";
-  // Date-only (YYYY-MM-DD): treat as local calendar day → noon UTC
+  // Date-only (YYYY-MM-DD): treat as end of local day (23:59)
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return new Date(`${value}T12:00:00.000Z`);
+    return DateTime.fromISO(`${value}T23:59`, { zone: TZ }).toUTC().toJSDate();
   }
   // datetime-local (YYYY-MM-DDTHH:mm) without timezone: interpret as local TZ
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {

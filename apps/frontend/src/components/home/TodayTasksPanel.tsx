@@ -10,7 +10,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
-import { localDateKey } from "@/lib/utils";
+import { formatDateTime, isTaskOverdue, localDateKey } from "@/lib/utils";
 import type { Task } from "@/types/entities";
 
 const priorityRank = { URGENT: 0, HIGH: 1, NORMAL: 2, LOW: 3 } as const;

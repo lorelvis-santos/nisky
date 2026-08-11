@@ -1,11 +1,11 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, CheckSquare2, Circle, GripVertical, MessageSquare, MoreHorizontal, Play, Square, Timer } from "lucide-react";
+import { AlertCircle, CalendarDays, CheckCircle2, CheckSquare2, Circle, GripVertical, MessageSquare, MoreHorizontal, Play, Square, Timer } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import type { Task } from "@/types/entities";
-import { cn, isTaskOverdue } from "@/lib/utils";
+import { cn, formatDateTime, isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "./PriorityChip";
 import { taskDragId } from "../dnd/TasksDnDProvider";
 import { useTaskSelection } from "../selection/TaskSelectionContext";
@@ -133,6 +133,18 @@ export function TaskCardShell({
             </span>
           )}
           <PriorityChip priority={task.priority} />
+          {task.dueDate && (
+            <span
+              className={cn(
+                "flex items-center gap-1 font-data-mono text-data-mono text-[11px]",
+                overdue ? "text-error" : "text-on-surface-variant",
+              )}
+              title={task.dueDate}
+            >
+              <CalendarDays size={12} />
+              {formatDateTime(task.dueDate)}
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {(task.commentCount ?? 0) > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-on-surface-variant" title="Comentarios"><MessageSquare size={13} /> {task.commentCount}</span>}

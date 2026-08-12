@@ -2,8 +2,8 @@ import Redis from "ioredis";
 
 export const REDIS_LOG_PREFIX = "[redis]";
 
-const PRESENCE_TTL_SECONDS = 60;
-const REFRESH_INTERVAL_MS = 30_000;
+const PRESENCE_TTL_SECONDS = 10;
+const REFRESH_INTERVAL_MS = 5_000;
 
 export const redis = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", {
   maxRetriesPerRequest: 3,

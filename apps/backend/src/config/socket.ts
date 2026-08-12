@@ -55,30 +55,33 @@ export function initSocket(httpServer: HttpServer): TypedServer {
   io.on("connection", (socket: TypedSocket) => {
     socket.join(SocketRooms.USER(socket.data.user.id));
 
-    const presenceIntervals = new Map<string, NodeJS.Timeout>();
+    const presenceKeys = new Map<string, { interval: NodeJS.Timeout; projectId: string; taskId: string | null }>();
 
     socket.on(SocketEvents.PRESENCE_JOIN, ({ projectId, taskId }: { projectId: string; taskId?: string | null }) => {
       trackPresence(socket.data.user.id, projectId, taskId ?? null, true).catch(() => undefined);
       const key = `${projectId}:${taskId ?? ""}`;
-      const existing = presenceIntervals.get(key);
-      if (existing) clearInterval(existing);
+      const existing = presenceKeys.get(key);
+      if (existing) clearInterval(existing.interval);
       const interval = setInterval(() => {
         trackPresence(socket.data.user.id, projectId, taskId ?? null, true).catch(() => undefined);
       }, socketPresence.refreshIntervalMs);
-      presenceIntervals.set(key, interval);
+      presenceKeys.set(key, { interval, projectId, taskId: taskId ?? null });
     });
 
     socket.on(SocketEvents.PRESENCE_LEAVE, ({ projectId, taskId }: { projectId: string; taskId?: string | null }) => {
       const key = `${projectId}:${taskId ?? ""}`;
-      const current = presenceIntervals.get(key);
-      if (current) clearInterval(current);
-      presenceIntervals.delete(key);
+      const current = presenceKeys.get(key);
+      if (current) clearInterval(current.interval);
+      presenceKeys.delete(key);
       trackPresence(socket.data.user.id, projectId, taskId ?? null, false).catch(() => undefined);
     });
 
     socket.on("disconnect", () => {
-      for (const interval of presenceIntervals.values()) clearInterval(interval);
-      presenceIntervals.clear();
+      for (const { interval, projectId, taskId } of presenceKeys.values()) {
+        clearInterval(interval);
+        trackPresence(socket.data.user.id, projectId, taskId, false).catch(() => undefined);
+      }
+      presenceKeys.clear();
     });
 
     socket.emit(SocketEvents.SERVER_BOOT_VERSION, { version: SERVER_BOOT_VERSION });

@@ -23,16 +23,14 @@ export function ScheduleBlockModal({
   const projectsQuery = useProjectsQuery();
   const mutations = useTimeBlockMutations();
   const projects = projectsQuery.data ?? [];
-  const defaultProject = projects.find((project) => project.isDefault);
   const busy = mutations.create.isPending || mutations.update.isPending || mutations.remove.isPending;
 
   if (!open) return null;
-  return <ModalBody busy={busy} defaultProjectId={defaultProject?.id} formKey={target?.id ?? formKey} mutations={mutations} onClose={onClose} projects={projects} setFormKey={setFormKey} target={target ?? null} />;
+  return <ModalBody busy={busy} formKey={target?.id ?? formKey} mutations={mutations} onClose={onClose} projects={projects} setFormKey={setFormKey} target={target ?? null} />;
 }
 
 function ModalBody({
   busy,
-  defaultProjectId,
   formKey,
   mutations,
   onClose,
@@ -41,7 +39,6 @@ function ModalBody({
   target,
 }: {
   busy: boolean;
-  defaultProjectId: string | undefined;
   formKey: number | string;
   mutations: ReturnType<typeof useTimeBlockMutations>;
   onClose: () => void;
@@ -103,7 +100,6 @@ function ModalBody({
         <div className="overflow-y-auto p-5" data-modal-scroll>
           <TimeBlockEditor
             busy={busy}
-            defaultProjectId={defaultProjectId}
             key={target?.id ?? `schedule-${formKey}`}
             onDelete={remove}
             onSave={save}

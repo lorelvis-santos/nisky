@@ -9,7 +9,6 @@ import { DAY_NAMES, DAY_ORDER, minToTime, timeToMin } from "../lib/time";
 export function TimeBlockEditor({
   target,
   prefill,
-  defaultProjectId,
   projects,
   busy,
   onSave,
@@ -18,7 +17,6 @@ export function TimeBlockEditor({
 }: {
   target: TimeBlock | null;
   prefill?: { dayOfWeek: number; startMin: number; endMin: number };
-  defaultProjectId: string | undefined;
   projects: Project[];
   busy: boolean;
   onSave: (data: CreateTimeBlockPayload) => Promise<void>;
@@ -26,7 +24,7 @@ export function TimeBlockEditor({
   onDelete: () => Promise<void>;
 }) {
   const [name, setName] = useState(target?.name ?? "");
-  const [projectId, setProjectId] = useState(target?.projectId ?? defaultProjectId ?? "");
+  const [projectId, setProjectId] = useState(target ? target.projectId ?? "" : "");
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(target?.daysOfWeek ?? [prefill?.dayOfWeek ?? 1]);
   const [startTime, setStartTime] = useState(minToTime(target?.startMin ?? prefill?.startMin ?? 9 * 60));
   const [endTime, setEndTime] = useState(minToTime(target?.endMin ?? prefill?.endMin ?? 11 * 60));

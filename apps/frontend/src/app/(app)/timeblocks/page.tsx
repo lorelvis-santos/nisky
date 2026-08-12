@@ -66,7 +66,6 @@ function TimeBlocksContent() {
   const settingsQuery = useTimeBlockSettingsQuery();
   const settingsMutation = useTimeBlockSettingsMutation();
   const settings = settingsQuery.data;
-  const defaultProject = projects.find((project) => project.isDefault);
   const isMobile = useIsMobile(1023);
   const blocks = query.data ?? [];
   const [editing, setEditing] = useState<TimeBlock | null>(null);
@@ -233,7 +232,6 @@ function TimeBlocksContent() {
   const editor = (
     <TimeBlockEditor
       busy={busy}
-      defaultProjectId={defaultProject?.id}
       key={editing?.id ?? `create-${formKey}-${prefill?.dayOfWeek ?? ""}-${prefill?.startMin ?? ""}-${prefill?.endMin ?? ""}`}
       onDelete={remove}
       onSave={save}

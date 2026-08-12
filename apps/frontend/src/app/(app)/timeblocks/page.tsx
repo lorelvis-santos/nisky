@@ -21,6 +21,67 @@ import type { TimeBlock } from "@/types/entities";
 
 type SlotPrefill = { dayOfWeek: number; startMin: number; endMin: number };
 
+function ResizeResolveModal({
+  date,
+  onException,
+  onOriginal,
+  onCancel,
+  busy,
+}: {
+  date: string;
+  onException: () => void;
+  onOriginal: () => void;
+  onCancel: () => void;
+  busy: boolean;
+}) {
+  useModalScrollLock();
+  return (
+    <div
+      aria-modal="true"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]"
+      onClick={onCancel}
+      role="dialog"
+    >
+      <div
+        className="w-full max-w-md border border-outline-variant bg-surface p-container-padding"
+        data-modal-scroll
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="font-headline-xs text-headline-xs">¿Aplicar cambio a un solo día?</h2>
+        <p className="mt-3 font-body-md text-body-md text-on-surface-variant">
+          Este bloque se repite varios días. Puedes moverlo solo el {date} o cambiar el horario original para siempre.
+        </p>
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <button
+            className="border border-outline-variant px-4 py-2 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
+            disabled={busy}
+            onClick={onCancel}
+            type="button"
+          >
+            Cancelar
+          </button>
+          <button
+            className="border border-primary px-4 py-2 font-body-md text-body-md text-primary hover:bg-primary-container/40 disabled:opacity-50"
+            disabled={busy}
+            onClick={onOriginal}
+            type="button"
+          >
+            Cambiar original
+          </button>
+          <button
+            className="bg-primary-container px-4 py-2 font-body-md text-body-md text-on-primary hover:bg-primary disabled:opacity-50"
+            disabled={busy}
+            onClick={onException}
+            type="button"
+          >
+            Solo este día
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MobileEditorModal({
   children,
   title,
@@ -74,6 +135,13 @@ function TimeBlocksContent() {
   const [formKey, setFormKey] = useState(0);
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [resolveDraft, setResolveDraft] = useState<{
+    block: TimeBlock;
+    startMin: number;
+    endMin: number;
+    days: number[];
+    draggedDate: string;
+  } | null>(null);
   const [dayStartTime, setDayStartTime] = useState("06:00");
   const [dayEndTime, setDayEndTime] = useState("23:00");
   const settingsBusy = settingsMutation.isPending;
@@ -183,21 +251,8 @@ function TimeBlocksContent() {
     if (startMin === block.startMin && endMin === block.endMin && !daysChanged) return;
 
     if (!daysChanged && draggedDate && (block.daysOfWeek.length > 1 || block.repeatEveryWeeks > 1)) {
-      if (confirm(`¿Quieres aplicar el cambio de horario solo para este día (${draggedDate})?\n\n[Aceptar] = Solo este día (excepción)\n[Cancelar] = Cambiar el bloque original`)) {
-        try {
-          await mutations.createException.mutateAsync({
-            id: block.id,
-            date: draggedDate,
-            action: "move",
-            startMin,
-            endMin,
-          });
-          toast.success("Excepción guardada para este día");
-        } catch {
-          toast.error("Ups, no pudimos crear la excepción.");
-        }
-        return;
-      }
+      setResolveDraft({ block, startMin, endMin, days, draggedDate });
+      return;
     }
 
     try {
@@ -213,6 +268,43 @@ function TimeBlocksContent() {
     } catch {
       toast.error("Ups, no pudimos ajustar el bloque. Inténtalo de nuevo.");
     }
+  };
+
+  const resolveAsException = async () => {
+    if (!resolveDraft) return;
+    const { block, startMin, endMin, draggedDate } = resolveDraft;
+    try {
+      await mutations.createException.mutateAsync({
+        id: block.id,
+        date: draggedDate,
+        action: "move",
+        startMin,
+        endMin,
+      });
+      toast.success("Excepción guardada para este día");
+    } catch {
+      toast.error("Ups, no pudimos crear la excepción.");
+    }
+    setResolveDraft(null);
+  };
+
+  const resolveAsOriginal = async () => {
+    if (!resolveDraft) return;
+    const { block, startMin, endMin, days } = resolveDraft;
+    try {
+      await mutations.update.mutateAsync({
+        id: block.id,
+        payload: { startMin, endMin, daysOfWeek: days },
+      });
+      setEditing((current) =>
+        current?.id === block.id
+          ? { ...current, startMin, endMin, daysOfWeek: days }
+          : current,
+      );
+    } catch {
+      toast.error("Ups, no pudimos ajustar el bloque. Inténtalo de nuevo.");
+    }
+    setResolveDraft(null);
   };
 
   const closeEditor = () => {
@@ -263,12 +355,29 @@ function TimeBlocksContent() {
     }
   };
 
+  const skipToday = async () => {
+    if (!editing) return;
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    try {
+      await mutations.createException.mutateAsync({
+        id: editing.id,
+        date: dateStr,
+        action: "skip",
+      });
+      toast.success("Bloque saltado hoy");
+    } catch {
+      toast.error("Ups, no pudimos saltar el bloque.");
+    }
+  };
+
   const editor = (
     <TimeBlockEditor
       busy={busy}
       key={editing?.id ?? `create-${formKey}-${prefill?.dayOfWeek ?? ""}-${prefill?.startMin ?? ""}-${prefill?.endMin ?? ""}`}
       onDelete={remove}
       onSave={save}
+      onSkipToday={skipToday}
       onToggleActive={toggleActive}
       prefill={prefill ?? undefined}
       projects={projects}
@@ -406,6 +515,16 @@ function TimeBlocksContent() {
         >
           {editor}
         </MobileEditorModal>
+      )}
+
+      {resolveDraft && (
+        <ResizeResolveModal
+          busy={mutations.createException.isPending || mutations.update.isPending}
+          date={resolveDraft.draggedDate}
+          onCancel={() => setResolveDraft(null)}
+          onException={() => void resolveAsException()}
+          onOriginal={() => void resolveAsOriginal()}
+        />
       )}
     </section>
   );

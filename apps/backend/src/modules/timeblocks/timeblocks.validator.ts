@@ -67,3 +67,8 @@ export const createTimeBlockExceptionSchema = z.object({
   }
 );
 export type CreateTimeBlockExceptionDto = z.infer<typeof createTimeBlockExceptionSchema>;
+
+export const exceptionIdParamSchema = z.object({
+  id: z.uuid("El identificador no es válido"),
+  exceptionId: z.uuid("La excepción no es válida"),
+});

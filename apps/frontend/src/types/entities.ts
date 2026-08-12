@@ -110,6 +110,18 @@ export interface CalendarEvent {
   updatedAt: string;
 }
 
+export interface TimeBlockException {
+  id: string;
+  blockId: string;
+  userId: string;
+  date: string;
+  action: "skip" | "move";
+  startMin: number | null;
+  endMin: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface NotificationSettings {
   userId: string;
   morningDigest: boolean;

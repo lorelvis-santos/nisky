@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../../middlewares/auth.middleware";
 import { validateBody, validateParams } from "../../middlewares/validate.middleware";
 import { TimeBlockController } from "./timeblocks.controller";
-import { createTimeBlockSchema, idParamSchema, updateTimeBlockSchema, updateTimeBlockSettingsSchema, createTimeBlockExceptionSchema } from "./timeblocks.validator";
+import { createTimeBlockSchema, idParamSchema, updateTimeBlockSchema, updateTimeBlockSettingsSchema, createTimeBlockExceptionSchema, exceptionIdParamSchema } from "./timeblocks.validator";
 
 const router = Router();
 const controller = new TimeBlockController();
@@ -17,5 +17,7 @@ router.post("/", validateBody(createTimeBlockSchema), controller.create);
 router.patch("/:id", validateParams(idParamSchema), validateBody(updateTimeBlockSchema), controller.update);
 router.delete("/:id", validateParams(idParamSchema), controller.delete);
 router.post("/:id/exception", validateParams(idParamSchema), validateBody(createTimeBlockExceptionSchema), controller.exception);
+router.get("/:id/exceptions", validateParams(idParamSchema), controller.listExceptions);
+router.delete("/:id/exceptions/:exceptionId", validateParams(exceptionIdParamSchema), controller.deleteException);
 
 export default router;

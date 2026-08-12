@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Project, TimeBlock } from "@/types/entities";
+import { CalendarX, Trash2 } from "lucide-react";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import type { Project, TimeBlock, TimeBlockException } from "@/types/entities";
 import type { CreateTimeBlockPayload } from "../api/timeblocks";
 import { DAY_NAMES, DAY_ORDER, minToTime, timeToMin } from "../lib/time";
+import { useBlockExceptionsQuery, useTimeBlockMutations } from "../hooks/useTimeBlocks";
 
 export function TimeBlockEditor({
   target,
@@ -14,6 +17,7 @@ export function TimeBlockEditor({
   onSave,
   onToggleActive,
   onDelete,
+  onSkipToday,
 }: {
   target: TimeBlock | null;
   prefill?: { dayOfWeek: number; startMin: number; endMin: number };
@@ -22,6 +26,7 @@ export function TimeBlockEditor({
   onSave: (data: CreateTimeBlockPayload) => Promise<void>;
   onToggleActive: () => Promise<void>;
   onDelete: () => Promise<void>;
+  onSkipToday?: () => Promise<void>;
 }) {
   const [name, setName] = useState(target?.name ?? "");
   const [projectId, setProjectId] = useState(target ? target.projectId ?? "" : "");
@@ -31,6 +36,18 @@ export function TimeBlockEditor({
   const [repeatEveryWeeks, setRepeatEveryWeeks] = useState(target?.repeatEveryWeeks ?? 1);
   const [repeatEndsAt, setRepeatEndsAt] = useState(target?.repeatEndsAt ? target.repeatEndsAt.slice(0, 10) : "");
   const [remindBeforeMin, setRemindBeforeMin] = useState(target?.remindBeforeMin ?? 0);
+  const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
+  const [exceptionToDelete, setExceptionToDelete] = useState<TimeBlockException | null>(null);
+
+  const exceptionsQuery = useBlockExceptionsQuery(target?.id ?? null);
+  const exceptions = exceptionsQuery.data ?? [];
+  const exceptionMutations = useTimeBlockMutations();
+
+  const todayISO = (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  })();
+  const appliesToday = target ? target.daysOfWeek.includes(new Date().getDay()) : false;
 
   const previousTargetRef = useRef<TimeBlock | null>(target);
   useEffect(() => {
@@ -69,6 +86,23 @@ export function TimeBlockEditor({
       repeatEndsAt: repeatEndsAt || null,
       remindBeforeMin,
     });
+  };
+
+  const formatExceptionDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" });
+  };
+
+  const handleDeleteException = async () => {
+    if (!exceptionToDelete || !target) return;
+    try {
+      await exceptionMutations.deleteException.mutateAsync({ blockId: target.id, exceptionId: exceptionToDelete.id });
+      toast.success("Excepción eliminada");
+    } catch {
+      toast.error("No se pudo eliminar la excepción");
+    }
+    setExceptionToDelete(null);
   };
 
   return (
@@ -179,6 +213,71 @@ export function TimeBlockEditor({
             Eliminar
           </button>
         </div>
+      )}
+      {target && target.isActive && appliesToday && (
+        <button
+          className="flex w-full items-center justify-center gap-2 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-error disabled:opacity-50"
+          disabled={busy}
+          onClick={() => setSkipConfirmOpen(true)}
+          type="button"
+        >
+          <CalendarX size={15} /> Saltar hoy
+        </button>
+      )}
+      {target && exceptions.length > 0 && (
+        <div className="border-t border-outline-variant pt-3">
+          <span className="font-label-caps text-label-caps text-on-surface-variant">EXCEPCIONES ({exceptions.length})</span>
+          <ul className="mt-2 flex flex-col divide-y divide-outline-variant">
+            {exceptions.map((exc) => (
+              <li className="flex items-center justify-between gap-2 py-2" key={exc.id}>
+                <div className="min-w-0">
+                  <p className="truncate font-body-sm text-body-sm text-on-surface">{formatExceptionDate(exc.date)}</p>
+                  <p className="font-data-mono text-data-mono text-[10px] text-on-surface-variant">
+                    {exc.action === "skip"
+                      ? "Saltado"
+                      : `Movido a ${exc.startMin !== null ? minToTime(exc.startMin) : ""}–${exc.endMin !== null ? minToTime(exc.endMin) : ""}`}
+                  </p>
+                </div>
+                <button
+                  aria-label="Eliminar excepción"
+                  className="shrink-0 p-1 text-on-surface-variant hover:text-error"
+                  disabled={busy}
+                  onClick={() => setExceptionToDelete(exc)}
+                  type="button"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {skipConfirmOpen && target && (
+        <ConfirmModal
+          cancelLabel="Cancelar"
+          confirmLabel="Saltar hoy"
+          danger
+          loading={busy}
+          message={<>¿Saltar este bloque el día de hoy ({formatExceptionDate(todayISO)})? No se notificará ni contará como enfoque.</>}
+          onClose={() => setSkipConfirmOpen(false)}
+          onConfirm={async () => {
+            setSkipConfirmOpen(false);
+            if (onSkipToday) await onSkipToday();
+          }}
+          title="¿Saltar bloque hoy?"
+        />
+      )}
+      {exceptionToDelete && (
+        <ConfirmModal
+          cancelLabel="Cancelar"
+          confirmLabel="Eliminar"
+          danger
+          loading={busy}
+          message={<>¿Eliminar la excepción del {formatExceptionDate(exceptionToDelete.date)}? El bloque volverá a su horario normal ese día.</>}
+          onClose={() => setExceptionToDelete(null)}
+          onConfirm={() => void handleDeleteException()}
+          title="¿Eliminar excepción?"
+        />
       )}
     </div>
   );

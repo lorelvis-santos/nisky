@@ -2,7 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createTimeBlock,
   deleteTimeBlock,
+  deleteTimeBlockException,
   getActiveBlock,
+  getTimeBlockExceptions,
   getTimeBlockSettings,
   getTimeBlocks,
   getTodayBlocks,
@@ -42,6 +44,14 @@ export function useTodayBlocksQuery() {
   return useQuery({ queryKey: ["timeblocks", "today"], queryFn: getTodayBlocks, refetchInterval: 60_000 });
 }
 
+export function useBlockExceptionsQuery(blockId: string | null) {
+  return useQuery({
+    queryKey: ["timeblocks", blockId, "exceptions"],
+    queryFn: () => getTimeBlockExceptions(blockId!),
+    enabled: !!blockId,
+  });
+}
+
 export function useTimeBlockMutations() {
   const client = useQueryClient();
   const invalidateHome = () => client.invalidateQueries({ queryKey: ["home"] });
@@ -62,6 +72,12 @@ export function useTimeBlockMutations() {
   const createException = useMutation({
     mutationFn: (params: { id: string; date: string; action: "skip" | "move"; startMin?: number; endMin?: number }) =>
       createTimeBlockException(params.id, params.date, params.action, params.startMin, params.endMin),
+    onSuccess: invalidate,
+  });
+
+  const deleteException = useMutation({
+    mutationFn: ({ blockId, exceptionId }: { blockId: string; exceptionId: string }) =>
+      deleteTimeBlockException(blockId, exceptionId),
     onSuccess: invalidate,
   });
 
@@ -106,5 +122,6 @@ export function useTimeBlockMutations() {
     update,
     remove,
     createException,
+    deleteException,
   };
 }

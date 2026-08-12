@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { TimeBlock, TimeBlockSettings, TimeBlockWithProject } from "@/types/entities";
+import type { TimeBlock, TimeBlockSettings, TimeBlockWithProject, TimeBlockException } from "@/types/entities";
 
 export async function getTimeBlocks() {
   const { data } = await api.get<{ data: TimeBlock[] }>("/timeblocks");
@@ -56,5 +56,15 @@ export async function updateTimeBlock(id: string, payload: UpdateTimeBlockPayloa
 
 export async function deleteTimeBlock(id: string) {
   const { data } = await api.delete<{ data: { success: boolean } }>(`/timeblocks/${id}`);
+  return data.data;
+}
+
+export async function getTimeBlockExceptions(blockId: string) {
+  const { data } = await api.get<{ data: TimeBlockException[] }>(`/timeblocks/${blockId}/exceptions`);
+  return data.data;
+}
+
+export async function deleteTimeBlockException(blockId: string, exceptionId: string) {
+  const { data } = await api.delete<{ data: { success: boolean } }>(`/timeblocks/${blockId}/exceptions/${exceptionId}`);
   return data.data;
 }

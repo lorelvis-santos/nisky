@@ -4,6 +4,7 @@ import { timeBlockService } from "./timeblocks.service";
 import type { CreateTimeBlockDto, UpdateTimeBlockDto, UpdateTimeBlockSettingsDto } from "./timeblocks.validator";
 
 type IdParams = { id: string };
+type ExceptionIdParams = { id: string; exceptionId: string };
 
 function userId(req: Request) {
   if (!req.user) throw new AppError("UNAUTHORIZED");
@@ -45,5 +46,13 @@ export class TimeBlockController {
 
   exception = async (req: Request<IdParams, {}, import("./timeblocks.validator").CreateTimeBlockExceptionDto>, res: Response, next: NextFunction) => {
     try { res.success(await timeBlockService.createException(userId(req), req.params.id, req.body)); } catch (error) { next(error); }
+  };
+
+  listExceptions = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
+    try { res.success(await timeBlockService.listExceptions(userId(req), req.params.id)); } catch (error) { next(error); }
+  };
+
+  deleteException = async (req: Request<ExceptionIdParams>, res: Response, next: NextFunction) => {
+    try { res.success(await timeBlockService.deleteException(userId(req), req.params.id, req.params.exceptionId)); } catch (error) { next(error); }
   };
 }

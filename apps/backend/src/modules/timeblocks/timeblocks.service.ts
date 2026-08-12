@@ -178,6 +178,24 @@ export class TimeBlockService {
       },
     });
   }
+
+  async listExceptions(userId: string, blockId: string) {
+    await this.getById(userId, blockId);
+    return prisma.timeBlockException.findMany({
+      where: { userId, blockId },
+      orderBy: { date: "asc" },
+    });
+  }
+
+  async deleteException(userId: string, blockId: string, exceptionId: string) {
+    await this.getById(userId, blockId);
+    const exception = await prisma.timeBlockException.findFirst({
+      where: { id: exceptionId, userId, blockId },
+    });
+    if (!exception) throw new AppError("NOT_FOUND", "Excepción no encontrada");
+    await prisma.timeBlockException.delete({ where: { id: exceptionId } });
+    return { success: true };
+  }
 }
 
 export const timeBlockService = new TimeBlockService();

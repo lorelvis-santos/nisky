@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, Calendar as CalendarIcon, MapPin, Clock } from "lucide-react";
+import { Plus, X, MapPin, Clock } from "lucide-react";
 import { useEventsQuery, useEventMutations } from "@/features/events/hooks/useEvents";
 import type { CalendarEventPayload } from "@/features/events/api/events";
 import type { CalendarEvent } from "@/types/entities";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { toast } from "sonner";
 
 function toLocalISODate(date: Date) {
@@ -75,7 +77,7 @@ export default function EventsPage() {
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-primary px-4 py-2 text-on-primary hover:bg-primary/90 font-label-lg"
+          className="flex items-center gap-2 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary disabled:opacity-50"
           type="button"
         >
           <Plus size={20} />
@@ -103,7 +105,7 @@ export default function EventsPage() {
                       className="flex flex-col text-left border border-outline-variant bg-surface p-4 hover:bg-surface-container-lowest transition-colors"
                       type="button"
                     >
-                      <div className="font-title-md text-title-md font-semibold text-on-surface">
+                      <div className="font-headline-xs text-headline-xs font-semibold text-on-surface">
                         {event.title}
                       </div>
                       <div className="mt-2 flex items-center gap-4 font-body-sm text-body-sm text-on-surface-variant">
@@ -150,18 +152,20 @@ function parseMin(time: string) {
 
 function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: () => void }) {
   const { createEvent, updateEvent, deleteEvent } = useEventMutations();
-  
+  useModalScrollLock();
+
   const [title, setTitle] = useState(event?.title ?? "");
   const [date, setDate] = useState(event ? toLocalISODate(new Date(event.date)) : toLocalISODate(new Date()));
   const [allDay, setAllDay] = useState(event?.allDay ?? false);
   const [startMin, setStartMin] = useState(event?.startMin ? formatMin(event.startMin) : "09:00");
   const [endMin, setEndMin] = useState(event?.endMin ? formatMin(event.endMin) : "10:00");
   const [location, setLocation] = useState(event?.location ?? "");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return toast.error("El título es requerido");
-    
+
     const payload: CalendarEventPayload = {
       title,
       date,
@@ -187,7 +191,6 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
 
   const handleDelete = async () => {
     if (!event) return;
-    if (!confirm("¿Eliminar evento?")) return;
     try {
       await deleteEvent.mutateAsync(event.id);
       toast.success("Evento eliminado");
@@ -197,106 +200,136 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
     }
   };
 
+  const saving = createEvent.isPending || updateEvent.isPending;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-on-surface/20 p-4">
-      <div className="w-full max-w-md border border-outline-variant bg-surface">
-        <div className="flex items-center justify-between border-b border-outline-variant p-4">
-          <h2 className="font-title-lg text-title-lg">{event ? "Editar Evento" : "Nuevo Evento"}</h2>
-          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface" type="button">
-            <X size={20} />
-          </button>
-        </div>
-        <form onSubmit={handleSave} className="p-4 space-y-4">
-          <div>
-            <label className="mb-1 block font-label-md text-on-surface-variant">Título</label>
-            <input
-              autoFocus
-              className="w-full border border-outline-variant bg-surface px-3 py-2 outline-none focus:border-primary"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="Ej. Reunión de equipo"
-            />
-          </div>
-          
-          <div>
-            <label className="mb-1 block font-label-md text-on-surface-variant">Fecha</label>
-            <input
-              type="date"
-              className="w-full border border-outline-variant bg-surface px-3 py-2 outline-none focus:border-primary"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="allDay"
-              checked={allDay}
-              onChange={e => setAllDay(e.target.checked)}
-            />
-            <label htmlFor="allDay" className="font-body-md">Todo el día</label>
-          </div>
-
-          {!allDay && (
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="mb-1 block font-label-md text-on-surface-variant">Inicio</label>
-                <input
-                  type="time"
-                  className="w-full border border-outline-variant bg-surface px-3 py-2 outline-none focus:border-primary"
-                  value={startMin}
-                  onChange={e => setStartMin(e.target.value)}
-                />
-              </div>
-              <div className="flex-1">
-                <label className="mb-1 block font-label-md text-on-surface-variant">Fin</label>
-                <input
-                  type="time"
-                  className="w-full border border-outline-variant bg-surface px-3 py-2 outline-none focus:border-primary"
-                  value={endMin}
-                  onChange={e => setEndMin(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="mb-1 block font-label-md text-on-surface-variant">Ubicación (opcional)</label>
-            <input
-              className="w-full border border-outline-variant bg-surface px-3 py-2 outline-none focus:border-primary"
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-              placeholder="Ej. Sala A o enlace de Meet"
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 border-t border-outline-variant pt-4 mt-6">
-            {event && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="mr-auto px-4 py-2 font-label-lg text-error hover:bg-error/10 border border-transparent"
-              >
-                Eliminar
-              </button>
-            )}
+    <>
+      <div
+        aria-modal="true"
+        className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]"
+        onClick={onClose}
+        role="dialog"
+      >
+        <div
+          className="w-full max-w-md border border-outline-variant bg-surface"
+          data-modal-scroll
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
+            <h2 className="font-headline-xs text-headline-xs font-bold text-primary">
+              {event ? "Editar evento" : "Nuevo evento"}
+            </h2>
             <button
-              type="button"
+              aria-label="Cerrar"
+              className="text-on-surface-variant hover:text-on-surface"
               onClick={onClose}
-              className="border border-outline-variant px-4 py-2 font-label-lg text-on-surface hover:bg-surface-container-low"
+              type="button"
             >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="bg-primary px-4 py-2 font-label-lg text-on-primary hover:bg-primary/90"
-            >
-              Guardar
+              <X size={19} />
             </button>
           </div>
-        </form>
+          <form onSubmit={handleSave} className="space-y-4 p-5">
+            <label className="block">
+              <span className="font-label-caps text-label-caps text-on-surface-variant">TÍTULO</span>
+              <input
+                autoFocus
+                className="field mt-1"
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ej. Reunión de equipo"
+                value={title}
+              />
+            </label>
+            <label className="block">
+              <span className="font-label-caps text-label-caps text-on-surface-variant">FECHA</span>
+              <input
+                className="field mt-1"
+                onChange={(e) => setDate(e.target.value)}
+                type="date"
+                value={date}
+              />
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                checked={allDay}
+                id="allDay"
+                onChange={(e) => setAllDay(e.target.checked)}
+                type="checkbox"
+              />
+              <label className="font-body-sm text-body-sm" htmlFor="allDay">Todo el día</label>
+            </div>
+            {!allDay && (
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="font-label-caps text-label-caps text-on-surface-variant">INICIO</span>
+                  <input
+                    className="field mt-1"
+                    onChange={(e) => setStartMin(e.target.value)}
+                    type="time"
+                    value={startMin}
+                  />
+                </label>
+                <label className="block">
+                  <span className="font-label-caps text-label-caps text-on-surface-variant">FIN</span>
+                  <input
+                    className="field mt-1"
+                    onChange={(e) => setEndMin(e.target.value)}
+                    type="time"
+                    value={endMin}
+                  />
+                </label>
+              </div>
+            )}
+            <label className="block">
+              <span className="font-label-caps text-label-caps text-on-surface-variant">UBICACIÓN (OPCIONAL)</span>
+              <input
+                className="field mt-1"
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Ej. Sala A o enlace de Meet"
+                value={location}
+              />
+            </label>
+            <div className="flex justify-end gap-2 border-t border-outline-variant pt-4">
+              {event && (
+                <button
+                  className="mr-auto border border-transparent px-4 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30 disabled:opacity-50"
+                  disabled={deleteEvent.isPending}
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  type="button"
+                >
+                  Eliminar
+                </button>
+              )}
+              <button
+                className="border border-outline-variant px-4 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
+                disabled={saving}
+                onClick={onClose}
+                type="button"
+              >
+                Cancelar
+              </button>
+              <button
+                className="bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary disabled:opacity-50"
+                disabled={saving}
+                type="submit"
+              >
+                Guardar
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+      {deleteConfirmOpen && event && (
+        <ConfirmModal
+          cancelLabel="Cancelar"
+          confirmLabel="Eliminar"
+          danger
+          loading={deleteEvent.isPending}
+          message={<>¿Eliminar el evento «{event.title}»? Esta acción no se puede deshacer.</>}
+          onClose={() => setDeleteConfirmOpen(false)}
+          onConfirm={() => void handleDelete()}
+          title="¿Eliminar evento?"
+        />
+      )}
+    </>
   );
 }

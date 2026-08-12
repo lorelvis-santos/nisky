@@ -4,16 +4,16 @@ export const idParamSchema = z.object({
   id: z.string().uuid("ID inválido"),
 });
 
-export const createEventSchema = z
-  .object({
-    title: z.string().trim().min(1, "El título es requerido").max(200, "Máximo 200 caracteres"),
-    date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Fecha inválida" }),
-    allDay: z.boolean().default(false),
-    startMin: z.number().int().min(0).max(1439).optional(),
-    endMin: z.number().int().min(1).max(1440).optional(),
-    location: z.string().trim().max(200).optional(),
-  })
-  .superRefine((v, ctx) => {
+export const createEventBaseSchema = z.object({
+  title: z.string().trim().min(1, "El título es requerido").max(200, "Máximo 200 caracteres"),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Fecha inválida" }),
+  allDay: z.boolean().default(false),
+  startMin: z.number().int().min(0).max(1439).optional(),
+  endMin: z.number().int().min(1).max(1440).optional(),
+  location: z.string().trim().max(200).optional(),
+});
+
+export const createEventSchema = createEventBaseSchema.superRefine((v, ctx) => {
     if (!v.allDay) {
       if (v.startMin === undefined) {
         ctx.addIssue({ code: "custom", path: ["startMin"], message: "Requiere hora de inicio" });
@@ -27,7 +27,7 @@ export const createEventSchema = z
     }
   });
 
-export const updateEventSchema = createEventSchema.partial();
+export const updateEventSchema = createEventBaseSchema.partial();
 
 export const queryRangeSchema = z
   .object({

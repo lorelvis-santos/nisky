@@ -127,7 +127,6 @@ export function TimeBlockEditor({
         <span className="font-label-caps text-label-caps text-on-surface-variant">REPETIR</span>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {[
-            [0, "No repetir"],
             [1, "Cada semana"],
             [2, "Cada 2 semanas"],
             [3, "Cada 3 semanas"],

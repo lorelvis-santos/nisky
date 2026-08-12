@@ -5,6 +5,7 @@ export const idParamSchema = z.object({ id: z.uuid("El identificador no es váli
 export const createProjectSchema = z.object({
   name: z.string("El nombre es requerido").trim().min(1, "El nombre es requerido").max(100),
   color: z.string().trim().max(20).optional(),
+  weeklyTargetMinutes: z.number().int().min(0).max(10080).nullable().optional(),
 });
 
 export const updateProjectSchema = createProjectSchema.partial();

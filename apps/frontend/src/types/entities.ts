@@ -39,6 +39,7 @@ export interface Project {
   name: string;
   color: string;
   isDefault: boolean;
+  weeklyTargetMinutes: number | null;
   createdAt: string;
   updatedAt: string;
   members?: ProjectMember[];
@@ -343,6 +344,13 @@ export interface HomeWeeklyStats {
   completedWorkSessions: number;
   completedTasks: number;
   dueTasks: number;
+  projectProgress?: Array<{
+    id: string;
+    name: string;
+    color: string;
+    targetMinutes: number;
+    spentMinutes: number;
+  }>;
   weekStart: string;
   weekEnd: string;
 }

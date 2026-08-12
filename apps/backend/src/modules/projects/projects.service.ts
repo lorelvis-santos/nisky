@@ -67,6 +67,7 @@ export class ProjectService {
       data: {
         ...(data.name !== undefined ? { name: data.name } : {}),
         ...(data.color !== undefined ? { color: data.color } : {}),
+        ...(data.weeklyTargetMinutes !== undefined ? { weeklyTargetMinutes: data.weeklyTargetMinutes } : {}),
       },
     });
   }

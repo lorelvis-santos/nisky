@@ -14,6 +14,7 @@ export async function getProject(id: string) {
 export type CreateProjectPayload = {
   name: string;
   color?: string;
+  weeklyTargetMinutes?: number | null;
 };
 
 export type UpdateProjectPayload = Partial<CreateProjectPayload>;

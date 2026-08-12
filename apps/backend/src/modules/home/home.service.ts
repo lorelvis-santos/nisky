@@ -145,7 +145,7 @@ export class HomeService {
           phase: "WORK",
           endedAt: { gte: toUtc(weekStart), lte: toUtc(weekEnd) },
         },
-        select: { actualSec: true, plannedSec: true },
+        select: { actualSec: true, plannedSec: true, task: { select: { projectId: true } } },
       }),
       prisma.task.count({
         where: {
@@ -165,6 +165,23 @@ export class HomeService {
       }),
     ]);
 
+    const projectTargets = await prisma.project.findMany({
+      where: { userId, weeklyTargetMinutes: { gt: 0 } },
+      select: { id: true, name: true, color: true, weeklyTargetMinutes: true },
+    });
+
+    const projectProgress = projectTargets.map((p) => {
+      const pSessions = workSessions.filter((s) => s.task?.projectId === p.id);
+      const spentSec = pSessions.reduce((sum, s) => sum + (s.actualSec ?? s.plannedSec), 0);
+      return {
+        id: p.id,
+        name: p.name,
+        color: p.color,
+        targetMinutes: p.weeklyTargetMinutes!,
+        spentMinutes: Math.floor(spentSec / 60),
+      };
+    });
+
     return {
       activeBlock,
       blockTasks,
@@ -178,6 +195,7 @@ export class HomeService {
         completedWorkSessions: workSessions.length,
         completedTasks,
         dueTasks,
+        projectProgress,
         weekStart: weekStart.toISO()!,
         weekEnd: weekEnd.toISO()!,
       },

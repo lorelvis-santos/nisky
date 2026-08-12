@@ -52,6 +52,8 @@ export default function ProjectDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState("#303e51");
+  const [editTargetHours, setEditTargetHours] = useState("");
+  const [editTargetMinutes, setEditTargetMinutes] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const project = projectQuery.data;
@@ -73,9 +75,14 @@ export default function ProjectDetailPage() {
 
   const saveEdit = async () => {
     try {
+      const totalMinutes = (parseInt(editTargetHours) || 0) * 60 + (parseInt(editTargetMinutes) || 0);
       await projectMutations.update.mutateAsync({
         id: project.id,
-        payload: { name: editName.trim(), color: editColor },
+        payload: { 
+          name: editName.trim(), 
+          color: editColor,
+          weeklyTargetMinutes: totalMinutes > 0 ? totalMinutes : null
+        },
       });
       toast.success("Proyecto actualizado");
       setEditOpen(false);
@@ -129,15 +136,17 @@ export default function ProjectDetailPage() {
               {isOwner && (
                 <>
                   <button
-                    className="flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+                    className="flex shrink-0 items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
                     onClick={() => {
                       setEditName(project.name);
                       setEditColor(project.color);
+                      setEditTargetHours(project.weeklyTargetMinutes ? Math.floor(project.weeklyTargetMinutes / 60).toString() : "");
+                      setEditTargetMinutes(project.weeklyTargetMinutes ? (project.weeklyTargetMinutes % 60).toString() : "");
                       setEditOpen(true);
                     }}
                     type="button"
                   >
-                    <Pencil size={14} /> Editar
+                    <Pencil size={15} /> Editar
                   </button>
                   <button
                     className="flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-error hover:bg-error hover:text-error-foreground"
@@ -340,9 +349,13 @@ export default function ProjectDetailPage() {
         <EditProjectModal
           color={editColor}
           name={editName}
+          targetHours={editTargetHours}
+          targetMinutes={editTargetMinutes}
           onClose={() => setEditOpen(false)}
           onColorChange={setEditColor}
           onNameChange={setEditName}
+          onTargetHoursChange={setEditTargetHours}
+          onTargetMinutesChange={setEditTargetMinutes}
           onSave={() => void saveEdit()}
         />
       )}
@@ -370,15 +383,23 @@ export default function ProjectDetailPage() {
 function EditProjectModal({
   name,
   color,
+  targetHours,
+  targetMinutes,
   onNameChange,
   onColorChange,
+  onTargetHoursChange,
+  onTargetMinutesChange,
   onSave,
   onClose,
 }: {
   name: string;
   color: string;
+  targetHours: string;
+  targetMinutes: string;
   onNameChange: (value: string) => void;
   onColorChange: (value: string) => void;
+  onTargetHoursChange: (value: string) => void;
+  onTargetMinutesChange: (value: string) => void;
   onSave: () => void;
   onClose: () => void;
 }) {
@@ -402,6 +423,34 @@ function EditProjectModal({
             <div className="mt-1">
               <ColorPicker onChange={onColorChange} value={color} />
             </div>
+          </div>
+          <div>
+            <span className="font-label-caps text-label-caps text-on-surface-variant">META SEMANAL (OPCIONAL)</span>
+            <div className="mt-1 flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <input
+                  className="field w-16 text-center"
+                  maxLength={3}
+                  onChange={(event) => onTargetHoursChange(event.target.value.replace(/\D/g, ""))}
+                  placeholder="0"
+                  value={targetHours}
+                />
+                <span className="font-data-mono text-data-mono text-on-surface-variant">h</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <input
+                  className="field w-16 text-center"
+                  maxLength={2}
+                  onChange={(event) => onTargetMinutesChange(event.target.value.replace(/\D/g, ""))}
+                  placeholder="0"
+                  value={targetMinutes}
+                />
+                <span className="font-data-mono text-data-mono text-on-surface-variant">min</span>
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-on-surface-variant">
+              Si se establece, se mostrará el progreso en Inicio en base a las sesiones completadas.
+            </p>
           </div>
           <div className="flex gap-2">
             <button className="flex-1 bg-primary px-3 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50" disabled={!name.trim()} onClick={onSave} type="button">

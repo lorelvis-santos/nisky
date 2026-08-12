@@ -2,7 +2,9 @@ import type { Prisma } from "../../infra/prisma/generated/prisma/client";
 import { DateTime } from "luxon";
 import { prisma } from "../../infra/prisma/client";
 import { computeStreak, dateKey, localDateKey } from "../habits/habit-stats";
-import { mondayInTz, weeksBetween } from "../../utils/recurrence";
+import { timeBlockService } from "../timeblocks/timeblocks.service";
+import { blockOccurrenceOn } from "../timeblocks/timeblocks.util";
+import type { TimeBlockExceptionRow } from "../timeblocks/timeblocks.util";
 
 const TZ = "America/Santo_Domingo";
 
@@ -37,28 +39,17 @@ type BlockCandidate = {
   createdAt: Date;
 };
 
-function blockAppliesOn(block: BlockCandidate, day: DateTime) {
-  const dow = toDowIndex(day);
-  if (!block.daysOfWeek.includes(dow)) return false;
-  const dayUtc = day.toUTC().toJSDate();
-  if (block.repeatEndsAt && mondayInTz(dayUtc, TZ) > mondayInTz(block.repeatEndsAt, TZ)) return false;
-  if (block.repeatEveryWeeks > 1) {
-    const weeks = weeksBetween(block.createdAt, dayUtc, TZ);
-    if (weeks % block.repeatEveryWeeks !== 0) return false;
-  }
-  return true;
-}
-
-function nextBlockOccurrence(blocks: Array<BlockCandidate & { project?: unknown }>, now: DateTime) {
+function nextBlockOccurrence(blocks: Array<BlockCandidate & { project?: unknown }>, exceptions: TimeBlockExceptionRow[], now: DateTime) {
   let best: BlockCandidate | null = null;
   let bestDay: DateTime | null = null;
   for (let offset = 0; offset < 30; offset += 1) {
     const day = now.plus({ days: offset }).startOf("day");
     for (const block of blocks) {
-      if (!blockAppliesOn(block, day)) continue;
-      if (offset === 0 && block.startMin <= now.hour * 60 + now.minute) continue;
-      if (!best || day < bestDay! || (day.equals(bestDay!) && block.startMin < best.startMin)) {
-        best = block;
+      const occ = blockOccurrenceOn(block as any, day.toJSDate(), exceptions, TZ);
+      if (!occ.occurs) continue;
+      if (offset === 0 && occ.startMin <= now.hour * 60 + now.minute) continue;
+      if (!best || day < bestDay! || (day.equals(bestDay!) && occ.startMin < best.startMin)) {
+        best = { ...block, startMin: occ.startMin, endMin: occ.endMin };
         bestDay = day;
       }
     }
@@ -82,26 +73,20 @@ export class HomeService {
     const weekEnd = weekStart.endOf("week");
     const toUtc = (value: DateTime) => value.toUTC().toJSDate();
 
-    const [activeBlock, defaultProject, allBlocks] = await Promise.all([
-      prisma.timeBlock.findFirst({
-        where: {
-          userId,
-          isActive: true,
-          daysOfWeek: { has: toDowIndex(now) },
-          startMin: { lte: currentMin },
-          endMin: { gt: currentMin },
-        },
-        include: { project: true },
-      }),
+    const [activeBlock, defaultProject, allBlocks, exceptions] = await Promise.all([
+      timeBlockService.activeNow(userId),
       prisma.project.findFirst({ where: { userId, isDefault: true } }),
       prisma.timeBlock.findMany({
         where: { userId, isActive: true },
         orderBy: [{ startMin: "asc" }, { createdAt: "asc" }],
         include: { project: true },
       }),
+      prisma.timeBlockException.findMany({
+        where: { userId, date: { gte: todayStart.toJSDate() } },
+      }),
     ]);
 
-    const occurrence = nextBlockOccurrence(allBlocks, now);
+    const occurrence = nextBlockOccurrence(allBlocks, exceptions as TimeBlockExceptionRow[], now);
     const nextBlock = occurrence ? allBlocks.find((block) => block.id === occurrence.block.id) ?? null : null;
     const nextBlockStart = occurrence?.start ?? null;
 

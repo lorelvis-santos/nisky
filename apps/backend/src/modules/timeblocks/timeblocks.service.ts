@@ -115,6 +115,22 @@ export class TimeBlockService {
       data.endMin !== undefined ||
       data.daysOfWeek !== undefined ||
       data.remindBeforeMin !== undefined;
+
+    if (
+      data.startMin !== undefined ||
+      data.endMin !== undefined ||
+      data.daysOfWeek !== undefined
+    ) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      await prisma.timeBlockException.deleteMany({
+        where: {
+          blockId: id,
+          date: { gte: today },
+        },
+      });
+    }
+
     return prisma.timeBlock.update({
       where: { id },
       data: {
@@ -138,6 +154,29 @@ export class TimeBlockService {
     await this.getById(userId, id);
     await prisma.timeBlock.delete({ where: { id } });
     return { success: true };
+  }
+
+  async createException(userId: string, id: string, data: import("./timeblocks.validator").CreateTimeBlockExceptionDto) {
+    await this.getById(userId, id);
+    const dateObj = new Date(data.date);
+    dateObj.setHours(0, 0, 0, 0);
+
+    return prisma.timeBlockException.upsert({
+      where: { blockId_date: { blockId: id, date: dateObj } },
+      create: {
+        blockId: id,
+        userId,
+        date: dateObj,
+        action: data.action as any,
+        startMin: data.startMin,
+        endMin: data.endMin,
+      },
+      update: {
+        action: data.action as any,
+        startMin: data.startMin,
+        endMin: data.endMin,
+      },
+    });
   }
 }
 

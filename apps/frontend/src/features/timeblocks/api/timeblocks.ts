@@ -44,6 +44,11 @@ export async function createTimeBlock(payload: CreateTimeBlockPayload) {
   return data.data;
 }
 
+export async function createTimeBlockException(id: string, date: string, action: "skip" | "move", startMin?: number, endMin?: number) {
+  const { data } = await api.post<{ data: unknown }>(`/timeblocks/${id}/exception`, { date, action, startMin, endMin });
+  return data.data;
+}
+
 export async function updateTimeBlock(id: string, payload: UpdateTimeBlockPayload) {
   const { data } = await api.patch<{ data: TimeBlock }>(`/timeblocks/${id}`, payload);
   return data.data;

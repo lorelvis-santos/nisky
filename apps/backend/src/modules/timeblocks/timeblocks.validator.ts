@@ -53,3 +53,17 @@ export const updateTimeBlockSettingsSchema = z
 export type CreateTimeBlockDto = z.infer<typeof createTimeBlockSchema>;
 export type UpdateTimeBlockDto = z.infer<typeof updateTimeBlockSchema>;
 export type UpdateTimeBlockSettingsDto = z.infer<typeof updateTimeBlockSettingsSchema>;
+
+export const createTimeBlockExceptionSchema = z.object({
+  date: dateValue,
+  action: z.enum(["skip", "move"]),
+  startMin: z.number().int().min(0).max(1439).optional(),
+  endMin: z.number().int().min(1).max(1440).optional(),
+}).refine(
+  (data) => data.action === "skip" || (data.startMin !== undefined && data.endMin !== undefined && data.endMin - data.startMin >= 5),
+  {
+    message: "Al mover, debes especificar startMin y endMin (duración >= 5)",
+    path: ["endMin"],
+  }
+);
+export type CreateTimeBlockExceptionDto = z.infer<typeof createTimeBlockExceptionSchema>;

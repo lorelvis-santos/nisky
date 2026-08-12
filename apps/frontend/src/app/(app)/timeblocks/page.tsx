@@ -176,11 +176,30 @@ function TimeBlocksContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- se reactiva solo cuando llega el primer lote de bloques
   }, [blocks.length]);
 
-  const resizeBlock = async (block: TimeBlock, startMin: number, endMin: number, days: number[]) => {
+  const resizeBlock = async (block: TimeBlock, startMin: number, endMin: number, days: number[], draggedDate?: string) => {
     const daysChanged =
       days.length !== block.daysOfWeek.length ||
       days.some((day, index) => day !== block.daysOfWeek[index]);
     if (startMin === block.startMin && endMin === block.endMin && !daysChanged) return;
+
+    if (!daysChanged && draggedDate && (block.daysOfWeek.length > 1 || block.repeatEveryWeeks > 1)) {
+      if (confirm(`¿Quieres aplicar el cambio de horario solo para este día (${draggedDate})?\n\n[Aceptar] = Solo este día (excepción)\n[Cancelar] = Cambiar el bloque original`)) {
+        try {
+          await mutations.createException.mutateAsync({
+            id: block.id,
+            date: draggedDate,
+            action: "move",
+            startMin,
+            endMin,
+          });
+          toast.success("Excepción guardada para este día");
+        } catch {
+          toast.error("Ups, no pudimos crear la excepción.");
+        }
+        return;
+      }
+    }
+
     try {
       await mutations.update.mutateAsync({
         id: block.id,

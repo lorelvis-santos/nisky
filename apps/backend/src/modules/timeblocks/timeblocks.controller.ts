@@ -42,4 +42,8 @@ export class TimeBlockController {
   delete = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
     try { res.success(await timeBlockService.delete(userId(req), req.params.id)); } catch (error) { next(error); }
   };
+
+  exception = async (req: Request<IdParams, {}, import("./timeblocks.validator").CreateTimeBlockExceptionDto>, res: Response, next: NextFunction) => {
+    try { res.success(await timeBlockService.createException(userId(req), req.params.id, req.body)); } catch (error) { next(error); }
+  };
 }

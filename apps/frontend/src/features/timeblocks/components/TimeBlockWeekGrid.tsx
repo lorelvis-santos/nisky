@@ -28,6 +28,7 @@ type ResizeDraft = {
   endMin: number;
   days: number[];
   dragDay: number;
+  draggedDate: string;
   durationMin: number;
 columns: DayColumn[];
    container: HTMLElement;
@@ -59,6 +60,7 @@ export function TimeBlockWeekGrid({
     startMin: number,
     endMin: number,
     days: number[],
+    draggedDate?: string,
   ) => void;
   onResizePreview?: (
     block: TimeBlock,
@@ -287,6 +289,7 @@ export function TimeBlockWeekGrid({
           state.startMin,
           state.endMin,
           state.days,
+          state.draggedDate
         );
       } else if (!movedRef.current) {
         onBlockClickRef.current(state.block);
@@ -320,6 +323,10 @@ export function TimeBlockWeekGrid({
     const ownColumn = columns.find((item) => item.dayOfWeek === dragDay);
     const gridRect = grid.getBoundingClientRect();
     const colRect = ownColumn?.el.getBoundingClientRect();
+    const dragDateObj = days.find((d) => d.dayOfWeek === dragDay)?.date;
+    const draggedDate = dragDateObj 
+      ? `${dragDateObj.getFullYear()}-${String(dragDateObj.getMonth() + 1).padStart(2, "0")}-${String(dragDateObj.getDate()).padStart(2, "0")}`
+      : "";
     blockDownRef.current = true;
     downRef.current = { x: event.clientX, y: event.clientY };
     movedRef.current = false;
@@ -331,6 +338,7 @@ export function TimeBlockWeekGrid({
       endMin: block.endMin,
       days: [...block.daysOfWeek],
       dragDay,
+      draggedDate,
       durationMin: block.endMin - block.startMin,
       columns,
       container,
@@ -359,6 +367,10 @@ export function TimeBlockWeekGrid({
     const columns = getColumns(grid);
     const gridRect = grid.getBoundingClientRect();
     const colRect = column.getBoundingClientRect();
+    const dragDateObj = days.find((d) => d.dayOfWeek === dragDay)?.date;
+    const draggedDate = dragDateObj 
+      ? `${dragDateObj.getFullYear()}-${String(dragDateObj.getMonth() + 1).padStart(2, "0")}-${String(dragDateObj.getDate()).padStart(2, "0")}`
+      : "";
     blockDownRef.current = true;
     downRef.current = { x: event.clientX, y: event.clientY };
     movedRef.current = false;
@@ -370,6 +382,7 @@ export function TimeBlockWeekGrid({
       endMin: block.endMin,
       days: [...block.daysOfWeek],
       dragDay,
+      draggedDate,
       durationMin: block.endMin - block.startMin,
       columns,
       container,

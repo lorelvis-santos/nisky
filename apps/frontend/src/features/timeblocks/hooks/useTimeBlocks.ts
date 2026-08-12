@@ -1,5 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createTimeBlock, deleteTimeBlock, getActiveBlock, getTimeBlockSettings, getTimeBlocks, getTodayBlocks, updateTimeBlock, updateTimeBlockSettings, type CreateTimeBlockPayload, type UpdateTimeBlockPayload } from "../api/timeblocks";
+import {
+  createTimeBlock,
+  deleteTimeBlock,
+  getActiveBlock,
+  getTimeBlockSettings,
+  getTimeBlocks,
+  getTodayBlocks,
+  updateTimeBlock,
+  updateTimeBlockSettings,
+  createTimeBlockException,
+  type CreateTimeBlockPayload,
+  type UpdateTimeBlockPayload,
+} from "../api/timeblocks";
 import type { TimeBlock, TimeBlockSettings } from "@/types/entities";
 
 const TIMEBLOCKS_KEY = ["timeblocks"] as const;
@@ -34,6 +46,10 @@ export function useTimeBlockMutations() {
   const client = useQueryClient();
   const invalidateHome = () => client.invalidateQueries({ queryKey: ["home"] });
   const invalidateBlocks = () => client.invalidateQueries({ queryKey: ["timeblocks"] });
+  const invalidate = () => {
+    void invalidateBlocks();
+    void invalidateHome();
+  };
 
   const create = useMutation({
     mutationFn: (payload: CreateTimeBlockPayload) => createTimeBlock(payload),
@@ -41,6 +57,12 @@ export function useTimeBlockMutations() {
       client.setQueryData<TimeBlock[]>(TIMEBLOCKS_KEY, (old) => [...(old ?? []), created]);
       void invalidateHome();
     },
+  });
+
+  const createException = useMutation({
+    mutationFn: (params: { id: string; date: string; action: "skip" | "move"; startMin?: number; endMin?: number }) =>
+      createTimeBlockException(params.id, params.date, params.action, params.startMin, params.endMin),
+    onSuccess: invalidate,
   });
 
   const update = useMutation({
@@ -79,5 +101,10 @@ export function useTimeBlockMutations() {
     },
   });
 
-  return { create, update, remove };
+  return {
+    create,
+    update,
+    remove,
+    createException,
+  };
 }

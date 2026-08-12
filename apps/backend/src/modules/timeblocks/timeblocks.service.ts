@@ -1,6 +1,6 @@
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
-import { blockOccursOn, dayOfWeek, nowMinutes } from "./timeblocks.util";
+import { blockOccurrenceOn, dayOfWeek, nowMinutes } from "./timeblocks.util";
 import type { CreateTimeBlockDto, UpdateTimeBlockDto, UpdateTimeBlockSettingsDto } from "./timeblocks.validator";
 
 const settingsDefaults = {
@@ -50,7 +50,7 @@ export class TimeBlockService {
       },
       include: { project: true },
     });
-    return candidates.find((block) => blockOccursOn(block, now)) ?? null;
+    return candidates.find((block) => blockOccurrenceOn(block, now).occurs) ?? null;
   }
 
   async today(userId: string) {
@@ -60,7 +60,7 @@ export class TimeBlockService {
       include: { project: true },
     });
     return candidates
-      .filter((block) => blockOccursOn(block, now))
+      .filter((block) => blockOccurrenceOn(block, now).occurs)
       .sort((a, b) => a.startMin - b.startMin || a.createdAt.getTime() - b.createdAt.getTime());
   }
 

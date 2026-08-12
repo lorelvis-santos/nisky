@@ -46,6 +46,8 @@ model User {
   canvasAccounts CanvasAccount[]
   projects       Project[]
   timeBlocks     TimeBlock[]
+  calendarEvents CalendarEvent[]
+  timeBlockExceptions TimeBlockException[]
   projectMemberships ProjectMember[] @relation("UserProjectMemberships")
   sentProjectInvitations ProjectInvitation[] @relation("UserProjectInvitations")
   assignedTasks  Task[]              @relation("TaskAssignee")
@@ -65,6 +67,7 @@ model Project {
   name       String
   color      String      @default("#303e51")
   isDefault  Boolean     @default(false)
+  weeklyTargetMinutes Int?
   tasks      Task[]
   timeBlocks TimeBlock[]
   moodleAccounts MoodleAccount[]
@@ -126,11 +129,52 @@ model TimeBlock {
   lastRemindNotifiedAt DateTime?
   lastStartNotifiedAt   DateTime?
   lastEndWarnNotifiedAt DateTime?
+  exceptions TimeBlockException[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId, isActive])
   @@index([projectId])
+}
+
+model CalendarEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @db.VarChar(200)
+  date      DateTime
+  allDay    Boolean  @default(false)
+  startMin  Int?
+  endMin    Int?
+  location  String?  @db.VarChar(200)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, allDay, date])
+}
+
+enum TimeBlockExceptionAction {
+  skip
+  move
+}
+
+model TimeBlockException {
+  id        String                   @id @default(uuid())
+  userId    String
+  user      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blockId   String
+  block     TimeBlock                @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  date      DateTime
+  action    TimeBlockExceptionAction
+  startMin  Int?
+  endMin    Int?
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+
+  @@unique([blockId, date])
+  @@index([userId, date])
+  @@index([blockId, date])
 }
 
 model NotificationSettings {

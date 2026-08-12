@@ -4,7 +4,7 @@ import { pushService } from "../modules/push/push.service";
 import { defaultNotificationSettings } from "../utils/notifications/notification-settings";
 import { recordNotificationLog } from "../modules/push/notification-log.service";
 import { scheduleInTimezone } from "../utils/cron-timezone";
-import { blockOccursOn, dayOfWeek, nowMinutes, TIME_BLOCKS_TZ } from "../modules/timeblocks/timeblocks.util";
+import { blockOccurrenceOn, dayOfWeek, nowMinutes, TIME_BLOCKS_TZ } from "../modules/timeblocks/timeblocks.util";
 
 function nowInTz() {
   return DateTime.now().setZone(TIME_BLOCKS_TZ);
@@ -34,7 +34,7 @@ export async function processTimeBlockNotifications() {
     include: { project: true, user: true },
   });
 
-  const dueBlocks = dayBlocks.filter((block) => blockOccursOn(block, new Date()));
+  const dueBlocks = dayBlocks.filter((block) => blockOccurrenceOn(block, new Date()).occurs);
 
   const userIds = [...new Set(dueBlocks.map((block) => block.userId))];
   const settingsByUser = new Map<string, { timeBlockReminders: boolean }>();

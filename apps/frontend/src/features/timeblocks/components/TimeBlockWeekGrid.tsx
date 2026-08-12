@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Project, TimeBlock } from "@/types/entities";
+import type { Project, TimeBlock, CalendarEvent } from "@/types/entities";
 import { cn } from "@/lib/utils";
 import { DAY_NAMES_SHORT, DAY_ORDER, hexToRgba, minToTime } from "../lib/time";
 
@@ -40,6 +40,7 @@ columns: DayColumn[];
 export function TimeBlockWeekGrid({
   blocks,
   projects,
+  events = [],
   onBlockClick,
   onSlotClick,
   onResize,
@@ -50,6 +51,7 @@ export function TimeBlockWeekGrid({
 }: {
   blocks: TimeBlock[];
   projects: Project[];
+  events?: CalendarEvent[];
   onBlockClick: (block: TimeBlock) => void;
   onSlotClick: (dayOfWeek: number, startMin: number) => void;
   onResize: (
@@ -457,6 +459,29 @@ export function TimeBlockWeekGrid({
     );
   };
 
+  const renderEventBlock = (event: CalendarEvent) => {
+    if (event.allDay || event.startMin === null || event.endMin === null) return null;
+    const top = (Math.max(event.startMin - dayStartMin, 0) * HOUR_PX) / 60;
+    const bottom = (Math.min(event.endMin - dayStartMin, totalMin) * HOUR_PX) / 60;
+    const height = Math.max(bottom - top, 12);
+    return (
+      <div
+        key={event.id}
+        className="absolute inset-x-1 z-0 px-2 py-1 text-left bg-on-surface/5 border border-on-surface/10 rounded-sm pointer-events-none overflow-hidden"
+        style={{ top, height }}
+      >
+        <p className="truncate font-body-sm text-body-sm font-semibold text-on-surface/60 leading-tight">
+          {event.title}
+        </p>
+        {event.location && (
+          <p className="truncate font-data-mono text-[10px] text-on-surface-variant/60 leading-tight">
+            ⌖ {event.location}
+          </p>
+        )}
+      </div>
+    );
+  };
+
   const draftProject = draft
     ? projects.find((item) => item.id === draft.block.projectId)
     : null;
@@ -509,6 +534,15 @@ export function TimeBlockWeekGrid({
                     {day.date.getDate()}
                   </p>
                 </span>
+                <div className="mt-1 flex flex-col gap-1">
+                  {events
+                    .filter((e) => e.allDay && new Date(e.date).getDate() === day.date.getDate())
+                    .map((e) => (
+                      <div key={e.id} className="truncate rounded-sm bg-surface-container-high px-1 text-[10px] font-medium text-on-surface" title={e.title}>
+                        {e.title}
+                      </div>
+                    ))}
+                </div>
               </div>
             ))}
             <div
@@ -554,6 +588,9 @@ export function TimeBlockWeekGrid({
                       draft?.block.id === block.id,
                     ),
                   )}
+                  {events
+                    .filter((e) => !e.allDay && new Date(e.date).getDate() === day.date.getDate())
+                    .map((e) => renderEventBlock(e))}
                   {isToday && nowMin >= dayStartMin && nowMin <= dayEndMin && (
                     <div
                       className="pointer-events-none absolute inset-x-0 z-[15]"

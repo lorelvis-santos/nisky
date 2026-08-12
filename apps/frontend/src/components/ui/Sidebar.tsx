@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   AlarmClock,
   BookOpen,
+  Calendar,
   CalendarClock,
   CalendarDays,
   FolderKanban,
@@ -29,6 +30,7 @@ const primaryItems = [
   { href: "/projects", label: "Proyectos", icon: FolderKanban },
   { href: "/tasks", label: "Planificación y tareas", icon: CalendarDays },
   { href: "/timeblocks", label: "Horario", icon: CalendarClock },
+  { href: "/events", label: "Eventos", icon: Calendar },
   { href: "/focus", label: "Modo enfoque", icon: Timer },
   { href: "/journal", label: "Diario", icon: PencilLine },
   { href: "/knowledge", label: "Mis notas", icon: BookOpen },

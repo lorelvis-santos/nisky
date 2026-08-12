@@ -19,6 +19,7 @@ const titles: Record<string, string> = {
   "/": "Inicio",
   "/tasks": "Planificación y tareas",
   "/timeblocks": "Horario",
+  "/events": "Eventos",
   "/focus": "Modo enfoque",
   "/journal": "Diario",
   "/knowledge": "Mis notas",

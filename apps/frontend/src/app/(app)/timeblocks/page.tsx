@@ -12,6 +12,7 @@ import {
   useTimeBlockSettingsQuery,
   useTimeBlocksQuery,
 } from "@/features/timeblocks/hooks/useTimeBlocks";
+import { useEventsQuery } from "@/features/events/hooks/useEvents";
 import { minToTime, timeToMin } from "@/features/timeblocks/lib/time";
 import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
@@ -76,6 +77,20 @@ function TimeBlocksContent() {
   const [dayStartTime, setDayStartTime] = useState("06:00");
   const [dayEndTime, setDayEndTime] = useState("23:00");
   const settingsBusy = settingsMutation.isPending;
+
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setHours(0, 0, 0, 0);
+  const day = weekStart.getDay();
+  weekStart.setDate(weekStart.getDate() - (day === 0 ? 6 : day - 1));
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  
+  const from = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
+  const to = `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, "0")}-${String(weekEnd.getDate()).padStart(2, "0")}`;
+  
+  const eventsQuery = useEventsQuery(from, to);
+  const events = eventsQuery.data ?? [];
 
   const openSettings = () => {
     setDayStartTime(minToTime(settings?.dayStartMin ?? 6 * 60));
@@ -321,6 +336,7 @@ function TimeBlocksContent() {
         <div className="min-w-0 flex-1 border border-outline-variant bg-surface-container-lowest lg:min-h-0 lg:overflow-y-auto">
           <TimeBlockWeekGrid
             blocks={blocks}
+            events={events}
             dayEndMin={settings?.dayEndMin ?? 23 * 60}
             dayStartMin={settings?.dayStartMin ?? 6 * 60}
             moveEnabled={!isMobile}

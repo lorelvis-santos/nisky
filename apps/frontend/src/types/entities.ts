@@ -96,6 +96,19 @@ export interface TimeBlockSettings {
   updatedAt: string;
 }
 
+export interface CalendarEvent {
+  id: string;
+  userId: string;
+  title: string;
+  date: string;
+  allDay: boolean;
+  startMin: number | null;
+  endMin: number | null;
+  location: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface NotificationSettings {
   userId: string;
   morningDigest: boolean;

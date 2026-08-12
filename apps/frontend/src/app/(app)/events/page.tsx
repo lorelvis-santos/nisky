@@ -70,8 +70,8 @@ export default function EventsPage() {
       <div className="flex items-center justify-between border-b border-outline-variant p-container-padding">
         <div className="flex items-center gap-4">
           <button onClick={prevMonth} className="p-2 hover:bg-surface-container-low border border-outline-variant" type="button">&lt;</button>
-          <h2 className="font-headline-sm text-headline-sm capitalize">
-            {currentMonth.toLocaleDateString("es", { month: "long", year: "numeric" })}
+          <h2 className="font-headline-sm text-headline-sm">
+            {currentMonth.toLocaleDateString("es", { month: "long", year: "numeric" }).replace(/^\p{L}/u, (char) => char.toUpperCase())}
           </h2>
           <button onClick={nextMonth} className="p-2 hover:bg-surface-container-low border border-outline-variant" type="button">&gt;</button>
         </div>

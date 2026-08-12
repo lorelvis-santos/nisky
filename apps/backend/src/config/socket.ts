@@ -66,12 +66,6 @@ export function initSocket(httpServer: HttpServer): TypedServer {
         trackPresence(socket.data.user.id, projectId, taskId ?? null, true).catch(() => undefined);
       }, socketPresence.refreshIntervalMs);
       presenceIntervals.set(key, interval);
-      socket.on(SocketEvents.PRESENCE_LEAVE, () => {
-        const current = presenceIntervals.get(key);
-        if (current) clearInterval(current);
-        presenceIntervals.delete(key);
-        trackPresence(socket.data.user.id, projectId, taskId ?? null, false).catch(() => undefined);
-      });
     });
 
     socket.on(SocketEvents.PRESENCE_LEAVE, ({ projectId, taskId }: { projectId: string; taskId?: string | null }) => {

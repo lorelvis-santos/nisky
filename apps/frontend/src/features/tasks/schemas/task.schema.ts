@@ -16,7 +16,8 @@ export const taskRecurrenceSchema = z
 
 const dueDateValue = z
   .string()
-  .refine((value) => /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(value), "Formato de fecha inválido")
+  .refine((value) => value === "" || /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(value), "Formato de fecha inválido")
+  .transform((value) => value === "" ? undefined : value)
   .optional();
 
 export const taskSchema = z.object({

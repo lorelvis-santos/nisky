@@ -94,7 +94,7 @@ export function ActiveBlockBanner({
           </p>
           <div className="ml-auto flex items-center gap-3">
             <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
-              VER AGENDA
+              VER HORARIO
             </Link>
             <button
               className="flex h-9 items-center gap-2 border border-outline-variant bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
@@ -117,7 +117,7 @@ export function ActiveBlockBanner({
         </div>
         <div className="ml-auto flex items-center gap-3">
           <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
-            VER AGENDA
+            VER HORARIO
           </Link>
           <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
             NUEVO BLOQUE
@@ -217,7 +217,7 @@ const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-outline-variant pt-2">
         <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
-          VER AGENDA
+          VER HORARIO
         </Link>
         <button
           className="flex h-9 items-center gap-2 border border-outline-variant bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"

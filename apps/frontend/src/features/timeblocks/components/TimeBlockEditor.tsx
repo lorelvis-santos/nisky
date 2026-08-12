@@ -55,8 +55,8 @@ export function TimeBlockEditor({
   const save = async () => {
     const startMin = timeToMin(startTime);
     const endMin = timeToMin(endTime);
-    if (endMin <= startMin) {
-      toast.error("La hora de fin debe ser mayor a la de inicio.");
+    if (endMin - startMin < 5) {
+      toast.error("El bloque debe durar al menos 5 minutos.");
       return;
     }
     await onSave({

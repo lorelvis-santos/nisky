@@ -1,15 +1,12 @@
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
+import { blockOccursOn, dayOfWeek, nowMinutes } from "./timeblocks.util";
 import type { CreateTimeBlockDto, UpdateTimeBlockDto, UpdateTimeBlockSettingsDto } from "./timeblocks.validator";
 
 const settingsDefaults = {
   dayStartMin: 360,
   dayEndMin: 1380,
 };
-
-function nowMinutes(now = new Date()) {
-  return now.getHours() * 60 + now.getMinutes();
-}
 
 export class TimeBlockService {
   async getSettings(userId: string) {
@@ -43,26 +40,28 @@ export class TimeBlockService {
 
   async activeNow(userId: string) {
     const now = new Date();
-    return prisma.timeBlock.findFirst({
+    const candidates = await prisma.timeBlock.findMany({
       where: {
         userId,
         isActive: true,
-        daysOfWeek: { has: now.getDay() },
+        daysOfWeek: { has: dayOfWeek(now) },
         startMin: { lte: nowMinutes(now) },
         endMin: { gt: nowMinutes(now) },
       },
-      orderBy: { startMin: "asc" },
       include: { project: true },
     });
+    return candidates.find((block) => blockOccursOn(block, now)) ?? null;
   }
 
   async today(userId: string) {
     const now = new Date();
-    return prisma.timeBlock.findMany({
-      where: { userId, daysOfWeek: { has: now.getDay() } },
-      orderBy: [{ startMin: "asc" }, { createdAt: "asc" }],
+    const candidates = await prisma.timeBlock.findMany({
+      where: { userId, daysOfWeek: { has: dayOfWeek(now) } },
       include: { project: true },
     });
+    return candidates
+      .filter((block) => blockOccursOn(block, now))
+      .sort((a, b) => a.startMin - b.startMin || a.createdAt.getTime() - b.createdAt.getTime());
   }
 
   private async assertNoOverlap(userId: string, daysOfWeek: number[], startMin: number, endMin: number, excludeId?: string) {

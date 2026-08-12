@@ -26,7 +26,7 @@ function shouldShow(key: string): boolean {
   return true;
 }
 
-const NOTIF_BODY = "Te avisamos cuando una tarea vence, un bloque de agenda empieza o un hábito te espera.";
+const NOTIF_BODY = "Te avisamos cuando una tarea vence, un bloque de horario empieza o un hábito te espera.";
 const INSTALL_BODY = "Ábrela desde tu inicio como una app de verdad, sin navegador y sin distracciones.";
 
 export function ProactivePrompts() {

@@ -247,10 +247,10 @@ function TimeBlocksContent() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-outline-variant pb-4">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-            TU AGENDA SEMANAL
+            TU HORARIO SEMANAL
           </p>
           <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">
-            Agenda
+            Horario
           </h1>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
             Reserva horas para tus proyectos. El enfoque activo las usa para
@@ -284,7 +284,7 @@ function TimeBlocksContent() {
             RANGO DEL DÍA
           </p>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-            Define las horas visibles en tu agenda semanal.
+            Define las horas visibles en tu horario semanal.
           </p>
           <div className="mt-3 grid max-w-md grid-cols-2 gap-3">
             <label className="block">

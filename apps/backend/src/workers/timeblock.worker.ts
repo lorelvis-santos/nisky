@@ -1,25 +1,13 @@
 import { DateTime } from "luxon";
 import { prisma } from "../infra/prisma/client";
 import { pushService } from "../modules/push/push.service";
-import { mondayInTz, weeksBetween } from "../utils/recurrence";
 import { defaultNotificationSettings } from "../utils/notifications/notification-settings";
 import { recordNotificationLog } from "../modules/push/notification-log.service";
 import { scheduleInTimezone } from "../utils/cron-timezone";
-
-const TZ = "America/Santo_Domingo";
+import { blockOccursOn, dayOfWeek, nowMinutes, TIME_BLOCKS_TZ } from "../modules/timeblocks/timeblocks.util";
 
 function nowInTz() {
-  return DateTime.now().setZone(TZ);
-}
-
-function nowMinutes() {
-  const now = nowInTz();
-  return now.hour * 60 + now.minute;
-}
-
-function todayDayOfWeek() {
-  const now = nowInTz();
-  return now.weekday % 7;
+  return DateTime.now().setZone(TIME_BLOCKS_TZ);
 }
 
 function formatMin(value: number) {
@@ -30,30 +18,23 @@ function formatMin(value: number) {
 
 function notifiedToday(value: Date | null) {
   if (!value) return false;
-  return DateTime.fromJSDate(value).setZone(TZ).hasSame(nowInTz(), "day");
+  return DateTime.fromJSDate(value).setZone(TIME_BLOCKS_TZ).hasSame(nowInTz(), "day");
 }
 
 export async function processTimeBlockNotifications() {
   const nowMin = nowMinutes();
-  const dayOfWeek = todayDayOfWeek();
+  const dayOfWeekNow = dayOfWeek();
 
   const dayBlocks = await prisma.timeBlock.findMany({
     where: {
       isActive: true,
-      daysOfWeek: { has: dayOfWeek },
+      daysOfWeek: { has: dayOfWeekNow },
       endMin: { gt: nowMin },
     },
     include: { project: true, user: true },
   });
 
-  const dueBlocks = dayBlocks.filter((block) => {
-    if (block.repeatEndsAt && mondayInTz(new Date(), TZ) > mondayInTz(block.repeatEndsAt, TZ)) return false;
-    if (block.repeatEveryWeeks > 1) {
-      const weeks = weeksBetween(block.createdAt, new Date(), TZ);
-      if (weeks % block.repeatEveryWeeks !== 0) return false;
-    }
-    return true;
-  });
+  const dueBlocks = dayBlocks.filter((block) => blockOccursOn(block, new Date()));
 
   const userIds = [...new Set(dueBlocks.map((block) => block.userId))];
   const settingsByUser = new Map<string, { timeBlockReminders: boolean }>();
@@ -69,7 +50,7 @@ export async function processTimeBlockNotifications() {
         event: "timeblock_remind",
         title: label,
         status: "skipped",
-        error: "Ajustes: recordatorios de agenda desactivados",
+        error: "Ajustes: recordatorios de horario desactivados",
       });
       continue;
     }

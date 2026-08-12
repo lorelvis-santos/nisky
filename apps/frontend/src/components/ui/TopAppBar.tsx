@@ -18,7 +18,7 @@ const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
 const titles: Record<string, string> = {
   "/": "Inicio",
   "/tasks": "Planificación y tareas",
-  "/timeblocks": "Agenda",
+  "/timeblocks": "Horario",
   "/focus": "Modo enfoque",
   "/journal": "Diario",
   "/knowledge": "Mis notas",

@@ -12,9 +12,9 @@ const FAQS: Array<{ question: string; answer: string }> = [
       "Entra a Planificación y tareas. Verás tu semana: arrastra las tareas entre días o crea nuevas en el proyecto que quieras. Lo que no tenga fecha aún, espera en Pendientes hasta que le encuentres día.",
   },
   {
-    question: "¿Qué es la Agenda?",
+    question: "¿Qué es el Horario?",
     answer:
-      "La Agenda es para reservar horas de tu día como si fueran citas contigo mismo: clases, estudio, deporte... En computador puedes arrastrar directamente sobre la parrilla para apartar el tiempo que quieras. En el móvil, toca una hora libre y completa los datos, o pulsa el botón + abajo a la derecha. Si algo se repite cada semana, dile que se repita y listo. También puedes pedirle a Nisky que te avise antes de que empiece.",
+      "El Horario es para reservar horas de tu día como si fueran citas contigo mismo: clases, estudio, deporte... En computador puedes arrastrar directamente sobre la parrilla para apartar el tiempo que quieras. En el móvil, toca una hora libre y completa los datos, o pulsa el botón + abajo a la derecha. Si algo se repite cada semana, dile que se repita y listo. También puedes pedirle a Nisky que te avise antes de que empiece.",
   },
   {
     question: "¿Cómo me concentro mejor?",
@@ -29,7 +29,7 @@ const FAQS: Array<{ question: string; answer: string }> = [
   {
     question: "¿Cómo me llegan los recordatorios?",
     answer:
-      "Crea tus recordatorios en la sección Recordatorios. Y si activas las notificaciones en Ajustes › Notificaciones, Nisky te avisa cuando una tarea o un bloque de tu Agenda se acerca, o cuando tu plataforma tenga novedades.",
+      "Crea tus recordatorios en la sección Recordatorios. Y si activas las notificaciones en Ajustes › Notificaciones, Nisky te avisa cuando una tarea o un bloque de tu Horario se acerca, o cuando tu plataforma tenga novedades.",
   },
   {
     question: "¿Cómo conecto mi universidad?",

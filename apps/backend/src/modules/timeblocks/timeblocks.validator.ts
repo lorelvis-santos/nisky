@@ -17,8 +17,8 @@ const timeBlockFields = {
 
 export const createTimeBlockSchema = z
   .object(timeBlockFields)
-  .refine((value) => value.endMin > value.startMin, {
-    message: "La hora de fin debe ser mayor a la de inicio",
+  .refine((value) => value.endMin - value.startMin >= 5, {
+    message: "El bloque debe durar al menos 5 minutos",
     path: ["endMin"],
   });
 
@@ -33,9 +33,9 @@ export const updateTimeBlockSchema = z
     isActive: z.boolean().optional(),
   })
   .refine(
-    (value) => value.startMin === undefined || value.endMin === undefined || value.endMin > value.startMin,
+    (value) => value.startMin === undefined || value.endMin === undefined || value.endMin - value.startMin >= 5,
     {
-      message: "La hora de fin debe ser mayor a la de inicio",
+      message: "El bloque debe durar al menos 5 minutos",
       path: ["endMin"],
     },
   );

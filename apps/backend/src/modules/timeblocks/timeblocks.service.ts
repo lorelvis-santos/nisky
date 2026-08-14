@@ -78,6 +78,25 @@ export class TimeBlockService {
     if (overlapping) {
       throw new AppError("CONFLICT", "Ya tienes un bloque que se cruza con este horario");
     }
+
+    const exceptions = await prisma.timeBlockException.findMany({
+      where: {
+        userId,
+        action: "move",
+        blockId: excludeId ? { not: excludeId } : undefined,
+      },
+    });
+    const exceptionClash = exceptions.some(
+      (exc) =>
+        daysOfWeek.includes(dayOfWeek(exc.date)) &&
+        exc.startMin !== null &&
+        exc.endMin !== null &&
+        exc.startMin < endMin &&
+        exc.endMin > startMin,
+    );
+    if (exceptionClash) {
+      throw new AppError("CONFLICT", "Ya tienes un bloque que se cruza con este horario");
+    }
   }
 
   async create(userId: string, data: CreateTimeBlockDto) {
@@ -159,7 +178,18 @@ export class TimeBlockService {
 
   async createException(userId: string, id: string, data: import("./timeblocks.validator").CreateTimeBlockExceptionDto) {
     await this.getById(userId, id);
-    const dateObj = DateTime.fromISO(data.date).setZone(TIME_BLOCKS_TZ).startOf("day").toJSDate();
+    const dateObj = DateTime.fromISO(data.date, { zone: TIME_BLOCKS_TZ }).startOf("day").toJSDate();
+
+    if (data.action === "move" && data.startMin !== undefined && data.endMin !== undefined) {
+      const sameDayExceptions = await prisma.timeBlockException.findMany({ where: { userId, date: dateObj } });
+      const blocks = await prisma.timeBlock.findMany({ where: { userId } });
+      for (const block of blocks) {
+        if (block.id === id) continue;
+        const occ = blockOccurrenceOn(block, dateObj, sameDayExceptions);
+        if (!occ.occurs || occ.startMin >= data.endMin || occ.endMin <= data.startMin) continue;
+        throw new AppError("CONFLICT", "Ya tienes un bloque que se cruza con este horario");
+      }
+    }
 
     return prisma.timeBlockException.upsert({
       where: { blockId_date: { blockId: id, date: dateObj } },

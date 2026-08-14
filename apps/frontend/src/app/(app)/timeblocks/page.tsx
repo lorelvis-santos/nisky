@@ -208,8 +208,8 @@ function TimeBlocksContent() {
           ? "Bloque creado. Tócalo para ajustarlo."
           : "Bloque creado. Arrastra sus bordes para ajustarlo.",
       );
-    } catch {
-      toast.error("Ups, no pudimos crear el bloque. Inténtalo de nuevo.");
+    } catch (err) {
+      toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos crear el bloque. Inténtalo de nuevo.");
     }
   };
 
@@ -279,8 +279,8 @@ function TimeBlocksContent() {
         endMin,
       });
       toast.success("Excepción guardada para este día");
-    } catch {
-      toast.error("Ups, no pudimos crear la excepción.");
+    } catch (err) {
+      toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos crear la excepción.");
     }
     setResolveDraft(null);
   };
@@ -360,8 +360,8 @@ function TimeBlocksContent() {
         action: "skip",
       });
       toast.success("Bloque saltado hoy");
-    } catch {
-      toast.error("Ups, no pudimos saltar el bloque.");
+    } catch (err) {
+      toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos saltar el bloque.");
     }
   };
 

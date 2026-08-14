@@ -8,6 +8,7 @@ export interface CalendarEventPayload {
   startMin?: number;
   endMin?: number;
   location?: string;
+  color?: string;
 }
 
 export const eventsApi = {

@@ -217,11 +217,8 @@ function TimeBlocksContent() {
   };
 
   const previewResize = (block: TimeBlock, startMin: number, endMin: number, days: number[]) => {
-    setEditing((current) =>
-      current?.id === block.id
-        ? { ...current, startMin, endMin, daysOfWeek: days }
-        : current,
-    );
+    setEditing({ ...block, startMin, endMin, daysOfWeek: days });
+    setPrefill(null);
   };
 
   useEffect(() => {
@@ -260,11 +257,8 @@ function TimeBlocksContent() {
         id: block.id,
         payload: { startMin, endMin, daysOfWeek: days },
       });
-      setEditing((current) =>
-        current?.id === block.id
-          ? { ...current, startMin, endMin, daysOfWeek: days }
-          : current,
-      );
+      setEditing({ ...block, startMin, endMin, daysOfWeek: days });
+      setPrefill(null);
     } catch {
       toast.error("Ups, no pudimos ajustar el bloque. Inténtalo de nuevo.");
     }
@@ -296,11 +290,8 @@ function TimeBlocksContent() {
         id: block.id,
         payload: { startMin, endMin, daysOfWeek: days },
       });
-      setEditing((current) =>
-        current?.id === block.id
-          ? { ...current, startMin, endMin, daysOfWeek: days }
-          : current,
-      );
+      setEditing({ ...block, startMin, endMin, daysOfWeek: days });
+      setPrefill(null);
     } catch {
       toast.error("Ups, no pudimos ajustar el bloque. Inténtalo de nuevo.");
     }
@@ -393,7 +384,7 @@ function TimeBlocksContent() {
             TU HORARIO SEMANAL
           </p>
           <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">
-            Horario
+            Agenda
           </h1>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
             Reserva horas para tus proyectos. El enfoque activo las usa para

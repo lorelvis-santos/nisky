@@ -106,6 +106,7 @@ export interface CalendarEvent {
   startMin: number | null;
   endMin: number | null;
   location: string | null;
+  color: string | null;
   createdAt: string;
   updatedAt: string;
 }

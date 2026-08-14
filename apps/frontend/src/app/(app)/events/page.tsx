@@ -6,6 +6,8 @@ import { useEventsQuery, useEventMutations } from "@/features/events/hooks/useEv
 import type { CalendarEventPayload } from "@/features/events/api/events";
 import type { CalendarEvent } from "@/types/entities";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { ColorPicker, PROJECT_COLORS } from "@/components/ui/ColorPicker";
+import { hexToRgba } from "@/features/timeblocks/lib/time";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { toast } from "sonner";
 
@@ -98,30 +100,37 @@ export default function EventsPage() {
                   {new Date(day + "T00:00:00").toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" })}
                 </h3>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {groupedEvents[day].map((event: CalendarEvent) => (
-                    <button
-                      key={event.id}
-                      onClick={() => openEdit(event)}
-                      className="flex flex-col text-left border border-outline-variant bg-surface p-4 hover:bg-surface-container-lowest transition-colors"
-                      type="button"
-                    >
-                      <div className="font-headline-xs text-headline-xs font-semibold text-on-surface">
-                        {event.title}
-                      </div>
-                      <div className="mt-2 flex items-center gap-4 font-body-sm text-body-sm text-on-surface-variant">
-                        <div className="flex items-center gap-1">
-                          <Clock size={14} />
-                          {event.allDay ? "Todo el día" : `${formatMin(event.startMin!)} - ${formatMin(event.endMin!)}`}
-                        </div>
-                        {event.location && (
-                          <div className="flex items-center gap-1 truncate">
-                            <MapPin size={14} />
-                            <span className="truncate">{event.location}</span>
+                  {groupedEvents[day].map((event: CalendarEvent) => {
+                    const eventColor = event.color ?? "#303e51";
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={() => openEdit(event)}
+                        className="flex flex-col border border-outline-variant p-4 text-left transition-colors hover:border-outline"
+                        style={{ borderLeft: `3px solid ${eventColor}`, backgroundColor: hexToRgba(eventColor, 0.06) }}
+                        type="button"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: eventColor }} />
+                          <div className="font-headline-xs text-headline-xs font-semibold text-on-surface">
+                            {event.title}
                           </div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                        </div>
+                        <div className="mt-2 flex items-center gap-4 font-body-sm text-body-sm text-on-surface-variant">
+                          <div className="flex items-center gap-1">
+                            <Clock size={14} />
+                            {event.allDay ? "Todo el día" : `${formatMin(event.startMin!)} - ${formatMin(event.endMin!)}`}
+                          </div>
+                          {event.location && (
+                            <div className="flex items-center gap-1 truncate">
+                              <MapPin size={14} />
+                              <span className="truncate">{event.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -160,6 +169,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
   const [startMin, setStartMin] = useState(event?.startMin ? formatMin(event.startMin) : "09:00");
   const [endMin, setEndMin] = useState(event?.endMin ? formatMin(event.endMin) : "10:00");
   const [location, setLocation] = useState(event?.location ?? "");
+  const [color, setColor] = useState(event?.color ?? PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -173,6 +183,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
       startMin: allDay ? undefined : parseMin(startMin),
       endMin: allDay ? undefined : parseMin(endMin),
       location: location.trim() || undefined,
+      color,
     };
 
     try {
@@ -288,6 +299,12 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
                 value={location}
               />
             </label>
+            <div className="block">
+              <span className="font-label-caps text-label-caps text-on-surface-variant">COLOR</span>
+              <div className="mt-2">
+                <ColorPicker onChange={setColor} value={color} />
+              </div>
+            </div>
             <div className="flex justify-end gap-2 border-t border-outline-variant pt-4">
               {event && (
                 <button

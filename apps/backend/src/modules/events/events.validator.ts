@@ -11,6 +11,7 @@ export const createEventBaseSchema = z.object({
   startMin: z.number().int().min(0).max(1439).optional(),
   endMin: z.number().int().min(1).max(1440).optional(),
   location: z.string().trim().max(200).optional(),
+  color: z.string().trim().max(20).optional(),
 });
 
 export const createEventSchema = createEventBaseSchema.superRefine((v, ctx) => {

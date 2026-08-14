@@ -196,9 +196,6 @@ export function TimeBlockWeekGrid({
         const dx = event.clientX - down.x;
         const dy = event.clientY - down.y;
         if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) {
-          if (state.kind === "move" && Math.abs(dy) > Math.abs(dx)) {
-            return;
-          }
           movedRef.current = true;
           rafRef.current = requestAnimationFrame(scrollTick);
         }
@@ -474,16 +471,17 @@ export function TimeBlockWeekGrid({
 
   const renderEventBlock = (event: CalendarEvent) => {
     if (event.allDay || event.startMin === null || event.endMin === null) return null;
+    const eventColor = event.color ?? "#303e51";
     const top = (Math.max(event.startMin - dayStartMin, 0) * HOUR_PX) / 60;
     const bottom = (Math.min(event.endMin - dayStartMin, totalMin) * HOUR_PX) / 60;
     const height = Math.max(bottom - top, 12);
     return (
       <div
         key={event.id}
-        className="absolute inset-x-1 z-0 px-2 py-1 text-left bg-on-surface/5 border border-on-surface/10 rounded-sm pointer-events-none overflow-hidden"
-        style={{ top, height }}
+        className="absolute inset-x-1 z-0 overflow-hidden border-l-2 px-2 py-1 text-left"
+        style={{ top, height, backgroundColor: hexToRgba(eventColor, 0.14), borderColor: eventColor }}
       >
-        <p className="truncate font-body-sm text-body-sm font-semibold text-on-surface/60 leading-tight">
+        <p className="truncate font-body-sm text-body-sm font-semibold leading-tight" style={{ color: eventColor }}>
           {event.title}
         </p>
         {event.location && (

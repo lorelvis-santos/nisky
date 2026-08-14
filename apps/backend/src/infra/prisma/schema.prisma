@@ -147,6 +147,7 @@ model CalendarEvent {
   startMin  Int?
   endMin    Int?
   location  String?  @db.VarChar(200)
+  color     String?  @db.VarChar(20)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

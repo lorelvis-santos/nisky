@@ -4,6 +4,21 @@ import { DateTime } from "luxon";
 import { TIME_BLOCKS_TZ } from "../timeblocks/timeblocks.util";
 import type { CreateEventDto, UpdateEventDto } from "./events.validator";
 
+const EVENT_COLORS = [
+  "#303e51",
+  "#006d77",
+  "#8b5e3c",
+  "#6b4f4f",
+  "#2d5a27",
+  "#5c1a1a",
+  "#1a3a5c",
+  "#4a4a2a",
+];
+
+function randomEventColor() {
+  return EVENT_COLORS[Math.floor(Math.random() * EVENT_COLORS.length)];
+}
+
 export class EventsService {
   async list(userId: string, from: Date, to: Date) {
     return prisma.calendarEvent.findMany({
@@ -44,6 +59,7 @@ export class EventsService {
         startMin: data.allDay ? null : data.startMin,
         endMin: data.allDay ? null : data.endMin,
         location: data.location,
+        color: data.color ?? randomEventColor(),
       },
     });
   }
@@ -64,6 +80,7 @@ export class EventsService {
         startMin,
         endMin,
         location: data.location,
+        ...(data.color !== undefined ? { color: data.color } : {}),
       },
     });
   }

@@ -13,6 +13,7 @@ router.patch("/settings", validateBody(updateTimeBlockSettingsSchema), controlle
 router.get("/", controller.list);
 router.get("/active", controller.active);
 router.get("/today", controller.today);
+router.get("/exceptions", controller.listAllExceptions);
 router.post("/", validateBody(createTimeBlockSchema), controller.create);
 router.patch("/:id", validateParams(idParamSchema), validateBody(updateTimeBlockSchema), controller.update);
 router.delete("/:id", validateParams(idParamSchema), controller.delete);

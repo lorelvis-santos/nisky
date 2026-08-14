@@ -39,6 +39,12 @@ export type BlockOccurrence = {
   exceptionId: string | null;
 } | { occurs: false };
 
+function sameDay(a: Date, b: Date, zone: string) {
+  const da = DateTime.fromJSDate(a, { zone });
+  const db = DateTime.fromJSDate(b, { zone });
+  return da.year === db.year && da.month === db.month && da.day === db.day;
+}
+
 export function blockOccurrenceOn(
   block: TimeBlockOccurrence,
   date: Date = new Date(),
@@ -52,7 +58,7 @@ export function blockOccurrenceOn(
     if (weeks % block.repeatEveryWeeks !== 0) return { occurs: false };
   }
 
-  const exception = exceptions.find(e => e.blockId === block.id && e.date.getTime() === date.getTime());
+  const exception = exceptions.find(e => e.blockId === block.id && sameDay(e.date, date, zone));
   
   if (exception) {
     if (exception.action === "skip") return { occurs: false };

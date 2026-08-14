@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Project, TimeBlock, CalendarEvent } from "@/types/entities";
+import type { Project, TimeBlock, CalendarEvent, TimeBlockException } from "@/types/entities";
 import { cn } from "@/lib/utils";
 import { DAY_NAMES_SHORT, DAY_ORDER, hexToRgba, minToTime } from "../lib/time";
 
@@ -20,6 +20,20 @@ function monday(date: Date) {
 }
 
 type DayColumn = { el: HTMLElement; dayOfWeek: number };
+
+function sameLocalDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function exceptionFor(block: TimeBlock, day: Date, exceptions: TimeBlockException[]) {
+  return exceptions.find(
+    (exc) => exc.blockId === block.id && sameLocalDay(new Date(exc.date), day),
+  );
+}
 
 type ResizeDraft = {
   block: TimeBlock;
@@ -42,6 +56,7 @@ export function TimeBlockWeekGrid({
   blocks,
   projects,
   events = [],
+  exceptions = [],
   onBlockClick,
   onSlotClick,
   onResize,
@@ -53,6 +68,7 @@ export function TimeBlockWeekGrid({
   blocks: TimeBlock[];
   projects: Project[];
   events?: CalendarEvent[];
+  exceptions?: TimeBlockException[];
   onBlockClick: (block: TimeBlock) => void;
   onSlotClick: (dayOfWeek: number, startMin: number) => void;
   onResize: (
@@ -591,14 +607,18 @@ export function TimeBlockWeekGrid({
                   }}
                   style={{ height: totalPx }}
                 >
-                  {dayBlocks.map((block) =>
-                    renderBlockButton(
+                  {dayBlocks.map((block) => {
+                    const exc = exceptionFor(block, day.date, exceptions);
+                    if (exc?.action === "skip") return null;
+                    const startMin = exc?.action === "move" && exc.startMin !== null ? exc.startMin : block.startMin;
+                    const endMin = exc?.action === "move" && exc.endMin !== null ? exc.endMin : block.endMin;
+                    return renderBlockButton(
                       block,
-                      block.startMin,
-                      block.endMin,
+                      startMin,
+                      endMin,
                       draft?.block.id === block.id,
-                    ),
-                  )}
+                    );
+                  })}
                   {events
                     .filter((e) => !e.allDay && new Date(e.date).getDate() === day.date.getDate())
                     .map((e) => renderEventBlock(e))}

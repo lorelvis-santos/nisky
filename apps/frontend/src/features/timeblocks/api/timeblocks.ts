@@ -64,6 +64,11 @@ export async function getTimeBlockExceptions(blockId: string) {
   return data.data;
 }
 
+export async function getAllTimeBlockExceptions(from: string, to: string) {
+  const { data } = await api.get<{ data: TimeBlockException[] }>("/timeblocks/exceptions", { params: { from, to } });
+  return data.data;
+}
+
 export async function deleteTimeBlockException(blockId: string, exceptionId: string) {
   const { data } = await api.delete<{ data: { success: boolean } }>(`/timeblocks/${blockId}/exceptions/${exceptionId}`);
   return data.data;

@@ -1,6 +1,7 @@
 import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
-import { blockOccurrenceOn, dayOfWeek, nowMinutes } from "./timeblocks.util";
+import { blockOccurrenceOn, dayOfWeek, nowMinutes, TIME_BLOCKS_TZ } from "./timeblocks.util";
+import { DateTime } from "luxon";
 import type { CreateTimeBlockDto, UpdateTimeBlockDto, UpdateTimeBlockSettingsDto } from "./timeblocks.validator";
 
 const settingsDefaults = {
@@ -158,8 +159,7 @@ export class TimeBlockService {
 
   async createException(userId: string, id: string, data: import("./timeblocks.validator").CreateTimeBlockExceptionDto) {
     await this.getById(userId, id);
-    const dateObj = new Date(data.date);
-    dateObj.setHours(0, 0, 0, 0);
+    const dateObj = DateTime.fromISO(data.date).setZone(TIME_BLOCKS_TZ).startOf("day").toJSDate();
 
     return prisma.timeBlockException.upsert({
       where: { blockId_date: { blockId: id, date: dateObj } },
@@ -183,6 +183,17 @@ export class TimeBlockService {
     await this.getById(userId, blockId);
     return prisma.timeBlockException.findMany({
       where: { userId, blockId },
+      orderBy: { date: "asc" },
+    });
+  }
+
+  async listAllExceptions(userId: string, from?: Date, to?: Date) {
+    return prisma.timeBlockException.findMany({
+      where: {
+        userId,
+        ...(from ? { date: { gte: from } } : {}),
+        ...(to ? { date: { lte: to } } : {}),
+      },
       orderBy: { date: "asc" },
     });
   }

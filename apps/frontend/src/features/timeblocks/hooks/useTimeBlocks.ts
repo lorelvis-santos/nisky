@@ -3,6 +3,7 @@ import {
   createTimeBlock,
   deleteTimeBlock,
   deleteTimeBlockException,
+  getAllTimeBlockExceptions,
   getActiveBlock,
   getTimeBlockExceptions,
   getTimeBlockSettings,
@@ -49,6 +50,13 @@ export function useBlockExceptionsQuery(blockId: string | null) {
     queryKey: ["timeblocks", blockId, "exceptions"],
     queryFn: () => getTimeBlockExceptions(blockId!),
     enabled: !!blockId,
+  });
+}
+
+export function useWeekExceptionsQuery(from: string, to: string) {
+  return useQuery({
+    queryKey: ["timeblocks", "exceptions", from, to],
+    queryFn: () => getAllTimeBlockExceptions(from, to),
   });
 }
 

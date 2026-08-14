@@ -11,6 +11,7 @@ import {
   useTimeBlockSettingsMutation,
   useTimeBlockSettingsQuery,
   useTimeBlocksQuery,
+  useWeekExceptionsQuery,
 } from "@/features/timeblocks/hooks/useTimeBlocks";
 import { useEventsQuery } from "@/features/events/hooks/useEvents";
 import { minToTime, timeToMin } from "@/features/timeblocks/lib/time";
@@ -159,6 +160,8 @@ function TimeBlocksContent() {
   
   const eventsQuery = useEventsQuery(from, to);
   const events = eventsQuery.data ?? [];
+  const exceptionsQuery = useWeekExceptionsQuery(from, to);
+  const exceptions = exceptionsQuery.data ?? [];
 
   const openSettings = () => {
     setDayStartTime(minToTime(settings?.dayStartMin ?? 6 * 60));
@@ -456,6 +459,7 @@ function TimeBlocksContent() {
           <TimeBlockWeekGrid
             blocks={blocks}
             events={events}
+            exceptions={exceptions}
             dayEndMin={settings?.dayEndMin ?? 23 * 60}
             dayStartMin={settings?.dayStartMin ?? 6 * 60}
             moveEnabled={!isMobile}

@@ -40,6 +40,8 @@ type ResizeDraft = {
   kind: "start" | "end" | "move";
   startMin: number;
   endMin: number;
+  baseStartMin: number;
+  baseEndMin: number;
   days: number[];
   dragDay: number;
   draggedDate: string;
@@ -293,8 +295,8 @@ export function TimeBlockWeekGrid({
         state.days.length !== state.block.daysOfWeek.length ||
         state.days.some((day, index) => day !== state.block.daysOfWeek[index]);
       const changed =
-        state.startMin !== state.block.startMin ||
-        state.endMin !== state.block.endMin ||
+        state.startMin !== state.baseStartMin ||
+        state.endMin !== state.baseEndMin ||
         daysChanged;
       if (changed) {
         onResizeRef.current(
@@ -340,6 +342,17 @@ export function TimeBlockWeekGrid({
     const draggedDate = dragDateObj 
       ? `${dragDateObj.getFullYear()}-${String(dragDateObj.getMonth() + 1).padStart(2, "0")}-${String(dragDateObj.getDate()).padStart(2, "0")}`
       : "";
+    const dragException = dragDateObj
+      ? exceptionFor(block, dragDateObj, exceptions)
+      : undefined;
+    const baseStartMin =
+      dragException?.action === "move" && dragException.startMin !== null
+        ? dragException.startMin
+        : block.startMin;
+    const baseEndMin =
+      dragException?.action === "move" && dragException.endMin !== null
+        ? dragException.endMin
+        : block.endMin;
     blockDownRef.current = true;
     downRef.current = { x: event.clientX, y: event.clientY };
     movedRef.current = false;
@@ -347,12 +360,14 @@ export function TimeBlockWeekGrid({
     draftRef.current = {
       block,
       kind: edge,
-      startMin: block.startMin,
-      endMin: block.endMin,
+      startMin: baseStartMin,
+      endMin: baseEndMin,
+      baseStartMin,
+      baseEndMin,
       days: [...block.daysOfWeek],
       dragDay,
       draggedDate,
-      durationMin: block.endMin - block.startMin,
+      durationMin: baseEndMin - baseStartMin,
       columns,
       container,
       grid,
@@ -384,6 +399,17 @@ export function TimeBlockWeekGrid({
     const draggedDate = dragDateObj 
       ? `${dragDateObj.getFullYear()}-${String(dragDateObj.getMonth() + 1).padStart(2, "0")}-${String(dragDateObj.getDate()).padStart(2, "0")}`
       : "";
+    const dragException = dragDateObj
+      ? exceptionFor(block, dragDateObj, exceptions)
+      : undefined;
+    const baseStartMin =
+      dragException?.action === "move" && dragException.startMin !== null
+        ? dragException.startMin
+        : block.startMin;
+    const baseEndMin =
+      dragException?.action === "move" && dragException.endMin !== null
+        ? dragException.endMin
+        : block.endMin;
     blockDownRef.current = true;
     downRef.current = { x: event.clientX, y: event.clientY };
     movedRef.current = false;
@@ -391,12 +417,14 @@ export function TimeBlockWeekGrid({
     draftRef.current = {
       block,
       kind: "move",
-      startMin: block.startMin,
-      endMin: block.endMin,
+      startMin: baseStartMin,
+      endMin: baseEndMin,
+      baseStartMin,
+      baseEndMin,
       days: [...block.daysOfWeek],
       dragDay,
       draggedDate,
-      durationMin: block.endMin - block.startMin,
+      durationMin: baseEndMin - baseStartMin,
       columns,
       container,
       grid,
@@ -452,7 +480,7 @@ export function TimeBlockWeekGrid({
           backgroundColor: hexToRgba(color, 0.14),
           borderColor: color,
         }}
-        title={`${label} · ${minToTime(block.startMin)}–${minToTime(block.endMin)}${block.isActive ? "" : " · Pausado"}`}
+        title={`${label} · ${minToTime(startMin)}–${minToTime(endMin)}${block.isActive ? "" : " · Pausado"}`}
         type="button"
       >
         <p

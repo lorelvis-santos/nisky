@@ -248,6 +248,32 @@ function TimeBlocksContent() {
     const daysChanged =
       days.length !== block.daysOfWeek.length ||
       days.some((day, index) => day !== block.daysOfWeek[index]);
+
+    const hasMoveException =
+      !!draggedDate &&
+      exceptions.some((exc) => {
+        if (exc.blockId !== block.id || exc.action !== "move") return false;
+        const d = new Date(exc.date);
+        const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        return dayKey === draggedDate;
+      });
+
+    if (!daysChanged && hasMoveException) {
+      try {
+        await mutations.createException.mutateAsync({
+          id: block.id,
+          date: draggedDate,
+          action: "move",
+          startMin,
+          endMin,
+        });
+        toast.success("Excepción actualizada para este día");
+      } catch (err) {
+        toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos actualizar la excepción.");
+      }
+      return;
+    }
+
     if (startMin === block.startMin && endMin === block.endMin && !daysChanged) return;
 
     if (!daysChanged && draggedDate && (block.daysOfWeek.length > 1 || block.repeatEveryWeeks > 1)) {

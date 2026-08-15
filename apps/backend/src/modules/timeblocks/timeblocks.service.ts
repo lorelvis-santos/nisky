@@ -97,6 +97,22 @@ export class TimeBlockService {
     if (exceptionClash) {
       throw new AppError("CONFLICT", "Ya tienes un bloque que se cruza con este horario");
     }
+
+    const now = DateTime.now().setZone(TIME_BLOCKS_TZ).startOf("day").toJSDate();
+    const futureEvents = await prisma.calendarEvent.findMany({
+      where: { userId, date: { gte: now } },
+      select: { date: true, allDay: true, startMin: true, endMin: true },
+    });
+    const eventClash = futureEvents.some((event) => {
+      if (!daysOfWeek.includes(dayOfWeek(event.date))) return false;
+      if (event.allDay) return true;
+      const eventStart = event.startMin ?? 0;
+      const eventEnd = event.endMin ?? 24 * 60;
+      return eventStart < endMin && eventEnd > startMin;
+    });
+    if (eventClash) {
+      throw new AppError("CONFLICT", "Ya tienes un evento que se cruza con este horario");
+    }
   }
 
   async create(userId: string, data: CreateTimeBlockDto) {
@@ -188,6 +204,18 @@ export class TimeBlockService {
         const occ = blockOccurrenceOn(block, dateObj, sameDayExceptions);
         if (!occ.occurs || occ.startMin >= data.endMin || occ.endMin <= data.startMin) continue;
         throw new AppError("CONFLICT", "Ya tienes un bloque que se cruza con este horario");
+      }
+      const sameDayEvents = await prisma.calendarEvent.findMany({
+        where: { userId, date: dateObj },
+        select: { allDay: true, startMin: true, endMin: true },
+      });
+      const eventClash = sameDayEvents.some(
+        (event) =>
+          event.allDay ||
+          (event.startMin !== null && event.endMin !== null && event.startMin < data.endMin! && event.endMin! > data.startMin!),
+      );
+      if (eventClash) {
+        throw new AppError("CONFLICT", "Ya tienes un evento que se cruza con este horario");
       }
     }
 

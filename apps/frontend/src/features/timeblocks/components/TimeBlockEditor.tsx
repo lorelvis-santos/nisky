@@ -26,7 +26,7 @@ export function TimeBlockEditor({
   onSave: (data: CreateTimeBlockPayload) => Promise<void>;
   onToggleActive: () => Promise<void>;
   onDelete: () => Promise<void>;
-  onSkipToday?: () => Promise<void>;
+  onSkipToday: (date: string) => Promise<void>;
 }) {
   const [name, setName] = useState(target?.name ?? "");
   const [projectId, setProjectId] = useState(target ? target.projectId ?? "" : "");
@@ -39,15 +39,15 @@ export function TimeBlockEditor({
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
   const [exceptionToDelete, setExceptionToDelete] = useState<TimeBlockException | null>(null);
 
-  const exceptionsQuery = useBlockExceptionsQuery(target?.id ?? null);
-  const exceptions = exceptionsQuery.data ?? [];
-  const exceptionMutations = useTimeBlockMutations();
-
   const todayISO = (() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   })();
-  const appliesToday = target ? target.daysOfWeek.includes(new Date().getDay()) : false;
+  const [skipDate, setSkipDate] = useState(todayISO);
+
+  const exceptionsQuery = useBlockExceptionsQuery(target?.id ?? null);
+  const exceptions = exceptionsQuery.data ?? [];
+  const exceptionMutations = useTimeBlockMutations();
 
   const previousTargetRef = useRef<TimeBlock | null>(target);
   useEffect(() => {
@@ -214,15 +214,27 @@ export function TimeBlockEditor({
           </button>
         </div>
       )}
-      {target && target.isActive && appliesToday && (
-        <button
-          className="flex w-full items-center justify-center gap-2 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-error disabled:opacity-50"
-          disabled={busy}
-          onClick={() => setSkipConfirmOpen(true)}
-          type="button"
-        >
-          <CalendarX size={15} /> Saltar hoy
-        </button>
+      {target && target.isActive && (
+        <div className="flex items-end gap-2 border-t border-outline-variant pt-3">
+          <label className="flex-1">
+            <span className="font-label-caps text-label-caps text-on-surface-variant">SALTAR UN DÍA</span>
+            <input
+              className="field mt-1"
+              min="2000-01-01"
+              onChange={(event) => setSkipDate(event.target.value)}
+              type="date"
+              value={skipDate}
+            />
+          </label>
+          <button
+            className="flex-1 whitespace-nowrap border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-error disabled:opacity-50"
+            disabled={busy || !skipDate}
+            onClick={() => setSkipConfirmOpen(true)}
+            type="button"
+          >
+            <CalendarX className="mr-1 inline" size={15} /> Saltar
+          </button>
+        </div>
       )}
       {target && exceptions.length > 0 && (
         <div className="border-t border-outline-variant pt-3">
@@ -255,16 +267,16 @@ export function TimeBlockEditor({
       {skipConfirmOpen && target && (
         <ConfirmModal
           cancelLabel="Cancelar"
-          confirmLabel="Saltar hoy"
+          confirmLabel={skipDate === todayISO ? "Saltar hoy" : "Saltar este día"}
           danger
           loading={busy}
-          message={<>¿Saltar este bloque el día de hoy ({formatExceptionDate(todayISO)})? No se notificará ni contará como enfoque.</>}
+          message={<>¿Saltar este bloque el {skipDate === todayISO ? "día de hoy" : `día ${formatExceptionDate(skipDate)}`}? No se notificará ni contará como enfoque.</>}
           onClose={() => setSkipConfirmOpen(false)}
           onConfirm={async () => {
             setSkipConfirmOpen(false);
-            if (onSkipToday) await onSkipToday();
+            await onSkipToday(skipDate);
           }}
-          title="¿Saltar bloque hoy?"
+          title={skipDate === todayISO ? "¿Saltar bloque hoy?" : "¿Saltar bloque este día?"}
         />
       )}
       {exceptionToDelete && (

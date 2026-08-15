@@ -103,6 +103,20 @@ function ModalBody({
             key={target?.id ?? `schedule-${formKey}`}
             onDelete={remove}
             onSave={save}
+            onSkipToday={async (date: string) => {
+              if (!target) return;
+              try {
+                await mutations.createException.mutateAsync({
+                  id: target.id,
+                  date,
+                  action: "skip",
+                });
+                toast.success("Bloque saltado ese día");
+                onClose();
+              } catch (err) {
+                toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos saltar el bloque.");
+              }
+            }}
             onToggleActive={toggleActive}
             projects={projects}
             target={target}

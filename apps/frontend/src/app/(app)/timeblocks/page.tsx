@@ -375,17 +375,19 @@ function TimeBlocksContent() {
     }
   };
 
-  const skipToday = async () => {
+  const skipToday = async (date?: string) => {
     if (!editing) return;
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const dateStr = date ?? (() => {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    })();
     try {
       await mutations.createException.mutateAsync({
         id: editing.id,
         date: dateStr,
         action: "skip",
       });
-      toast.success("Bloque saltado hoy");
+      toast.success("Bloque saltado ese día");
     } catch (err) {
       toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos saltar el bloque.");
     }

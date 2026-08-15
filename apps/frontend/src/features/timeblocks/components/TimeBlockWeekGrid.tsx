@@ -35,6 +35,15 @@ function exceptionFor(block: TimeBlock, day: Date, exceptions: TimeBlockExceptio
   );
 }
 
+function timesOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number) {
+  return aStart < bEnd && aEnd > bStart;
+}
+
+function dayConflicts(block: TimeBlock, event: CalendarEvent) {
+  if (event.allDay || event.startMin === null || event.endMin === null) return true;
+  return timesOverlap(block.startMin, block.endMin, event.startMin, event.endMin);
+}
+
 type ResizeDraft = {
   block: TimeBlock;
   kind: "start" | "end" | "move";
@@ -441,6 +450,7 @@ export function TimeBlockWeekGrid({
     startMin: number,
     endMin: number,
     hidden: boolean,
+    conflict?: CalendarEvent,
   ) => {
     const project = projects.find((item) => item.id === block.projectId);
     const color = project?.color ?? "#7a8494";
@@ -479,10 +489,24 @@ export function TimeBlockWeekGrid({
           height,
           backgroundColor: hexToRgba(color, 0.14),
           borderColor: color,
+          ...(conflict ? { outline: "1px dashed var(--error)", outlineOffset: -3 } : {}),
         }}
-        title={`${label} · ${minToTime(startMin)}–${minToTime(endMin)}${block.isActive ? "" : " · Pausado"}`}
+        title={
+          conflict
+            ? `${label} · ${minToTime(startMin)}–${minToTime(endMin)} · ¡Choca con "${conflict.title}"!`
+            : `${label} · ${minToTime(startMin)}–${minToTime(endMin)}${block.isActive ? "" : " · Pausado"}`
+        }
         type="button"
       >
+        {conflict && (
+          <span
+            aria-hidden="true"
+            className="absolute right-1 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-error text-[10px] font-bold text-on-primary"
+            title={`Choca con "${conflict.title}"`}
+          >
+            !
+          </span>
+        )}
         <p
           className={cn(
             "truncate font-body-sm text-body-sm font-semibold",
@@ -513,7 +537,7 @@ export function TimeBlockWeekGrid({
     );
   };
 
-  const renderEventBlock = (event: CalendarEvent) => {
+  const renderEventBlock = (event: CalendarEvent, conflict?: TimeBlock) => {
     if (event.allDay || event.startMin === null || event.endMin === null) return null;
     const eventColor = event.color ?? "#303e51";
     const top = (Math.max(event.startMin - dayStartMin, 0) * HOUR_PX) / 60;
@@ -522,8 +546,18 @@ export function TimeBlockWeekGrid({
     return (
       <div
         key={event.id}
-        className="absolute inset-x-1 z-0 overflow-hidden border-l-2 px-2 py-1 text-left"
-        style={{ top, height, backgroundColor: hexToRgba(eventColor, 0.14), borderColor: eventColor }}
+        className={cn(
+          "absolute inset-x-1 z-0 overflow-hidden border-l-2 px-2 py-1 text-left",
+          conflict && "border-l-error",
+        )}
+        style={{
+          top,
+          height,
+          backgroundColor: hexToRgba(eventColor, 0.14),
+          borderColor: conflict ? "var(--error)" : eventColor,
+          ...(conflict ? { outline: "1px dashed var(--error)", outlineOffset: -3 } : {}),
+        }}
+        title={conflict ? `${event.title} · ¡Choca con el bloque "${conflict.name ?? projects.find((p) => p.id === conflict.projectId)?.name ?? "Tiempo libre"}"!` : undefined}
       >
         <p className="truncate font-body-sm text-body-sm font-semibold leading-tight" style={{ color: eventColor }}>
           {event.title}
@@ -618,6 +652,9 @@ export function TimeBlockWeekGrid({
               const dayBlocks = blocks
                 .filter((block) => block.daysOfWeek.includes(day.dayOfWeek))
                 .sort((a, b) => a.startMin - b.startMin);
+              const dayEvents = events.filter(
+                (e) => new Date(e.date).getDate() === day.date.getDate(),
+              );
               const isToday = day.key === todayKey;
               return (
                 <div
@@ -640,16 +677,29 @@ export function TimeBlockWeekGrid({
                     if (exc?.action === "skip") return null;
                     const startMin = exc?.action === "move" && exc.startMin !== null ? exc.startMin : block.startMin;
                     const endMin = exc?.action === "move" && exc.endMin !== null ? exc.endMin : block.endMin;
+                    const conflict = dayEvents.find(
+                      (event) => dayConflicts({ ...block, startMin, endMin }, event),
+                    );
                     return renderBlockButton(
                       block,
                       startMin,
                       endMin,
                       draft?.block.id === block.id,
+                      conflict,
                     );
                   })}
-                  {events
-                    .filter((e) => !e.allDay && new Date(e.date).getDate() === day.date.getDate())
-                    .map((e) => renderEventBlock(e))}
+                  {dayEvents
+                    .filter((e) => !e.allDay && e.startMin !== null && e.endMin !== null)
+                    .map((e) => {
+                      const conflict = dayBlocks.find((block) => {
+                        const exc = exceptionFor(block, day.date, exceptions);
+                        if (exc?.action === "skip") return false;
+                        const bStart = exc?.action === "move" && exc.startMin !== null ? exc.startMin : block.startMin;
+                        const bEnd = exc?.action === "move" && exc.endMin !== null ? exc.endMin : block.endMin;
+                        return dayConflicts({ ...block, startMin: bStart, endMin: bEnd }, e);
+                      });
+                      return renderEventBlock(e, conflict);
+                    })}
                   {isToday && nowMin >= dayStartMin && nowMin <= dayEndMin && (
                     <div
                       className="pointer-events-none absolute inset-x-0 z-[15]"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MoreVertical } from "lucide-react";
 import type { Project, TimeBlock, CalendarEvent, TimeBlockException } from "@/types/entities";
 import { cn } from "@/lib/utils";
 import { DAY_NAMES_SHORT, DAY_ORDER, hexToRgba, minToTime } from "../lib/time";
@@ -72,6 +73,7 @@ export function TimeBlockWeekGrid({
   onSlotClick,
   onResize,
   onResizePreview,
+  onEventAction,
   moveEnabled = true,
   dayStartMin = 6 * 60,
   dayEndMin = 23 * 60,
@@ -95,6 +97,7 @@ export function TimeBlockWeekGrid({
     endMin: number,
     days: number[],
   ) => void;
+  onEventAction?: (event: CalendarEvent, date: Date, action: "skip" | "move") => void;
   moveEnabled?: boolean;
   dayStartMin?: number;
   dayEndMin?: number;
@@ -104,6 +107,14 @@ export function TimeBlockWeekGrid({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<ResizeDraft | null>(null);
   const draftRef = useRef<ResizeDraft | null>(null);
+  const [eventMenu, setEventMenu] = useState<{ eventId: string; date: Date } | null>(null);
+
+  useEffect(() => {
+    if (!eventMenu) return;
+    const close = () => setEventMenu(null);
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [eventMenu]);
   const downRef = useRef<{ x: number; y: number } | null>(null);
   const movedRef = useRef(false);
   const blockDownRef = useRef(false);
@@ -537,12 +548,13 @@ export function TimeBlockWeekGrid({
     );
   };
 
-  const renderEventBlock = (event: CalendarEvent, conflict?: TimeBlock) => {
+  const renderEventBlock = (event: CalendarEvent, conflict?: TimeBlock, dayDate?: Date) => {
     if (event.allDay || event.startMin === null || event.endMin === null) return null;
     const eventColor = event.color ?? "#303e51";
     const top = (Math.max(event.startMin - dayStartMin, 0) * HOUR_PX) / 60;
     const bottom = (Math.min(event.endMin - dayStartMin, totalMin) * HOUR_PX) / 60;
     const height = Math.max(bottom - top, 12);
+    const menuOpen = eventMenu?.eventId === event.id;
     return (
       <div
         key={event.id}
@@ -566,6 +578,50 @@ export function TimeBlockWeekGrid({
           <p className="truncate font-data-mono text-[10px] text-on-surface-variant/60 leading-tight">
             ⌖ {event.location}
           </p>
+        )}
+        {event.recurrenceType && dayDate && onEventAction && (
+          <div
+            className="absolute right-1 top-1 z-30"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <button
+              aria-label="Opciones del evento recurrente"
+              className="flex h-5 w-5 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEventMenu((m) => (m?.eventId === event.id ? null : { eventId: event.id, date: dayDate }));
+              }}
+              type="button"
+            >
+              <MoreVertical size={12} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-6 z-40 flex w-40 flex-col border border-outline-variant bg-surface-container-lowest">
+                <button
+                  className="px-3 py-2 text-left font-body-sm text-body-sm text-on-surface hover:bg-surface-container-high"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEventMenu(null);
+                    onEventAction(event, dayDate, "skip");
+                  }}
+                  type="button"
+                >
+                  Saltar solo hoy
+                </button>
+                <button
+                  className="border-t border-outline-variant px-3 py-2 text-left font-body-sm text-body-sm text-on-surface hover:bg-surface-container-high"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEventMenu(null);
+                    onEventAction(event, dayDate, "move");
+                  }}
+                  type="button"
+                >
+                  Mover solo hoy
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     );
@@ -698,7 +754,7 @@ export function TimeBlockWeekGrid({
                         const bEnd = exc?.action === "move" && exc.endMin !== null ? exc.endMin : block.endMin;
                         return dayConflicts({ ...block, startMin: bStart, endMin: bEnd }, e);
                       });
-                      return renderEventBlock(e, conflict);
+                      return renderEventBlock(e, conflict, day.date);
                     })}
                   {isToday && nowMin >= dayStartMin && nowMin <= dayEndMin && (
                     <div

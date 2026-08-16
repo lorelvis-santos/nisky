@@ -13,7 +13,7 @@ import {
   useTimeBlocksQuery,
   useWeekExceptionsQuery,
 } from "@/features/timeblocks/hooks/useTimeBlocks";
-import { useEventsQuery } from "@/features/events/hooks/useEvents";
+import { useEventsQuery, useEventMutations } from "@/features/events/hooks/useEvents";
 import { minToTime, timeToMin } from "@/features/timeblocks/lib/time";
 import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
@@ -21,9 +21,92 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { TasksSidebar } from "@/features/tasks/components/TasksSidebar";
 import { useTasksSidebar } from "@/context/TasksSidebarContext";
 import { groupTasksByDueDate, useTodayTasksQuery } from "@/features/tasks/hooks/useTasks";
-import type { TimeBlock } from "@/types/entities";
+import type { TimeBlock, CalendarEvent } from "@/types/entities";
 
 type SlotPrefill = { dayOfWeek: number; startMin: number; endMin: number };
+
+function toISODateString(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function EventMoveModal({
+  title,
+  startTime,
+  endTime,
+  busy,
+  onChangeStart,
+  onChangeEnd,
+  onCancel,
+  onSave,
+}: {
+  title: string;
+  startTime: string;
+  endTime: string;
+  busy: boolean;
+  onChangeStart: (value: string) => void;
+  onChangeEnd: (value: string) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  useModalScrollLock();
+  return (
+    <div
+      aria-modal="true"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]"
+      onClick={onCancel}
+      role="dialog"
+    >
+      <div
+        className="w-full max-w-md border border-outline-variant bg-surface p-container-padding"
+        data-modal-scroll
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="font-headline-xs text-headline-xs">Mover «{title}» solo hoy</h2>
+        <p className="mt-2 font-body-md text-body-md text-on-surface-variant">
+          Este cambio solo aplica a la ocurrencia del día seleccionado.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="font-label-caps text-label-caps text-on-surface-variant">INICIO</span>
+            <input
+              className="field mt-1"
+              onChange={(e) => onChangeStart(e.target.value)}
+              type="time"
+              value={startTime}
+            />
+          </label>
+          <label className="block">
+            <span className="font-label-caps text-label-caps text-on-surface-variant">FIN</span>
+            <input
+              className="field mt-1"
+              onChange={(e) => onChangeEnd(e.target.value)}
+              type="time"
+              value={endTime}
+            />
+          </label>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            className="border border-outline-variant px-4 py-2 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
+            disabled={busy}
+            onClick={onCancel}
+            type="button"
+          >
+            Cancelar
+          </button>
+          <button
+            className="bg-primary-container px-4 py-2 font-body-md text-body-md text-on-primary hover:bg-primary disabled:opacity-50"
+            disabled={busy}
+            onClick={onSave}
+            type="button"
+          >
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ResizeResolveModal({
   date,
@@ -167,6 +250,10 @@ function TimeBlocksContent() {
   
   const eventsQuery = useEventsQuery(from, to);
   const events = eventsQuery.data ?? [];
+  const eventMutations = useEventMutations();
+  const [eventMoveDraft, setEventMoveDraft] = useState<{ event: CalendarEvent; date: Date } | null>(null);
+  const [eventMoveStart, setEventMoveStart] = useState("09:00");
+  const [eventMoveEnd, setEventMoveEnd] = useState("10:00");
   const exceptionsQuery = useWeekExceptionsQuery(from, to);
   const exceptions = exceptionsQuery.data ?? [];
 
@@ -401,6 +488,42 @@ function TimeBlocksContent() {
     }
   };
 
+  const handleEventAction = (event: CalendarEvent, date: Date, action: "skip" | "move") => {
+    const dateStr = toISODateString(date);
+    if (action === "skip") {
+      eventMutations.createException
+        .mutateAsync({ eventId: event.id, payload: { date: dateStr, action: "skip" } })
+        .then(() => toast.success("Evento saltado ese día"))
+        .catch((err) =>
+          toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos saltar el evento."),
+        );
+      return;
+    }
+    setEventMoveStart(minToTime(event.startMin ?? 9 * 60));
+    setEventMoveEnd(minToTime(event.endMin ?? 10 * 60));
+    setEventMoveDraft({ event, date });
+  };
+
+  const saveEventMove = async () => {
+    if (!eventMoveDraft) return;
+    const startMin = timeToMin(eventMoveStart);
+    const endMin = timeToMin(eventMoveEnd);
+    if (endMin <= startMin) {
+      toast.error("El fin debe ser mayor al inicio.");
+      return;
+    }
+    try {
+      await eventMutations.createException.mutateAsync({
+        eventId: eventMoveDraft.event.id,
+        payload: { date: toISODateString(eventMoveDraft.date), action: "move", startMin, endMin },
+      });
+      toast.success("Evento movido ese día");
+      setEventMoveDraft(null);
+    } catch (err) {
+      toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos mover el evento.");
+    }
+  };
+
   const editor = (
     <TimeBlockEditor
       busy={busy}
@@ -515,6 +638,7 @@ function TimeBlocksContent() {
             dayStartMin={settings?.dayStartMin ?? 6 * 60}
             moveEnabled={!isMobile}
             onBlockClick={openBlock}
+            onEventAction={handleEventAction}
             onResize={resizeBlock}
             onResizePreview={previewResize}
             onSlotClick={createAtSlot}
@@ -570,6 +694,19 @@ function TimeBlocksContent() {
           onCancel={() => setResolveDraft(null)}
           onException={() => void resolveAsException()}
           onOriginal={() => void resolveAsOriginal()}
+        />
+      )}
+
+      {eventMoveDraft && (
+        <EventMoveModal
+          busy={eventMutations.createException.isPending}
+          endTime={eventMoveEnd}
+          onChangeEnd={setEventMoveEnd}
+          onChangeStart={setEventMoveStart}
+          onCancel={() => setEventMoveDraft(null)}
+          onSave={() => void saveEventMove()}
+          startTime={eventMoveStart}
+          title={eventMoveDraft.event.title}
         />
       )}
     </section>

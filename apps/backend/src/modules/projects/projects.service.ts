@@ -123,11 +123,34 @@ export class ProjectService {
     ]);
     const memberProjects = memberships.map(m => m.project);
     const seen = new Set<string>();
-    return [...owned, ...memberProjects].filter((project) => {
+    const projects = [...owned, ...memberProjects].filter((project) => {
       if (seen.has(project.id)) return false;
       seen.add(project.id);
       return true;
     });
+    const ownerIds = [...new Set(projects.map(p => p.userId))];
+    const owners = await prisma.user.findMany({
+      where: { id: { in: ownerIds } },
+      select: { id: true, email: true, name: true, avatarUrl: true },
+    });
+    const ownerById = new Map(owners.map(o => [o.id, o]));
+    for (const project of projects) {
+      const hasOwner = project.members.some(m => m.userId === project.userId);
+      if (!hasOwner) {
+        const owner = ownerById.get(project.userId);
+        if (owner) {
+          project.members.unshift({
+            id: `owner-${owner.id}`,
+            projectId: project.id,
+            userId: owner.id,
+            user: owner,
+            role: "OWNER",
+            createdAt: new Date(0),
+          });
+        }
+      }
+    }
+    return projects;
   }
 
   async listMembers(userId: string, projectId: string) {

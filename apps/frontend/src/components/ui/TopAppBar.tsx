@@ -1,6 +1,6 @@
 "use client";
 
-import { AlarmClock, Bell, CalendarClock, ChevronRight, ListTodo, LogOut, Menu, Pause, Play, Settings, Square, StickyNote, X } from "lucide-react";
+import { AlarmClock, Bell, CalendarClock, ChevronLeft, ChevronRight, ListTodo, LogOut, Menu, Pause, Play, Settings, Square, StickyNote, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { useRemindersQuery, usePendingRemindersQuery } from "@/features/reminders/hooks/useReminders";
 import { InvitationsPanel } from "@/features/projects/components/InvitationsPanel";
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { useTasksSidebar } from "@/context/TasksSidebarContext";
 import type { Reminder, Task } from "@/types/entities";
 
 const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
@@ -28,13 +29,24 @@ const titles: Record<string, string> = {
   "/support": "Ayuda",
 };
 
-export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpenCapture: () => void }) {
+export function TopAppBar({
+  onMenu,
+  onOpenCapture,
+  sidebarCollapsed,
+  onToggleSidebar,
+}: {
+  onMenu: () => void;
+  onOpenCapture: () => void;
+  sidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const pomodoro = usePomodoro();
   const { user, logout } = useAuth();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const tasksSidebar = useTasksSidebar();
   const remindersQuery = useRemindersQuery();
   const pendingQuery = usePendingRemindersQuery();
   const tasksQuery = useTasksQuery({ limit: 100, sort: "dueDate", order: "asc" });
@@ -53,6 +65,14 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-outline-variant bg-surface px-container-padding">
       <div className="flex items-center gap-element-gap-sm">
+        <button
+          aria-label={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
+          className="hidden text-on-surface-variant hover:text-primary md:flex"
+          onClick={onToggleSidebar}
+          type="button"
+        >
+          {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
         <div className="flex items-center gap-element-gap-md md:hidden">
           <button aria-label="Abrir menú" className="text-on-surface-variant hover:text-primary" onClick={onMenu} type="button"><Menu size={20} /></button>
           <Link aria-label="Ir a Inicio" className="font-headline-sm text-headline-sm font-bold text-primary hover:underline" href="/">Nisky</Link>
@@ -74,6 +94,17 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
           <kbd className="font-data-mono text-data-mono text-[10px] text-on-surface-variant">Alt+N</kbd>
         </button>
 <InvitationsPanel />
+          {pathname === "/timeblocks" && (
+            <button
+              aria-label="Tareas de hoy"
+              className="flex items-center gap-1.5 border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary lg:hidden"
+              onClick={tasksSidebar.toggle}
+              type="button"
+            >
+              <ListTodo size={15} />
+              <span className="font-body-sm text-body-sm">Tareas</span>
+            </button>
+          )}
           <div className="relative">
             <button aria-expanded={notificationsOpen} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setNotificationsOpen((open) => !open)} type="button">
             <Bell size={19} />

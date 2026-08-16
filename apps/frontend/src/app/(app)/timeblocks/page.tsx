@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Plus, SlidersHorizontal, X } from "lucide-react";
+import { CalendarClock, ListTodo, Plus, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
@@ -18,6 +18,9 @@ import { minToTime, timeToMin } from "@/features/timeblocks/lib/time";
 import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { TasksSidebar } from "@/features/tasks/components/TasksSidebar";
+import { useTasksSidebar } from "@/context/TasksSidebarContext";
+import { groupTasksByDueDate, useTodayTasksQuery } from "@/features/tasks/hooks/useTasks";
 import type { TimeBlock } from "@/types/entities";
 
 type SlotPrefill = { dayOfWeek: number; startMin: number; endMin: number };
@@ -131,6 +134,10 @@ function TimeBlocksContent() {
   const settings = settingsQuery.data;
   const isMobile = useIsMobile(1023);
   const blocks = query.data ?? [];
+  const { isOpen: tasksSidebarOpen, setIsOpen: setTasksSidebarOpen, toggle: toggleTasksSidebar } = useTasksSidebar();
+  const todayTasksQuery = useTodayTasksQuery();
+  const { overdue, todayTasks, tomorrowTasks } = groupTasksByDueDate(todayTasksQuery.data?.data ?? []);
+  const tasksTotal = overdue.length + todayTasks.length + tomorrowTasks.length;
   const [editing, setEditing] = useState<TimeBlock | null>(null);
   const [prefill, setPrefill] = useState<SlotPrefill | null>(null);
   const [formKey, setFormKey] = useState(0);
@@ -331,6 +338,7 @@ function TimeBlocksContent() {
     setEditing(null);
     setPrefill(null);
     setMobileFormOpen(false);
+    if (isMobile) setTasksSidebarOpen(false);
   };
 
   const save = async (data: CreateTimeBlockPayload) => {
@@ -424,6 +432,17 @@ function TimeBlocksContent() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            aria-expanded={tasksSidebarOpen}
+            aria-label={tasksSidebarOpen ? "Ocultar tareas" : "Mostrar tareas"}
+            className={`hidden items-center gap-1.5 border border-outline-variant bg-surface-container-lowest px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant hover:border-primary hover:text-primary lg:flex ${tasksSidebarOpen ? "border-primary bg-primary-container text-on-primary" : ""}`}
+            onClick={toggleTasksSidebar}
+            type="button"
+          >
+            <ListTodo size={14} />
+            <span className="hidden sm:inline">Tareas</span>
+            {tasksTotal > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-data-mono text-[10px] text-on-primary">{tasksTotal > 9 ? "9+" : tasksTotal}</span>}
+          </button>
+          <button
             aria-label="Ajustar rango del día"
             className="flex items-center gap-2 border border-outline-variant bg-surface-container-lowest px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant hover:border-primary hover:text-primary"
             onClick={openSettings}
@@ -483,6 +502,10 @@ function TimeBlocksContent() {
       )}
 
       <div className="flex items-start gap-4 lg:min-h-0 lg:flex-1">
+        <TasksSidebar
+          isMobileOpen={tasksSidebarOpen && isMobile}
+          onMobileClose={() => setTasksSidebarOpen(false)}
+        />
         <div className="min-w-0 flex-1 border border-outline-variant bg-surface-container-lowest lg:min-h-0 lg:overflow-y-auto">
           <TimeBlockWeekGrid
             blocks={blocks}

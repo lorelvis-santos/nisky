@@ -149,7 +149,7 @@ function TasksSidebarContent({
       </div>
 
       {empty ? (
-        <div className="flex flex-1 items-center justify-center px-4 text-center">
+        <div className="flex flex-1 items-center justify-center px-6 py-16 text-center sm:py-24">
           <p className="font-body-sm text-body-sm text-on-surface-variant">
             No hay tareas pendientes para hoy ni mañana.
           </p>

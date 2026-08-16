@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   AlarmClock,
   BookOpen,
-  Calendar,
   CalendarClock,
   CalendarDays,
   ChevronLeft,
@@ -14,6 +13,7 @@ import {
   FolderKanban,
   HelpCircle,
   LayoutDashboard,
+  ListTodo,
   LogOut,
   MessageSquarePlus,
   PencilLine,
@@ -30,8 +30,8 @@ import type { User } from "@/types/entities";
 const primaryItems = [
   { href: "/", label: "Inicio", icon: LayoutDashboard },
   { href: "/projects", label: "Proyectos", icon: FolderKanban },
-  { href: "/tasks", label: "Planificación y tareas", icon: CalendarDays },
-  { href: "/events", label: "Eventos", icon: Calendar },
+  { href: "/tasks", label: "Planificación y tareas", icon: ListTodo },
+  { href: "/events", label: "Eventos", icon: CalendarDays },
   { href: "/timeblocks", label: "Agenda", icon: CalendarClock },
   { href: "/focus", label: "Modo enfoque", icon: Timer },
   { href: "/journal", label: "Diario", icon: PencilLine },
@@ -103,7 +103,7 @@ export function Sidebar({
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-outline-variant bg-surface transition-all duration-200 md:static md:z-auto md:translate-x-0 ${collapsed ? "md:w-16" : "md:w-64"} ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-outline-variant bg-surface transition-all duration-200 md:relative md:z-auto md:translate-x-0 ${collapsed ? "md:w-16" : "md:w-64"} ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-14 items-center justify-between border-b border-outline-variant px-container-padding">
           <Link
@@ -120,14 +120,6 @@ export function Sidebar({
               "Nisky"
             )}
           </Link>
-          <button
-            aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
-            className="hidden text-on-surface-variant hover:text-primary md:flex"
-            onClick={onToggleCollapse}
-            type="button"
-          >
-            {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-          </button>
           <button
             aria-label="Cerrar menú"
             className="text-on-surface-variant md:hidden"
@@ -183,7 +175,7 @@ export function Sidebar({
             <span className={`font-body-sm text-body-sm ${collapsed ? "md:hidden" : ""}`}>Cerrar sesión</span>
           </button>
         </div>
-        <div className={`border-t border-outline-variant py-4 pl-0 pr-container-padding ${collapsed ? "md:hidden" : ""}`}>
+<div className={`border-t border-outline-variant py-4 pl-0 pr-container-padding ${collapsed ? "md:hidden" : ""}`}>
           <Image
             alt="Las"
             className="h-10 w-full object-contain"
@@ -192,6 +184,15 @@ export function Sidebar({
             width={1264}
           />
         </div>
+        <button
+          aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+          className="absolute -right-3 top-4 z-50 hidden h-6 w-6 cursor-pointer items-center justify-center border border-outline-variant bg-surface text-on-surface-variant transition-colors hover:border-primary hover:bg-surface-container-low hover:text-primary md:flex"
+          onClick={onToggleCollapse}
+          title={collapsed ? "Expandir menú (Alt+B)" : "Colapsar menú (Alt+B)"}
+          type="button"
+        >
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
       </aside>
       {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
     </>

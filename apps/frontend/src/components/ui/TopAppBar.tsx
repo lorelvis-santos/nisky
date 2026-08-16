@@ -1,6 +1,6 @@
 "use client";
 
-import { AlarmClock, Bell, CalendarClock, ChevronLeft, ChevronRight, ListTodo, LogOut, Menu, Pause, Play, Settings, Square, StickyNote, X } from "lucide-react";
+import { AlarmClock, Bell, CalendarClock, ChevronRight, ListTodo, LogOut, Menu, Pause, Play, Settings, Square, StickyNote, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -29,17 +29,7 @@ const titles: Record<string, string> = {
   "/support": "Ayuda",
 };
 
-export function TopAppBar({
-  onMenu,
-  onOpenCapture,
-  sidebarCollapsed,
-  onToggleSidebar,
-}: {
-  onMenu: () => void;
-  onOpenCapture: () => void;
-  sidebarCollapsed: boolean;
-  onToggleSidebar: () => void;
-}) {
+export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpenCapture: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const pomodoro = usePomodoro();
@@ -65,14 +55,6 @@ export function TopAppBar({
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-outline-variant bg-surface px-container-padding">
       <div className="flex items-center gap-element-gap-sm">
-        <button
-          aria-label={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
-          className="hidden text-on-surface-variant hover:text-primary md:flex"
-          onClick={onToggleSidebar}
-          type="button"
-        >
-          {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-        </button>
         <div className="flex items-center gap-element-gap-md md:hidden">
           <button aria-label="Abrir menú" className="text-on-surface-variant hover:text-primary" onClick={onMenu} type="button"><Menu size={20} /></button>
           <Link aria-label="Ir a Inicio" className="font-headline-sm text-headline-sm font-bold text-primary hover:underline" href="/">Nisky</Link>

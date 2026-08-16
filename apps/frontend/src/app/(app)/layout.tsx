@@ -71,7 +71,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <TasksSidebarProvider>
         <Sidebar user={user} open={menuOpen} onClose={() => setMenuOpen(false)} collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <TopAppBar onMenu={() => setMenuOpen(true)} onOpenCapture={() => setCaptureOpen(true)} sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
+          <TopAppBar onMenu={() => setMenuOpen(true)} onOpenCapture={() => setCaptureOpen(true)} />
           <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
         </main>
       </TasksSidebarProvider>

@@ -65,13 +65,13 @@ function NavItem({
 
   return (
     <Link
-      className={`flex items-center gap-element-gap-md border-l-2 px-container-padding py-3 font-body-md text-body-md transition-colors ${active ? "border-primary bg-secondary-container text-on-secondary-container font-semibold" : "border-transparent text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"} ${collapsed ? "justify-center px-0" : ""}`}
+      className={`flex items-center gap-element-gap-md border-l-2 px-container-padding py-3 font-body-md text-body-md transition-colors ${active ? "border-primary bg-secondary-container text-on-secondary-container font-semibold" : "border-transparent text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"} ${collapsed ? "md:justify-center md:px-0" : ""}`}
       href={href}
       onClick={onNavigate}
       title={collapsed ? label : undefined}
     >
       <Icon size={20} strokeWidth={1.8} />
-      {!collapsed && label}
+      <span className={collapsed ? "md:hidden" : undefined}>{label}</span>
     </Link>
   );
 }
@@ -106,22 +106,20 @@ export function Sidebar({
         className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-outline-variant bg-surface transition-all duration-200 md:static md:z-auto md:translate-x-0 ${collapsed ? "md:w-16" : "md:w-64"} ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-14 items-center justify-between border-b border-outline-variant px-container-padding">
-          {collapsed ? (
-            <Link
-              className="hidden font-headline-sm text-headline-sm font-bold text-primary hover:underline md:block"
-              href="/"
-              title="Nisky"
-            >
-              N
-            </Link>
-          ) : (
-            <Link
-              className="font-headline-sm text-headline-sm font-bold text-primary hover:underline"
-              href="/"
-            >
-              Nisky
-            </Link>
-          )}
+          <Link
+            className="font-headline-sm text-headline-sm font-bold text-primary hover:underline"
+            href="/"
+            title="Nisky"
+          >
+            {collapsed ? (
+              <>
+                <span className="md:hidden">Nisky</span>
+                <span className="hidden md:inline">N</span>
+              </>
+            ) : (
+              "Nisky"
+            )}
+          </Link>
           <button
             aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
             className="hidden text-on-surface-variant hover:text-primary md:flex"
@@ -140,19 +138,17 @@ export function Sidebar({
           </button>
         </div>
         <div
-          className={`flex items-center gap-element-gap-md border-b border-outline-variant px-container-padding py-3 ${collapsed ? "justify-center px-0" : ""}`}
+          className={`flex items-center gap-element-gap-md border-b border-outline-variant px-container-padding py-3 ${collapsed ? "md:justify-center md:px-0" : ""}`}
         >
           <Avatar avatarUrl={user?.avatarUrl} email={user?.email} name={user?.name} size="md" />
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="truncate font-body-md text-body-md font-semibold">
-                {user?.name ?? "Usuario"}
-              </p>
-              <p className="truncate font-data-mono text-data-mono text-on-surface-variant">
-                {user?.email}
-              </p>
-            </div>
-          )}
+          <div className={`min-w-0 ${collapsed ? "md:hidden" : ""}`}>
+            <p className="truncate font-body-md text-body-md font-semibold">
+              {user?.name ?? "Usuario"}
+            </p>
+            <p className="truncate font-data-mono text-data-mono text-on-surface-variant">
+              {user?.email}
+            </p>
+          </div>
         </div>
         <nav className="flex flex-1 flex-col gap-element-gap-xs overflow-y-auto py-element-gap-md">
           {primaryItems.map((item) => (
@@ -161,7 +157,7 @@ export function Sidebar({
         </nav>
         <div className="border-t border-outline-variant py-element-gap-xs">
           <button
-            className={`flex w-full items-center gap-element-gap-md border-l-2 border-transparent px-container-padding py-3 text-left font-body-md text-body-md text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface ${collapsed ? "justify-center px-0" : ""}`}
+            className={`flex w-full items-center gap-element-gap-md border-l-2 border-transparent px-container-padding py-3 text-left font-body-md text-body-md text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface ${collapsed ? "md:justify-center md:px-0" : ""}`}
             onClick={() => {
               onClose();
               setFeedbackOpen(true);
@@ -170,7 +166,7 @@ export function Sidebar({
             type="button"
           >
             <MessageSquarePlus size={20} strokeWidth={1.8} />
-            {!collapsed && "Feedback"}
+            <span className={collapsed ? "md:hidden" : undefined}>Feedback</span>
           </button>
           {secondaryItems.map((item) => (
             <NavItem {...item} collapsed={collapsed} key={item.href} onNavigate={onClose} />
@@ -178,26 +174,24 @@ export function Sidebar({
         </div>
         <div className="border-t border-outline-variant p-container-padding">
           <button
-            className={`flex w-full items-center gap-element-gap-sm text-on-surface-variant hover:text-error ${collapsed ? "justify-center px-0" : ""}`}
+            className={`flex w-full items-center gap-element-gap-sm text-on-surface-variant hover:text-error ${collapsed ? "md:justify-center md:px-0" : ""}`}
             onClick={() => void logout()}
             title={collapsed ? "Cerrar sesión" : undefined}
             type="button"
           >
             <LogOut size={18} />
-            {!collapsed && <span className="font-body-sm text-body-sm">Cerrar sesión</span>}
+            <span className={`font-body-sm text-body-sm ${collapsed ? "md:hidden" : ""}`}>Cerrar sesión</span>
           </button>
         </div>
-        {!collapsed && (
-          <div className="border-t border-outline-variant py-4 pl-0 pr-container-padding">
-            <Image
-              alt="Las"
-              className="h-10 w-full object-contain"
-              height={40}
-              src="/las-logo-2.png"
-              width={1264}
-            />
-          </div>
-        )}
+        <div className={`border-t border-outline-variant py-4 pl-0 pr-container-padding ${collapsed ? "md:hidden" : ""}`}>
+          <Image
+            alt="Las"
+            className="h-10 w-full object-contain"
+            height={40}
+            src="/las-logo-2.png"
+            width={1264}
+          />
+        </div>
       </aside>
       {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
     </>

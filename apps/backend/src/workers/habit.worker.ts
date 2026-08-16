@@ -61,6 +61,7 @@ export async function processHabitReminders() {
 }
 
 export function startHabitWorker() {
-  void processHabitReminders();
-  return scheduleInTimezone("*/30 * * * *", () => void processHabitReminders());
+  const nowHour = DateTime.now().setZone(TZ).hour;
+  if (nowHour >= 8 && nowHour < 23) void processHabitReminders();
+  return scheduleInTimezone("*/30 8-22 * * *", () => void processHabitReminders());
 }

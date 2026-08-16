@@ -106,7 +106,7 @@ export async function processTaskDueNotices(): Promise<TaskDueNoticeResult> {
         tag: `task-due-${type}-${task.id}`,
         data: { taskId: task.id, type, dueDate: task.dueDate.toISOString() },
       });
-      if (result.total === 0) continue;
+      if (result.total === 0 || result.sent === 0) continue;
       await prisma.task.update({ where: { id: task.id }, data: { lastDueWarnedAt: new Date() } });
       const audience = [task.userId];
       if (task.projectId) {

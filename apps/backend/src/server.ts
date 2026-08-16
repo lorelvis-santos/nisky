@@ -9,6 +9,7 @@ import { startTaskRecurrenceWorker } from "./workers/task-recurrence.worker";
 import { startTimeBlockWorker } from "./workers/timeblock.worker";
 import { startMorningDigestWorker, startTaskNoticeWorker } from "./workers/task-notice.worker";
 import { startHabitWorker } from "./workers/habit.worker";
+import { startPushCleanupWorker } from "./workers/push-cleanup.worker";
 
 const port = Number(process.env.PORT ?? 4000);
 
@@ -34,4 +35,5 @@ httpServer.listen(port, () => {
   startTaskNoticeWorker();
   startMorningDigestWorker();
   startHabitWorker();
+  startPushCleanupWorker();
 });

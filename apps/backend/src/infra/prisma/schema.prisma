@@ -496,18 +496,21 @@ model Setting {
 }
 
 model PushSubscription {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  endpoint  String
-  p256dh    String
-  auth      String
-  userAgent String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint    String
+  p256dh      String
+  auth        String
+  userAgent   String?
+  lastErrorAt DateTime?
+  disabledAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([userId, endpoint])
   @@index([userId])
+  @@index([disabledAt])
 }
 
 enum ReminderRepeatType {

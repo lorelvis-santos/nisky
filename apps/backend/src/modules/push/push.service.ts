@@ -13,6 +13,34 @@ type NotificationPayload = {
   data?: Record<string, unknown>;
 };
 
+const MAX_PUSH_ATTEMPTS = 2;
+const RETRY_DELAY_MS = 800;
+
+function isTransientError(statusCode?: number) {
+  return !statusCode || (statusCode >= 500 && statusCode < 600);
+}
+
+async function sendWithRetry(subscription: { endpoint: string; p256dh: string; auth: string }, payload: string) {
+  let attempt = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    attempt += 1;
+    try {
+      return await webpush.sendNotification(
+        { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
+        payload,
+      );
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode;
+      if (attempt < MAX_PUSH_ATTEMPTS && isTransientError(status)) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
 let configured = false;
 
 function configureWebPush() {
@@ -27,8 +55,11 @@ function configureWebPush() {
   configured = true;
 }
 
-async function removeExpiredSubscription(userId: string, endpoint: string) {
-  await prisma.pushSubscription.deleteMany({ where: { userId, endpoint } });
+async function markExpiredSubscription(userId: string, endpoint: string) {
+  await prisma.pushSubscription.updateMany({
+    where: { userId, endpoint, disabledAt: null },
+    data: { disabledAt: new Date(), lastErrorAt: new Date() },
+  });
 }
 
 export class PushService {
@@ -99,7 +130,7 @@ export class PushService {
       }
     }
     configureWebPush();
-    const subscriptions = await prisma.pushSubscription.findMany({ where: { userId } });
+    const subscriptions = await prisma.pushSubscription.findMany({ where: { userId, disabledAt: null } });
     if (subscriptions.length === 0) {
       const event = typeof payload.data?.type === "string" ? payload.data.type : "push";
       const dayStart = new Date();
@@ -125,10 +156,13 @@ export class PushService {
       tag: payload.tag,
       data: { url: payload.url ?? "/", ...payload.data },
     });
-    const results = await Promise.allSettled(subscriptions.map((subscription) => webpush.sendNotification({
+    const subscriptionPayloads = subscriptions.map((subscription) => ({
+      id: subscription.id,
       endpoint: subscription.endpoint,
-      keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-    }, serialized)));
+      p256dh: subscription.p256dh,
+      auth: subscription.auth,
+    }));
+    const results = await Promise.allSettled(subscriptionPayloads.map((sub) => sendWithRetry(sub, serialized)));
 
     let firstError: string | null = null;
     await Promise.all(results.map(async (result, index) => {
@@ -136,7 +170,7 @@ export class PushService {
       const error = result.reason as { statusCode?: number; message?: string };
       if (!firstError) firstError = `${error.statusCode ?? "ERR"}: ${error.message ?? "desconocido"}`;
       if (error.statusCode === 404 || error.statusCode === 410) {
-        await removeExpiredSubscription(userId, subscriptions[index]!.endpoint);
+        await markExpiredSubscription(userId, subscriptionPayloads[index]!.endpoint);
       }
     }));
 

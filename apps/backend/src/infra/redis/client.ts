@@ -50,10 +50,13 @@ export async function isUserInChat(userId: string, projectId: string, taskId: st
 }
 
 export async function clearUserPresence(userId: string): Promise<void> {
-  const keys = await redis.keys(`presence:${userId}:*`);
-  if (keys.length > 0) {
-    await redis.del(...keys);
-  }
+  const pattern = `presence:${userId}:*`;
+  let cursor = "0";
+  do {
+    const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 100);
+    cursor = next;
+    if (keys.length > 0) await redis.del(...keys);
+  } while (cursor !== "0");
 }
 
 export const socketPresence = {

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { eventsApi, CalendarEventPayload } from "../api/events";
+import { eventsApi, CalendarEventPayload, EventExceptionPayload } from "../api/events";
 
 export function useEventsQuery(from: string, to: string) {
   return useQuery({
@@ -16,37 +16,56 @@ export function useTodayEventsQuery() {
   });
 }
 
+export function useEventExceptionsQuery(eventId: string) {
+  return useQuery({
+    queryKey: ["event-exceptions", eventId],
+    queryFn: () => eventsApi.getEventExceptions(eventId),
+    enabled: Boolean(eventId),
+  });
+}
+
 export function useEventMutations() {
   const queryClient = useQueryClient();
 
+  const invalidateEvents = () => {
+    queryClient.invalidateQueries({ queryKey: ["events"] });
+    queryClient.invalidateQueries({ queryKey: ["event-exceptions"] });
+    queryClient.invalidateQueries({ queryKey: ["home"] });
+  };
+
   const createEvent = useMutation({
     mutationFn: eventsApi.createEvent,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["home"] });
-    },
+    onSuccess: invalidateEvents,
   });
 
   const updateEvent = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Partial<CalendarEventPayload> }) =>
       eventsApi.updateEvent(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["home"] });
-    },
+    onSuccess: invalidateEvents,
   });
 
   const deleteEvent = useMutation({
     mutationFn: eventsApi.deleteEvent,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["home"] });
-    },
+    onSuccess: invalidateEvents,
+  });
+
+  const createException = useMutation({
+    mutationFn: ({ eventId, payload }: { eventId: string; payload: EventExceptionPayload }) =>
+      eventsApi.createEventException(eventId, payload),
+    onSuccess: invalidateEvents,
+  });
+
+  const deleteException = useMutation({
+    mutationFn: ({ eventId, exceptionId }: { eventId: string; exceptionId: string }) =>
+      eventsApi.deleteEventException(eventId, exceptionId),
+    onSuccess: invalidateEvents,
   });
 
   return {
     createEvent,
     updateEvent,
     deleteEvent,
+    createException,
+    deleteException,
   };
 }

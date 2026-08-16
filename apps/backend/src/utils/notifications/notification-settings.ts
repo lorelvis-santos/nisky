@@ -7,6 +7,7 @@ export type NotificationSettingsFlags = {
   integrationErrors: boolean;
   timeBlockReminders: boolean;
   habitReminders: boolean;
+  eventReminders: boolean;
 };
 
 const DEFAULTS: NotificationSettingsFlags = {
@@ -16,6 +17,7 @@ const DEFAULTS: NotificationSettingsFlags = {
   integrationErrors: true,
   timeBlockReminders: true,
   habitReminders: true,
+  eventReminders: true,
 };
 
 export async function defaultNotificationSettings(userId: string) {
@@ -31,6 +33,7 @@ export async function defaultNotificationSettings(userId: string) {
     integrationErrors: settings.integrationErrors,
     timeBlockReminders: settings.timeBlockReminders,
     habitReminders: settings.habitReminders,
+    eventReminders: settings.eventReminders,
   } as NotificationSettingsFlags;
 }
 

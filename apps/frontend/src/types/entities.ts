@@ -97,6 +97,8 @@ export interface TimeBlockSettings {
   updatedAt: string;
 }
 
+export type EventRecurrenceType = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+
 export interface CalendarEvent {
   id: string;
   userId: string;
@@ -107,6 +109,30 @@ export interface CalendarEvent {
   endMin: number | null;
   location: string | null;
   color: string | null;
+  recurrenceType: EventRecurrenceType | null;
+  recurrenceInterval: number;
+  recurrenceDaysOfWeek: number[];
+  recurrenceDayOfMonth: number | null;
+  recurrenceEndsAt: string | null;
+  remindBeforeMin: number;
+  lastRemindNotifiedAt: string | null;
+  lastStartNotifiedAt: string | null;
+  lastEndWarnNotifiedAt: string | null;
+  isException?: boolean;
+  exceptionAction?: "skip" | "move";
+  exceptions?: CalendarEventException[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CalendarEventException {
+  id: string;
+  eventId: string;
+  userId: string;
+  date: string;
+  action: "skip" | "move";
+  startMin: number | null;
+  endMin: number | null;
   createdAt: string;
   updatedAt: string;
 }

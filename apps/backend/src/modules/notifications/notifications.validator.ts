@@ -8,6 +8,7 @@ export const updateNotificationSettingsSchema = z
     integrationErrors: z.boolean().optional(),
     timeBlockReminders: z.boolean().optional(),
     habitReminders: z.boolean().optional(),
+    eventReminders: z.boolean().optional(),
   })
   .superRefine((value, context) => {
     const keys = [
@@ -17,6 +18,7 @@ export const updateNotificationSettingsSchema = z
       "integrationErrors",
       "timeBlockReminders",
       "habitReminders",
+      "eventReminders",
     ] as const;
     if (!keys.some((key) => value[key] !== undefined)) {
       context.addIssue({

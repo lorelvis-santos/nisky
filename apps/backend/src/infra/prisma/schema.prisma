@@ -48,6 +48,7 @@ model User {
   timeBlocks     TimeBlock[]
   calendarEvents CalendarEvent[]
   timeBlockExceptions TimeBlockException[]
+  calendarEventExceptions CalendarEventException[]
   projectMemberships ProjectMember[] @relation("UserProjectMemberships")
   sentProjectInvitations ProjectInvitation[] @relation("UserProjectInvitations")
   assignedTasks  Task[]              @relation("TaskAssignee")
@@ -138,21 +139,61 @@ model TimeBlock {
 }
 
 model CalendarEvent {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String   @db.VarChar(200)
-  date      DateTime
-  allDay    Boolean  @default(false)
-  startMin  Int?
-  endMin    Int?
-  location  String?  @db.VarChar(200)
-  color     String?  @db.VarChar(20)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(uuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                 String   @db.VarChar(200)
+  date                  DateTime
+  allDay                Boolean  @default(false)
+  startMin              Int?
+  endMin                Int?
+  location              String?  @db.VarChar(200)
+  color                 String?  @db.VarChar(20)
+  recurrenceType        EventRecurrenceType?
+  recurrenceInterval    Int      @default(1)
+  recurrenceDaysOfWeek  Int[]    @default([])
+  recurrenceDayOfMonth  Int?
+  recurrenceEndsAt      DateTime?
+  remindBeforeMin       Int      @default(0)
+  lastRemindNotifiedAt  DateTime?
+  lastStartNotifiedAt   DateTime?
+  lastEndWarnNotifiedAt DateTime?
+  exceptions            CalendarEventException[]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@index([userId, date])
   @@index([userId, allDay, date])
+}
+
+enum EventRecurrenceType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum CalendarEventExceptionAction {
+  skip
+  move
+}
+
+model CalendarEventException {
+  id        String                       @id @default(uuid())
+  userId    String
+  user      User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     CalendarEvent                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  date      DateTime
+  action    CalendarEventExceptionAction
+  startMin  Int?
+  endMin    Int?
+  createdAt DateTime                     @default(now())
+  updatedAt DateTime                     @updatedAt
+
+  @@unique([eventId, date])
+  @@index([userId, date])
+  @@index([eventId, date])
 }
 
 enum TimeBlockExceptionAction {
@@ -187,6 +228,7 @@ model NotificationSettings {
   integrationErrors    Boolean  @default(true)
   timeBlockReminders   Boolean  @default(true)
   habitReminders       Boolean  @default(true)
+  eventReminders       Boolean  @default(true)
   updatedAt            DateTime @updatedAt
 }
 

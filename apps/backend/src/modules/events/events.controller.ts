@@ -48,6 +48,33 @@ export class EventsController {
       next(error);
     }
   }
+
+  async listExceptions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const exceptions = await eventsService.listExceptions(req.user!.id, req.params.id as string);
+      res.success(exceptions);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createException(req: Request, res: Response, next: NextFunction) {
+    try {
+      const exception = await eventsService.createException(req.user!.id, req.params.id as string, req.body);
+      res.status(201).success(exception);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteException(req: Request, res: Response, next: NextFunction) {
+    try {
+      await eventsService.deleteException(req.user!.id, req.params.id as string, req.params.exceptionId as string);
+      res.success({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const eventsController = new EventsController();

@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import { CalendarEvent } from "@/types/entities";
+import { CalendarEvent, CalendarEventException, EventRecurrenceType } from "@/types/entities";
 
 export interface CalendarEventPayload {
   title: string;
@@ -9,6 +9,19 @@ export interface CalendarEventPayload {
   endMin?: number;
   location?: string;
   color?: string;
+  recurrenceType?: EventRecurrenceType | null;
+  recurrenceInterval?: number;
+  recurrenceDaysOfWeek?: number[];
+  recurrenceDayOfMonth?: number | null;
+  recurrenceEndsAt?: string | null;
+  remindBeforeMin?: number;
+}
+
+export interface EventExceptionPayload {
+  date: string;
+  action: "skip" | "move";
+  startMin?: number;
+  endMin?: number;
 }
 
 export const eventsApi = {
@@ -34,6 +47,21 @@ export const eventsApi = {
 
   deleteEvent: async (id: string) => {
     const res = await api.delete<{ data: { success: true } }>(`/events/${id}`);
+    return res.data.data;
+  },
+
+  getEventExceptions: async (eventId: string) => {
+    const res = await api.get<{ data: CalendarEventException[] }>(`/events/${eventId}/exceptions`);
+    return res.data.data;
+  },
+
+  createEventException: async (eventId: string, payload: EventExceptionPayload) => {
+    const res = await api.post<{ data: CalendarEventException }>(`/events/${eventId}/exceptions`, payload);
+    return res.data.data;
+  },
+
+  deleteEventException: async (eventId: string, exceptionId: string) => {
+    const res = await api.delete<{ data: { success: true } }>(`/events/${eventId}/exceptions/${exceptionId}`);
     return res.data.data;
   },
 };

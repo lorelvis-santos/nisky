@@ -8,12 +8,13 @@ import type { NotificationLog, NotificationSettingsPayload } from "@/features/no
 import { PushSubscriptionManager } from "@/components/pwa/PushSubscriptionManager";
 import { cn } from "@/lib/utils";
 
-type FlagKey = "morningDigest" | "taskDueReminders" | "integrationNews" | "integrationErrors" | "timeBlockReminders" | "habitReminders";
+type FlagKey = "morningDigest" | "taskDueReminders" | "integrationNews" | "integrationErrors" | "timeBlockReminders" | "habitReminders" | "eventReminders";
 
 const OPTIONS: Array<{ key: FlagKey; title: string; description: string }> = [
   { key: "morningDigest", title: "Resumen de la mañana", description: "Un aviso a las 7:00 con lo que vence hoy, lo vencido ayer y tu primer bloque." },
   { key: "taskDueReminders", title: "Tareas por vencer", description: "Aviso puntual cuando una tarea vence hoy o mañana." },
   { key: "timeBlockReminders", title: "Agenda", description: "Aviso al iniciar tu bloque, cuando queden 5 minutos y, si configuras aviso previo en el bloque, antes de empezar." },
+  { key: "eventReminders", title: "Eventos", description: "Aviso antes (si lo configuras), al empezar y 5 minutos antes de terminar de tus eventos recurrentes." },
   { key: "habitReminders", title: "Hábitos", description: "Te recordamos tus hábitos pendientes y celebramos tus rachas." },
   { key: "integrationNews", title: "Nuevas asignaciones de la universidad", description: "Te avisamos cuando la plataforma de tu universidad sincroniza tareas nuevas." },
   { key: "integrationErrors", title: "Errores de sincronización", description: "Te avisamos si una cuenta de la universidad no logra sincronizar." },

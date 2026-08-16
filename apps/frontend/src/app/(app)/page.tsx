@@ -10,6 +10,7 @@ import { ActivityHeatmap } from "@/components/home/ActivityHeatmap";
 import { FutureView } from "@/components/home/FutureView";
 import { HomeHabitsMatrix } from "@/components/home/HomeHabitsMatrix";
 import { QuickCaptureSheet } from "@/components/home/QuickCaptureSheet";
+import { QuickNotesPanel } from "@/components/home/QuickNotesPanel";
 import { TodayTasksPanel, getTodayUrgentTasks } from "@/components/home/TodayTasksPanel";
 import { WeeklyStats } from "@/components/home/WeeklyStats";
 import { useHabitMutations } from "@/features/habits/hooks/useHabits";
@@ -70,6 +71,7 @@ export default function DashboardPage() {
           <div className="border border-outline-variant bg-surface-container-lowest">
             <TodayTasksPanel emptyMessage="Nada pendiente. ¡Todo al día!" onToggle={(task) => void toggleTask(task)} tasks={urgentTasks} />
           </div>
+          <QuickNotesPanel />
           <FutureView blocks={overview?.futureBlocks ?? []} tasks={overview?.futureTasks ?? []} />
           <WeeklyStats weekly={overview?.weekly} />
           <HomeHabitsMatrix

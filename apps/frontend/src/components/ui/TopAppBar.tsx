@@ -11,8 +11,9 @@ import { Avatar } from "@/components/ui/Avatar";
 import { useRemindersQuery, usePendingRemindersQuery } from "@/features/reminders/hooks/useReminders";
 import { InvitationsPanel } from "@/features/projects/components/InvitationsPanel";
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { useQuickNotesQuery } from "@/features/quicknotes/hooks/useQuickNotes";
 import { useTasksSidebar } from "@/context/TasksSidebarContext";
-import type { Reminder, Task } from "@/types/entities";
+import type { QuickNote, Reminder, Task } from "@/types/entities";
 
 const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
 
@@ -40,9 +41,10 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   const remindersQuery = useRemindersQuery();
   const pendingQuery = usePendingRemindersQuery();
   const tasksQuery = useTasksQuery({ limit: 100, sort: "dueDate", order: "asc" });
+  const quickNotesQuery = useQuickNotesQuery("INBOX", 50);
   const title = titles[pathname] ?? "Nisky";
   const pending = pendingQuery.data ?? [];
-  const notices = buildNotices(tasksQuery.data?.data ?? [], remindersQuery.data ?? [], pending);
+  const notices = buildNotices(tasksQuery.data?.data ?? [], remindersQuery.data ?? [], pending, quickNotesQuery.data ?? []);
 
   const togglePause = async () => {
     try { await pomodoro.pauseResume(); } catch { toast.error("Ups, no pudimos actualizar el Pomodoro."); }
@@ -119,7 +121,7 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   );
 }
 
-type Notice = { id: string; kind: "task" | "reminder" | "pending"; title: string; detail: string; url: string };
+type Notice = { id: string; kind: "task" | "reminder" | "pending" | "quick"; title: string; detail: string; url: string };
 
 function calendarDay(value: string) {
   const date = new Date(value);
@@ -145,7 +147,7 @@ function reminderUrl(reminder: Reminder) {
   return "/reminders";
 }
 
-function buildNotices(tasks: Task[], reminders: Reminder[], pending: Reminder[]) {
+function buildNotices(tasks: Task[], reminders: Reminder[], pending: Reminder[], quickNotes: QuickNote[]) {
   const pendingNotices: Notice[] = pending.map((reminder) => ({
     id: `pending-${reminder.id}`,
     kind: "pending" as const,
@@ -153,6 +155,16 @@ function buildNotices(tasks: Task[], reminders: Reminder[], pending: Reminder[])
     detail: `Pendiente · venció el ${new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(reminder.triggerAt))}`,
     url: "/reminders",
   }));
+  const quickNotesNotices: Notice[] =
+    quickNotes.length > 0
+      ? [{
+          id: "quick-notes",
+          kind: "quick" as const,
+          title: `Notas rápidas sin revisar (${quickNotes.length})`,
+          detail: quickNotes.length === 1 ? "Pendiente de revisar" : "Pendientes de revisar, archivar o convertir",
+          url: "/",
+        }]
+      : [];
   const taskNotices: Notice[] = tasks
     .filter((task) => task.status !== "COMPLETED" && task.status !== "CANCELLED" && task.dueDate && dayDifference(task.dueDate) <= 2)
     .map((task) => ({ id: `task-${task.id}`, kind: "task" as const, title: task.title, detail: taskDueLabel(task), url: `/tasks?taskId=${encodeURIComponent(task.id)}` }));
@@ -163,7 +175,7 @@ function buildNotices(tasks: Task[], reminders: Reminder[], pending: Reminder[])
     detail: `Recordatorio · ${new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(reminder.triggerAt))}`,
     url: reminderUrl(reminder),
   }));
-  return [...pendingNotices, ...taskNotices, ...reminderNotices].slice(0, 9);
+  return [...pendingNotices, ...quickNotesNotices, ...taskNotices, ...reminderNotices].slice(0, 9);
 }
 
 function NotificationPanel({ notices, onClose, onOpen }: { notices: Notice[]; onClose: () => void; onOpen: (url: string, kind: Notice["kind"]) => void }) {
@@ -182,7 +194,7 @@ function NotificationPanel({ notices, onClose, onOpen }: { notices: Notice[]; on
         <div className="max-h-80 overflow-y-auto divide-y divide-outline-variant pr-1 [scrollbar-gutter:stable]">
           {notices.map((notice) => (
             <button className="flex w-full items-start gap-3 py-3 text-left hover:bg-surface-container-low" key={notice.id} onClick={() => onOpen(notice.url, notice.kind)} type="button">
-              <span className={`mt-0.5 shrink-0 ${notice.kind === "pending" ? "text-error" : "text-primary"}`}>{notice.kind === "task" ? <ListTodo size={16} /> : <AlarmClock size={16} />}</span>
+              <span className={`mt-0.5 shrink-0 ${notice.kind === "pending" ? "text-error" : notice.kind === "quick" ? "text-tertiary" : "text-primary"}`}>{notice.kind === "task" ? <ListTodo size={16} /> : notice.kind === "quick" ? <StickyNote size={16} /> : <AlarmClock size={16} />}</span>
               <span className="min-w-0 flex-1"><span className="block truncate font-body-sm text-body-sm text-on-surface">{notice.title}</span><span className="mt-0.5 flex items-center gap-1 font-data-mono text-data-mono text-xs text-on-surface-variant">{notice.kind === "task" ? <CalendarClock size={11} /> : null}{notice.detail}</span></span>
               <ChevronRight className="mt-0.5 shrink-0 text-on-surface-variant" size={15} />
             </button>

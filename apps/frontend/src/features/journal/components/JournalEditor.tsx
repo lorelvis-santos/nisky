@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
 import type { JournalEntry } from "@/types/entities";
 import { journalEntrySchema, type JournalEntryForm } from "../schemas/journal.schema";
@@ -17,10 +18,12 @@ export function JournalEditor({
   entry,
   onSave,
   onDelete,
+  onBack,
 }: {
   entry: JournalEntry | null;
   onSave: (form: JournalEntryForm) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onBack?: () => void;
 }) {
   const [form, setForm] = useState<JournalEntryForm>({
     title: entry?.title ?? "",
@@ -52,7 +55,14 @@ export function JournalEditor({
     <div className="flex h-full min-h-0 flex-col gap-container-padding p-container-padding sm:p-section-gap">
       <div>
         <p className="font-label-caps text-label-caps text-on-surface-variant">MI DIARIO</p>
-        <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">{entry ? "Editar entrada" : "Nueva entrada"}</h1>
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <button aria-label="Volver a mis entradas" className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center text-on-surface-variant hover:text-on-surface lg:hidden" onClick={onBack} type="button">
+              <ArrowLeft size={20} />
+            </button>
+          )}
+          <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">{entry ? "Editar entrada" : "Nueva entrada"}</h1>
+        </div>
       </div>
 
       <label className="block">

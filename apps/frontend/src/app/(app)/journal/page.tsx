@@ -67,32 +67,49 @@ export default function JournalPage() {
   return (
     <section className="flex h-full min-h-0 flex-col bg-surface">
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-section-gap p-container-padding lg:grid-cols-[20rem_1fr]">
-        <JournalSidebar
-          creating={creating}
-          entries={entries}
-          onNew={openNew}
-          onSelect={openEntry}
-          selectedId={selectedId}
-        />
         {editing || creating ? (
-          <JournalEditor
-            entry={editing}
-            key={creating ? "new" : editing?.id}
-            onDelete={selected ? remove : undefined}
-            onSave={save}
-          />
+          <>
+            <div className="hidden lg:block">
+              <JournalSidebar
+                creating={creating}
+                entries={entries}
+                onNew={openNew}
+                onSelect={openEntry}
+                selectedId={selectedId}
+              />
+            </div>
+            <JournalEditor
+              entry={editing}
+              key={creating ? "new" : editing?.id}
+              onBack={() => {
+                setSelectedId(null);
+                setCreating(false);
+              }}
+              onDelete={selected ? remove : undefined}
+              onSave={save}
+            />
+          </>
         ) : (
-          <article className="flex min-h-[20rem] flex-col items-center justify-center gap-2 border border-outline-variant bg-surface-container-lowest p-section-gap text-center">
-            <NotebookPen className="text-primary" size={28} />
-            <p className="font-label-caps text-label-caps text-on-surface-variant">MI DIARIO</p>
-            <h1 className="font-headline-sm text-headline-sm text-primary">Una pausa para pensar</h1>
-            <p className="max-w-xl font-body-sm text-body-sm text-on-surface-variant">
-              Escribe tranquilo: tus entradas solo se abren para ti, y solo mientras estás conectado.
-            </p>
-            <button className="mt-2 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={openNew} type="button">
-              Nueva entrada
-            </button>
-          </article>
+          <>
+            <JournalSidebar
+              creating={creating}
+              entries={entries}
+              onNew={openNew}
+              onSelect={openEntry}
+              selectedId={selectedId}
+            />
+            <article className="flex min-h-[20rem] flex-col items-center justify-center gap-2 border border-outline-variant bg-surface-container-lowest p-section-gap text-center">
+              <NotebookPen className="text-primary" size={28} />
+              <p className="font-label-caps text-label-caps text-on-surface-variant">MI DIARIO</p>
+              <h1 className="font-headline-sm text-headline-sm text-primary">Una pausa para pensar</h1>
+              <p className="max-w-xl font-body-sm text-body-sm text-on-surface-variant">
+                Escribe tranquilo: tus entradas solo se abren para ti, y solo mientras estás conectado.
+              </p>
+              <button className="mt-2 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={openNew} type="button">
+                Nueva entrada
+              </button>
+            </article>
+          </>
         )}
       </div>
     </section>

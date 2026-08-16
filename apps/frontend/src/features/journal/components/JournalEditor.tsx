@@ -74,16 +74,16 @@ export function JournalEditor({
       <div className="flex min-h-0 flex-1 flex-col">
         <span className="mb-1 font-label-caps text-label-caps text-on-surface-variant">CONTENIDO</span>
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <MarkdownEditor minHeight="24rem" onChange={(content) => set("content", content)} placeholder="Escribe libremente..." value={form.content} />
+          <MarkdownEditor minHeight="min(24rem, 45vh)" onChange={(content) => set("content", content)} placeholder="Escribe libremente..." value={form.content} />
         </div>
       </div>
 
       {error && <p className="border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
 
-      <div className={`flex items-center gap-3 border-t border-outline-variant pt-container-padding ${entry ? "justify-between" : "justify-end"}`}>
+      <div className={`sticky bottom-0 z-10 -mx-container-padding flex items-center gap-3 border-t border-outline-variant bg-surface px-container-padding pt-container-padding sm:-mx-section-gap sm:px-section-gap ${entry ? "justify-between" : "justify-end"}`}>
         {entry && onDelete ? (
           <button
-            className={confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"}
+            className={`min-h-11 ${confirmDelete ? "bg-error px-4 font-body-sm text-body-sm text-error-foreground" : "px-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"}`}
             onClick={() => {
               if (!confirmDelete) {
                 setConfirmDelete(true);
@@ -96,7 +96,7 @@ export function JournalEditor({
             {confirmDelete ? "¿Eliminar entrada?" : "Eliminar"}
           </button>
         ) : null}
-        <button className="bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={() => void submit()} type="button">
+        <button className="min-h-11 flex-1 bg-primary-container px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary sm:flex-none" onClick={() => void submit()} type="button">
           {entry ? "Guardar cambios" : "Guardar entrada"}
         </button>
       </div>

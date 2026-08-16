@@ -35,19 +35,19 @@ export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: Quic
   }, [draft, mutations.create]);
 
   return (
-    <div className="flex min-h-[250px] flex-col">
-      <div className="flex flex-1 flex-col gap-2 p-3">
-        <textarea aria-label="Nota rápida" autoFocus className="min-h-28 flex-1 resize-none border-0 bg-transparent p-0 font-body-sm text-body-sm text-on-surface outline-none placeholder:text-on-surface-variant focus:ring-0" id="quick-capture-input" onChange={(event) => { setDraft(event.target.value); setSaveState("idle"); }} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void save(); } }} placeholder="Escribe algo para revisarlo después..." value={draft} />
+    <div className="flex min-h-[280px] flex-col">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
+        <textarea aria-label="Nota rápida" autoFocus className="min-h-36 flex-1 resize-none border-0 bg-transparent p-0 font-body-sm text-body-sm text-on-surface outline-none placeholder:text-on-surface-variant focus:ring-0 sm:min-h-28" id="quick-capture-input" onChange={(event) => { setDraft(event.target.value); setSaveState("idle"); }} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void save(); } }} placeholder="Escribe algo para revisarlo después..." value={draft} />
         {detected && <span className="inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha detectada: {detected.label}</span>}
         <div className="flex items-center justify-between gap-3 border-t border-outline-variant pt-3">
           <span className="font-body-sm text-body-sm text-on-surface-variant">{saveState === "saving" ? "Guardando..." : saveState === "saved" ? "Guardado" : `${draft.length} caracteres`}</span>
-          <button className="bg-primary-container px-3 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50" disabled={!draft.trim() || saveState === "saving"} onClick={() => void save()} type="button">Guardar nota</button>
+          <button className="min-h-11 bg-primary-container px-5 font-body-sm text-body-sm text-on-primary hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50" disabled={!draft.trim() || saveState === "saving"} onClick={() => void save()} type="button">Guardar nota</button>
         </div>
       </div>
       {query.isError ? (
         <p className="border-t border-outline-variant p-3 font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus notas. Inténtalo de nuevo.</p>
       ) : inboxNotes.length > 0 && (
-        <div className="border-t border-outline-variant p-3">
+        <div className="max-h-56 shrink-0 overflow-y-auto border-t border-outline-variant p-3">
           <div className="mb-2 flex items-center justify-between gap-3">
             <p className="font-label-caps text-label-caps text-on-surface-variant">BANDEJA DE ENTRADA</p>
             {inboxNotes.length > 8 && <button aria-label={`Ver todas las notas (${inboxNotes.length})`} className="font-label-caps text-label-caps text-primary hover:underline" onClick={() => setAllOpen(true)} type="button">VER TODAS ({inboxNotes.length})</button>}
@@ -55,8 +55,8 @@ export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: Quic
           <div>{inboxNotes.slice(0, 8).map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)}</div>
         </div>
       )}
-      <div className="flex justify-end border-t border-outline-variant p-3">
-        <button className="font-label-caps text-label-caps text-primary hover:underline" onClick={() => setManagerOpen(true)} type="button">VER ARCHIVADAS</button>
+      <div className="flex shrink-0 justify-end border-t border-outline-variant p-3">
+        <button className="min-h-10 font-label-caps text-label-caps text-primary hover:underline" onClick={() => setManagerOpen(true)} type="button">VER ARCHIVADAS</button>
       </div>
       {allOpen && <QuickNoteManager onClose={() => setAllOpen(false)} onConvertToTask={onConvertToTask} view="inbox" />}
       {managerOpen && <QuickNoteManager onClose={() => setManagerOpen(false)} />}

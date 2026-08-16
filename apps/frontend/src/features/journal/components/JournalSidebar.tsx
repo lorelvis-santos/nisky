@@ -24,11 +24,11 @@ export function JournalSidebar({
     <aside className="flex min-h-0 flex-col border border-outline-variant bg-surface-container-lowest lg:h-full">
       <div className="flex shrink-0 items-center justify-between border-b border-outline-variant p-container-padding">
         <span className="font-label-caps text-label-caps text-on-surface-variant">MIS ENTRADAS</span>
-        <button aria-label="Nueva entrada" className="flex h-8 w-8 items-center justify-center bg-primary-container text-on-primary hover:bg-primary" onClick={onNew} type="button">
-          <Plus size={16} />
+        <button aria-label="Nueva entrada" className="flex h-10 w-10 items-center justify-center bg-primary-container text-on-primary hover:bg-primary lg:h-8 lg:w-8" onClick={onNew} type="button">
+          <Plus size={18} />
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="max-h-52 min-h-0 flex-1 overflow-y-auto lg:max-h-none">
         {entries.length === 0 ? (
           <p className="p-container-padding font-body-sm text-body-sm text-on-surface-variant">Tus entradas aparecerán aquí.</p>
         ) : (

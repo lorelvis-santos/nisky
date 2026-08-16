@@ -131,6 +131,11 @@
     -webkit-appearance: auto;
     appearance: auto;
   }
+  @media (max-width: 639px) {
+    .field {
+      height: 44px;
+    }
+  }
 }
 
 @layer utilities {

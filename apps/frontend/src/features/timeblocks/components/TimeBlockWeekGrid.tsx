@@ -329,7 +329,10 @@ export function TimeBlockWeekGrid({
           state.draggedDate
         );
       } else if (!movedRef.current) {
-        onBlockClickRef.current(state.block);
+        onBlockClickRef.current(
+          state.block,
+          state.draggedDate ? parseDateOnly(state.draggedDate) : undefined,
+        );
       }
     },
     [moveHandle, stopAutoscroll],

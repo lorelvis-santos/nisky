@@ -105,7 +105,7 @@ export class TimeBlockService {
     });
     const eventClash = futureEvents.some((event) => {
       if (!daysOfWeek.includes(dayOfWeek(event.date))) return false;
-      if (event.allDay) return true;
+      if (event.allDay) return false;
       const eventStart = event.startMin ?? 0;
       const eventEnd = event.endMin ?? 24 * 60;
       return eventStart < endMin && eventEnd > startMin;
@@ -211,8 +211,11 @@ export class TimeBlockService {
       });
       const eventClash = sameDayEvents.some(
         (event) =>
-          event.allDay ||
-          (event.startMin !== null && event.endMin !== null && event.startMin < data.endMin! && event.endMin! > data.startMin!),
+          !event.allDay &&
+          event.startMin !== null &&
+          event.endMin !== null &&
+          event.startMin < data.endMin! &&
+          event.endMin! > data.startMin!,
       );
       if (eventClash) {
         throw new AppError("CONFLICT", "Ya tienes un evento que se cruza con este horario");

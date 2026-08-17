@@ -213,9 +213,10 @@ export class EventsService {
       const eventClash = sameDayEvents.some((event) => {
         const occ = eventOccurrenceOn(event, dateObj, event.exceptions);
         if (!occ.occurs) return false;
-        const otherStart = occ.startMin ?? event.startMin ?? 0;
-        const otherEnd = occ.endMin ?? event.endMin ?? 1440;
-        return otherStart < data.endMin! && otherEnd > data.startMin!;
+        const occStart = occ.startMin;
+        const occEnd = occ.endMin;
+        if (occStart === null || occStart === undefined || occEnd === null || occEnd === undefined) return false;
+        return occStart < data.endMin! && occEnd > data.startMin!;
       });
       if (eventClash) {
         throw new AppError("CONFLICT", "Ya tienes un evento que se cruza con este horario");

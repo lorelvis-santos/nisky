@@ -14,7 +14,7 @@ const eventBaseFields = {
   endMin: z.number().int().min(1).max(1440).optional(),
   location: z.string().trim().max(200).optional(),
   color: z.string().trim().max(20).optional(),
-  recurrenceType: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).optional(),
+  recurrenceType: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).nullable().optional(),
   recurrenceInterval: z.number().int().min(1).max(365).default(1),
   recurrenceDaysOfWeek: z.array(z.number().int().min(0).max(6)).default([]),
   recurrenceDayOfMonth: z.number().int().min(1).max(31).nullable().optional(),

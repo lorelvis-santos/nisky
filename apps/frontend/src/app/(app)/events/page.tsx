@@ -286,7 +286,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
     <>
       <div
         aria-modal="true"
-        className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]"
+        className="fixed inset-0 z-[60] flex items-end bg-on-surface/20 backdrop-blur-[1px] sm:items-center sm:justify-center sm:p-4"
         onClick={onClose}
         role="dialog"
       >
@@ -532,7 +532,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
                 </div>
               </fieldset>
             )}
-            <div className="flex justify-end gap-2 border-t border-outline-variant pt-4">
+            <div className="flex flex-wrap justify-end gap-2 border-t border-outline-variant pt-4">
               {event && (
                 <button
                   className="mr-auto border border-transparent px-4 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30 disabled:opacity-50"

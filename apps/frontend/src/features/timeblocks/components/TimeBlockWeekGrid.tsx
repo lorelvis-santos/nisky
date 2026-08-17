@@ -739,11 +739,13 @@ export function TimeBlockWeekGrid({
                     const conflict = dayEvents.find(
                       (event) => dayConflicts({ ...block, startMin, endMin }, event),
                     );
+                    const hidden =
+                      draft?.block.id === block.id && draft.dragDay === day.dayOfWeek;
                     return renderBlockButton(
                       block,
                       startMin,
                       endMin,
-                      draft?.block.id === block.id,
+                      hidden,
                       conflict,
                       day.date,
                     );

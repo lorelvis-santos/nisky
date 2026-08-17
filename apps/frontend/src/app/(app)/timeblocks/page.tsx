@@ -14,7 +14,7 @@ import {
   useWeekExceptionsQuery,
 } from "@/features/timeblocks/hooks/useTimeBlocks";
 import { useEventsQuery, useEventMutations } from "@/features/events/hooks/useEvents";
-import { minToTime, timeToMin } from "@/features/timeblocks/lib/time";
+import { minToTime, parseDateOnly, timeToMin } from "@/features/timeblocks/lib/time";
 import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -352,7 +352,7 @@ function TimeBlocksContent() {
       !!draggedDate &&
       exceptions.some((exc) => {
         if (exc.blockId !== block.id || exc.action !== "move") return false;
-        const d = new Date(exc.date);
+        const d = parseDateOnly(exc.date);
         const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         return dayKey === draggedDate;
       });
@@ -556,6 +556,7 @@ function TimeBlocksContent() {
       onDelete={remove}
       onSave={save}
       onSkipToday={skipToday}
+      initialSkipDate={editDate ?? undefined}
       onToggleActive={toggleActive}
       prefill={prefill ?? undefined}
       projects={projects}

@@ -8,7 +8,7 @@ import type { CalendarEventPayload } from "@/features/events/api/events";
 import type { CalendarEvent, EventRecurrenceType } from "@/types/entities";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ColorPicker, PROJECT_COLORS } from "@/components/ui/ColorPicker";
-import { hexToRgba } from "@/features/timeblocks/lib/time";
+import { hexToRgba, parseDateOnly } from "@/features/timeblocks/lib/time";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -83,7 +83,7 @@ export default function EventsPage() {
 
   // Agrupar eventos por día
   const groupedEvents = events.reduce((acc: Record<string, CalendarEvent[]>, event: CalendarEvent) => {
-    const day = toLocalISODate(new Date(event.date));
+    const day = toLocalISODate(parseDateOnly(event.date));
     if (!acc[day]) acc[day] = [];
     acc[day].push(event);
     return acc;
@@ -188,7 +188,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
   useModalScrollLock();
 
   const [title, setTitle] = useState(event?.title ?? "");
-  const [date, setDate] = useState(event ? toLocalISODate(new Date(event.date)) : toLocalISODate(new Date()));
+  const [date, setDate] = useState(event ? toLocalISODate(parseDateOnly(event.date)) : toLocalISODate(new Date()));
   const [allDay, setAllDay] = useState(event?.allDay ?? false);
   const [startMin, setStartMin] = useState(event?.startMin ? formatMin(event.startMin) : "09:00");
   const [endMin, setEndMin] = useState(event?.endMin ? formatMin(event.endMin) : "10:00");
@@ -199,7 +199,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
   const [recurrenceDaysOfWeek, setRecurrenceDaysOfWeek] = useState<number[]>(event?.recurrenceDaysOfWeek ?? []);
   const [recurrenceDayOfMonth, setRecurrenceDayOfMonth] = useState<number | null>(event?.recurrenceDayOfMonth ?? null);
   const [recurrenceEndsAt, setRecurrenceEndsAt] = useState(
-    event?.recurrenceEndsAt ? toLocalISODate(new Date(event.recurrenceEndsAt)) : "",
+    event?.recurrenceEndsAt ? event.recurrenceEndsAt.slice(0, 10) : "",
   );
   const [remindBeforeMin, setRemindBeforeMin] = useState(event?.remindBeforeMin ?? 0);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);

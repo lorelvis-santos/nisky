@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MoreVertical } from "lucide-react";
 import type { Project, TimeBlock, CalendarEvent, TimeBlockException } from "@/types/entities";
 import { cn } from "@/lib/utils";
-import { DAY_NAMES_SHORT, DAY_ORDER, hexToRgba, minToTime } from "../lib/time";
+import { DAY_NAMES_SHORT, DAY_ORDER, hexToRgba, minToTime, parseDateOnly } from "../lib/time";
 
 const HOUR_PX = 56;
 const MIN_DURATION = 15;
@@ -32,7 +32,7 @@ function sameLocalDay(a: Date, b: Date) {
 
 function exceptionFor(block: TimeBlock, day: Date, exceptions: TimeBlockException[]) {
   return exceptions.find(
-    (exc) => exc.blockId === block.id && sameLocalDay(new Date(exc.date), day),
+    (exc) => exc.blockId === block.id && sameLocalDay(parseDateOnly(exc.date), day),
   );
 }
 
@@ -684,7 +684,7 @@ export function TimeBlockWeekGrid({
                 </span>
                 <div className="mt-1 flex flex-col gap-1">
                   {events
-                    .filter((e) => e.allDay && new Date(e.date).getDate() === day.date.getDate())
+                    .filter((e) => e.allDay && sameLocalDay(parseDateOnly(e.date), day.date))
                     .map((e) => (
                       <div key={e.id} className="truncate rounded-sm bg-surface-container-high px-1 text-[10px] font-medium text-on-surface" title={e.title}>
                         {e.title}
@@ -712,7 +712,7 @@ export function TimeBlockWeekGrid({
                 .filter((block) => block.daysOfWeek.includes(day.dayOfWeek))
                 .sort((a, b) => a.startMin - b.startMin);
               const dayEvents = events.filter(
-                (e) => new Date(e.date).getDate() === day.date.getDate(),
+                (e) => sameLocalDay(parseDateOnly(e.date), day.date),
               );
               const isToday = day.key === todayKey;
               return (

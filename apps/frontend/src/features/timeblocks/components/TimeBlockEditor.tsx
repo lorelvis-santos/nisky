@@ -6,7 +6,7 @@ import { CalendarX, Trash2 } from "lucide-react";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import type { Project, TimeBlock, TimeBlockException } from "@/types/entities";
 import type { CreateTimeBlockPayload } from "../api/timeblocks";
-import { DAY_NAMES, DAY_ORDER, minToTime, timeToMin } from "../lib/time";
+import { DAY_NAMES, DAY_ORDER, minToTime, parseDateOnly, timeToMin } from "../lib/time";
 import { useBlockExceptionsQuery, useTimeBlockMutations } from "../hooks/useTimeBlocks";
 
 export function TimeBlockEditor({
@@ -18,6 +18,7 @@ export function TimeBlockEditor({
   onToggleActive,
   onDelete,
   onSkipToday,
+  initialSkipDate,
 }: {
   target: TimeBlock | null;
   prefill?: { dayOfWeek: number; startMin: number; endMin: number };
@@ -27,6 +28,7 @@ export function TimeBlockEditor({
   onToggleActive: () => Promise<void>;
   onDelete: () => Promise<void>;
   onSkipToday: (date: string) => Promise<void>;
+  initialSkipDate?: string;
 }) {
   const [name, setName] = useState(target?.name ?? "");
   const [projectId, setProjectId] = useState(target ? target.projectId ?? "" : "");
@@ -43,7 +45,15 @@ export function TimeBlockEditor({
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   })();
-  const [skipDate, setSkipDate] = useState(todayISO);
+  const [skipDate, setSkipDate] = useState(initialSkipDate ?? todayISO);
+
+  const previousSkipDateRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (initialSkipDate && initialSkipDate !== previousSkipDateRef.current) {
+      previousSkipDateRef.current = initialSkipDate;
+      setSkipDate(initialSkipDate);
+    }
+  }, [initialSkipDate]);
 
   const exceptionsQuery = useBlockExceptionsQuery(target?.id ?? null);
   const exceptions = exceptionsQuery.data ?? [];
@@ -89,7 +99,7 @@ export function TimeBlockEditor({
   };
 
   const formatExceptionDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    const date = parseDateOnly(dateStr);
     if (Number.isNaN(date.getTime())) return dateStr;
     return date.toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" });
   };

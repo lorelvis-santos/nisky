@@ -303,7 +303,7 @@ function TimeBlocksContent() {
           : "Bloque creado. Arrastra sus bordes para ajustarlo.",
       );
     } catch (err) {
-      toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos crear el bloque. Inténtalo de nuevo.");
+      toast.error((err as { message?: string })?.message ?? "Ups, no pudimos crear el bloque. Inténtalo de nuevo.");
     }
   };
 
@@ -363,7 +363,7 @@ function TimeBlocksContent() {
         });
         toast.success("Excepción actualizada para este día");
       } catch (err) {
-        toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos actualizar la excepción.");
+        toast.error((err as { message?: string })?.message ?? "Ups, no pudimos actualizar la excepción.");
       }
       return;
     }
@@ -400,7 +400,7 @@ function TimeBlocksContent() {
       });
       toast.success("Excepción guardada para este día");
     } catch (err) {
-      toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos crear la excepción.");
+      toast.error((err as { message?: string })?.message ?? "Ups, no pudimos crear la excepción.");
     }
     setResolveDraft(null);
   };
@@ -484,7 +484,7 @@ function TimeBlocksContent() {
       });
       toast.success("Bloque saltado ese día");
     } catch (err) {
-      toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos saltar el bloque.");
+      toast.error((err as { message?: string })?.message ?? "Ups, no pudimos saltar el bloque.");
     }
   };
 
@@ -495,7 +495,7 @@ function TimeBlocksContent() {
         .mutateAsync({ eventId: event.id, payload: { date: dateStr, action: "skip" } })
         .then(() => toast.success("Evento saltado ese día"))
         .catch((err) =>
-          toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos saltar el evento."),
+          toast.error((err as { message?: string })?.message ?? "Ups, no pudimos saltar el evento."),
         );
       return;
     }
@@ -520,7 +520,7 @@ function TimeBlocksContent() {
       toast.success("Evento movido ese día");
       setEventMoveDraft(null);
     } catch (err) {
-      toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos mover el evento.");
+      toast.error((err as { message?: string })?.message ?? "Ups, no pudimos mover el evento.");
     }
   };
 

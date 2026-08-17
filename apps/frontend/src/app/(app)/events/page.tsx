@@ -264,8 +264,8 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
         toast.success("Evento creado");
       }
       onClose();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error ?? "Error al guardar el evento");
+    } catch (err) {
+      toast.error((err as { message?: string })?.message ?? "Error al guardar el evento");
     }
   };
 

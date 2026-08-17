@@ -114,7 +114,7 @@ function ModalBody({
                 toast.success("Bloque saltado ese día");
                 onClose();
               } catch (err) {
-                toast.error((err as any)?.response?.data?.error ?? "Ups, no pudimos saltar el bloque.");
+                toast.error((err as { message?: string })?.message ?? "Ups, no pudimos saltar el bloque.");
               }
             }}
             onToggleActive={toggleActive}

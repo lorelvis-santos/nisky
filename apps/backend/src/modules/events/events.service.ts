@@ -82,6 +82,7 @@ export class EventsService {
   }
 
   private async assertNoBlockOverlap(userId: string, date: Date, startMin: number | null, endMin: number | null) {
+    if (startMin === null || endMin === null) return;
     const dayExceptions = await prisma.timeBlockException.findMany({ where: { userId, date } });
     const blocks = await prisma.timeBlock.findMany({
       where: { userId },
@@ -90,10 +91,7 @@ export class EventsService {
     for (const block of blocks) {
       const occ = blockOccurrenceOn(block, date, dayExceptions);
       if (!occ.occurs) continue;
-      const clash =
-        startMin === null || endMin === null
-          ? true
-          : occ.startMin < endMin && occ.endMin > startMin;
+      const clash = occ.startMin < endMin && occ.endMin > startMin;
       if (!clash) continue;
       const label = block.name ?? block.project?.name ?? "bloque";
       const dayName = DateTime.fromJSDate(date, { zone: TIME_BLOCKS_TZ }).toFormat("EEE d MMM", { locale: "es" });

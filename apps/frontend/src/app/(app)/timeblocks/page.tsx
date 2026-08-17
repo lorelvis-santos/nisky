@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, ListTodo, Plus, SlidersHorizontal, X } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, ListTodo, Plus, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
@@ -238,7 +238,10 @@ function TimeBlocksContent() {
   const settingsBusy = settingsMutation.isPending;
 
   const now = new Date();
-  const weekStart = new Date(now);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const anchor = new Date(now);
+  anchor.setDate(anchor.getDate() + weekOffset * 7);
+  const weekStart = new Date(anchor);
   weekStart.setHours(0, 0, 0, 0);
   const day = weekStart.getDay();
   weekStart.setDate(weekStart.getDate() - (day === 0 ? 6 : day - 1));
@@ -553,7 +556,41 @@ function TimeBlocksContent() {
             decirte qué toca ahora.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center border border-outline-variant bg-surface-container-lowest">
+            <button
+              aria-label="Semana anterior"
+              className="flex h-9 w-9 items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+              onClick={() => setWeekOffset((offset) => offset - 1)}
+              title="Semana anterior"
+              type="button"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="min-w-[9.5rem] border-x border-outline-variant px-3 text-center font-data-mono text-data-mono text-xs text-on-surface-variant">
+              {weekStart.getDate() < weekEnd.getDate()
+                ? `${weekStart.getDate()}–${weekEnd.getDate()} ${weekEnd.toLocaleDateString("es", { month: "short" })}`
+                : `${weekStart.toLocaleDateString("es", { day: "numeric", month: "short" })} – ${weekEnd.toLocaleDateString("es", { day: "numeric", month: "short" })}`}
+            </span>
+            <button
+              aria-label="Semana siguiente"
+              className="flex h-9 w-9 items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+              onClick={() => setWeekOffset((offset) => offset + 1)}
+              title="Semana siguiente"
+              type="button"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+          <button
+            className="h-9 border border-outline-variant bg-surface-container-lowest px-3 font-data-mono text-data-mono text-xs text-on-surface-variant hover:border-primary hover:text-primary"
+            disabled={weekOffset === 0}
+            onClick={() => setWeekOffset(0)}
+            title="Ir a la semana actual"
+            type="button"
+          >
+            Hoy
+          </button>
           <button
             aria-expanded={tasksSidebarOpen}
             aria-label={tasksSidebarOpen ? "Ocultar tareas" : "Mostrar tareas"}
@@ -643,6 +680,7 @@ function TimeBlocksContent() {
             onResizePreview={previewResize}
             onSlotClick={createAtSlot}
             projects={projects}
+            weekStart={weekStart}
           />
         </div>
         <aside className="hidden w-[20rem] shrink-0 flex-col border border-outline-variant bg-surface-container-lowest lg:flex lg:max-h-full">

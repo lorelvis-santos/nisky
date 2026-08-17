@@ -77,6 +77,7 @@ export function TimeBlockWeekGrid({
   moveEnabled = true,
   dayStartMin = 6 * 60,
   dayEndMin = 23 * 60,
+  weekStart,
 }: {
   blocks: TimeBlock[];
   projects: Project[];
@@ -101,6 +102,7 @@ export function TimeBlockWeekGrid({
   moveEnabled?: boolean;
   dayStartMin?: number;
   dayEndMin?: number;
+  weekStart?: Date;
 }) {
   const totalMin = Math.max(dayEndMin - dayStartMin, 60);
   const totalPx = (totalMin * HOUR_PX) / 60;
@@ -131,9 +133,9 @@ export function TimeBlockWeekGrid({
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
-  const weekStart = monday(now);
+  const gridWeekStart = weekStart ?? monday(now);
   const days = DAY_ORDER.map((dayOfWeek, index) => {
-    const date = new Date(weekStart);
+    const date = new Date(gridWeekStart);
     date.setDate(date.getDate() + index);
     return {
       dayOfWeek,

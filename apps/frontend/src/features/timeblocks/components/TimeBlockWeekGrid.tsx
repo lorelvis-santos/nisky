@@ -41,7 +41,7 @@ function timesOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number
 }
 
 function dayConflicts(block: TimeBlock, event: CalendarEvent) {
-  if (event.allDay || event.startMin === null || event.endMin === null) return true;
+  if (event.allDay || event.startMin === null || event.endMin === null) return false;
   return timesOverlap(block.startMin, block.endMin, event.startMin, event.endMin);
 }
 
@@ -83,7 +83,7 @@ export function TimeBlockWeekGrid({
   projects: Project[];
   events?: CalendarEvent[];
   exceptions?: TimeBlockException[];
-  onBlockClick: (block: TimeBlock) => void;
+  onBlockClick: (block: TimeBlock, date?: Date) => void;
   onSlotClick: (dayOfWeek: number, startMin: number) => void;
   onResize: (
     block: TimeBlock,
@@ -464,6 +464,7 @@ export function TimeBlockWeekGrid({
     endMin: number,
     hidden: boolean,
     conflict?: CalendarEvent,
+    dayDate?: Date,
   ) => {
     const project = projects.find((item) => item.id === block.projectId);
     const color = project?.color ?? "#7a8494";
@@ -492,7 +493,7 @@ export function TimeBlockWeekGrid({
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          if (!moveEnabled || event.detail === 0) onBlockClick(block);
+          if (!moveEnabled || event.detail === 0) onBlockClick(block, dayDate);
         }}
         onPointerDown={
           moveEnabled ? (event) => startMove(event, block) : undefined
@@ -744,6 +745,7 @@ export function TimeBlockWeekGrid({
                       endMin,
                       draft?.block.id === block.id,
                       conflict,
+                      day.date,
                     );
                   })}
                   {dayEvents

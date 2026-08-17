@@ -222,6 +222,7 @@ function TimeBlocksContent() {
   const { overdue, todayTasks, tomorrowTasks } = groupTasksByDueDate(todayTasksQuery.data?.data ?? []);
   const tasksTotal = overdue.length + todayTasks.length + tomorrowTasks.length;
   const [editing, setEditing] = useState<TimeBlock | null>(null);
+  const [editDate, setEditDate] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<SlotPrefill | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
@@ -310,9 +311,10 @@ function TimeBlocksContent() {
     }
   };
 
-  const openBlock = (block: TimeBlock) => {
+  const openBlock = (block: TimeBlock, date?: Date) => {
     setEditing(block);
     setPrefill(null);
+    setEditDate(date ? toISODateString(date) : null);
     if (isMobile) setMobileFormOpen(true);
   };
 
@@ -402,6 +404,8 @@ function TimeBlocksContent() {
         endMin,
       });
       toast.success("Excepción guardada para este día");
+      setEditing({ ...block, startMin, endMin });
+      setEditDate(null);
     } catch (err) {
       toast.error((err as { message?: string })?.message ?? "Ups, no pudimos crear la excepción.");
     }
@@ -418,6 +422,7 @@ function TimeBlocksContent() {
       });
       setEditing({ ...block, startMin, endMin, daysOfWeek: days });
       setPrefill(null);
+      setEditDate(null);
     } catch {
       toast.error("Ups, no pudimos ajustar el bloque. Inténtalo de nuevo.");
     }
@@ -434,8 +439,25 @@ function TimeBlocksContent() {
   const save = async (data: CreateTimeBlockPayload) => {
     try {
       if (editing) {
+        const daysChanged =
+          data.daysOfWeek.length !== editing.daysOfWeek.length ||
+          data.daysOfWeek.some((day, index) => day !== editing.daysOfWeek[index]);
+        const timeChanged =
+          data.startMin !== editing.startMin || data.endMin !== editing.endMin;
+        const repeats = editing.daysOfWeek.length > 1 || editing.repeatEveryWeeks > 1;
+        if (!daysChanged && timeChanged && repeats && editDate) {
+          setResolveDraft({
+            block: editing,
+            startMin: data.startMin,
+            endMin: data.endMin,
+            days: data.daysOfWeek,
+            draggedDate: editDate,
+          });
+          return;
+        }
         await mutations.update.mutateAsync({ id: editing.id, payload: data });
         setEditing({ ...editing, ...data, daysOfWeek: data.daysOfWeek });
+        setEditDate(null);
         toast.success("¡Listo, bloque actualizado!");
         return;
       }

@@ -93,21 +93,22 @@ export default function EventsPage() {
 
   return (
     <div className="flex h-full flex-col bg-surface">
-      <div className="flex items-center justify-between border-b border-outline-variant p-container-padding">
-        <div className="flex items-center gap-4">
-          <button onClick={prevMonth} className="p-2 hover:bg-surface-container-low border border-outline-variant" type="button">&lt;</button>
-          <h2 className="font-headline-sm text-headline-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant p-container-padding">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+          <button onClick={prevMonth} className="flex h-8 w-8 shrink-0 items-center justify-center border border-outline-variant hover:bg-surface-container-low sm:h-9 sm:w-9" type="button" aria-label="Mes anterior">&lt;</button>
+          <h2 className="truncate font-headline-sm text-base sm:text-headline-sm">
             {currentMonth.toLocaleDateString("es", { month: "long", year: "numeric" }).replace(/^\p{L}/u, (char) => char.toUpperCase())}
           </h2>
-          <button onClick={nextMonth} className="p-2 hover:bg-surface-container-low border border-outline-variant" type="button">&gt;</button>
+          <button onClick={nextMonth} className="flex h-8 w-8 shrink-0 items-center justify-center border border-outline-variant hover:bg-surface-container-low sm:h-9 sm:w-9" type="button" aria-label="Mes siguiente">&gt;</button>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary disabled:opacity-50"
+          className="flex items-center gap-2 bg-primary-container px-3 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary disabled:opacity-50 sm:px-4"
           type="button"
         >
-          <Plus size={20} />
-          Nuevo evento
+          <Plus size={18} className="shrink-0 sm:size-5" />
+          <span className="hidden sm:inline">Nuevo evento</span>
+          <span className="sm:hidden">Nuevo</span>
         </button>
       </div>
 

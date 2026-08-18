@@ -100,13 +100,6 @@ export function ActiveBlockBanner({
           <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/events">
             VER AGENDA
           </Link>
-          <button
-            className="flex h-9 items-center gap-2 border border-outline-variant bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
-            onClick={() => onPlayPomodoro()}
-            type="button"
-          >
-            <Play size={15} /> Comenzar enfoque
-          </button>
         </div>
       </div>
     );

@@ -90,7 +90,13 @@ export class HomeService {
     ]);
 
     const occurrence = nextBlockOccurrence(allBlocks, exceptions as TimeBlockExceptionRow[], now);
-    const nextBlock = occurrence ? allBlocks.find((block) => block.id === occurrence.block.id) ?? null : null;
+    const nextBlock = occurrence
+      ? {
+          ...(allBlocks.find((block) => block.id === occurrence.block.id) ?? occurrence.block),
+          startMin: occurrence.block.startMin,
+          endMin: occurrence.block.endMin,
+        }
+      : null;
     const nextBlockStart = occurrence?.start ?? null;
 
     const activeEvent = await prisma.calendarEvent

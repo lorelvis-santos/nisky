@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CalendarDays, CheckCircle2, Circle, ListChecks, Play } from "lucide-react";
+import { AlertCircle, CalendarDays, CheckCircle2, Circle, ListChecks, MapPin, Play } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { localDateKey } from "@/lib/utils";
@@ -68,16 +68,49 @@ export function ActiveBlockBanner({
   const nowMin = useNowMinutes();
   const nowTimestamp = useNowTimestamp();
 
-  const eventRow = activeEvent ? (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: activeEvent.color ?? "#303e51" }} />
-      <p className="truncate font-headline-xs text-headline-xs font-semibold">{activeEvent.title}</p>
-      <p className="shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant">
-        {activeEvent.allDay ? "Todo el día" : `${minToTime(activeEvent.startMin ?? 0)}–${minToTime(activeEvent.endMin ?? 0)}`}
-      </p>
-      {activeEvent.location && <p className="truncate font-body-sm text-body-sm text-on-surface-variant">{activeEvent.location}</p>}
-    </div>
-  ) : null;
+  if (activeEvent) {
+    const color = activeEvent.color ?? "#303e51";
+    const timeLabel = activeEvent.allDay
+      ? "Todo el día"
+      : `${minToTime(activeEvent.startMin ?? 0)}–${minToTime(activeEvent.endMin ?? 0)}`;
+    return (
+      <div
+        className="flex flex-col gap-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4"
+        style={{ borderTop: `3px solid ${color}` }}
+      >
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-outline-variant pb-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+            <p className="truncate font-headline-sm text-headline-sm font-bold" style={{ color }}>
+              {activeEvent.title}
+            </p>
+            <p className="shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant">{timeLabel}</p>
+          </div>
+          <p className="shrink-0 border border-primary bg-primary-container px-3 py-1 font-data-mono text-data-mono text-sm font-semibold text-on-primary">
+            En curso
+          </p>
+        </div>
+        {activeEvent.location && (
+          <p className="flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-variant">
+            <MapPin size={13} className="shrink-0" />
+            <span className="line-clamp-1">{activeEvent.location}</span>
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-outline-variant pt-2">
+          <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/events">
+            VER AGENDA
+          </Link>
+          <button
+            className="flex h-9 items-center gap-2 border border-outline-variant bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
+            onClick={() => onPlayPomodoro()}
+            type="button"
+          >
+            <Play size={15} /> Comenzar enfoque
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!block) {
     if (nextBlock && nextBlockStart) {
@@ -92,7 +125,6 @@ export function ActiveBlockBanner({
       const color = nextBlock.project?.color ?? "#303e51";
       return (
         <div className="flex flex-col gap-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4">
-          {eventRow}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <div className="flex min-w-0 items-center gap-2">
             <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
@@ -125,7 +157,6 @@ export function ActiveBlockBanner({
     }
     return (
       <div className="flex flex-col gap-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4">
-        {eventRow}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex min-w-0 items-center gap-2">
             <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full bg-outline-variant" />
@@ -169,7 +200,6 @@ const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
       className="flex flex-col gap-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4"
       style={{ borderTop: `3px solid ${color}` }}
     >
-      {eventRow && <div className="border-b border-outline-variant pb-2">{eventRow}</div>}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-outline-variant pb-2">
         <div className="flex min-w-0 items-center gap-2">
           <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />

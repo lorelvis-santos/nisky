@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Mail, ShieldCheck, UserMinus } from "lucide-react";
+import { AtSign, LogOut, Mail, ShieldCheck, UserMinus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -108,6 +108,7 @@ export function MembersPanel({ project }: { project: Project }) {
                 <span className="min-w-0 flex-1 basis-40">
                   <span className="block truncate font-body-sm text-body-sm text-on-surface">
                     {member.user.name ?? member.user.email}
+                    {member.user.username && <span className="ml-1 font-data-mono text-data-mono text-xs text-on-surface-variant">@{member.user.username}</span>}
                     {isSelf && <span className="ml-1 font-label-caps text-[10px] uppercase tracking-wide text-on-surface-variant">· tú</span>}
                   </span>
                   <span className="block truncate font-data-mono text-data-mono text-[11px] text-on-surface-variant">
@@ -160,17 +161,20 @@ export function MembersPanel({ project }: { project: Project }) {
 
       {isOwner && (
         <div className="flex gap-2 pt-1">
-          <input
-            aria-label="Email del nuevo miembro"
-            className="field h-9 min-w-0 flex-1"
-            onChange={(event) => setEmail(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") void invite();
-            }}
-            placeholder="email@ejemplo.com"
-            type="email"
-            value={email}
-          />
+          <div className="relative min-w-0 flex-1">
+            <AtSign size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+            <input
+              aria-label="Email o @usuario del nuevo miembro"
+              className="field h-9 w-full pl-8"
+              onChange={(event) => setEmail(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") void invite();
+              }}
+              placeholder="email@ejemplo.com o @usuario"
+              type="text"
+              value={email}
+            />
+          </div>
           <button
             className="flex h-9 shrink-0 items-center gap-1.5 border border-outline-variant px-2.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:opacity-50"
             disabled={!email.trim()}

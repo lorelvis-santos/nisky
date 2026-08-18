@@ -65,7 +65,8 @@ export function InvitationsPanel() {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-body-sm text-body-sm text-on-surface">{invitation.project.name}</span>
                     <span className="mt-0.5 block truncate font-data-mono text-data-mono text-xs text-on-surface-variant">
-                      {invitation.invitedBy.name ?? invitation.invitedBy.email} · {invitation.email}
+                      {invitation.invitedBy.name ?? invitation.invitedBy.email}
+                      {invitation.invitedBy.username ? ` (@${invitation.invitedBy.username})` : ""} · {invitation.email}
                     </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-1">

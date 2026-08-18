@@ -1,17 +1,57 @@
 "use client";
 
-import { Camera, Check, X } from "lucide-react";
+import { AtSign, Camera, Check, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
 import type { User } from "@/types/entities";
 import { useProfileMutations } from "../hooks/useProjects";
 
+const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
+const RESERVED_USERNAMES = new Set([
+  "admin",
+  "administrator",
+  "api",
+  "support",
+  "me",
+  "root",
+  "system",
+  "nisky",
+  "help",
+  "settings",
+  "profile",
+  "login",
+  "register",
+  "auth",
+  "dashboard",
+  "projects",
+  "tasks",
+  "habits",
+  "timeblocks",
+  "events",
+  "integrations",
+  "notifications",
+  "feedback",
+  "journal",
+  "notes",
+  "focus",
+]);
+
+function usernameHint(value: string) {
+  const trimmed = value.trim().replace(/^@/, "");
+  if (trimmed === "") return null;
+  if (!USERNAME_REGEX.test(trimmed)) return "Solo letras, números y _ (3-30 caracteres).";
+  if (RESERVED_USERNAMES.has(trimmed.toLowerCase())) return "Ese nombre no está disponible.";
+  return null;
+}
+
 export function ProfileSection() {
   const { user, accessToken, setAuth } = useAuth();
   const mutations = useProfileMutations();
   const [name, setName] = useState(user?.name ?? "");
+  const [username, setUsername] = useState(user?.username ?? "");
   const [editing, setEditing] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -29,6 +69,36 @@ export function ProfileSection() {
       toast.success("¡Perfil actualizado!");
     } catch {
       toast.error("Ups, no pudimos guardar tu perfil. Inténtalo de nuevo.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveUsername = async () => {
+    const trimmed = username.trim().replace(/^@/, "");
+    if (usernameHint(trimmed) || (!trimmed && user?.username === null && username === "")) return;
+    setSaving(true);
+    try {
+      applyUser(await mutations.update.mutateAsync({ username: trimmed === "" ? null : trimmed.toLowerCase() }));
+      setUsername(trimmed === "" ? "" : trimmed.toLowerCase());
+      setEditingUsername(false);
+      toast.success("¡Nombre de usuario guardado!");
+    } catch (error) {
+      toast.error((error as { message?: string })?.message ?? "Ups, no pudimos guardar el nombre de usuario.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeUsername = async () => {
+    setSaving(true);
+    try {
+      applyUser(await mutations.update.mutateAsync({ username: null }));
+      setUsername("");
+      setEditingUsername(false);
+      toast.success("Nombre de usuario eliminado");
+    } catch (error) {
+      toast.error((error as { message?: string })?.message ?? "Ups, no pudimos eliminar el nombre de usuario.");
     } finally {
       setSaving(false);
     }
@@ -125,6 +195,75 @@ export function ProfileSection() {
             <button className="border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-surface-container-high" onClick={() => setEditing(true)} type="button">
               Editar
             </button>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">NOMBRE DE USUARIO</span>
+        <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">
+          Úsalo para que te inviten a proyectos con @tu_usuario en lugar del email. Opcional.
+        </p>
+        {editingUsername ? (
+          <div className="mt-2">
+            <div className="flex gap-2">
+              <div className="relative max-w-xs flex-1">
+                <AtSign size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                <input
+                  aria-label="Nombre de usuario"
+                  autoFocus
+                  className="field h-9 w-full pl-8"
+                  maxLength={30}
+                  onChange={(event) => setUsername(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") void saveUsername();
+                  }}
+                  placeholder="tu_usuario"
+                  value={username}
+                />
+              </div>
+              <button
+                aria-label="Guardar nombre de usuario"
+                className="flex items-center gap-1 border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:opacity-50"
+                disabled={saving || Boolean(usernameHint(username.trim().replace(/^@/, "")))}
+                onClick={() => void saveUsername()}
+                type="button"
+              >
+                <Check size={14} /> Guardar
+              </button>
+              <button
+                className="border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high"
+                onClick={() => {
+                  setEditingUsername(false);
+                  setUsername(user?.username ?? "");
+                }}
+                type="button"
+              >
+                Cancelar
+              </button>
+            </div>
+            {usernameHint(username.trim().replace(/^@/, "")) ? (
+              <p className="mt-1 font-body-sm text-body-sm text-error">{usernameHint(username.trim().replace(/^@/, ""))}</p>
+            ) : username.trim() ? (
+              <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">Tu invitación será: @{username.trim().replace(/^@/, "").toLowerCase()}</p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="mt-1 flex items-center gap-2">
+            <p className="font-data-mono text-data-mono">{user?.username ? `@${user.username}` : "-"}</p>
+            <button className="border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-surface-container-high" onClick={() => { setEditingUsername(true); setUsername(user?.username ?? ""); }} type="button">
+              {user?.username ? "Editar" : "Crear"}
+            </button>
+            {user?.username && (
+              <button
+                className="border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50"
+                disabled={saving}
+                onClick={() => void removeUsername()}
+                type="button"
+              >
+                Eliminar
+              </button>
+            )}
           </div>
         )}
       </div>

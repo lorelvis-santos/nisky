@@ -109,7 +109,7 @@ export class ProjectService {
       _count: { select: { tasks: { where: { archivedAt: null } } } },
       members: {
         take: 4,
-        include: { user: { select: { id: true, email: true, name: true, avatarUrl: true } } },
+        include: { user: { select: { id: true, email: true, name: true, username: true, avatarUrl: true } } },
         orderBy: [{ role: "desc" }, { createdAt: "asc" }],
       },
     } satisfies Prisma.ProjectInclude;
@@ -131,7 +131,7 @@ export class ProjectService {
     const ownerIds = [...new Set(projects.map(p => p.userId))];
     const owners = await prisma.user.findMany({
       where: { id: { in: ownerIds } },
-      select: { id: true, email: true, name: true, avatarUrl: true },
+      select: { id: true, email: true, name: true, username: true, avatarUrl: true },
     });
     const ownerById = new Map(owners.map(o => [o.id, o]));
     for (const project of projects) {
@@ -158,7 +158,7 @@ export class ProjectService {
     const [members, project] = await Promise.all([
       prisma.projectMember.findMany({
         where: { projectId },
-        include: { user: { select: { id: true, email: true, name: true, avatarUrl: true } } },
+        include: { user: { select: { id: true, email: true, name: true, username: true, avatarUrl: true } } },
         orderBy: [{ role: "desc" }, { createdAt: "asc" }],
       }),
       prisma.project.findUnique({ where: { id: projectId }, select: { userId: true } }),
@@ -168,7 +168,7 @@ export class ProjectService {
     if (project && !ownerInMembers) {
       const owner = await prisma.user.findUnique({
         where: { id: project.userId },
-        select: { id: true, email: true, name: true, avatarUrl: true },
+        select: { id: true, email: true, name: true, username: true, avatarUrl: true },
       });
       if (owner) {
         members.unshift({
@@ -184,16 +184,25 @@ export class ProjectService {
     return members;
   }
 
-  async inviteMember(userId: string, projectId: string, email: string) {
+  async inviteMember(userId: string, projectId: string, identifier: string) {
     const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
     if (!project) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
     if (project.isDefault) throw new AppError("FORBIDDEN", "El proyecto por defecto no se puede compartir");
 
     const inviter = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
-    if (email === inviter?.email) throw new AppError("BAD_REQUEST", "No puedes invitarte a ti mismo");
 
-    const invitee = await prisma.user.findUnique({ where: { email }, select: { id: true, name: true } });
-    if (!invitee) throw new AppError("NOT_FOUND", "El usuario no existe en Nisky");
+    const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+    const lookup = looksLikeEmail
+      ? { email: identifier.toLowerCase() }
+      : { username: identifier.replace(/^@/, "").toLowerCase() };
+    const invitee = await prisma.user.findUnique({ where: lookup, select: { id: true, name: true, email: true, username: true } });
+    if (!invitee) {
+      throw new AppError(
+        "NOT_FOUND",
+        looksLikeEmail ? "El usuario no existe en Nisky" : "Ese usuario no existe en Nisky",
+      );
+    }
+    if (invitee.id === userId) throw new AppError("BAD_REQUEST", "No puedes invitarte a ti mismo");
 
     const existingMember = await prisma.projectMember.findUnique({
       where: { projectId_userId: { projectId, userId: invitee.id } },
@@ -201,7 +210,7 @@ export class ProjectService {
     if (existingMember) throw new AppError("CONFLICT", "El usuario ya es miembro");
 
     const existingInvite = await prisma.projectInvitation.findUnique({
-      where: { projectId_email: { projectId, email } },
+      where: { projectId_email: { projectId, email: invitee.email } },
     });
     if (existingInvite && existingInvite.status === "PENDING")
       throw new AppError("CONFLICT", "Ya hay una invitación pendiente para este email");
@@ -212,7 +221,7 @@ export class ProjectService {
     }
 
     const invitation = await prisma.projectInvitation.create({
-      data: { projectId, invitedById: userId, email },
+      data: { projectId, invitedById: userId, email: invitee.email },
     });
 
     await pushService.sendToUser(invitee.id, {
@@ -235,14 +244,14 @@ export class ProjectService {
       where: { email: user.email, status: "PENDING" },
       include: {
         project: { select: { id: true, name: true, color: true, userId: true } },
-        invitedBy: { select: { id: true, email: true, name: true } },
+        invitedBy: { select: { id: true, email: true, name: true, username: true } },
       },
       orderBy: { createdAt: "desc" },
     });
   }
 
   async acceptInvitation(userId: string, invitationId: string) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, username: true } });
     if (!user) throw new AppError("NOT_FOUND", "Usuario no encontrado");
     const invitation = await prisma.projectInvitation.findFirst({
       where: { id: invitationId, email: user.email, status: "PENDING" },
@@ -257,7 +266,7 @@ export class ProjectService {
     if (project) {
       await pushService.sendToUser(project.userId, {
         title: "Invitación aceptada",
-        body: `${user.email} aceptó tu invitación a "${project.name}"`,
+        body: `${user.username ? `@${user.username}` : user.email} aceptó tu invitación a "${project.name}"`,
         url: `/projects`,
         tag: `invite-accepted-${projectId}`,
         data: { type: "PROJECT_INVITATION_ACCEPTED", projectId },

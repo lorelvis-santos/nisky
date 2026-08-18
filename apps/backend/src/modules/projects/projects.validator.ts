@@ -16,7 +16,13 @@ export const memberIdParamSchema = z.object({
   projectId: z.uuid("El proyecto no es válido"),
   memberId: z.uuid("El miembro no es válido"),
 });
-export const inviteMemberSchema = z.object({ email: z.email("Email inválido") });
+export const inviteMemberSchema = z.object({
+  identifier: z
+    .string("El email o @usuario es requerido")
+    .trim()
+    .min(1, "El email o @usuario es requerido")
+    .max(120, "Identificador demasiado largo"),
+});
 export const updateMemberRoleSchema = z.object({ role: z.enum(["OWNER", "MEMBER"]) });
 
 export type CreateProjectDto = z.infer<typeof createProjectSchema>;

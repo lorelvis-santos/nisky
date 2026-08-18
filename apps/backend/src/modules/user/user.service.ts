@@ -1,13 +1,31 @@
 import { prisma } from "../../infra/prisma/client";
+import { AppError } from "../../utils/errors/handler";
 import { StorageFactory } from "../storage/storage.factory";
 import type { UpdateProfileDto } from "./user.validator";
 
+const userSelect = {
+  id: true,
+  email: true,
+  name: true,
+  username: true,
+  role: true,
+  avatarUrl: true,
+  createdAt: true,
+} as const;
+
 export class UserService {
   async updateProfile(userId: string, data: UpdateProfileDto) {
+    if (data.username !== undefined && data.username !== null) {
+      const existing = await prisma.user.findUnique({ where: { username: data.username } });
+      if (existing && existing.id !== userId) throw new AppError("CONFLICT", "Ese nombre de usuario ya está en uso");
+    }
     return prisma.user.update({
       where: { id: userId },
-      data: { ...(data.name !== undefined ? { name: data.name } : {}) },
-      select: { id: true, email: true, name: true, role: true, avatarUrl: true, createdAt: true },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.username !== undefined ? { username: data.username } : {}),
+      },
+      select: userSelect,
     });
   }
 
@@ -17,7 +35,7 @@ export class UserService {
     const updated = await prisma.user.update({
       where: { id: userId },
       data: { avatarUrl: result.url },
-      select: { id: true, email: true, name: true, role: true, avatarUrl: true, createdAt: true },
+      select: userSelect,
     });
     // Borrar avatar anterior de Cloudinary
     if (oldAvatar?.avatarUrl) {
@@ -40,7 +58,7 @@ export class UserService {
     return prisma.user.update({
       where: { id: userId },
       data: { avatarUrl: null },
-      select: { id: true, email: true, name: true, role: true, avatarUrl: true, createdAt: true },
+      select: userSelect,
     });
   }
 }

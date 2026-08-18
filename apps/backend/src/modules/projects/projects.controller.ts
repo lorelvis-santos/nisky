@@ -51,7 +51,7 @@ export class ProjectController {
   };
 
   inviteMember = async (req: Request<ProjectIdParams, {}, InviteMemberDto>, res: Response, next: NextFunction) => {
-    try { res.success(await projectService.inviteMember(userId(req), req.params.projectId, req.body.email), 201); } catch (error) { next(error); }
+    try { res.success(await projectService.inviteMember(userId(req), req.params.projectId, req.body.identifier), 201); } catch (error) { next(error); }
   };
 
   listPendingInvitations = async (req: Request, res: Response, next: NextFunction) => {

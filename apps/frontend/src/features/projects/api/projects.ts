@@ -54,8 +54,8 @@ export async function getProjectMembers(projectId: string) {
   return data.data;
 }
 
-export async function inviteProjectMember(projectId: string, email: string) {
-  const { data } = await api.post<{ data: ProjectInvitation }>(`/projects/${projectId}/invitations`, { email });
+export async function inviteProjectMember(projectId: string, identifier: string) {
+  const { data } = await api.post<{ data: ProjectInvitation }>(`/projects/${projectId}/invitations`, { identifier });
   return data.data;
 }
 
@@ -84,7 +84,7 @@ export async function updateProjectMemberRole(projectId: string, memberId: strin
   return data.data;
 }
 
-export async function updateProfile(payload: { name: string }) {
+export async function updateProfile(payload: { name?: string; username?: string | null }) {
   const { data } = await api.patch<{ data: User }>("/user/profile", payload);
   return data.data;
 }

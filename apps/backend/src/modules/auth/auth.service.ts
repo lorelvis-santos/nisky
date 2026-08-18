@@ -13,8 +13,8 @@ const REFRESH_DAYS = Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 7);
 
 type RequestMetadata = { userAgent?: string; ip?: string };
 
-function publicUser(user: { id: string; email: string; name: string | null; role: "ADMIN" | "USER"; avatarUrl?: string | null }) {
-  return { id: user.id, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatarUrl ?? null };
+function publicUser(user: { id: string; email: string; name: string | null; username?: string | null; role: "ADMIN" | "USER"; avatarUrl?: string | null }) {
+  return { id: user.id, email: user.email, name: user.name, username: user.username ?? null, role: user.role, avatarUrl: user.avatarUrl ?? null };
 }
 
 function accessTokenFor(user: { id: string; email: string; role: "ADMIN" | "USER" }) {
@@ -65,7 +65,7 @@ export class AuthService {
     });
   }
 
-  private async issue(user: { id: string; email: string; name: string | null; role: "ADMIN" | "USER"; avatarUrl?: string | null }, metadata: RequestMetadata) {
+  private async issue(user: { id: string; email: string; name: string | null; username?: string | null; role: "ADMIN" | "USER"; avatarUrl?: string | null }, metadata: RequestMetadata) {
     const refresh = newRefreshToken();
     await this.storeRefreshToken(user.id, refresh.raw, metadata);
     return { accessToken: accessTokenFor(user), refreshToken: refresh.raw, refreshTokenId: refresh.id, user: publicUser(user) };
@@ -144,7 +144,7 @@ export class AuthService {
   async me(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, role: true, avatarUrl: true, createdAt: true },
+      select: { id: true, email: true, name: true, username: true, role: true, avatarUrl: true, createdAt: true },
     });
     if (!user) throw new AppError("NOT_FOUND", "Usuario no encontrado");
     return user;

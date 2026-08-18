@@ -4,6 +4,7 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  username: string | null;
   role: UserRole;
   avatarUrl?: string | null;
   createdAt?: string;
@@ -52,7 +53,7 @@ export interface ProjectMember {
   id: string;
   projectId: string;
   userId: string;
-  user: { id: string; email: string; name: string | null; avatarUrl: string | null };
+  user: { id: string; email: string; name: string | null; username: string | null; avatarUrl: string | null };
   role: ProjectRole;
   createdAt: string;
 }
@@ -61,7 +62,7 @@ export interface ProjectInvitation {
   id: string;
   projectId: string;
   project: Project;
-  invitedBy: { id: string; email: string; name: string | null };
+  invitedBy: { id: string; email: string; name: string | null; username: string | null };
   email: string;
   status: "PENDING" | "ACCEPTED" | "DECLINED";
   createdAt: string;

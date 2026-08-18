@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import type { ApiResponse } from "@/types/api.types";
-import type { JournalEntry, Paginated } from "@/types/entities";
+import type { JournalDraft, JournalEntry, Paginated } from "@/types/entities";
 
 export interface JournalQueryParams {
   page?: number;
@@ -13,6 +13,13 @@ export interface JournalEntryPayload {
   title: string;
   content: string;
   classification?: string;
+  tags?: string[];
+}
+
+export interface JournalDraftPayload {
+  title?: string;
+  content?: string;
+  classification?: string | null;
   tags?: string[];
 }
 
@@ -33,4 +40,17 @@ export async function updateJournalEntry(id: string, payload: Partial<JournalEnt
 
 export async function deleteJournalEntry(id: string) {
   await api.delete(`/journal/${id}`);
+}
+
+export async function fetchJournalDraft() {
+  const { data } = await api.get<ApiResponse<JournalDraft | null>>("/journal/draft");
+  return data.data;
+}
+
+export async function saveJournalDraft(payload: JournalDraftPayload) {
+  await api.put("/journal/draft", payload);
+}
+
+export async function deleteJournalDraft() {
+  await api.delete("/journal/draft");
 }

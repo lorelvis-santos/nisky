@@ -27,6 +27,15 @@ export const updateNoteSchema = z.object({
   projectId: z.uuid("El proyecto no es válido").nullable().optional(),
 });
 
+export const saveNoteDraftSchema = z.object({
+  title: z.string().max(200).nullish(),
+  content: z.string().max(50_000).nullish(),
+  category: categorySchema.nullish(),
+  tags: tagsSchema,
+  pinned: z.boolean().nullish(),
+  projectId: z.uuid("El proyecto no es válido").nullish(),
+});
+
 export const noteQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -39,3 +48,4 @@ export const noteQuerySchema = z.object({
 export type CreateNoteDto = z.infer<typeof createNoteSchema>;
 export type UpdateNoteDto = z.infer<typeof updateNoteSchema>;
 export type NoteQueryDto = z.infer<typeof noteQuerySchema>;
+export type SaveNoteDraftDto = z.infer<typeof saveNoteDraftSchema>;

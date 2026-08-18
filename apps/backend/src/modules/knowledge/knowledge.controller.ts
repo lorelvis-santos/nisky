@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
 import { knowledgeService } from "./knowledge.service";
-import type { CreateNoteDto, NoteQueryDto, UpdateNoteDto } from "./knowledge.validator";
+import type { CreateNoteDto, NoteQueryDto, SaveNoteDraftDto, UpdateNoteDto } from "./knowledge.validator";
 
 type IdParams = { id: string };
 
@@ -33,5 +33,17 @@ export class KnowledgeController {
 
   delete = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
     try { await knowledgeService.delete(userId(req), req.params.id); res.success({ success: true }); } catch (error) { next(error); }
+  };
+
+  getDraft = async (req: Request, res: Response, next: NextFunction) => {
+    try { res.success(await knowledgeService.getDraft(userId(req))); } catch (error) { next(error); }
+  };
+
+  saveDraft = async (req: Request<{}, {}, SaveNoteDraftDto>, res: Response, next: NextFunction) => {
+    try { res.success(await knowledgeService.saveDraft(userId(req), req.body)); } catch (error) { next(error); }
+  };
+
+  deleteDraft = async (req: Request, res: Response, next: NextFunction) => {
+    try { res.success(await knowledgeService.deleteDraft(userId(req))); } catch (error) { next(error); }
   };
 }

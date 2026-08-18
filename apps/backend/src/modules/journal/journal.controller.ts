@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
 import { journalService } from "./journal.service";
-import type { CreateJournalEntryDto, JournalQueryDto, UpdateJournalEntryDto } from "./journal.validator";
+import type { CreateJournalEntryDto, JournalQueryDto, SaveJournalDraftDto, UpdateJournalEntryDto } from "./journal.validator";
 
 type IdParams = { id: string };
 
@@ -33,5 +33,17 @@ export class JournalController {
 
   delete = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
     try { await journalService.delete(userId(req), sessionId(req), req.params.id); res.success({ success: true }); } catch (error) { next(error); }
+  };
+
+  getDraft = async (req: Request, res: Response, next: NextFunction) => {
+    try { res.success(await journalService.getDraft(userId(req), sessionId(req))); } catch (error) { next(error); }
+  };
+
+  saveDraft = async (req: Request<{}, {}, SaveJournalDraftDto>, res: Response, next: NextFunction) => {
+    try { res.success(await journalService.saveDraft(userId(req), sessionId(req), req.body)); } catch (error) { next(error); }
+  };
+
+  deleteDraft = async (req: Request, res: Response, next: NextFunction) => {
+    try { res.success(await journalService.deleteDraft(userId(req), sessionId(req))); } catch (error) { next(error); }
   };
 }

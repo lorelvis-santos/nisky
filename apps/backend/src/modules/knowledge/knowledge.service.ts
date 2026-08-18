@@ -2,7 +2,7 @@ import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { buildPaginatedResponse, getPaginationArgs } from "../../utils/pagination/handler";
 import { getAccessibleProjectIds } from "../projects/access";
-import type { CreateNoteDto, NoteQueryDto, UpdateNoteDto } from "./knowledge.validator";
+import type { CreateNoteDto, NoteQueryDto, SaveNoteDraftDto, UpdateNoteDto } from "./knowledge.validator";
 
 function countByName(items: Array<{ name: string }>) {
   const counts = new Map<string, number>();
@@ -83,6 +83,53 @@ export class KnowledgeService {
   async delete(userId: string, id: string) {
     const result = await prisma.note.deleteMany({ where: { id, userId } });
     if (result.count !== 1) throw new AppError("NOT_FOUND", "Nota no encontrada");
+    return { success: true };
+  }
+
+  async getDraft(userId: string) {
+    const draft = await prisma.noteDraft.findUnique({ where: { userId } });
+    if (!draft) return null;
+    return {
+      title: draft.title,
+      content: draft.content,
+      category: draft.category,
+      tags: draft.tags,
+      pinned: draft.pinned,
+      projectId: draft.projectId,
+      updatedAt: draft.updatedAt,
+    };
+  }
+
+  async saveDraft(userId: string, data: SaveNoteDraftDto) {
+    if (data.projectId) {
+      const accessible = await getAccessibleProjectIds(userId);
+      if (!accessible.includes(data.projectId)) throw new AppError("FORBIDDEN", "No tienes acceso a este proyecto");
+    }
+    await prisma.noteDraft.upsert({
+      where: { userId },
+      create: {
+        userId,
+        title: data.title ?? "",
+        content: data.content ?? "",
+        category: data.category ?? null,
+        tags: data.tags ?? [],
+        pinned: data.pinned ?? false,
+        projectId: data.projectId ?? null,
+      },
+      update: {
+        ...(data.title !== undefined ? { title: data.title ?? "" } : {}),
+        ...(data.content !== undefined ? { content: data.content ?? "" } : {}),
+        ...(data.category !== undefined ? { category: data.category } : {}),
+        ...(data.tags !== undefined ? { tags: data.tags } : {}),
+        ...(data.pinned !== undefined ? { pinned: data.pinned ?? false } : {}),
+        ...(data.projectId !== undefined ? { projectId: data.projectId } : {}),
+      },
+    });
+    return { saved: true };
+  }
+
+  async deleteDraft(userId: string) {
+    await prisma.noteDraft.deleteMany({ where: { userId } });
     return { success: true };
   }
 

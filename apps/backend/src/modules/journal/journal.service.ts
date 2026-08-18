@@ -3,7 +3,7 @@ import { AppError } from "../../utils/errors/handler";
 import { decryptJournalContent, encryptJournalContent } from "../../utils/journal/crypto";
 import { getJournalKey } from "../../utils/journal/keyStore";
 import { buildPaginatedResponse, getPaginationArgs } from "../../utils/pagination/handler";
-import type { CreateJournalEntryDto, JournalQueryDto, UpdateJournalEntryDto } from "./journal.validator";
+import type { CreateJournalEntryDto, JournalQueryDto, SaveJournalDraftDto, UpdateJournalEntryDto } from "./journal.validator";
 
 function requireKey(sessionId: string | undefined, userId: string) {
   const key = sessionId ? getJournalKey(sessionId, userId) : undefined;
@@ -87,6 +87,49 @@ export class JournalService {
     requireKey(sessionId, userId);
     const result = await prisma.journalEntry.deleteMany({ where: { id, userId } });
     if (result.count !== 1) throw new AppError("NOT_FOUND", "Entrada no encontrada");
+  }
+
+  async getDraft(userId: string, sessionId: string | undefined) {
+    const key = requireKey(sessionId, userId);
+    const draft = await prisma.journalDraft.findUnique({ where: { userId } });
+    if (!draft) return null;
+    return {
+      title: draft.title,
+      classification: draft.classification,
+      tags: draft.tags,
+      updatedAt: draft.updatedAt,
+      content: decryptJournalContent(draft.contentCipher, draft.iv, draft.authTag, key),
+    };
+  }
+
+  async saveDraft(userId: string, sessionId: string | undefined, data: SaveJournalDraftDto) {
+    const key = requireKey(sessionId, userId);
+    const encrypted = encryptJournalContent(data.content ?? "", key);
+    await prisma.journalDraft.upsert({
+      where: { userId },
+      create: {
+        userId,
+        title: data.title ?? "",
+        contentCipher: encrypted.contentCipher,
+        iv: encrypted.iv,
+        authTag: encrypted.authTag,
+        classification: data.classification ?? null,
+        tags: data.tags ?? [],
+      },
+      update: {
+        ...(data.title !== undefined ? { title: data.title ?? "" } : {}),
+        ...(data.content !== undefined ? { contentCipher: encrypted.contentCipher, iv: encrypted.iv, authTag: encrypted.authTag } : {}),
+        ...(data.classification !== undefined ? { classification: data.classification } : {}),
+        ...(data.tags !== undefined ? { tags: data.tags } : {}),
+      },
+    });
+    return { saved: true };
+  }
+
+  async deleteDraft(userId: string, sessionId: string | undefined) {
+    requireKey(sessionId, userId);
+    await prisma.journalDraft.deleteMany({ where: { userId } });
+    return { success: true };
   }
 }
 

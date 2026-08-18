@@ -24,6 +24,13 @@ export const updateJournalEntrySchema = z.object({
   tags: tagsSchema,
 });
 
+export const saveJournalDraftSchema = z.object({
+  title: z.string().max(200).nullish(),
+  content: z.string().max(50_000).nullish(),
+  classification: classificationSchema.nullish(),
+  tags: tagsSchema,
+});
+
 export const journalQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -34,3 +41,4 @@ export const journalQuerySchema = z.object({
 export type CreateJournalEntryDto = z.infer<typeof createJournalEntrySchema>;
 export type UpdateJournalEntryDto = z.infer<typeof updateJournalEntrySchema>;
 export type JournalQueryDto = z.infer<typeof journalQuerySchema>;
+export type SaveJournalDraftDto = z.infer<typeof saveJournalDraftSchema>;

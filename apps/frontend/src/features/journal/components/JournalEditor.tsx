@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
-import type { JournalEntry } from "@/types/entities";
+import { useDraftAutosave } from "@/hooks/useDraftAutosave";
+import type { JournalDraft, JournalEntry } from "@/types/entities";
+import { deleteJournalDraft, fetchJournalDraft, saveJournalDraft, type JournalDraftPayload } from "../api/journal";
 import { journalEntrySchema, type JournalEntryForm } from "../schemas/journal.schema";
 
 function parseTags(value: string) {
@@ -34,6 +36,39 @@ export function JournalEditor({
   const [tagsText, setTagsText] = useState((entry?.tags ?? []).join(", "));
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [restoredAt, setRestoredAt] = useState<Date | null>(null);
+  const appliedRestoreRef = useRef(false);
+  const isNew = entry === null;
+
+  const draft = useDraftAutosave<JournalDraft, JournalDraftPayload>({
+    load: fetchJournalDraft,
+    save: saveJournalDraft,
+    clear: deleteJournalDraft,
+    isDirty: (payload) => Boolean(payload.title.trim() || payload.content.trim() || payload.classification?.trim() || payload.tags.length),
+  });
+
+  useEffect(() => {
+    if (!draft.restored) return;
+    appliedRestoreRef.current = true;
+    setForm({
+      title: draft.restored.title ?? "",
+      content: draft.restored.content ?? "",
+      classification: draft.restored.classification ?? undefined,
+      tags: draft.restored.tags ?? [],
+    });
+    setTagsText((draft.restored.tags ?? []).join(", "));
+    setRestoredAt(new Date(draft.restored.updatedAt));
+  }, [draft.restored]);
+
+  useEffect(() => {
+    if (!isNew) return;
+    if (appliedRestoreRef.current) {
+      appliedRestoreRef.current = false;
+      return;
+    }
+    draft.update({ title: form.title, content: form.content, classification: form.classification ?? null, tags: form.tags ?? [] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, tagsText, isNew]);
 
   const set = <K extends keyof JournalEntryForm>(key: K, value: JournalEntryForm[K]) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -46,8 +81,23 @@ export function JournalEditor({
     setError("");
     try {
       await onSave(result.data);
+      if (isNew) {
+        await draft.discard();
+        setRestoredAt(null);
+      }
     } catch {
       setError("Ups, no pudimos guardar tu entrada. Inténtalo de nuevo.");
+    }
+  };
+
+  const remove = async () => {
+    if (!onDelete) return;
+    try {
+      await onDelete();
+      await draft.discard();
+      setRestoredAt(null);
+    } catch {
+      setError("Ups, no pudimos borrar tu entrada. Inténtalo de nuevo.");
     }
   };
 
@@ -64,6 +114,24 @@ export function JournalEditor({
           <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">{entry ? "Editar entrada" : "Nueva entrada"}</h1>
         </div>
       </div>
+
+      {restoredAt && (
+        <p className="flex items-center justify-between gap-2 border border-outline-variant bg-surface-container-low px-3 py-2 font-body-sm text-body-sm text-on-surface-variant">
+          <span>Se restauró tu borrador de {restoredAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.</span>
+          <button
+            className="font-body-sm text-body-sm text-error hover:underline"
+            onClick={() => {
+              setForm({ title: "", content: "", classification: undefined, tags: [] });
+              setTagsText("");
+              setRestoredAt(null);
+              void draft.discard();
+            }}
+            type="button"
+          >
+            Descartar
+          </button>
+        </p>
+      )}
 
       <label className="block">
         <span className="font-label-caps text-label-caps text-on-surface-variant">TÍTULO</span>
@@ -99,13 +167,18 @@ export function JournalEditor({
                 setConfirmDelete(true);
                 return;
               }
-              void onDelete();
+              void remove();
             }}
             type="button"
           >
             {confirmDelete ? "¿Eliminar entrada?" : "Eliminar"}
           </button>
         ) : null}
+        {isNew && (
+          <span className="min-h-11 shrink-0 font-body-sm text-body-sm text-on-surface-variant">
+            {draft.state === "saving" ? "Guardando borrador..." : draft.state === "error" ? "Error al guardar el borrador" : draft.state === "saved" ? "Borrador guardado" : ""}
+          </span>
+        )}
         <button className="min-h-11 flex-1 bg-primary-container px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary sm:flex-none" onClick={() => void submit()} type="button">
           {entry ? "Guardar cambios" : "Guardar entrada"}
         </button>

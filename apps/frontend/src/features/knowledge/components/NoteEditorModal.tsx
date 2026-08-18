@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pin, X } from "lucide-react";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import { useDraftAutosave } from "@/hooks/useDraftAutosave";
 import { useAccessibleProjects } from "@/features/projects/hooks/useProjects";
-import type { Note } from "@/types/entities";
+import type { Note, NoteDraft } from "@/types/entities";
+import { deleteNoteDraft, fetchNoteDraft, saveNoteDraft, type NoteDraftPayload } from "../api/knowledge";
 import { noteFormSchema, type NoteForm } from "../schemas/knowledge.schema";
 
 function parseTags(value: string) {
@@ -38,10 +40,45 @@ export function NoteEditorModal({
   const [tagsText, setTagsText] = useState((note?.tags ?? []).join(", "));
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [restoredAt, setRestoredAt] = useState<Date | null>(null);
+  const appliedRestoreRef = useRef(false);
+  const isNew = note === null;
   const projectsQuery = useAccessibleProjects();
   const projects = projectsQuery.data ?? [];
 
   useModalScrollLock();
+
+  const draft = useDraftAutosave<NoteDraft, NoteDraftPayload>({
+    load: fetchNoteDraft,
+    save: saveNoteDraft,
+    clear: deleteNoteDraft,
+    isDirty: (payload) => Boolean(payload.title.trim() || payload.content.trim() || payload.category?.trim() || payload.tags.length || payload.pinned || payload.projectId),
+  });
+
+  useEffect(() => {
+    if (!draft.restored) return;
+    appliedRestoreRef.current = true;
+    setForm({
+      title: draft.restored.title ?? "",
+      content: draft.restored.content ?? "",
+      category: draft.restored.category ?? undefined,
+      tags: draft.restored.tags ?? [],
+      pinned: draft.restored.pinned ?? false,
+      projectId: draft.restored.projectId ?? undefined,
+    });
+    setTagsText((draft.restored.tags ?? []).join(", "));
+    setRestoredAt(new Date(draft.restored.updatedAt));
+  }, [draft.restored]);
+
+  useEffect(() => {
+    if (!isNew) return;
+    if (appliedRestoreRef.current) {
+      appliedRestoreRef.current = false;
+      return;
+    }
+    draft.update({ title: form.title, content: form.content, category: form.category ?? null, tags: form.tags ?? [], pinned: form.pinned, projectId: form.projectId ?? null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, tagsText, isNew]);
 
   const set = <K extends keyof NoteForm>(key: K, value: NoteForm[K]) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -54,6 +91,10 @@ export function NoteEditorModal({
     setError("");
     try {
       await onSave(result.data);
+      if (isNew) {
+        await draft.discard();
+        setRestoredAt(null);
+      }
     } catch {
       setError("Ups, no pudimos guardar tu nota. Inténtalo de nuevo.");
     }
@@ -63,6 +104,8 @@ export function NoteEditorModal({
     if (!onDelete) return;
     try {
       await onDelete();
+      await draft.discard();
+      setRestoredAt(null);
     } catch {
       setError("Ups, no pudimos borrar tu nota. Inténtalo de nuevo.");
     }
@@ -76,6 +119,23 @@ export function NoteEditorModal({
           <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button"><X size={19} /></button>
         </div>
         <div className="space-y-4 overflow-y-auto p-5" data-modal-scroll>
+          {restoredAt && (
+            <p className="flex items-center justify-between gap-2 border border-outline-variant bg-surface-container-low px-3 py-2 font-body-sm text-body-sm text-on-surface-variant">
+              <span>Se restauró tu borrador de {restoredAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.</span>
+              <button
+                className="font-body-sm text-body-sm text-error hover:underline"
+                onClick={() => {
+                  setForm({ title: "", content: "", category: undefined, tags: [], pinned: false, projectId: undefined });
+                  setTagsText("");
+                  setRestoredAt(null);
+                  void draft.discard();
+                }}
+                type="button"
+              >
+                Descartar
+              </button>
+            </p>
+          )}
           <label className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">TÍTULO</span>
             <input autoFocus className="field mt-1" maxLength={200} onChange={(event) => set("title", event.target.value)} value={form.title} />
@@ -141,6 +201,9 @@ export function NoteEditorModal({
             </button>
           ) : <span />}
           <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+            <span className="mr-auto self-center whitespace-nowrap font-body-sm text-body-sm text-on-surface-variant">
+              {isNew && (draft.state === "saving" ? "Guardando borrador..." : draft.state === "error" ? "Error al guardar el borrador" : draft.state === "saved" ? "Borrador guardado" : "")}
+            </span>
             <button className="whitespace-nowrap border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={onClose} type="button">Cancelar</button>
             <button className="whitespace-nowrap bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={() => void submit()} type="button">
               {note ? "Guardar cambios" : "Crear nota"}

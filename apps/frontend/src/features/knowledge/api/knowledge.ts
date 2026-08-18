@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import type { ApiResponse } from "@/types/api.types";
-import type { KnowledgeFacets, Note, Paginated } from "@/types/entities";
+import type { KnowledgeFacets, Note, NoteDraft, Paginated } from "@/types/entities";
 
 export interface NoteQueryParams {
   page?: number;
@@ -18,6 +18,15 @@ export interface NotePayload {
   tags?: string[];
   pinned?: boolean;
   projectId?: string;
+}
+
+export interface NoteDraftPayload {
+  title?: string;
+  content?: string;
+  category?: string | null;
+  tags?: string[];
+  pinned?: boolean;
+  projectId?: string | null;
 }
 
 export async function fetchNotes(params: NoteQueryParams) {
@@ -42,4 +51,17 @@ export async function updateNote(id: string, payload: Partial<NotePayload>) {
 
 export async function deleteNote(id: string) {
   await api.delete(`/knowledge/${id}`);
+}
+
+export async function fetchNoteDraft() {
+  const { data } = await api.get<ApiResponse<NoteDraft | null>>("/knowledge/draft");
+  return data.data;
+}
+
+export async function saveNoteDraft(payload: NoteDraftPayload) {
+  await api.put("/knowledge/draft", payload);
+}
+
+export async function deleteNoteDraft() {
+  await api.delete("/knowledge/draft");
 }

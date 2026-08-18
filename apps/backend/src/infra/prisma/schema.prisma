@@ -39,7 +39,9 @@ model User {
   timeBlockSettings TimeBlockSettings?
   journalSalt    Bytes?
   journalEntries JournalEntry[]
+  journalDraft   JournalDraft?
   notes          Note[]
+  noteDraft      NoteDraft?
   comments       Comment[]
   pushSubscriptions PushSubscription[]
   reminders      Reminder[]
@@ -460,6 +462,18 @@ model JournalEntry {
   @@index([userId, createdAt])
 }
 
+model JournalDraft {
+  userId         String   @id
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String   @default("")
+  contentCipher  Bytes
+  iv             Bytes
+  authTag        Bytes
+  classification String?
+  tags           String[]
+  updatedAt      DateTime @updatedAt
+}
+
 model Note {
   id        String    @id @default(uuid())
   userId    String
@@ -477,6 +491,18 @@ model Note {
   @@index([userId, createdAt])
   @@index([userId, category])
   @@index([projectId])
+}
+
+model NoteDraft {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("")
+  content   String   @default("")
+  category  String?
+  tags      String[]
+  pinned    Boolean  @default(false)
+  projectId String?
+  updatedAt DateTime @updatedAt
 }
 
 model Comment {

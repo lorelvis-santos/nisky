@@ -329,6 +329,14 @@ export interface JournalEntry {
   updatedAt: string;
 }
 
+export interface JournalDraft {
+  title: string;
+  classification: string | null;
+  tags: string[];
+  content: string;
+  updatedAt: string;
+}
+
 export interface Note {
   id: string;
   userId: string;
@@ -339,6 +347,16 @@ export interface Note {
   pinned: boolean;
   projectId: string | null;
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface NoteDraft {
+  title: string;
+  content: string;
+  category: string | null;
+  tags: string[];
+  pinned: boolean;
+  projectId: string | null;
   updatedAt: string;
 }
 

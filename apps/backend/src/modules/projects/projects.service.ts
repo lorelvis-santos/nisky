@@ -250,6 +250,41 @@ export class ProjectService {
     });
   }
 
+  async listProjectInvitations(userId: string, projectId: string) {
+    await assertProjectAccess(userId, projectId);
+    const invitations = await prisma.projectInvitation.findMany({
+      where: { projectId, status: "PENDING" },
+      include: {
+        invitedBy: { select: { id: true, email: true, name: true, username: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    const inviteeEmails = [...new Set(invitations.map((invitation) => invitation.email))];
+    const invitees = await prisma.user.findMany({
+      where: { email: { in: inviteeEmails } },
+      select: { id: true, email: true, name: true, username: true, avatarUrl: true },
+    });
+    const inviteeByEmail = new Map(invitees.map((invitee) => [invitee.email, invitee]));
+    return invitations.map((invitation) => ({
+      id: invitation.id,
+      projectId: invitation.projectId,
+      email: invitation.email,
+      status: invitation.status,
+      createdAt: invitation.createdAt,
+      invitedBy: invitation.invitedBy,
+      invitee: inviteeByEmail.get(invitation.email) ?? null,
+    }));
+  }
+
+  async cancelInvitation(userId: string, invitationId: string) {
+    const invitation = await prisma.projectInvitation.findUnique({ where: { id: invitationId } });
+    if (!invitation) throw new AppError("NOT_FOUND", "Invitación no encontrada");
+    await assertProjectOwner(userId, invitation.projectId);
+    await prisma.projectInvitation.delete({ where: { id: invitationId } });
+    emitToUsers([...(await getProjectAudience(invitation.projectId))], "projects", { kind: "invitation_cancelled", projectId: invitation.projectId });
+    return { success: true };
+  }
+
   async acceptInvitation(userId: string, invitationId: string) {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, username: true } });
     if (!user) throw new AppError("NOT_FOUND", "Usuario no encontrado");

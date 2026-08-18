@@ -64,6 +64,16 @@ export async function getPendingInvitations() {
   return data.data;
 }
 
+export async function getProjectInvitations(projectId: string) {
+  const { data } = await api.get<{ data: ProjectInvitation[] }>(`/projects/${projectId}/invitations`);
+  return data.data;
+}
+
+export async function cancelInvitation(invitationId: string) {
+  const { data } = await api.delete<{ data: { success: boolean } }>(`/projects/invitations/${invitationId}`);
+  return data.data;
+}
+
 export async function acceptInvitation(invitationId: string) {
   const { data } = await api.post<{ data: { success: boolean } }>(`/projects/invitations/${invitationId}/accept`);
   return data.data;

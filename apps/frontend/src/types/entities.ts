@@ -66,6 +66,7 @@ export interface ProjectInvitation {
   email: string;
   status: "PENDING" | "ACCEPTED" | "DECLINED";
   createdAt: string;
+  invitee?: { id: string; email: string; name: string | null; username: string | null; avatarUrl: string | null } | null;
 }
 
 export interface TimeBlock {

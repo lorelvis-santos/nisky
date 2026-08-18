@@ -58,6 +58,14 @@ export class ProjectController {
     try { res.success(await projectService.listPendingInvitations(userId(req))); } catch (error) { next(error); }
   };
 
+  listProjectInvitations = async (req: Request<ProjectIdParams>, res: Response, next: NextFunction) => {
+    try { res.success(await projectService.listProjectInvitations(userId(req), req.params.projectId)); } catch (error) { next(error); }
+  };
+
+  cancelInvitation = async (req: Request<InvitationIdParams>, res: Response, next: NextFunction) => {
+    try { res.success(await projectService.cancelInvitation(userId(req), req.params.invitationId)); } catch (error) { next(error); }
+  };
+
   acceptInvitation = async (req: Request<InvitationIdParams>, res: Response, next: NextFunction) => {
     try { res.success(await projectService.acceptInvitation(userId(req), req.params.invitationId)); } catch (error) { next(error); }
   };

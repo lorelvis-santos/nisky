@@ -1,6 +1,6 @@
 "use client";
 
-import { AtSign, LogOut, Mail, ShieldCheck, UserMinus } from "lucide-react";
+import { AtSign, LogOut, Mail, ShieldCheck, UserMinus, UserRoundPlus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthProvider";
 import { cn } from "@/lib/utils";
 import type { Project } from "@/types/entities";
-import { useLeaveProjectMutation, useProjectMemberMutations, useProjectMembers } from "../hooks/useProjects";
+import { useLeaveProjectMutation, useProjectInvitations, useProjectMemberMutations, useProjectMembers } from "../hooks/useProjects";
 
 function MembersSkeleton() {
   return (
@@ -31,16 +31,20 @@ export function MembersPanel({ project }: { project: Project }) {
   const { user } = useAuth();
   const router = useRouter();
   const membersQuery = useProjectMembers(project.id);
+  const invitationsQuery = useProjectInvitations(project.id);
   const mutations = useProjectMemberMutations(project.id);
   const leaveMutation = useLeaveProjectMutation();
   const [email, setEmail] = useState("");
   const [confirmTransferId, setConfirmTransferId] = useState<string | null>(null);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [confirmCancelInvitationId, setConfirmCancelInvitationId] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const isOwner = user?.id === project.userId;
   const members = membersQuery.data ?? [];
+  const pendingInvitations = invitationsQuery.data ?? [];
   const transferTarget = members.find((member) => member.id === confirmTransferId) ?? null;
   const removeTarget = members.find((member) => member.id === confirmRemoveId) ?? null;
+  const cancelTarget = pendingInvitations.find((invitation) => invitation.id === confirmCancelInvitationId) ?? null;
 
   const invite = async () => {
     const trimmed = email.trim();
@@ -71,6 +75,16 @@ export function MembersPanel({ project }: { project: Project }) {
       toast.success("¡Se transfirió la propiedad del proyecto!");
     } catch {
       toast.error("Ups, no pudimos cambiar el rol.");
+    }
+  };
+
+  const cancelPendingInvitation = async (invitationId: string) => {
+    try {
+      await mutations.cancel.mutateAsync(invitationId);
+      setConfirmCancelInvitationId(null);
+      toast.success("Invitación cancelada");
+    } catch {
+      toast.error("Ups, no pudimos cancelar la invitación.");
     }
   };
 
@@ -159,6 +173,49 @@ export function MembersPanel({ project }: { project: Project }) {
         </div>
       )}
 
+      {isOwner && pendingInvitations.length > 0 && (
+        <div className="pt-1">
+          <p className="flex items-center gap-1.5 py-1 font-label-caps text-label-caps text-on-surface-variant">
+            <UserRoundPlus size={13} />
+            INVITACIONES PENDIENTES ({pendingInvitations.length})
+          </p>
+          <div className="divide-y divide-outline-variant">
+            {pendingInvitations.map((invitation) => (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-2 py-2.5 -mx-2 hover:bg-surface-container-low" key={invitation.id}>
+                <Avatar
+                  avatarUrl={invitation.invitee?.avatarUrl ?? null}
+                  email={invitation.email}
+                  name={invitation.invitee?.name ?? null}
+                  size="md"
+                />
+                <span className="min-w-0 flex-1 basis-40">
+                  <span className="block truncate font-body-sm text-body-sm text-on-surface">
+                    {invitation.invitee?.name ?? invitation.email}
+                    {invitation.invitee?.username && (
+                      <span className="ml-1 font-data-mono text-data-mono text-xs text-on-surface-variant">@{invitation.invitee.username}</span>
+                    )}
+                  </span>
+                  <span className="block truncate font-data-mono text-data-mono text-[11px] text-on-surface-variant">{invitation.email}</span>
+                </span>
+                <span className="inline-flex shrink-0 items-center rounded-[2px] border border-outline-variant bg-surface-container-high px-1.5 py-0.5 font-label-caps text-[11px] uppercase tracking-wide text-on-surface-variant">
+                  Pendiente
+                </span>
+                <button
+                  aria-label={`Cancelar invitación a ${invitation.invitee?.name ?? invitation.email}`}
+                  className="flex h-9 items-center gap-1.5 border border-outline-variant px-2.5 font-body-sm text-body-sm text-on-surface-variant hover:border-error/50 hover:bg-surface-container-high hover:text-error"
+                  onClick={() => setConfirmCancelInvitationId(invitation.id)}
+                  title="Cancelar invitación"
+                  type="button"
+                >
+                  <X size={15} />
+                  <span className="hidden sm:inline">Cancelar</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {isOwner && (
         <div className="flex gap-2 pt-1">
           <div className="relative min-w-0 flex-1">
@@ -242,6 +299,22 @@ export function MembersPanel({ project }: { project: Project }) {
           onClose={() => setConfirmTransferId(null)}
           onConfirm={() => void makeOwner(transferTarget.id)}
           title="¿Transferir propiedad?"
+        />
+      )}
+
+      {confirmCancelInvitationId && cancelTarget && (
+        <ConfirmModal
+          confirmLabel="Cancelar invitación"
+          danger
+          loading={mutations.cancel.isPending}
+          message={
+            <>
+              ¿Cancelar la invitación a <strong>{cancelTarget.invitee?.name ?? cancelTarget.email}</strong> para <strong>{project.name}</strong>? Podrás volver a invitarlo en cualquier momento.
+            </>
+          }
+          onClose={() => setConfirmCancelInvitationId(null)}
+          onConfirm={() => void cancelPendingInvitation(cancelTarget.id)}
+          title="¿Cancelar invitación?"
         />
       )}
     </div>

@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   acceptInvitation,
+  cancelInvitation,
   createProject,
   declineInvitation,
   deleteProject,
   getAccessibleProjects,
   getPendingInvitations,
   getProject,
+  getProjectInvitations,
   getProjectMembers,
   getProjects,
   inviteProjectMember,
@@ -47,6 +49,14 @@ export function useProjectMembers(projectId: string | null) {
   });
 }
 
+export function useProjectInvitations(projectId: string | null) {
+  return useQuery({
+    queryKey: ["projects", projectId, "invitations"],
+    queryFn: () => getProjectInvitations(projectId as string),
+    enabled: Boolean(projectId),
+  });
+}
+
 export function usePendingInvitations() {
   return useQuery({
     queryKey: ["invitations", "pending"],
@@ -59,11 +69,13 @@ export function useProjectMemberMutations(projectId: string) {
   const client = useQueryClient();
   const invalidate = async () => {
     await client.invalidateQueries({ queryKey: ["projects", projectId, "members"] });
+    await client.invalidateQueries({ queryKey: ["projects", projectId, "invitations"] });
+    await client.invalidateQueries({ queryKey: ["invitations", "pending"] });
     await client.invalidateQueries({ queryKey: ["projects"] });
     await client.invalidateQueries({ queryKey: ["tasks"] });
   };
   const invite = useMutation({
-    mutationFn: (email: string) => inviteProjectMember(projectId, email),
+    mutationFn: (identifier: string) => inviteProjectMember(projectId, identifier),
     onSuccess: invalidate,
   });
   const remove = useMutation({
@@ -74,7 +86,11 @@ export function useProjectMemberMutations(projectId: string) {
     mutationFn: ({ memberId, role }: { memberId: string; role: ProjectRole }) => updateProjectMemberRole(projectId, memberId, role),
     onSuccess: invalidate,
   });
-  return { invite, remove, updateRole };
+  const cancel = useMutation({
+    mutationFn: cancelInvitation,
+    onSuccess: invalidate,
+  });
+  return { invite, remove, updateRole, cancel };
 }
 
 export function useInvitationMutations() {

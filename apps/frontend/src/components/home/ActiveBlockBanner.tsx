@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { localDateKey } from "@/lib/utils";
 import { PriorityChip } from "@/features/tasks/components/PriorityChip";
 import { minToTime } from "@/features/timeblocks/lib/time";
-import type { Task, TimeBlockWithProject } from "@/types/entities";
+import type { CalendarEvent, Task, TimeBlockWithProject } from "@/types/entities";
 
 function formatDuration(minutes: number) {
   const hours = Math.floor(minutes / 60);
@@ -53,6 +53,7 @@ export function ActiveBlockBanner({
   nextBlock,
   nextBlockStart,
   tasks,
+  activeEvent,
   onPlayPomodoro,
   onToggleTask,
 }: {
@@ -60,11 +61,23 @@ export function ActiveBlockBanner({
   nextBlock: TimeBlockWithProject | null;
   nextBlockStart: string | null;
   tasks: Task[];
+  activeEvent: CalendarEvent | null;
   onPlayPomodoro: (taskId?: string, projectId?: string) => void;
   onToggleTask: (task: Task) => void;
 }) {
   const nowMin = useNowMinutes();
   const nowTimestamp = useNowTimestamp();
+
+  const eventRow = activeEvent ? (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: activeEvent.color ?? "#303e51" }} />
+      <p className="truncate font-headline-xs text-headline-xs font-semibold">{activeEvent.title}</p>
+      <p className="shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant">
+        {activeEvent.allDay ? "Todo el día" : `${minToTime(activeEvent.startMin ?? 0)}–${minToTime(activeEvent.endMin ?? 0)}`}
+      </p>
+      {activeEvent.location && <p className="truncate font-body-sm text-body-sm text-on-surface-variant">{activeEvent.location}</p>}
+    </div>
+  ) : null;
 
   if (!block) {
     if (nextBlock && nextBlockStart) {
@@ -78,8 +91,10 @@ export function ActiveBlockBanner({
       const label = nextBlock.project?.name ?? nextBlock.name ?? "Bloque de enfoque";
       const color = nextBlock.project?.color ?? "#303e51";
       return (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4">
-          <div className="flex min-w-0 items-center gap-2">
+        <div className="flex flex-col gap-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4">
+          {eventRow}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex min-w-0 items-center gap-2">
             <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
             <p className="truncate font-headline-xs text-headline-xs font-bold" style={{ color }}>
               {label}
@@ -105,16 +120,19 @@ export function ActiveBlockBanner({
             </button>
           </div>
         </div>
-      );
+      </div>
+    );
     }
     return (
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4">
-        <div className="flex min-w-0 items-center gap-2">
-          <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full bg-outline-variant" />
-          <p className="truncate font-headline-xs text-headline-xs font-bold text-on-surface-variant">
-            Sin bloque activo ahora
-          </p>
-        </div>
+      <div className="flex flex-col gap-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4">
+        {eventRow}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full bg-outline-variant" />
+            <p className="truncate font-headline-xs text-headline-xs font-bold text-on-surface-variant">
+              Sin bloque activo ahora
+            </p>
+          </div>
         <div className="ml-auto flex items-center gap-3">
           <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
             VER HORARIO
@@ -129,6 +147,7 @@ export function ActiveBlockBanner({
           >
             <Play size={15} /> Comenzar enfoque
           </button>
+        </div>
         </div>
       </div>
     );
@@ -150,6 +169,7 @@ const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
       className="flex flex-col gap-2 border border-outline-variant bg-surface-container-lowest px-container-padding py-3 sm:px-4"
       style={{ borderTop: `3px solid ${color}` }}
     >
+      {eventRow && <div className="border-b border-outline-variant pb-2">{eventRow}</div>}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-outline-variant pb-2">
         <div className="flex min-w-0 items-center gap-2">
           <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />

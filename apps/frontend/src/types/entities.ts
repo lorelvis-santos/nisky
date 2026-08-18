@@ -396,6 +396,7 @@ export interface HomeWeeklyStats {
 
 export interface HomeOverview {
   activeBlock: TimeBlockWithProject | null;
+  activeEvent: CalendarEvent | null;
   blockTasks: Task[];
   urgentTasks: Task[];
   futureTasks: (Task & { project: Project | null })[];

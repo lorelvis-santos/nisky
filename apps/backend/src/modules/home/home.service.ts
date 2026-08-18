@@ -5,6 +5,7 @@ import { computeStreak, dateKey, localDateKey } from "../habits/habit-stats";
 import { timeBlockService } from "../timeblocks/timeblocks.service";
 import { blockOccurrenceOn } from "../timeblocks/timeblocks.util";
 import type { TimeBlockExceptionRow } from "../timeblocks/timeblocks.util";
+import { eventOccurrenceOn } from "../events/events.util";
 
 const TZ = "America/Santo_Domingo";
 
@@ -91,6 +92,21 @@ export class HomeService {
     const occurrence = nextBlockOccurrence(allBlocks, exceptions as TimeBlockExceptionRow[], now);
     const nextBlock = occurrence ? allBlocks.find((block) => block.id === occurrence.block.id) ?? null : null;
     const nextBlockStart = occurrence?.start ?? null;
+
+    const activeEvent = await prisma.calendarEvent
+      .findMany({ where: { userId }, include: { exceptions: true } })
+      .then((events) =>
+        events
+          .map((event) => {
+            const occ = eventOccurrenceOn(event, now.toJSDate(), event.exceptions);
+            if (!occ.occurs) return null;
+            if (event.allDay) return { ...event, startMin: null, endMin: null };
+            if (occ.startMin == null || occ.endMin == null) return null;
+            if (occ.startMin > currentMin || occ.endMin <= currentMin) return null;
+            return { ...event, startMin: occ.startMin, endMin: occ.endMin };
+          })
+          .find((event): event is NonNullable<typeof event> => event !== null) ?? null,
+      );
 
     const blockTasks = activeBlock?.projectId
       ? await prisma.task.findMany({
@@ -191,6 +207,7 @@ export class HomeService {
 
     return {
       activeBlock,
+      activeEvent,
       blockTasks,
       urgentTasks,
       futureTasks,

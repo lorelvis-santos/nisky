@@ -61,6 +61,7 @@ export default function DashboardPage() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 p-container-padding pb-20 sm:px-section-gap">
           <ActiveBlockBanner
+            activeEvent={overview?.activeEvent ?? null}
             block={activeBlock}
             nextBlock={overview?.nextBlock ?? null}
             nextBlockStart={overview?.nextBlockStart ?? null}

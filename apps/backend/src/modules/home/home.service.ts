@@ -39,7 +39,9 @@ type BlockCandidate = {
   createdAt: Date;
 };
 
-function nextBlockOccurrence(blocks: Array<BlockCandidate & { project?: unknown }>, exceptions: TimeBlockExceptionRow[], now: DateTime) {
+type TimeBlockWithProject = BlockCandidate & { project?: unknown };
+
+function nextBlockOccurrence(blocks: TimeBlockWithProject[], exceptions: TimeBlockExceptionRow[], now: DateTime) {
   let best: BlockCandidate | null = null;
   let bestDay: DateTime | null = null;
   for (let offset = 0; offset < 30; offset += 1) {
@@ -127,14 +129,19 @@ export class HomeService {
       include: taskInclude,
     });
 
-    const futureBlocks = await prisma.timeBlock.findMany({
-      where: {
-        userId,
-        isActive: true,
-        daysOfWeek: { hasSome: [toDowIndex(tomorrow), toDowIndex(dayAfter)] },
-      },
-      orderBy: [{ startMin: "asc" }, { createdAt: "asc" }],
-      include: { project: true },
+    const futureBlocks = allBlocks.flatMap((block) => {
+      const occurrences: Array<TimeBlockWithProject & { date: string }> = [];
+      for (const day of [tomorrow, dayAfter]) {
+        const occ = blockOccurrenceOn(block, day.toJSDate(), exceptions as TimeBlockExceptionRow[], TZ);
+        if (!occ.occurs) continue;
+        occurrences.push({
+          ...block,
+          date: day.toISODate()!,
+          startMin: occ.startMin,
+          endMin: occ.endMin,
+        });
+      }
+      return occurrences;
     });
 
     const [workSessions, completedTasks, dueTasks] = await Promise.all([

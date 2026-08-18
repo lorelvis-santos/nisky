@@ -399,7 +399,7 @@ export interface HomeOverview {
   blockTasks: Task[];
   urgentTasks: Task[];
   futureTasks: (Task & { project: Project | null })[];
-  futureBlocks: TimeBlockWithProject[];
+  futureBlocks: (TimeBlockWithProject & { date?: string })[];
   nextBlock: TimeBlockWithProject | null;
   nextBlockStart: string | null;
   weekly: HomeWeeklyStats;

@@ -24,17 +24,24 @@ function notifiedToday(value: Date | null) {
 export async function processTimeBlockNotifications() {
   const nowMin = nowMinutes();
   const dayOfWeekNow = dayOfWeek();
+  const todayStart = DateTime.now().setZone(TIME_BLOCKS_TZ).startOf("day").toJSDate();
 
-  const dayBlocks = await prisma.timeBlock.findMany({
-    where: {
-      isActive: true,
-      daysOfWeek: { has: dayOfWeekNow },
-      endMin: { gt: nowMin },
-    },
-    include: { project: true, user: true },
+  const [dayBlocks, exceptions] = await Promise.all([
+    prisma.timeBlock.findMany({
+      where: {
+        isActive: true,
+        daysOfWeek: { has: dayOfWeekNow },
+      },
+      include: { project: true, user: true },
+    }),
+    prisma.timeBlockException.findMany({ where: { date: { gte: todayStart } } }),
+  ]);
+
+  const dueBlocks = dayBlocks.flatMap((block) => {
+    const occ = blockOccurrenceOn(block, new Date(), exceptions);
+    if (!occ.occurs || occ.endMin <= nowMin) return [];
+    return [{ ...block, startMin: occ.startMin, endMin: occ.endMin }];
   });
-
-  const dueBlocks = dayBlocks.filter((block) => blockOccurrenceOn(block, new Date()).occurs);
 
   const userIds = [...new Set(dueBlocks.map((block) => block.userId))];
   const settingsByUser = new Map<string, { timeBlockReminders: boolean }>();

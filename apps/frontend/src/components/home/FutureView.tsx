@@ -5,6 +5,8 @@ import { localDateKey } from "@/lib/utils";
 import { minToTime } from "@/features/timeblocks/lib/time";
 import type { Project, Task, TimeBlockWithProject } from "@/types/entities";
 
+type FutureBlock = TimeBlockWithProject & { date?: string };
+
 function dayLabel(offsetDays: number) {
   const date = new Date();
   date.setDate(date.getDate() + offsetDays);
@@ -22,7 +24,7 @@ export function FutureView({
   blocks,
 }: {
   tasks: (Task & { project: Project | null })[];
-  blocks: TimeBlockWithProject[];
+  blocks: FutureBlock[];
 }) {
   const tomorrowKey = futureDayKey(1);
   const dayAfterKey = futureDayKey(2);
@@ -43,7 +45,9 @@ export function FutureView({
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {days.map((day) => {
           const dayTasks = tasks.filter((task) => task.dueDate && localDateKey(task.dueDate) === day.key).slice(0, 3);
-          const dayBlocks = blocks.filter((block) => block.daysOfWeek.includes(new Date(`${day.key}T12:00:00.000Z`).getDay()));
+          const dayBlocks = blocks
+            .filter((block) => (block.date ? block.date === day.key : block.daysOfWeek.includes(new Date(`${day.key}T12:00:00.000Z`).getDay())))
+            .sort((a, b) => a.startMin - b.startMin);
           return (
             <div className="border border-outline-variant bg-surface" key={day.key}>
               <p className="border-b border-outline-variant bg-surface-bright px-3 py-2 font-label-caps text-label-caps uppercase text-on-surface-variant">

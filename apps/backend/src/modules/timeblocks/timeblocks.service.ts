@@ -41,27 +41,41 @@ export class TimeBlockService {
 
   async activeNow(userId: string) {
     const now = new Date();
-    const candidates = await prisma.timeBlock.findMany({
-      where: {
-        userId,
-        isActive: true,
-        daysOfWeek: { has: dayOfWeek(now) },
-        startMin: { lte: nowMinutes(now) },
-        endMin: { gt: nowMinutes(now) },
-      },
-      include: { project: true },
-    });
-    return candidates.find((block) => blockOccurrenceOn(block, now).occurs) ?? null;
+    const todayStart = DateTime.now().setZone(TIME_BLOCKS_TZ).startOf("day").toJSDate();
+    const [candidates, exceptions] = await Promise.all([
+      prisma.timeBlock.findMany({
+        where: { userId, isActive: true },
+        include: { project: true },
+      }),
+      prisma.timeBlockException.findMany({ where: { userId, date: { gte: todayStart } } }),
+    ]);
+    const nowMin = nowMinutes(now);
+    return (
+      candidates.find((block) => {
+        const occ = blockOccurrenceOn(block, now, exceptions);
+        if (!occ.occurs) return false;
+        return occ.startMin <= nowMin && occ.endMin > nowMin;
+      }) ?? null
+    );
   }
 
   async today(userId: string) {
     const now = new Date();
-    const candidates = await prisma.timeBlock.findMany({
-      where: { userId, daysOfWeek: { has: dayOfWeek(now) } },
-      include: { project: true },
-    });
+    const todayStart = DateTime.now().setZone(TIME_BLOCKS_TZ).startOf("day").toJSDate();
+    const [candidates, exceptions] = await Promise.all([
+      prisma.timeBlock.findMany({
+        where: { userId },
+        include: { project: true },
+      }),
+      prisma.timeBlockException.findMany({ where: { userId, date: { gte: todayStart } } }),
+    ]);
     return candidates
-      .filter((block) => blockOccurrenceOn(block, now).occurs)
+      .map((block) => {
+        const occ = blockOccurrenceOn(block, now, exceptions);
+        if (!occ.occurs) return null;
+        return { ...block, startMin: occ.startMin, endMin: occ.endMin };
+      })
+      .filter((block): block is NonNullable<typeof block> => block !== null)
       .sort((a, b) => a.startMin - b.startMin || a.createdAt.getTime() - b.createdAt.getTime());
   }
 

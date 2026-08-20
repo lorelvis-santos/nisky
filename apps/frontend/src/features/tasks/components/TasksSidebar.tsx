@@ -31,7 +31,7 @@ function Section({ title, count, color, children, defaultOpen = true }: SectionP
   return (
     <div className="border-b border-outline-variant">
       <button
-        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
+        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
         onClick={() => setOpen(!open)}
         type="button"
       >
@@ -44,7 +44,7 @@ function Section({ title, count, color, children, defaultOpen = true }: SectionP
         </span>
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
       </button>
-      {open && <div className="px-3 pb-2">{children}</div>}
+      {open && <div className="px-2.5 pb-2.5">{children}</div>}
     </div>
   );
 }
@@ -60,15 +60,21 @@ function TaskItem({
 }) {
   const priorityColors: Record<Task["priority"], string> = {
     URGENT: "bg-error text-error-foreground",
-    HIGH: "bg-tertiary-container text-tertiary",
+    HIGH: "bg-tertiary-container text-on-tertiary",
     NORMAL: "bg-surface-container-high text-on-surface-variant",
     LOW: "bg-outline-variant text-on-surface-variant",
+  };
+  const priorityLabels: Record<Task["priority"], string> = {
+    URGENT: "Urgente",
+    HIGH: "Alta",
+    NORMAL: "Normal",
+    LOW: "Baja",
   };
   const projectColor = task.project?.color ?? "#666";
 
   return (
     <button
-      className="group flex w-full items-center gap-2 rounded px-2 py-2 text-left transition-colors hover:bg-surface-container-low"
+      className="group flex w-full items-center gap-2.5 rounded px-2.5 py-2.5 text-left transition-colors hover:bg-surface-container-low"
       onClick={onClick}
       type="button"
     >
@@ -86,9 +92,9 @@ function TaskItem({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-body-sm text-body-sm text-on-surface">{task.title}</span>
-        <span className="mt-0.5 flex items-center gap-1.5">
-          <span className={cn("rounded px-1.5 py-0.5 font-data-mono text-[10px]", priorityColors[task.priority])}>
-            {task.priority}
+        <span className="mt-1 flex items-center gap-1.5">
+          <span className={cn("rounded px-1.5 py-0.5 font-label-caps text-[11px]", priorityColors[task.priority])}>
+            {priorityLabels[task.priority]}
           </span>
           {task.project && (
             <span
@@ -136,10 +142,10 @@ function TasksSidebarContent({
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <div className="flex shrink-0 items-center justify-between border-b border-outline-variant p-3">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-outline-variant p-3.5">
         <h2 className="font-headline-xs text-headline-xs">Tareas de hoy</h2>
         <button
-          className="flex items-center gap-1.5 bg-primary-container px-3 py-1.5 font-body-sm text-body-sm text-on-primary hover:bg-primary"
+          className="flex items-center gap-1.5 bg-primary-container px-3.5 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
           onClick={onOpenCreate}
           type="button"
         >

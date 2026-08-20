@@ -10,7 +10,7 @@ const labels: Record<TaskPriority, string> = {
 export function PriorityChip({ priority }: { priority: TaskPriority }) {
   const styles: Record<TaskPriority, string> = {
     URGENT: "border-error bg-error-container text-on-error-container",
-    HIGH: "border-tertiary-fixed-dim bg-tertiary-fixed text-on-tertiary-fixed",
+    HIGH: "border-tertiary-fixed-dim bg-tertiary-container text-on-tertiary",
     NORMAL:
       "border-secondary-container bg-secondary-container text-on-secondary-container",
     LOW: "border-outline-variant bg-surface-container-high text-on-surface-variant",

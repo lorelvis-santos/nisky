@@ -6,6 +6,7 @@ import { hasSkippedLogToday, recordNotificationLog } from "../modules/push/notif
 import { getProjectAudience } from "../modules/projects/access";
 import { emitToUsers } from "../config/socket.emit";
 import { scheduleInTimezone } from "../utils/cron-timezone";
+import { blockOccurrenceOn, nowMinutes } from "../modules/timeblocks/timeblocks.util";
 
 const TZ = "America/Santo_Domingo";
 
@@ -138,26 +139,37 @@ async function sendMorningDigest() {
     try {
       const settings = await defaultNotificationSettings(userId);
       if (!settings.morningDigest) continue;
-      const [dueToday, overdue, firstBlock] = await Promise.all([
+      const [dueToday, overdue, blocks] = await Promise.all([
         prisma.task.count({
           where: { userId, status: "PENDING", archivedAt: null, dueDate: { gte: toUtc(today), lt: toUtc(tomorrow) } },
         }),
         prisma.task.count({
           where: { userId, status: "PENDING", archivedAt: null, dueDate: { lt: toUtc(today), gt: toUtc(yesterday) } },
         }),
-        prisma.timeBlock.findFirst({
-          where: { userId, isActive: true, daysOfWeek: { has: nowInTz().weekday % 7 }, startMin: { gte: nowInTz().hour * 60 + nowInTz().minute } },
-          orderBy: { startMin: "asc" },
-          include: { project: true },
+        prisma.timeBlock.findMany({
+          where: { userId, isActive: true },
+          include: {
+            project: true,
+            exceptions: { where: { date: { gte: toUtc(today), lt: toUtc(tomorrow) } } },
+          },
         }),
       ]);
+
+      const nowMin = nowMinutes(new Date(), TZ);
+      const upcoming = blocks
+        .map((block) => ({ block, occ: blockOccurrenceOn(block, today.toJSDate(), block.exceptions) }))
+        .filter((entry): entry is { block: (typeof blocks)[number]; occ: { occurs: true; startMin: number; endMin: number; exceptionId: string | null } } => entry.occ.occurs && entry.occ.startMin >= nowMin)
+        .sort((a, b) => a.occ.startMin - b.occ.startMin);
+      const firstBlock = upcoming[0];
 
       const parts: string[] = [];
       if (dueToday > 0) parts.push(`${dueToday === 1 ? "1 tarea vence" : `${dueToday} tareas vencen`} hoy`);
       if (overdue > 0) parts.push(`${overdue} ${overdue === 1 ? "venció" : "vencieron"} ayer`);
-      const firstBlockLabel = firstBlock?.project?.name ?? firstBlock?.name;
-      if (firstBlock && firstBlockLabel) {
-        parts.push(`«${firstBlockLabel}» te espera a las ${String(Math.floor(firstBlock.startMin / 60)).padStart(2, "0")}:${String(firstBlock.startMin % 60).padStart(2, "0")}`);
+      if (firstBlock) {
+        const firstBlockLabel = firstBlock.block.project?.name ?? firstBlock.block.name;
+        if (firstBlockLabel) {
+          parts.push(`«${firstBlockLabel}» te espera a las ${String(Math.floor(firstBlock.occ.startMin / 60)).padStart(2, "0")}:${String(firstBlock.occ.startMin % 60).padStart(2, "0")}`);
+        }
       }
       if (parts.length === 0) continue;
       const body = parts.length > 1 ? `${parts.slice(0, -1).join(", ")} y ${parts[parts.length - 1]!}` : parts[0]!;

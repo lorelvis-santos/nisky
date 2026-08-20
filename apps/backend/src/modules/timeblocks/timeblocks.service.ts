@@ -50,13 +50,15 @@ export class TimeBlockService {
       prisma.timeBlockException.findMany({ where: { userId, date: { gte: todayStart } } }),
     ]);
     const nowMin = nowMinutes(now);
-    return (
-      candidates.find((block) => {
-        const occ = blockOccurrenceOn(block, now, exceptions);
-        if (!occ.occurs) return false;
-        return occ.startMin <= nowMin && occ.endMin > nowMin;
-      }) ?? null
-    );
+    const matched = candidates.find((block) => {
+      const occ = blockOccurrenceOn(block, now, exceptions);
+      if (!occ.occurs) return false;
+      return occ.startMin <= nowMin && occ.endMin > nowMin;
+    });
+    if (!matched) return null;
+    const occ = blockOccurrenceOn(matched, now, exceptions);
+    if (!occ.occurs) return null;
+    return { ...matched, startMin: occ.startMin, endMin: occ.endMin };
   }
 
   async today(userId: string) {

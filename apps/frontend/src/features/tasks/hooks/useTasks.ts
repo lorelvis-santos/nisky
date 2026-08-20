@@ -39,6 +39,34 @@ export function groupTasksByDueDate(tasks: Task[]) {
   return { overdue, todayTasks, tomorrowTasks };
 }
 
+export interface OverdueDayGroup {
+  dateKey: string;
+  label: string;
+  tasks: Task[];
+}
+
+export function groupOverdueByDay(tasks: Task[]): OverdueDayGroup[] {
+  const todayKey = localDateKey(new Date());
+  const today = new Date(`${todayKey}T00:00:00`).getTime();
+  const byDay = new Map<string, Task[]>();
+
+  for (const task of tasks) {
+    if (!task.dueDate) continue;
+    const dateKey = localDateKey(task.dueDate);
+    const list = byDay.get(dateKey) ?? [];
+    list.push(task);
+    byDay.set(dateKey, list);
+  }
+
+  return [...byDay.entries()]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([dateKey, dayTasks]) => {
+      const diffDays = Math.round((today - new Date(`${dateKey}T00:00:00`).getTime()) / 86_400_000);
+      const label = diffDays <= 1 ? "Ayer" : `Hace ${diffDays} días`;
+      return { dateKey, label, tasks: dayTasks };
+    });
+}
+
 export function useTaskMutations() {
   const client = useQueryClient();
   const invalidate = async () => {

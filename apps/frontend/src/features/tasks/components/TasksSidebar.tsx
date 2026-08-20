@@ -7,7 +7,7 @@ import { cn, toDatetimeLocal } from "@/lib/utils";
 import { formatDueTime } from "@/features/tasks/lib/task-utils";
 import type { Task } from "@/types/entities";
 import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
-import { groupTasksByDueDate, useTaskMutations, useTodayTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { groupOverdueByDay, groupTasksByDueDate, useTaskMutations, useTodayTasksQuery } from "@/features/tasks/hooks/useTasks";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { useTasksSidebar } from "@/context/TasksSidebarContext";
 import { useModalScrollLock } from "@/hooks/useModalScrollLock";
@@ -31,18 +31,20 @@ function Section({ title, count, color, children, defaultOpen = true }: SectionP
   return (
     <div className="border-b border-outline-variant">
       <button
-        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
+        className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
         onClick={() => setOpen(!open)}
         type="button"
       >
         <span className="flex items-center gap-1.5 font-label-caps text-label-caps">
           <span className={cn("h-1.5 w-1.5 rounded-full", colorMap[color])} />
           {title}
+          <span className={cn("font-data-mono text-data-mono text-xs", colorMap[color])}>
+            {count}
+          </span>
         </span>
-        <span className={cn("font-data-mono text-data-mono text-xs", colorMap[color])}>
-          {count}
+        <span className="ml-auto shrink-0 text-on-surface-variant">
+          {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
-        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
       </button>
       {open && <div className="px-2.5 pb-2.5">{children}</div>}
     </div>
@@ -164,13 +166,20 @@ function TasksSidebarContent({
         <div className="flex-1 divide-y divide-outline-variant/50 overflow-y-auto">
           {overdue.length > 0 && (
             <Section color="error" count={overdue.length} defaultOpen title="Atrasadas">
-              {overdue.map((task) => (
-                <TaskItem
-                  key={task.id}
-                  onComplete={() => onComplete(task)}
-                  onClick={() => onOpenTask(task)}
-                  task={task}
-                />
+              {groupOverdueByDay(overdue).map((group) => (
+                <div key={group.dateKey}>
+                  <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 font-data-mono text-data-mono text-xs font-bold text-error">
+                    {group.label} ({group.tasks.length})
+                  </p>
+                  {group.tasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      onComplete={() => onComplete(task)}
+                      onClick={() => onOpenTask(task)}
+                      task={task}
+                    />
+                  ))}
+                </div>
               ))}
             </Section>
           )}

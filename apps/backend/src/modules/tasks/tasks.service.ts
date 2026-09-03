@@ -105,10 +105,14 @@ export class TaskService {
     const where = {
       OR: [{ userId }, { projectId: { in: accessible } }],
       archivedAt: null,
-      ...(query.status ? { status: query.status } : {}),
+      ...(query.status
+        ? { status: Array.isArray(query.status) ? { in: query.status } : query.status }
+        : {}),
       ...(query.priority ? { priority: query.priority } : {}),
       ...(query.projectId ? { projectId: query.projectId } : {}),
       ...(query.q ? { AND: [{ OR: [{ title: { contains: query.q } }, { description: { contains: query.q } }] }] } : {}),
+      ...(query.scheduled === "PLANNED" ? { schedules: { some: { userId } } } : {}),
+      ...(query.scheduled === "UNPLANNED" ? { schedules: { none: { userId } } } : {}),
     };
 
     const orderBy = query.sort === "priority"

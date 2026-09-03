@@ -10,9 +10,10 @@ import type {
   PomodoroSettings,
 } from "@/types/entities";
 import { TaskFocusDetails } from "@/features/pomodoro/components/TaskFocusDetails";
-import { useTaskMutations, useTaskQuery, useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { useActiveTasksQuery, useTaskMutations, useTaskQuery } from "@/features/tasks/hooks/useTasks";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { useActiveBlockQuery } from "@/features/timeblocks/hooks/useTimeBlocks";
+import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
 import { Controls } from "@/features/pomodoro/components/Controls";
 import { SessionList } from "@/features/pomodoro/components/SessionList";
 import { SettingsModal } from "@/features/pomodoro/components/SettingsModal";
@@ -24,6 +25,7 @@ import {
 } from "@/features/pomodoro/hooks/usePomodoro";
 import { playCompletionSound } from "@/features/pomodoro/lib/sound";
 import { usePomodoro } from "@/context/PomodoroProvider";
+import { localDateKey } from "@/lib/utils";
 
 const fallbackSettings: PomodoroSettings = {
   workSec: 1500,
@@ -55,17 +57,18 @@ function FocusPageContent() {
     projectIdFromUrl ?? "",
   );
   const [showAllTasks, setShowAllTasks] = useState(false);
-  const tasksQuery = useTasksQuery(
-    showAllTasks
-      ? { status: "PENDING", limit: 100 }
-      : { projectId: selectedProjectId || undefined, status: "PENDING", limit: 100 },
+  const tasksQuery = useActiveTasksQuery(
+    showAllTasks ? {} : { projectId: selectedProjectId || undefined },
   );
+  const todayKey = localDateKey(new Date());
+  const schedulesQuery = useTaskSchedulesQuery({ from: todayKey, to: todayKey });
   const selectedTaskQuery = useTaskQuery(taskIdFromUrl);
   const mutations = usePomodoroMutations();
   const taskMutations = useTaskMutations();
   const globalPomodoro = usePomodoro();
   const settings = settingsQuery.data ?? fallbackSettings;
   const projects = projectsQuery.data ?? [];
+  const activeBlockId = activeBlockQuery.data?.id;
   const [phase, setPhase] = useState<PomodoroPhase>("WORK");
   const [cycleIndex, setCycleIndex] = useState(1);
   const [selectedTaskId, setSelectedTaskId] = useState(taskIdFromUrl ?? "");
@@ -77,7 +80,13 @@ function FocusPageContent() {
   const completionInFlight = useRef(false);
   const lastCompletedIdRef = useRef<string | null>(null);
   const initializedRef = useRef(false);
-  const tasks = (tasksQuery.data?.data ?? []).filter(
+  const scheduledTodayTasks = (schedulesQuery.data ?? [])
+    .filter((schedule) => schedule.occurrence?.occurs !== false)
+    .filter((schedule) => !selectedProjectId || schedule.task.projectId === selectedProjectId)
+    .sort((a, b) => Number(b.timeBlockId === activeBlockId) - Number(a.timeBlockId === activeBlockId) || a.order - b.order)
+    .map((schedule) => schedule.task);
+  const fallbackTasks = tasksQuery.data?.pages.flatMap((page) => page.data) ?? [];
+  const tasks = (showAllTasks || scheduledTodayTasks.length === 0 ? fallbackTasks : scheduledTodayTasks).filter(
     (task) => task.status !== "COMPLETED" && task.status !== "CANCELLED",
   );
 
@@ -107,7 +116,7 @@ function FocusPageContent() {
   useEffect(() => {
     if (selectedTaskId) return;
     if (!lastCompletedIdRef.current) return;
-    const list = tasksQuery.data?.data ?? [];
+    const list = tasks;
     const pending = list.filter(
       (task) => task.id !== lastCompletedIdRef.current,
     );
@@ -118,7 +127,7 @@ function FocusPageContent() {
     if (selectedProjectId) params.set("projectId", selectedProjectId);
     params.set("taskId", next.id);
     router.replace(`/focus?${params.toString()}`);
-  }, [tasksQuery.data, selectedProjectId, router, selectedTaskId]);
+  }, [tasks, selectedProjectId, router, selectedTaskId]);
   const selectedTask =
     tasks.find((task) => task.id === selectedTaskId) ??
     (taskIdFromUrl ? selectedTaskQuery.data : null) ??
@@ -360,6 +369,11 @@ function FocusPageContent() {
           >
             {showAllTasks ? "Mostrando todas las tareas" : "Ver todas las tareas"}
           </button>
+          {tasksQuery.hasNextPage && (showAllTasks || scheduledTodayTasks.length === 0) && (
+            <button className="self-start border border-outline-variant px-3 py-1.5 font-label-caps text-[10px] uppercase text-primary hover:bg-surface-container-low" onClick={() => void tasksQuery.fetchNextPage()} type="button">
+              Cargar más tareas
+            </button>
+          )}
         </div>
         {selectedTask && (
           <TaskFocusDetails

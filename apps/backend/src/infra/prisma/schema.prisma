@@ -49,6 +49,7 @@ model User {
   canvasAccounts CanvasAccount[]
   projects       Project[]
   timeBlocks     TimeBlock[]
+  taskSchedules  TaskSchedule[]
   calendarEvents CalendarEvent[]
   timeBlockExceptions TimeBlockException[]
   calendarEventExceptions CalendarEventException[]
@@ -134,11 +135,30 @@ model TimeBlock {
   lastStartNotifiedAt   DateTime?
   lastEndWarnNotifiedAt DateTime?
   exceptions TimeBlockException[]
+  taskSchedules TaskSchedule[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId, isActive])
   @@index([projectId])
+}
+
+model TaskSchedule {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId      String
+  task        Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  date        DateTime
+  timeBlockId String?
+  timeBlock   TimeBlock? @relation(fields: [timeBlockId], references: [id], onDelete: SetNull)
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([userId, taskId])
+  @@index([userId, date])
+  @@index([userId, timeBlockId, date])
 }
 
 model CalendarEvent {
@@ -289,6 +309,7 @@ model Task {
   assigneeId         String?
   assignee           User?                  @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   comments           Comment[]
+  schedules          TaskSchedule[]
   pomodoroEstimate   Int          @default(0)
   pomodoroCount      Int          @default(0)
   pomodoroSessions   PomodoroSession[]

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const taskStatus = z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"]);
+const taskStatuses = z.union([taskStatus, z.array(taskStatus).min(1).max(4)]);
 const taskPriority = z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]);
 const dateValue = z.string().trim().refine((value) => !Number.isNaN(Date.parse(value)), "La fecha no es válida");
 const pomodoroEstimate = z.number().int().min(0).max(100);
@@ -91,12 +92,13 @@ export const updateSubtaskSchema = createSubtaskSchema.partial().extend({
 export const taskQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
-  status: taskStatus.optional(),
+  status: taskStatuses.optional(),
   priority: taskPriority.optional(),
   sort: z.enum(["priority", "dueDate", "createdAt", "title"]).default("priority"),
   order: z.enum(["asc", "desc"]).default("desc"),
   q: z.string().trim().max(100).optional(),
   projectId: z.uuid("El proyecto no es válido").optional(),
+  scheduled: z.enum(["ALL", "PLANNED", "UNPLANNED"]).default("ALL"),
 });
 
 export type CreateTaskDto = z.infer<typeof createTaskSchema>;

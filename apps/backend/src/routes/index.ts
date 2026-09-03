@@ -20,12 +20,14 @@ import homeRoutes from "../modules/home/home.routes";
 import notificationRoutes from "../modules/notifications/notifications.routes";
 import userRoutes from "../modules/user/user.routes";
 import commentRoutes from "../modules/comments/comments.routes";
+import taskScheduleRoutes from "../modules/task-schedules/task-schedules.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
 router.use("/health", healthRoutes);
 router.use("/uploads", uploadRoutes);
 router.use("/tasks", taskRoutes);
+router.use("/task-schedules", taskScheduleRoutes);
 router.use("/habits", habitRoutes);
 router.use("/quick-notes", quickNoteRoutes);
 router.use("/pomodoro", pomodoroRoutes);

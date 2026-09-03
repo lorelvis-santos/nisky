@@ -2,7 +2,7 @@
 
 import { ArrowUpRight, CalendarDays, FolderKanban, ListTodo, MessageSquare, Pencil, Plus, Star, Trash2, Users, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { ColorPicker } from "@/components/ui/ColorPicker";
@@ -14,7 +14,8 @@ import { useProjectComments } from "@/features/comments/hooks/useComments";
 import { PriorityChip } from "@/features/tasks/components/PriorityChip";
 import { MembersPanel } from "@/features/projects/components/MembersPanel";
 import { useProjectMembers, useProjectMutations, useProjectQuery } from "@/features/projects/hooks/useProjects";
-import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { useInfiniteTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
 import { formatRelativeDate, isTaskOverdue } from "@/lib/utils";
 
 type Tab = "general" | "members" | "comments";
@@ -38,6 +39,10 @@ function timeAgo(value: string | Date): string {
   return `hace ${yr} año${yr > 1 ? "s" : ""}`;
 }
 
+function dateKey(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -46,7 +51,11 @@ export default function ProjectDetailPage() {
   const projectQuery = useProjectQuery(projectId);
   const membersQuery = useProjectMembers(projectId);
   const commentsQuery = useProjectComments(projectId, { order: "desc", limit: 1 });
-  const tasksQuery = useTasksQuery({ limit: 100 });
+  const tasksQuery = useInfiniteTasksQuery({ projectId });
+  const scheduleFrom = dateKey(new Date());
+  const scheduleToDate = new Date();
+  scheduleToDate.setDate(scheduleToDate.getDate() + 30);
+  const schedulesQuery = useTaskSchedulesQuery({ from: scheduleFrom, to: dateKey(scheduleToDate), projectId });
   const projectMutations = useProjectMutations();
   const [tab, setTab] = useState<Tab>("general");
   const [editOpen, setEditOpen] = useState(false);
@@ -57,6 +66,10 @@ export default function ProjectDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const project = projectQuery.data;
+  const projectTasks = useMemo(
+    () => tasksQuery.data?.pages.flatMap((page) => page.data) ?? [],
+    [tasksQuery.data],
+  );
   if (!project) {
     return (
       <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">
@@ -66,7 +79,7 @@ export default function ProjectDetailPage() {
   }
 
   const isOwner = project.userId === user?.id;
-  const projectTasks = tasksQuery.data?.data.filter((task) => task.projectId === project.id) ?? [];
+  const scheduleByTask = new Map((schedulesQuery.data ?? []).map((schedule) => [schedule.taskId, schedule]));
   const activeTasks = projectTasks.filter((task) => task.status === "PENDING" || task.status === "IN_PROGRESS");
   const members = membersQuery.data ?? [];
   const commentsCount = commentsQuery.data?.meta.totalItems ?? 0;
@@ -279,7 +292,8 @@ export default function ProjectDetailPage() {
                     </button>
                   </div>
                 ) : (
-                  <ul className="mt-2 divide-y divide-outline-variant">
+                  <>
+                    <ul className="mt-2 divide-y divide-outline-variant">
                     {projectTasks.slice(0, 6).map((task) => {
                       const overdue = isTaskOverdue(task);
                       return (
@@ -320,12 +334,23 @@ export default function ProjectDetailPage() {
                                   {formatRelativeDate(task.dueDate, true)}
                                 </span>
                               )}
+                              {scheduleByTask.has(task.id) && (
+                                <span className="font-label-caps text-[10px] uppercase text-primary">
+                                  Planificada {scheduleByTask.get(task.id)?.date}
+                                </span>
+                              )}
                             </span>
                           </button>
                         </li>
                       );
                     })}
-                  </ul>
+                    </ul>
+                    {tasksQuery.hasNextPage && (
+                      <button className="mt-3 w-full border border-outline-variant px-3 py-2 font-label-caps text-[10px] uppercase text-primary hover:bg-surface-container-low" onClick={() => void tasksQuery.fetchNextPage()} type="button">
+                        Cargar más tareas
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>

@@ -1,11 +1,13 @@
 "use client";
 
 import { CalendarClock, ChevronLeft, ChevronRight, ListTodo, Plus, SlidersHorizontal, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { TimeBlockEditor } from "@/features/timeblocks/components/TimeBlockEditor";
 import { TimeBlockWeekGrid } from "@/features/timeblocks/components/TimeBlockWeekGrid";
+import { TaskAssignmentPanel } from "@/features/timeblocks/components/TaskAssignmentPanel";
+import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
 import {
   useTimeBlockMutations,
   useTimeBlockSettingsMutation,
@@ -260,6 +262,16 @@ function TimeBlocksContent() {
   const [eventMoveEnd, setEventMoveEnd] = useState("10:00");
   const exceptionsQuery = useWeekExceptionsQuery(from, to);
   const exceptions = exceptionsQuery.data ?? [];
+  const schedulesQuery = useTaskSchedulesQuery({ from, to });
+  const taskCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const schedule of schedulesQuery.data ?? []) {
+      if (!schedule.timeBlockId || schedule.occurrence?.occurs === false) continue;
+      const key = `${schedule.timeBlockId}:${schedule.date}`;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }, [schedulesQuery.data]);
 
   const openSettings = () => {
     setDayStartTime(minToTime(settings?.dayStartMin ?? 6 * 60));
@@ -703,6 +715,7 @@ function TimeBlocksContent() {
             onResizePreview={previewResize}
             onSlotClick={createAtSlot}
             projects={projects}
+            taskCounts={taskCounts}
             weekStart={weekStart}
           />
         </div>
@@ -722,7 +735,10 @@ function TimeBlocksContent() {
               </button>
             )}
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">{editor}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {editor}
+            {editing && editDate && <TaskAssignmentPanel block={editing} date={editDate} />}
+          </div>
         </aside>
       </div>
 
@@ -745,6 +761,7 @@ function TimeBlocksContent() {
           title={editing ? "Editar bloque" : "Nuevo bloque"}
         >
           {editor}
+          {editing && editDate && <TaskAssignmentPanel block={editing} date={editDate} />}
         </MobileEditorModal>
       )}
 

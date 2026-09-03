@@ -6,10 +6,11 @@ import type { TaskFormData } from "../schemas/task.schema";
 export interface TaskQuery {
   page?: number;
   limit?: number;
-  status?: TaskStatus;
+  status?: TaskStatus | TaskStatus[];
   priority?: TaskPriority;
   q?: string;
   projectId?: string;
+  scheduled?: "ALL" | "PLANNED" | "UNPLANNED";
   sort?: "priority" | "dueDate" | "createdAt" | "title";
   order?: "asc" | "desc";
 }
@@ -18,7 +19,17 @@ export type TaskPayload = TaskFormData & { status?: TaskStatus };
 export type TaskUpdatePayload = Omit<Partial<TaskPayload>, "dueDate"> & { dueDate?: string | null };
 
 export async function fetchTasks(params: TaskQuery = {}) {
-  const { data } = await api.get<ApiResponse<Paginated<Task>>>("/tasks", { params: { limit: 100, sort: "priority", order: "desc", ...params } });
+  const query = { limit: 20, sort: "priority" as const, order: "desc" as const, ...params };
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) searchParams.append(key, item);
+    } else {
+      searchParams.set(key, String(value));
+    }
+  }
+  const { data } = await api.get<ApiResponse<Paginated<Task>>>("/tasks", { params: searchParams });
   return data.data as Paginated<Task>;
 }
 

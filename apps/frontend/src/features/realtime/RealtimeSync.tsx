@@ -6,7 +6,7 @@ import { socket, SocketEvents, type DataChangedPayload, type Domain } from "@/li
 import { useAuth } from "@/context/AuthProvider";
 
 const INVALIDATIONS: Record<Domain, string[][]> = {
-  tasks: [["tasks"], ["task"], ["home"]],
+  tasks: [["tasks"], ["task"], ["task-schedules"], ["home"]],
   comments: [["comments"]],
   projects: [
     ["projects"],

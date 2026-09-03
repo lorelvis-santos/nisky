@@ -10,8 +10,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
-import { formatDateTime, isTaskOverdue, localDateKey } from "@/lib/utils";
-import type { Task } from "@/types/entities";
+import { localDateKey } from "@/lib/utils";
+import type { HomeScheduledTask, Task } from "@/types/entities";
 
 const priorityRank = { URGENT: 0, HIGH: 1, NORMAL: 2, LOW: 3 } as const;
 
@@ -63,7 +63,7 @@ function TodayTaskRow({
   task,
   onToggle,
 }: {
-  task: Task;
+  task: Task | HomeScheduledTask;
   onToggle: (task: Task) => void;
 }) {
   return (
@@ -100,6 +100,9 @@ function TodayTaskRow({
               <MessageSquare size={11} /> {task.commentCount}
             </span>
           )}
+          {"scheduleState" in task && task.scheduleState === "REPLAN" && (
+            <span className="font-label-caps text-[10px] uppercase text-error">Replanificar</span>
+          )}
         </div>
       </Link>
     </div>
@@ -108,10 +111,12 @@ function TodayTaskRow({
 
 export function TodayTasksPanel({
   tasks,
+  plannedTasks = [],
   onToggle,
   emptyMessage = "Nada pendiente. ¡Todo al día!",
 }: {
   tasks: Task[];
+  plannedTasks?: HomeScheduledTask[];
   onToggle: (task: Task) => void;
   emptyMessage?: string;
 }) {
@@ -132,16 +137,17 @@ export function TodayTasksPanel({
     (task) =>
       !task.dueDate && task.priority === "HIGH" && task.status === "PENDING",
   );
+  const totalTasks = plannedTasks.length + tasks.length;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-outline-variant bg-surface-bright px-4 py-3">
         <div>
           <h2 className="font-headline-xs text-headline-xs font-bold text-primary">
-            Por hacer hoy ({tasks.length})
+            Por hacer hoy ({totalTasks})
           </h2>
           <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">
-            Lo que vence hoy y lo ya vencido.
+            Lo planificado, lo que vence hoy y lo ya vencido.
           </p>
         </div>
         <Link
@@ -152,13 +158,23 @@ export function TodayTasksPanel({
         </Link>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {tasks.length === 0 ? (
+        {totalTasks === 0 ? (
           <p className="flex flex-col items-center gap-2 px-4 py-8 text-center font-body-sm text-body-sm text-on-surface-variant">
             <Inbox size={20} className="text-outline" />
             {emptyMessage}
           </p>
         ) : (
           <>
+            {plannedTasks.length > 0 && (
+              <div>
+                <p className="flex items-center gap-1.5 px-4 pt-3 font-label-caps text-label-caps text-primary">
+                  <CalendarDays size={12} /> PLANIFICADAS HOY ({plannedTasks.length})
+                </p>
+                {plannedTasks.map((task) => (
+                  <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
+                ))}
+              </div>
+            )}
             {overdue.length > 0 && (
               <div>
                 <p className="flex items-center gap-1.5 px-4 pt-3 font-label-caps text-label-caps text-error">

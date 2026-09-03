@@ -92,6 +92,27 @@ export interface TimeBlockWithProject extends TimeBlock {
   project: Project | null;
 }
 
+export type TaskScheduleOccurrence =
+  | { occurs: true; startMin: number; endMin: number; exceptionId: string | null }
+  | { occurs: false }
+  | null;
+
+export interface TaskSchedule {
+  id: string;
+  userId: string;
+  taskId: string;
+  date: string;
+  timeBlockId: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+  task: Task;
+  timeBlock: TimeBlockWithProject | null;
+  occurrence: TaskScheduleOccurrence;
+}
+
+export type HomeScheduledTask = Task & { scheduleState: "PLANNED" | "REPLAN" };
+
 export interface TimeBlockSettings {
   userId: string;
   dayStartMin: number;
@@ -418,6 +439,7 @@ export interface HomeOverview {
   activeBlock: TimeBlockWithProject | null;
   activeEvent: CalendarEvent | null;
   blockTasks: Task[];
+  todayTasks: HomeScheduledTask[];
   urgentTasks: Task[];
   futureTasks: (Task & { project: Project | null })[];
   futureBlocks: (TimeBlockWithProject & { date?: string })[];

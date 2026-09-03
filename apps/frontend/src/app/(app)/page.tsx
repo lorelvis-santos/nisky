@@ -32,10 +32,9 @@ export default function DashboardPage() {
 
   const overview = overviewQuery.data;
   const activeBlock = overview?.activeBlock ?? null;
-  const blockTasks = overview?.blockTasks ?? [];
-  const blockTaskIds = new Set(blockTasks.map((task) => task.id));
+  const plannedTaskIds = new Set((overview?.todayTasks ?? []).map((task) => task.id));
   const urgentTasks = getTodayUrgentTasks(overview?.urgentTasks ?? [], 10).filter(
-    (task) => !blockTaskIds.has(task.id),
+    (task) => !plannedTaskIds.has(task.id),
   );
 
   const toggleTask = async (task: Task) => {
@@ -70,7 +69,7 @@ export default function DashboardPage() {
             tasks={overview?.blockTasks ?? []}
           />
           <div className="border border-outline-variant bg-surface-container-lowest">
-            <TodayTasksPanel emptyMessage="Nada pendiente. ¡Todo al día!" onToggle={(task) => void toggleTask(task)} tasks={urgentTasks} />
+            <TodayTasksPanel emptyMessage="Nada planificado. ¡Todo al día!" onToggle={(task) => void toggleTask(task)} plannedTasks={overview?.todayTasks ?? []} tasks={urgentTasks} />
           </div>
           <QuickNotesPanel />
           <FutureView blocks={overview?.futureBlocks ?? []} tasks={overview?.futureTasks ?? []} />

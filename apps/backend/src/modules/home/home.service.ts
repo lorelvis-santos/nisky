@@ -6,6 +6,7 @@ import { timeBlockService } from "../timeblocks/timeblocks.service";
 import { blockOccurrenceOn } from "../timeblocks/timeblocks.util";
 import type { TimeBlockExceptionRow } from "../timeblocks/timeblocks.util";
 import { eventOccurrenceOn } from "../events/events.util";
+import { taskScheduleService } from "../task-schedules/task-schedules.service";
 
 const TZ = "America/Santo_Domingo";
 
@@ -89,6 +90,19 @@ export class HomeService {
       }),
     ]);
 
+    const todaySchedules = await taskScheduleService.list(userId, {
+      from: todayStart.toISODate()!,
+      to: todayStart.toISODate()!,
+    });
+    const activeBlockTasks = todaySchedules
+      .filter((schedule) => schedule.timeBlockId === activeBlock?.id && schedule.occurrence?.occurs !== false)
+      .map((schedule) => schedule.task);
+    const plannedTodayTasks = todaySchedules
+      .map((schedule) => ({
+        ...schedule.task,
+        scheduleState: schedule.occurrence?.occurs === false ? "REPLAN" as const : "PLANNED" as const,
+      }));
+
     const occurrence = nextBlockOccurrence(allBlocks, exceptions as TimeBlockExceptionRow[], now);
     const nextBlock = occurrence
       ? {
@@ -114,20 +128,17 @@ export class HomeService {
           .find((event): event is NonNullable<typeof event> => event !== null) ?? null,
       );
 
-    const blockTasks = activeBlock?.projectId
-      ? await prisma.task.findMany({
-          where: { userId, projectId: activeBlock.projectId, status: "PENDING", archivedAt: null },
-          orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
-          take: 20,
-          include: taskInclude,
-        })
-      : [];
-
     const urgentTasks = await prisma.task.findMany({
       where: {
         userId,
         status: "PENDING",
         archivedAt: null,
+        schedules: {
+          none: {
+            userId,
+            date: { gte: toUtc(todayStart), lt: toUtc(tomorrow) },
+          },
+        },
         OR: [
           { dueDate: { lt: toUtc(todayStart) } },
           { dueDate: { gte: toUtc(todayStart), lt: toUtc(tomorrow) } },
@@ -214,7 +225,8 @@ export class HomeService {
     return {
       activeBlock,
       activeEvent,
-      blockTasks,
+      blockTasks: activeBlockTasks.slice(0, 20),
+      todayTasks: plannedTodayTasks.slice(0, 50),
       urgentTasks,
       futureTasks,
       futureBlocks,

@@ -13,18 +13,17 @@ import { DayList } from "@/features/tasks/components/DayList";
 import { MobileBacklog } from "@/features/tasks/components/MobileBacklog";
 import { MonthDayModal } from "@/features/tasks/components/MonthDayModal";
 import { MonthlyCalendar } from "@/features/tasks/components/MonthlyCalendar";
-import { OverduePanel } from "@/features/tasks/components/OverduePanel";
 import { PeriodNav } from "@/features/tasks/components/PeriodNav";
 import { TaskList } from "@/features/tasks/components/TaskList";
 import {
   TaskModal,
   type TaskForm,
 } from "@/features/tasks/components/TaskModal";
-import { WeeklyGrid } from "@/features/tasks/components/WeeklyGrid";
+import { PlanningBoard } from "@/features/tasks/components/PlanningBoard";
 import {
+  useInfiniteTasksQuery,
   useTaskMutations,
   useTaskQuery,
-  useTasksQuery,
 } from "@/features/tasks/hooks/useTasks";
 import {
   useAccessibleProjects,
@@ -173,7 +172,6 @@ function initialProjectFilter(): string | null {
 }
 
 function TasksPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [weekStart, setWeekStart] = useState(() => monday(new Date()));
   const [monthStart, setMonthStart] = useState(() => firstOfMonth(new Date()));
@@ -190,10 +188,10 @@ function TasksPageContent() {
   const isMobile = useIsMobile(1023);
   const selection = useTaskSelection();
   const modalUrl = useModalUrl();
-  const query = useTasksQuery({
+  const query = useInfiniteTasksQuery({
     q: search || undefined,
     priority: priority === "ALL" ? undefined : priority,
-  });
+  }, { enabled: view !== "week" });
   const urlTaskQuery = useTaskQuery(modalUrl.state.taskId);
   const mutations = useTaskMutations();
   const projectsQuery = useProjectsQuery();
@@ -205,7 +203,7 @@ function TasksPageContent() {
     }
     return merged;
   }, [projectsQuery.data, accessibleProjectsQuery.data]);
-  const allTasks = query.data?.data ?? emptyTasks;
+  const allTasks = query.data?.pages.flatMap((page) => page.data) ?? emptyTasks;
   const tasks = useMemo(
     () =>
       selectedProjectId
@@ -227,25 +225,6 @@ function TasksPageContent() {
     return counts;
   }, [allTasks]);
   const backlog = useMemo(() => tasks.filter((task) => !task.dueDate), [tasks]);
-  const todayKey = localDateKey(new Date());
-  const overdueTasks = useMemo(
-    () =>
-      tasks
-        .filter(
-          (task) =>
-            task.status !== "COMPLETED" &&
-            task.status !== "CANCELLED" &&
-            task.dueDate &&
-            dateKey(task.dueDate) < todayKey,
-        )
-        .sort(
-          (a, b) =>
-            (a.dueDate ?? "").localeCompare(b.dueDate ?? "") ||
-            a.order - b.order ||
-            a.createdAt.localeCompare(b.createdAt),
-        ),
-    [tasks, todayKey],
-  );
   const selectedTasks = useMemo(
     () => tasks.filter((task) => selection.selectedIds.has(task.id)),
     [tasks, selection.selectedIds],
@@ -496,6 +475,12 @@ function TasksPageContent() {
     />
   );
 
+  const loadMoreTasks = query.hasNextPage ? (
+    <button className="mx-auto my-3 block border border-outline-variant px-4 py-2 font-label-caps text-[10px] uppercase text-primary hover:bg-surface-container-low" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()} type="button">
+      {query.isFetchingNextPage ? "Cargando..." : "Cargar más tareas"}
+    </button>
+  ) : null;
+
   return (
     <section className="flex h-full min-h-0 flex-col bg-surface">
       <div className="flex shrink-0 flex-col gap-3 border-b border-outline-variant bg-surface-bright p-container-padding sm:flex-row sm:items-center sm:justify-between">
@@ -505,7 +490,7 @@ function TasksPageContent() {
               {view === "month" ? "MI MES" : view === "list" ? "TODAS LAS TAREAS" : "MI SEMANA"}
             </p>
             <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">
-              Mis tareas
+              Planificar
             </h1>
           </div>
         </div>
@@ -642,7 +627,19 @@ function TasksPageContent() {
           </button>
         </div>
       )}
-      {query.isLoading ? (
+      {view === "week" ? (
+        <PlanningBoard
+          onCreate={openCreate}
+          onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
+          onOpen={openEdit}
+          onStartPomodoro={openFocus}
+          onToggle={(task) => void toggleTask(task)}
+          priority={priority}
+          search={search}
+          selectedProjectId={selectedProjectId}
+          weekStart={weekStart}
+        />
+      ) : query.isLoading ? (
         <div className="flex min-h-0 flex-1 items-center justify-center font-body-sm text-body-sm text-on-surface-variant">
           Cargando tus tareas...
         </div>
@@ -701,6 +698,7 @@ function TasksPageContent() {
                   tasks={backlog}
                 />
               )}
+              {loadMoreTasks}
             </div>
           ) : (
             <div className="min-h-0 flex-1 lg:flex">
@@ -713,26 +711,7 @@ function TasksPageContent() {
                 />
               </aside>
               <div className="min-h-0 min-w-0 flex-1 lg:flex">
-                {view === "week" ? (
-                  <>
-                    {overdueTasks.length > 0 && (
-                      <OverduePanel
-                        onOpen={openEdit}
-                        onStartPomodoro={openFocus}
-                        onToggle={(task) => void toggleTask(task)}
-                        tasks={overdueTasks}
-                      />
-                    )}
-                    <WeeklyGrid
-                      onOpen={openEdit}
-                      onStartPomodoro={openFocus}
-                      onToggle={(task) => void toggleTask(task)}
-                      tasks={tasks}
-                      weekStart={weekStart}
-                    />
-                    {rightPanel}
-                  </>
-                ) : view === "month" ? (
+                {view === "month" ? (
                   <>
                     <MonthlyCalendar
                       monthStart={monthStart}
@@ -756,6 +735,7 @@ function TasksPageContent() {
                     {rightPanel}
                   </>
                 )}
+                {loadMoreTasks}
               </div>
             </div>
           )}

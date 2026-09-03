@@ -74,6 +74,7 @@ export function TimeBlockWeekGrid({
   onResize,
   onResizePreview,
   onEventAction,
+  taskCounts = {},
   moveEnabled = true,
   dayStartMin = 6 * 60,
   dayEndMin = 23 * 60,
@@ -99,6 +100,7 @@ export function TimeBlockWeekGrid({
     days: number[],
   ) => void;
   onEventAction?: (event: CalendarEvent, date: Date, action: "skip" | "move") => void;
+  taskCounts?: Record<string, number>;
   moveEnabled?: boolean;
   dayStartMin?: number;
   dayEndMin?: number;
@@ -472,6 +474,10 @@ export function TimeBlockWeekGrid({
     const project = projects.find((item) => item.id === block.projectId);
     const color = project?.color ?? "#7a8494";
     const label = block.name ?? project?.name ?? "Tiempo libre";
+    const occurrenceDate = dayDate
+      ? `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, "0")}-${String(dayDate.getDate()).padStart(2, "0")}`
+      : "";
+    const taskCount = taskCounts[`${block.id}:${occurrenceDate}`] ?? 0;
     const top = (Math.max(startMin - dayStartMin, 0) * HOUR_PX) / 60;
     const bottom = (Math.min(endMin - dayStartMin, totalMin) * HOUR_PX) / 60;
     const height = Math.max(bottom - top, 12);
@@ -536,6 +542,11 @@ export function TimeBlockWeekGrid({
         {!compact && (
           <p className="truncate font-data-mono text-data-mono text-[10px] text-on-surface-variant">
             {minToTime(startMin)}–{minToTime(endMin)}
+          </p>
+        )}
+        {taskCount > 0 && (
+          <p className="truncate font-label-caps text-[9px] uppercase text-primary">
+            {taskCount} {taskCount === 1 ? "tarea" : "tareas"}
           </p>
         )}
         <div

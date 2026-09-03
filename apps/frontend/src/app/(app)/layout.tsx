@@ -23,7 +23,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("app:sidebarCollapsed");
-    if (stored !== null) setSidebarCollapsed(stored === "true");
+    if (stored !== null) {
+      // Hydrate the client preference after SSR without changing the server markup.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSidebarCollapsed(stored === "true");
+    }
   }, []);
 
   const toggleSidebar = () => {

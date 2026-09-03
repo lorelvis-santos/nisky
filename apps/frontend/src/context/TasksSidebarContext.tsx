@@ -15,7 +15,11 @@ export function TasksSidebarProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("agenda:tasksSidebar");
-    if (stored !== null) setIsOpen(stored === "true");
+    if (stored !== null) {
+      // Hydrate the client preference after SSR without changing the server markup.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsOpen(stored === "true");
+    }
   }, []);
 
   const setOpen = (open: boolean) => {

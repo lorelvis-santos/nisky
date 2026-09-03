@@ -73,7 +73,11 @@ function NotificationLogsPanel() {
 
   useEffect(() => {
     try {
-      if (window.localStorage.getItem(HIDE_AUDIT_KEY) === "1") setHidden(true);
+      if (window.localStorage.getItem(HIDE_AUDIT_KEY) === "1") {
+        // Hydrate this client-only preference after the initial render.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setHidden(true);
+      }
     } catch {
       // privacidad: si el storage no está disponible, seguimos mostrando
     }

@@ -5,7 +5,7 @@ import { Bell, Download } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
-import { INSTALL_KEY, NOTIF_KEY, readPromptState, resetPromptState, writePromptState } from "@/lib/promptState";
+import { INSTALL_KEY, NOTIF_KEY, readPromptState, writePromptState } from "@/lib/promptState";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -172,6 +172,8 @@ export function ProactivePrompts() {
   useEffect(() => {
     if (isSubscribed) {
       writePromptState(NOTIF_KEY, { dismissCount: MAX_DISMISS, dismissedAt: null, neverAsk: true });
+      // A successful subscription closes the prompt rendered by this component.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNotifVisible(false);
     }
   }, [isSubscribed]);

@@ -58,6 +58,8 @@ export function NoteEditorModal({
   useEffect(() => {
     if (!draft.restored) return;
     appliedRestoreRef.current = true;
+    // Apply an asynchronously restored draft to the controlled editor state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm({
       title: draft.restored.title ?? "",
       content: draft.restored.content ?? "",

@@ -66,6 +66,8 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
   }, [presenceProjectId, presenceTaskId]);
 
   useEffect(() => {
+    // Clear locally fetched older pages when switching between entities.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOlderAsc([]);
     prevNewestLength.current = 0;
   }, [kind, id]);

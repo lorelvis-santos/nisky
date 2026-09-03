@@ -55,6 +55,8 @@ export default function EventsPage() {
     if (!eventIdParam || isModalOpen || isLoading) return;
     const target = events.find((event) => event.id === eventIdParam);
     if (target) {
+      // The URL is the source of truth for opening a deep-linked event.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEditingEvent(target);
       setIsModalOpen(true);
     }
@@ -194,7 +196,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent | null; onClose: 
   const [startMin, setStartMin] = useState(event?.startMin ? formatMin(event.startMin) : "09:00");
   const [endMin, setEndMin] = useState(event?.endMin ? formatMin(event.endMin) : "10:00");
   const [location, setLocation] = useState(event?.location ?? "");
-  const [color, setColor] = useState(event?.color ?? PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]);
+  const [color, setColor] = useState(event?.color ?? PROJECT_COLORS[0] ?? "#303e51");
   const [recurrenceType, setRecurrenceType] = useState<EventRecurrenceType | null>(event?.recurrenceType ?? null);
   const [recurrenceInterval, setRecurrenceInterval] = useState(event?.recurrenceInterval ?? 1);
   const [recurrenceDaysOfWeek, setRecurrenceDaysOfWeek] = useState<number[]>(event?.recurrenceDaysOfWeek ?? []);

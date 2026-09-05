@@ -25,8 +25,8 @@ const STATUS_BADGE: Record<FeedbackStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: FeedbackStatus }) {
-   return (
-     <span className={`inline-block rounded-full border px-2 py-0.5 font-label-caps text-label-caps uppercase ${STATUS_BADGE[status]}`}>
+  return (
+    <span className={`inline-block border px-2 py-0.5 font-label-caps text-label-caps uppercase ${STATUS_BADGE[status]}`}>
       {STATUS_LABEL[status]}
     </span>
   );
@@ -45,7 +45,7 @@ export function MyFeedbackList() {
   return (
     <section>
       <h2 className="font-headline-xs text-headline-xs">Tu historial</h2>
-       <ul className="mt-3 divide-y divide-outline-variant rounded-lg border border-outline-variant bg-surface shadow-cadence-1">
+      <ul className="mt-3 divide-y divide-outline-variant border border-outline-variant bg-surface-container-lowest">
         {items.map((item) => (
           <li className="flex items-start gap-3 p-container-padding" key={item.id}>
             <div className="min-w-0 flex-1">
@@ -60,7 +60,7 @@ export function MyFeedbackList() {
               <StatusBadge status={item.status} />
               <button
                 aria-label="Eliminar feedback"
-                 className="flex h-11 w-11 items-center justify-center rounded-md border border-outline-variant text-error transition-colors hover:bg-error-container disabled:opacity-50"
+                className="border border-outline-variant px-2 py-2 text-sm text-error hover:bg-error-container disabled:opacity-50"
                 disabled={remove.isPending}
                 onClick={() =>
                   remove.mutate(item.id, {

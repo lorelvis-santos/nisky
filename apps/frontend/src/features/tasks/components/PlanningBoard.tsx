@@ -16,8 +16,8 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ChevronLeft, ChevronRight, Inbox, LoaderCircle, Plus, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CalendarPlus, ChevronLeft, ChevronRight, Inbox, LoaderCircle, Plus, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { ReactNode } from "react";
 import type { Task, TaskPriority, TaskSchedule } from "@/types/entities";
@@ -26,7 +26,6 @@ import { dateKey } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { minToTime } from "@/features/timeblocks/lib/time";
 import { useTaskScheduleMutations, useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
-import { TaskPagination } from "@/features/tasks/components/TaskPagination";
 import { useUnplannedTasksQuery } from "@/features/tasks/hooks/useTasks";
 import { SortableTaskCard } from "./TaskCard";
 import { TaskCardGhost } from "../dnd/ghosts";
@@ -116,10 +115,8 @@ export function PlanningBoard({
   const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)), [weekStart]);
   const from = dateKey(days[0]);
   const to = dateKey(days[6]);
-  const [unplannedPage, setUnplannedPage] = useState(1);
   const schedulesQuery = useTaskSchedulesQuery({ from, to, projectId: selectedProjectId ?? undefined });
   const unplannedQuery = useUnplannedTasksQuery({
-    page: unplannedPage,
     projectId: selectedProjectId ?? undefined,
     q: search || undefined,
     priority: priority === "ALL" ? undefined : priority,
@@ -132,14 +129,10 @@ export function PlanningBoard({
   );
 
   const schedules = useMemo(() => schedulesQuery.data ?? [], [schedulesQuery.data]);
-  const unplannedTasks = useMemo(() => unplannedQuery.data?.data ?? [], [unplannedQuery.data]);
-  const unplannedCount = unplannedQuery.data?.meta.totalItems ?? unplannedTasks.length;
-
-  useEffect(() => {
-    // A changed filter starts the unplanned list at its first page.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUnplannedPage(1);
-  }, [priority, search, selectedProjectId]);
+  const unplannedTasks = useMemo(
+    () => unplannedQuery.data?.pages.flatMap((page) => page.data) ?? [],
+    [unplannedQuery.data],
+  );
   const visibleSchedules = useMemo(
     () => schedules.filter((schedule) => matchesFilter(schedule.task, search, priority)),
     [priority, schedules, search],
@@ -369,7 +362,7 @@ export function PlanningBoard({
             onClick={() => setMobileUnplannedOpen((open) => !open)}
             type="button"
           >
-              <span>Por planificar ({unplannedCount})</span>
+            <span>Por planificar ({unplannedTasks.length})</span>
             {mobileUnplannedOpen ? <X size={15} /> : <Inbox size={15} />}
           </button>
         )}
@@ -404,10 +397,12 @@ export function PlanningBoard({
                 ))}
               </SortableContext>
             )}
+            {unplannedQuery.hasNextPage && (
+              <button className="flex items-center justify-center gap-1 border border-outline-variant px-3 py-2 font-label-caps text-[10px] uppercase text-primary hover:bg-primary-container/20" onClick={() => void unplannedQuery.fetchNextPage()} type="button">
+                <CalendarPlus size={13} /> Cargar más
+              </button>
+            )}
           </DropZone>
-          {unplannedQuery.data && (
-            <TaskPagination isFetching={unplannedQuery.isFetching} meta={unplannedQuery.data.meta} onPageChange={setUnplannedPage} />
-          )}
           <button className="flex items-center justify-center gap-1 border-t border-outline-variant px-3 py-2 font-label-caps text-[10px] uppercase text-primary hover:bg-primary-container/20" onClick={onCreate} type="button">
             <Plus size={13} /> Nueva tarea
           </button>

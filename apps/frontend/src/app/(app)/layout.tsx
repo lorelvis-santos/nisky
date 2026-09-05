@@ -3,28 +3,18 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
-import { CaptureProvider, useCapture } from "@/context/CaptureContext";
 import { PendingRemindersGate } from "@/features/reminders/components/PendingRemindersGate";
 import { QuickCaptureModal } from "@/features/quicknotes/components/QuickCaptureModal";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { TopAppBar } from "@/components/ui/TopAppBar";
-import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
 import { TasksSidebarProvider } from "@/context/TasksSidebarContext";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <CaptureProvider>
-      <AuthenticatedAppLayout>{children}</AuthenticatedAppLayout>
-    </CaptureProvider>
-  );
-}
-
-function AuthenticatedAppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const capture = useCapture();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [captureOpen, setCaptureOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
@@ -52,7 +42,7 @@ function AuthenticatedAppLayout({ children }: { children: React.ReactNode }) {
     const handler = (event: KeyboardEvent) => {
       if (event.altKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "n") {
         event.preventDefault();
-        capture.open("NOTE");
+        setCaptureOpen(true);
       }
       if (event.altKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "b") {
         event.preventDefault();
@@ -65,7 +55,7 @@ function AuthenticatedAppLayout({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [capture]);
+  }, []);
 
   if (isLoading || !isAuthenticated) {
     return <div className="flex min-h-screen items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando sesión...</div>;
@@ -75,7 +65,7 @@ function AuthenticatedAppLayout({ children }: { children: React.ReactNode }) {
     return (
       <>
         {children}
-        <QuickCaptureModal initialMode={capture.mode} onClose={capture.close} open={capture.isOpen} />
+        <QuickCaptureModal onClose={() => setCaptureOpen(false)} open={captureOpen} />
       </>
     );
   }
@@ -84,14 +74,13 @@ function AuthenticatedAppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-background">
       <TasksSidebarProvider>
         <Sidebar user={user} open={menuOpen} onClose={() => setMenuOpen(false)} collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
-        <main className="flex min-w-0 flex-1 flex-col overflow-hidden pb-16 sm:pb-0">
-          <TopAppBar onMenu={() => setMenuOpen(true)} onOpenCapture={() => capture.open("NOTE")} />
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <TopAppBar onMenu={() => setMenuOpen(true)} onOpenCapture={() => setCaptureOpen(true)} />
           <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
         </main>
       </TasksSidebarProvider>
       <PendingRemindersGate />
-      <QuickCaptureModal initialMode={capture.mode} onClose={capture.close} open={capture.isOpen} />
-      <MobileBottomNav />
+      <QuickCaptureModal onClose={() => setCaptureOpen(false)} open={captureOpen} />
     </div>
   );
 }

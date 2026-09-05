@@ -3,14 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pin, X } from "lucide-react";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useDraftAutosave } from "@/hooks/useDraftAutosave";
 import { useAccessibleProjects } from "@/features/projects/hooks/useProjects";
 import type { Note, NoteDraft } from "@/types/entities";
@@ -52,6 +45,8 @@ export function NoteEditorModal({
   const isNew = note === null;
   const projectsQuery = useAccessibleProjects();
   const projects = projectsQuery.data ?? [];
+
+  useModalScrollLock();
 
   const draft = useDraftAutosave<NoteDraft, NoteDraftPayload>({
     load: fetchNoteDraft,
@@ -119,18 +114,13 @@ export function NoteEditorModal({
   };
 
   return (
-    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
-        <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
-          <div>
-            <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{note ? "Editar nota" : "Nueva nota"}</DialogTitle>
-            <DialogDescription className="sr-only">Edita el título, contenido y organización de tu nota.</DialogDescription>
-          </div>
-          <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button"><X size={19} /></button>
-          </DialogClose>
-        </DialogHeader>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5" data-modal-scroll>
+    <div aria-modal="true" className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]" role="dialog">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col border border-outline-variant bg-surface shadow-none">
+        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
+          <h2 className="font-headline-xs text-headline-xs font-bold text-primary">{note ? "Editar nota" : "Nueva nota"}</h2>
+          <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button"><X size={19} /></button>
+        </div>
+        <div className="space-y-4 overflow-y-auto p-5" data-modal-scroll>
           {restoredAt && (
             <p className="flex items-center justify-between gap-2 border border-outline-variant bg-surface-container-low px-3 py-2 font-body-sm text-body-sm text-on-surface-variant">
               <span>Se restauró tu borrador de {restoredAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.</span>
@@ -196,7 +186,7 @@ export function NoteEditorModal({
           </label>
           {error && <p className="border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
           {note && onDelete ? (
             <button
               className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap`}
@@ -216,15 +206,13 @@ export function NoteEditorModal({
             <span className="mr-auto self-center whitespace-nowrap font-body-sm text-body-sm text-on-surface-variant">
               {isNew && (draft.state === "saving" ? "Guardando borrador..." : draft.state === "error" ? "Error al guardar el borrador" : draft.state === "saved" ? "Borrador guardado" : "")}
             </span>
-            <DialogClose asChild>
-              <button className="whitespace-nowrap border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">Cancelar</button>
-            </DialogClose>
+            <button className="whitespace-nowrap border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={onClose} type="button">Cancelar</button>
             <button className="whitespace-nowrap bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={() => void submit()} type="button">
               {note ? "Guardar cambios" : "Crear nota"}
             </button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

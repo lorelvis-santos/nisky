@@ -1,17 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import { Plus, X } from "lucide-react";
 import type { Task } from "@/types/entities";
 import { dateKey } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { TaskCardShell } from "./TaskCard";
 
 const dayNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
@@ -44,11 +37,26 @@ export function MonthDayModal({
     (a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt),
   );
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   return (
-    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
-        <DialogHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
-          <DialogTitle
+    <div
+      aria-modal="true"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      role="dialog"
+    >
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col border border-outline-variant bg-surface shadow-none">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-outline-variant bg-surface-bright px-5 py-4">
+          <h2
             className={cn(
               "font-headline-xs text-headline-xs uppercase",
               isToday ? "font-bold text-primary" : "font-bold text-on-surface",
@@ -58,8 +66,7 @@ export function MonthDayModal({
             <span className="ml-2 font-data-mono text-data-mono text-xs font-normal normal-case text-on-surface-variant">
               {tasks.length} {tasks.length === 1 ? "tarea" : "tareas"}
             </span>
-          </DialogTitle>
-          <DialogDescription className="sr-only">Tareas programadas para este día.</DialogDescription>
+          </h2>
           <div className="flex items-center gap-2">
             <button
               aria-label={`Crear tarea para ${dayLabel(day)}`}
@@ -69,13 +76,16 @@ export function MonthDayModal({
             >
               <Plus size={14} /> Crear
             </button>
-            <DialogClose asChild>
-              <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
-                <X size={19} />
-              </button>
-            </DialogClose>
+            <button
+              aria-label="Cerrar"
+              className="text-on-surface-variant hover:text-on-surface"
+              onClick={onClose}
+              type="button"
+            >
+              <X size={19} />
+            </button>
           </div>
-        </DialogHeader>
+        </div>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
           {ordered.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-10">
@@ -102,7 +112,7 @@ export function MonthDayModal({
             ))
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

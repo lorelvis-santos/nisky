@@ -2,30 +2,33 @@
 
 import { X } from "lucide-react";
 import { FeedbackForm } from "@/components/feedback/FeedbackForm";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 
 export function FeedbackModal({ onClose }: { onClose: () => void }) {
+  useModalScrollLock();
   return (
-    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-md flex-col overflow-y-auto rounded-2xl border-outline-variant bg-surface p-5" showCloseButton={false}>
-        <DialogHeader className="mb-4 flex-row items-center justify-between text-left">
-          <DialogTitle className="font-headline-sm text-headline-sm normal-case tracking-normal">Enviar feedback</DialogTitle>
-          <DialogDescription className="sr-only">Comparte tus comentarios sobre Nisky.</DialogDescription>
-          <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
-              <X size={20} />
-            </button>
-          </DialogClose>
-        </DialogHeader>
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[90vh] w-full max-w-md flex-col overflow-y-auto border border-outline-variant bg-surface p-container-padding"
+        data-modal-scroll
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <p className="font-headline-sm text-headline-sm">Enviar feedback</p>
+          <button
+            aria-label="Cerrar"
+            className="text-on-surface-variant hover:text-on-surface"
+            onClick={onClose}
+            type="button"
+          >
+            <X size={20} />
+          </button>
+        </div>
         <FeedbackForm />
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

@@ -3,14 +3,7 @@
 import { ArchiveRestore, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import type { QuickNote } from "@/types/entities";
 import { formatCreatedAt } from "@/lib/utils";
 import { useQuickNoteMutations, useQuickNotesQuery } from "../hooks/useQuickNotes";
@@ -48,20 +41,19 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
   const notes = query.data ?? [];
   const inbox = view === "inbox";
 
+  useModalScrollLock();
+
   return (
-    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
-        <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+    <div aria-modal="true" className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]" role="dialog">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col border border-outline-variant bg-surface">
+        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
           <div>
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{inbox ? "BANDEJA DE ENTRADA" : "BANDEJA"}</p>
-            <DialogTitle className="mt-1 font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{inbox ? "Todas mis notas" : "Notas archivadas"}</DialogTitle>
-            <DialogDescription className="sr-only">Gestiona tus notas rápidas.</DialogDescription>
+            <h2 className="mt-1 font-headline-xs text-headline-xs font-bold text-primary">{inbox ? "Todas mis notas" : "Notas archivadas"}</h2>
           </div>
-          <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button"><X size={19} /></button>
-          </DialogClose>
-        </DialogHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto p-5" data-modal-scroll>
+          <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button"><X size={19} /></button>
+        </div>
+        <div className="overflow-y-auto p-5" data-modal-scroll>
           {query.isLoading ? <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando notas...</p> : query.isError ? <p className="font-body-sm text-body-sm text-error">{inbox ? "Ups, no pudimos cargar tus notas. Inténtalo de nuevo." : "Ups, no pudimos cargar las notas archivadas. Inténtalo de nuevo."}</p> : notes.length === 0 ? <p className="font-body-sm text-body-sm text-on-surface-variant">{inbox ? "Aún no tienes notas." : "Aún no hay notas archivadas."}</p> : inbox && onConvertToTask ? (
             notes.map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)
           ) : (
@@ -79,12 +71,8 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
             </div>
           )}
         </div>
-        <div className="flex shrink-0 justify-end border-t border-outline-variant bg-surface-container-low px-5 py-4">
-          <DialogClose asChild>
-            <button className="border border-outline-variant px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">Cerrar</button>
-          </DialogClose>
-        </div>
-      </DialogContent>
-    </Dialog>
+        <div className="flex justify-end border-t border-outline-variant bg-surface-container-low px-5 py-4"><button className="border border-outline-variant px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={onClose} type="button">Cerrar</button></div>
+      </div>
+    </div>
   );
 }

@@ -1,7 +1,5 @@
 ---
 name: Steel Monolith
-status: superseded
-replacement: ../serene_cadence/DESIGN.md
 colors:
   surface: '#fbf9fa'
   surface-dim: '#dbd9db'

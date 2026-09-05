@@ -22,7 +22,7 @@ Fase 1 completada incluye además: Pomodoro (Iteración 3), diario cifrado y bas
 - Nunca confiar en un `userId` enviado por el cliente.
 - Las fechas que representan un día calendario se guardan a las 12:00 UTC, como ya se hace con `Task.dueDate`, para evitar desplazamientos por zona horaria.
 - La interfaz se escribe en español; rutas, nombres de código y API en inglés.
-- Mantener Serene Cadence: superficies claras azuladas, radios suaves, sombras sutiles, Plus Jakarta Sans para estructura e Inter para densidad.
+- Mantener Steel Monolith: fondo claro, bordes de 1px, sin sombras, radios pequeños, Inter y JetBrains Mono.
 - Usar `proxy.ts`; no crear `middleware.ts`.
 - Usar Zod 4 con `z.email(...)` cuando aplique.
 - No usar `localStorage` ni `sessionStorage` para tokens.

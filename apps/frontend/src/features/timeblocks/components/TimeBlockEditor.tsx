@@ -118,7 +118,7 @@ export function TimeBlockEditor({
   return (
     <div className="space-y-3">
       <label className="block">
-        <span className="font-label-md text-label-md text-on-surface-variant">Proyecto</span>
+        <span className="font-label-caps text-label-caps text-on-surface-variant">PROYECTO</span>
         <select className="field mt-1" onChange={(event) => setProjectId(event.target.value)} value={projectId}>
           <option value="">Sin proyecto (tiempo libre)</option>
           {projects.map((project) => (
@@ -127,12 +127,12 @@ export function TimeBlockEditor({
         </select>
       </label>
       <div>
-        <span className="font-label-md text-label-md text-on-surface-variant">Días</span>
+        <span className="font-label-caps text-label-caps text-on-surface-variant">DÍAS</span>
         <div className="mt-1 flex flex-wrap gap-1.5">
           {DAY_ORDER.map((day) => (
             <button
               aria-pressed={daysOfWeek.includes(day)}
-              className={`min-h-11 rounded-md border px-3 py-1.5 font-body-sm text-body-sm transition-colors ${daysOfWeek.includes(day) ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface hover:bg-surface-container-low hover:text-secondary"}`}
+              className={`border px-3 py-1.5 font-body-sm text-body-sm ${daysOfWeek.includes(day) ? "bg-primary-container text-on-primary" : "border-outline-variant hover:bg-surface-container-low hover:text-primary"}`}
               key={day}
               onClick={() => toggleDay(day)}
               type="button"
@@ -144,20 +144,20 @@ export function TimeBlockEditor({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
-          <span className="font-label-md text-label-md text-on-surface-variant">Inicio</span>
+          <span className="font-label-caps text-label-caps text-on-surface-variant">INICIO</span>
           <input className="field mt-1" onChange={(event) => setStartTime(event.target.value)} type="time" value={startTime} />
         </label>
         <label className="block">
-          <span className="font-label-md text-label-md text-on-surface-variant">Fin</span>
+          <span className="font-label-caps text-label-caps text-on-surface-variant">FIN</span>
           <input className="field mt-1" onChange={(event) => setEndTime(event.target.value)} type="time" value={endTime} />
         </label>
       </div>
       <label className="block">
-        <span className="font-label-md text-label-md text-on-surface-variant">Nombre (opcional)</span>
+        <span className="font-label-caps text-label-caps text-on-surface-variant">NOMBRE (OPCIONAL)</span>
         <input className="field mt-1" onChange={(event) => setName(event.target.value)} placeholder="Ej: estudio ITLA" value={name} />
       </label>
       <label className="block">
-        <span className="font-label-md text-label-md text-on-surface-variant">Avisar antes</span>
+        <span className="font-label-caps text-label-caps text-on-surface-variant">AVISAR ANTES</span>
         <select className="field mt-1" onChange={(event) => setRemindBeforeMin(Number(event.target.value))} value={remindBeforeMin}>
           <option value={0}>Sin aviso previo</option>
           <option value={5}>5 minutos antes</option>
@@ -168,7 +168,7 @@ export function TimeBlockEditor({
         </select>
       </label>
       <section className="border-t border-outline-variant pt-3">
-        <span className="font-label-md text-label-md text-on-surface-variant">Repetir</span>
+        <span className="font-label-caps text-label-caps text-on-surface-variant">REPETIR</span>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {[
             [1, "Cada semana"],
@@ -177,7 +177,7 @@ export function TimeBlockEditor({
             [4, "Cada 4 semanas"],
           ].map(([weeks, label]) => (
             <button
-              className={`min-h-11 rounded-md border px-3 py-1.5 font-body-sm text-body-sm transition-colors ${repeatEveryWeeks === weeks ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface hover:bg-surface-container-low hover:text-secondary"}`}
+              className={`border px-3 py-1.5 font-body-sm text-body-sm ${repeatEveryWeeks === weeks ? "bg-primary-container text-on-primary" : "border-outline-variant hover:bg-surface-container-low hover:text-primary"}`}
               key={weeks}
               onClick={() => setRepeatEveryWeeks(weeks as number)}
               type="button"
@@ -187,7 +187,7 @@ export function TimeBlockEditor({
           ))}
         </div>
         <label className="mt-3 block">
-          <span className="font-label-md text-label-md text-on-surface-variant">Hasta (opcional)</span>
+          <span className="font-label-caps text-label-caps text-on-surface-variant">HASTA (OPCIONAL)</span>
           <input
             className="field mt-1"
             onChange={(event) => setRepeatEndsAt(event.target.value)}
@@ -197,7 +197,7 @@ export function TimeBlockEditor({
         </label>
       </section>
       <button
-        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary shadow-cadence-1 transition-colors hover:bg-primary/90 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary disabled:opacity-50"
         disabled={busy}
         onClick={() => void save()}
         type="button"
@@ -207,7 +207,7 @@ export function TimeBlockEditor({
       {target && (
         <div className="flex items-center justify-between gap-2 border-t border-outline-variant pt-3">
           <button
-            className={`min-h-11 flex-1 whitespace-nowrap rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-sm text-body-sm transition-colors hover:bg-surface-container-low disabled:opacity-50 ${target.isActive ? "" : "border-primary bg-primary text-on-primary"}`}
+            className={`flex-1 whitespace-nowrap border border-outline-variant px-3 py-2 font-body-sm text-body-sm hover:bg-surface-container-high disabled:opacity-50 ${target.isActive ? "" : "bg-primary-container text-on-primary"}`}
             disabled={busy}
             onClick={() => void onToggleActive()}
             type="button"
@@ -215,7 +215,7 @@ export function TimeBlockEditor({
             {target.isActive ? "Pausar" : "Activar"}
           </button>
           <button
-            className="min-h-11 flex-1 whitespace-nowrap rounded-md border border-error bg-surface px-3 py-2 font-body-sm text-body-sm text-error transition-colors hover:bg-error-container/30 disabled:opacity-50"
+            className="flex-1 whitespace-nowrap border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30 disabled:opacity-50"
             disabled={busy}
             onClick={() => void onDelete()}
             type="button"
@@ -227,7 +227,7 @@ export function TimeBlockEditor({
       {target && target.isActive && (
         <div className="flex items-end gap-2 border-t border-outline-variant pt-3">
           <label className="flex-1">
-            <span className="font-label-md text-label-md text-on-surface-variant">Saltar un día</span>
+            <span className="font-label-caps text-label-caps text-on-surface-variant">SALTAR UN DÍA</span>
             <input
               className="field mt-1"
               min="2000-01-01"
@@ -237,7 +237,7 @@ export function TimeBlockEditor({
             />
           </label>
           <button
-            className="min-h-11 flex-1 whitespace-nowrap rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-sm text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-error disabled:opacity-50"
+            className="flex-1 whitespace-nowrap border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-error disabled:opacity-50"
             disabled={busy || !skipDate}
             onClick={() => setSkipConfirmOpen(true)}
             type="button"
@@ -248,7 +248,7 @@ export function TimeBlockEditor({
       )}
       {target && exceptions.length > 0 && (
         <div className="border-t border-outline-variant pt-3">
-          <span className="font-label-md text-label-md text-on-surface-variant">Excepciones ({exceptions.length})</span>
+          <span className="font-label-caps text-label-caps text-on-surface-variant">EXCEPCIONES ({exceptions.length})</span>
           <ul className="mt-2 flex flex-col divide-y divide-outline-variant">
             {exceptions.map((exc) => (
               <li className="flex items-center justify-between gap-2 py-2" key={exc.id}>
@@ -262,7 +262,7 @@ export function TimeBlockEditor({
                 </div>
                 <button
                   aria-label="Eliminar excepción"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-error-container/40 hover:text-error"
+                  className="shrink-0 p-1 text-on-surface-variant hover:text-error"
                   disabled={busy}
                   onClick={() => setExceptionToDelete(exc)}
                   type="button"

@@ -48,8 +48,8 @@ export function IntegrationTasksList() {
         <h2 className="font-headline-xs text-headline-xs">Tareas de tus integraciones</h2>
         <div className="flex gap-1">
           {(["pending", "overdue", "all"] as const).map((f) => (
-             <button
-               className={`min-h-11 rounded-md border px-3 py-1.5 font-label-md text-label-md transition-colors ${filter === f ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+            <button
+              className={`px-3 py-1.5 font-label-caps text-label-caps uppercase ${filter === f ? "bg-primary-container text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
               key={f}
               onClick={() => setFilter(f)}
               type="button"
@@ -65,11 +65,11 @@ export function IntegrationTasksList() {
       ) : error ? (
         <p className="font-body-sm text-body-sm text-error">No se pudieron cargar las tareas.</p>
       ) : tasks.length === 0 ? (
-         <p className="max-w-2xl rounded-lg border border-outline-variant bg-surface p-container-padding font-body-sm text-body-sm text-on-surface-variant shadow-cadence-1">
+        <p className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding font-body-sm text-body-sm text-on-surface-variant">
           No hay tareas{filter === "overdue" ? " atrasadas" : filter === "pending" ? " próximas" : ""}. Conecta una integración en Ajustes.
         </p>
       ) : (
-         <ul className="max-w-2xl divide-y divide-outline-variant rounded-lg border border-outline-variant bg-surface shadow-cadence-1">
+        <ul className="max-w-2xl divide-y divide-outline-variant border border-outline-variant bg-surface-container-lowest">
           {tasks.map((task: Task) => {
             const due = task.dueDate ? new Date(task.dueDate) : null;
             const isOver = task.status === "PENDING" && due !== null && due < new Date();

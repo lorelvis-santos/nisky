@@ -8,7 +8,7 @@
 - [x] Usuario multirol y aislamiento preparado
 - [x] Login, registro, refresh rotation, logout y `/me`
 - [x] Frontend Next.js con route guard
-- [x] Serene Cadence aplicado como evolución visual de Stitch
+- [x] Steel Monolith aplicado
 - [x] Verificación de API, migraciones, typecheck y build
 
 ## Fase 1: Gestión diaria - Iteración 1

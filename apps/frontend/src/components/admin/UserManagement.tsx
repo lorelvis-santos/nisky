@@ -30,7 +30,7 @@ export function UserManagement() {
           value={search}
         />
         <button
-          className="min-h-11 rounded-md bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90"
+          className="border border-primary bg-primary-container px-4 py-2 font-body-sm text-body-sm text-primary-foreground hover:bg-primary"
           onClick={() => setCreating(true)}
           type="button"
         >

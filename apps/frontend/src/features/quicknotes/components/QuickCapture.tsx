@@ -1,0 +1,65 @@
+"use client";
+
+import { useCallback, useState } from "react";
+import { CalendarClock } from "lucide-react";
+import { toast } from "sonner";
+import type { QuickNote } from "@/types/entities";
+import { useQuickNoteMutations, useQuickNotesQuery } from "../hooks/useQuickNotes";
+import { QuickNoteItem } from "./QuickNoteItem";
+import { QuickNoteManager } from "./QuickNoteManager";
+import { detectDate, type DetectedDate } from "../utils/detectDate";
+
+export function QuickCapture({ onConvertToTask }: { onConvertToTask: (note: QuickNote, detected: DetectedDate | null) => void }) {
+  const [draft, setDraft] = useState("");
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [managerOpen, setManagerOpen] = useState(false);
+  const [allOpen, setAllOpen] = useState(false);
+  const query = useQuickNotesQuery("INBOX", 50);
+  const mutations = useQuickNoteMutations();
+  const detected = draft.trim() ? detectDate(draft) : null;
+  const inboxNotes = (query.data ?? []).filter((note) => note.status === "INBOX");
+
+  const save = useCallback(async () => {
+    const content = draft.trim();
+    if (!content || mutations.create.isPending) return;
+    setSaveState("saving");
+    try {
+      await mutations.create.mutateAsync(content);
+      setDraft("");
+      setSaveState("saved");
+      window.setTimeout(() => setSaveState("idle"), 1500);
+    } catch {
+      setSaveState("idle");
+      toast.error("Ups, no pudimos guardar tu nota. Inténtalo de nuevo.");
+    }
+  }, [draft, mutations.create]);
+
+  return (
+    <div className="flex min-h-[280px] flex-col">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
+        <textarea aria-label="Nota rápida" autoFocus className="min-h-36 flex-1 resize-none border-0 bg-transparent p-0 font-body-sm text-body-sm text-on-surface outline-none placeholder:text-on-surface-variant focus:ring-0 sm:min-h-28" id="quick-capture-input" onChange={(event) => { setDraft(event.target.value); setSaveState("idle"); }} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void save(); } }} placeholder="Escribe algo para revisarlo después..." value={draft} />
+        {detected && <span className="inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha detectada: {detected.label}</span>}
+        <div className="flex items-center justify-between gap-3 border-t border-outline-variant pt-3">
+          <span className="font-body-sm text-body-sm text-on-surface-variant">{saveState === "saving" ? "Guardando..." : saveState === "saved" ? "Guardado" : `${draft.length} caracteres`}</span>
+          <button className="min-h-11 bg-primary-container px-5 font-body-sm text-body-sm text-on-primary hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50" disabled={!draft.trim() || saveState === "saving"} onClick={() => void save()} type="button">Guardar nota</button>
+        </div>
+      </div>
+      {query.isError ? (
+        <p className="border-t border-outline-variant p-3 font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus notas. Inténtalo de nuevo.</p>
+      ) : inboxNotes.length > 0 && (
+        <div className="max-h-56 shrink-0 overflow-y-auto border-t border-outline-variant p-3">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="font-label-caps text-label-caps text-on-surface-variant">BANDEJA DE ENTRADA</p>
+            {inboxNotes.length > 8 && <button aria-label={`Ver todas las notas (${inboxNotes.length})`} className="font-label-caps text-label-caps text-primary hover:underline" onClick={() => setAllOpen(true)} type="button">VER TODAS ({inboxNotes.length})</button>}
+          </div>
+          <div>{inboxNotes.slice(0, 8).map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)}</div>
+        </div>
+      )}
+      <div className="flex shrink-0 justify-end border-t border-outline-variant p-3">
+        <button className="min-h-10 font-label-caps text-label-caps text-primary hover:underline" onClick={() => setManagerOpen(true)} type="button">VER ARCHIVADAS</button>
+      </div>
+      {allOpen && <QuickNoteManager onClose={() => setAllOpen(false)} onConvertToTask={onConvertToTask} view="inbox" />}
+      {managerOpen && <QuickNoteManager onClose={() => setManagerOpen(false)} />}
+    </div>
+  );
+}

@@ -35,18 +35,12 @@ export function HomeHabitsMatrix({
   const entries = matrix?.entries ?? [];
 
   return (
-    <section className="space-y-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-label-caps text-label-caps text-primary">SEGUIMIENTO</p>
-          <h2 className="mt-1 font-headline-xs text-headline-xs font-bold text-on-surface">Registro semanal</h2>
-          <p className="mt-0.5 hidden font-body-sm text-body-sm text-on-surface-variant sm:block">
-            Marca tus hábitos y conserva el ritmo.
-          </p>
-        </div>
+    <section className="border border-outline-variant bg-surface-container-lowest p-container-padding">
+      <header className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="font-headline-xs text-headline-xs font-bold text-primary">Hábitos</h2>
         <button
           aria-label="Gestionar hábitos"
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-transparent text-on-surface-variant hover:border-outline-variant hover:bg-surface-container-low hover:text-on-surface"
+          className="flex items-center gap-1.5 p-1 text-on-surface-variant hover:text-on-surface"
           onClick={onOpenManager}
           title="Gestionar hábitos"
           type="button"
@@ -64,7 +58,7 @@ export function HomeHabitsMatrix({
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[24rem] border-collapse">
+          <table className="w-full min-w-[22rem] border-collapse">
             <thead>
               <tr>
                 <th className="w-full pr-3 text-left font-label-caps text-label-caps text-on-surface-variant">HÁBITO</th>
@@ -96,7 +90,7 @@ export function HomeHabitsMatrix({
                         <button
                           aria-label={`${habit.name} ${key} ${completed ? "desmarcar" : "marcar"}`}
                           aria-pressed={completed}
-                          className={`flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${isToday ? "border-secondary" : "border-outline-variant"} ${completed ? "border-tertiary bg-tertiary text-on-primary" : "text-transparent hover:bg-surface-container-high"}`}
+                          className={`flex h-6 w-6 items-center justify-center border transition-colors ${isToday ? "border-primary" : "border-outline-variant"} ${completed ? "bg-primary-container text-on-primary-container" : "text-transparent hover:bg-surface-container-high"}`}
                           onClick={() => onToggle(habit.id, key)}
                           type="button"
                         >

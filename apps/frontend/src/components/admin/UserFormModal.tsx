@@ -5,14 +5,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
 import { PasswordInput } from "@/components/ui/PasswordInput";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useAdminUserMutations } from "@/features/admin/hooks/useAdmin";
 import { adminUserFormSchema, type AdminUserFormData } from "@/features/admin/schemas/admin.schema";
 import type { UserAdmin } from "@/types/admin";
@@ -42,6 +35,8 @@ export function UserFormModal({ user, onClose }: Props) {
   }));
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useModalScrollLock();
 
   const set = <K extends keyof AdminUserFormData>(key: K, value: AdminUserFormData[K]) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -80,18 +75,13 @@ export function UserFormModal({ user, onClose }: Props) {
   };
 
   return (
-    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
-        <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
-          <div>
-            <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{user ? "Editar usuario" : "Nuevo usuario"}</DialogTitle>
-            <DialogDescription className="sr-only">Administra los datos y permisos del usuario.</DialogDescription>
-          </div>
-          <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button"><X size={19} /></button>
-          </DialogClose>
-        </DialogHeader>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5" data-modal-scroll>
+    <div aria-modal="true" className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]" role="dialog">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col border border-outline-variant bg-surface shadow-none">
+        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
+          <h2 className="font-headline-xs text-headline-xs font-bold text-primary">{user ? "Editar usuario" : "Nuevo usuario"}</h2>
+          <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button"><X size={19} /></button>
+        </div>
+        <div className="space-y-4 overflow-y-auto p-5" data-modal-scroll>
           <label className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">NOMBRE</span>
             <input autoFocus className="field mt-1" onChange={(event) => set("name", event.target.value)} value={form.name} />
@@ -128,7 +118,7 @@ export function UserFormModal({ user, onClose }: Props) {
           </div>
           {error && <p className="border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
           {user && !isSelf ? (
             <button
               className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap`}
@@ -151,7 +141,7 @@ export function UserFormModal({ user, onClose }: Props) {
             </button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

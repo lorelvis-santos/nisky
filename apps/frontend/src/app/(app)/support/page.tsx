@@ -52,12 +52,12 @@ export default function SupportPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section className="h-full space-y-8 overflow-y-auto bg-background p-container-padding sm:p-section-gap">
-      <div className="rounded-lg border border-outline-variant bg-surface p-container-padding shadow-cadence-1 sm:p-section-gap">
+    <section className="h-full space-y-8 overflow-y-auto p-container-padding sm:p-section-gap">
+      <div className="border border-outline-variant bg-surface-container-lowest p-container-padding">
         <p className="font-label-caps text-label-caps text-on-surface-variant">
           AYUDA
         </p>
-        <h1 className="mt-2 font-headline-lg text-headline-lg text-on-surface">
+        <h1 className="mt-2 font-headline-sm text-headline-sm">
           Centro de ayuda
         </h1>
         <p className="mt-3 font-body-sm text-body-sm text-on-surface-variant">
@@ -66,8 +66,8 @@ export default function SupportPage() {
         </p>
       </div>
 
-      <div className="rounded-lg border border-outline-variant bg-surface p-container-padding shadow-cadence-1 sm:p-section-gap">
-        <h2 className="font-headline-md text-headline-md text-on-surface">
+      <div className="border border-outline-variant bg-surface-container-lowest p-container-padding">
+        <h2 className="font-headline-xs text-headline-xs">
           Preguntas frecuentes
         </h2>
         <div className="mt-3 divide-y divide-outline-variant">
@@ -77,11 +77,11 @@ export default function SupportPage() {
               <div key={item.question}>
                 <button
                   aria-expanded={open}
-                  className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md py-3 text-left transition-colors hover:bg-surface-container-low"
+                  className="flex w-full items-center justify-between gap-3 py-3 text-left"
                   onClick={() => setOpenIndex(open ? null : index)}
                   type="button"
                 >
-                  <span className="font-body-md text-body-md text-on-surface">{item.question}</span>
+                  <span className="font-body-md text-body-md">{item.question}</span>
                   <ChevronDown
                     className={`shrink-0 text-on-surface-variant transition-transform ${open ? "rotate-180" : ""}`}
                     size={18}

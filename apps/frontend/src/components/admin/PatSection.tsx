@@ -64,8 +64,8 @@ export function PatSection() {
   };
 
   return (
-    <div className="rounded-lg border border-outline-variant bg-surface p-container-padding shadow-cadence-1">
-      <h3 className="font-headline-xs text-headline-xs text-on-surface">Tokens de acceso</h3>
+    <div className="border border-outline-variant bg-surface-container-lowest p-container-padding">
+      <h3 className="font-headline-xs text-headline-xs">Tokens de acceso</h3>
       <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
         Usa tokens para conectar herramientas externas (como asistentes de IA) a tu cuenta sin exponer tu contraseña.
       </p>
@@ -86,18 +86,18 @@ export function PatSection() {
         expiresInDays: values.expiresInDays === undefined || values.expiresInDays === "" ? undefined : Number(values.expiresInDays),
       }))}>
         <label className="block">
-          <span className="font-label-md text-label-md text-on-surface-variant">Nombre del token</span>
+          <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Nombre del token</span>
           <input
-            className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
+            className="mt-1 w-full border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none focus:border-primary"
             placeholder="Ej: MCP local"
             {...register("name")}
           />
           {errors.name && <span className="mt-1 block text-xs text-error">{errors.name.message}</span>}
         </label>
         <label className="block">
-          <span className="font-label-md text-label-md text-on-surface-variant">Expiración</span>
+          <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Expiración</span>
           <select
-            className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
+            className="mt-1 w-full border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none focus:border-primary"
             {...register("expiresInDays")}
           >
             {EXPIRY_OPTIONS.map((option) => (
@@ -105,25 +105,25 @@ export function PatSection() {
             ))}
           </select>
         </label>
-        <button className="min-h-11 rounded-md bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50" disabled={createMutation.isPending} type="submit">
+        <button className="border border-primary bg-primary-container px-4 py-2 font-body-sm text-body-sm text-primary-foreground hover:bg-primary disabled:opacity-50" disabled={createMutation.isPending} type="submit">
           {createMutation.isPending ? "Creando..." : "Crear token"}
         </button>
-        {createMutation.error && <p className="rounded-md border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{createMutation.error.message}</p>}
+        {createMutation.error && <p className="border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{createMutation.error.message}</p>}
       </form>
 
       {createdPat && (
-        <div className="mt-4 max-w-sm rounded-md border border-secondary bg-secondary-container p-3">
+        <div className="mt-4 max-w-sm border border-primary bg-surface-container-high p-3">
           <p className="font-body-sm text-body-sm text-on-surface-variant">
             Copia este token ahora. No lo volveremos a mostrar.
           </p>
-          <code className="mt-2 block break-all rounded-md border border-outline-variant bg-surface p-2 font-data-mono text-data-mono">
+          <code className="mt-2 block break-all border border-outline-variant bg-surface p-2 font-data-mono text-data-mono">
             {createdPat.raw}
           </code>
           <div className="mt-3 flex gap-2">
-            <button className="min-h-11 rounded-md bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90" onClick={copy} type="button">
+            <button className="border border-primary bg-primary-container px-4 py-2 font-body-sm text-body-sm text-primary-foreground hover:bg-primary" onClick={copy} type="button">
               Copiar token
             </button>
-            <button className="min-h-11 rounded-md border border-outline-variant bg-surface px-4 py-2 font-body-sm text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container-low" onClick={() => setCreatedPat(null)} type="button">
+            <button className="border border-outline-variant px-4 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low" onClick={() => setCreatedPat(null)} type="button">
               Ya lo copié
             </button>
           </div>
@@ -135,7 +135,7 @@ export function PatSection() {
         {pats.length === 0 ? (
           <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">No tienes tokens activos.</p>
         ) : (
-             <ul className="mt-2 divide-y divide-outline-variant rounded-lg border border-outline-variant">
+          <ul className="mt-2 divide-y divide-outline-variant border border-outline-variant">
             {pats.map((pat) => (
               <li className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3 sm:flex-nowrap" key={pat.id}>
                 <div className="min-w-0 flex-1">
@@ -147,7 +147,7 @@ export function PatSection() {
                     Último uso: {formatDate(pat.lastUsedAt)} · Expira: {formatDate(pat.expiresAt)}
                   </p>
                 </div>
-                <button className="min-h-11 rounded-md border border-outline-variant bg-surface px-3 py-1.5 font-body-sm text-body-sm text-error transition-colors hover:bg-error-container/40" onClick={() => setRevokingId(pat.id)} type="button">
+                <button className="border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-error hover:bg-surface-container-low" onClick={() => setRevokingId(pat.id)} type="button">
                   Revocar
                 </button>
               </li>

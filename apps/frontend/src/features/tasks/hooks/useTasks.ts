@@ -1,41 +1,52 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { bulkDeleteTasks, bulkMoveTasks, createSubtask, createTask, deleteSubtask, deleteTask, fetchTask, fetchTasks, reorderTasks, updateSubtask, updateTask, type TaskQuery, type TaskUpdatePayload } from "../api/tasks";
 import { localDateKey } from "@/lib/utils";
 import type { Task } from "@/types/entities";
-
-const TASKS_PAGE_SIZE = 50;
 
 export function useTasksQuery(params: TaskQuery = {}) {
   return useQuery({ queryKey: ["tasks", params], queryFn: () => fetchTasks(params) });
 }
 
-type PaginatedTaskParams = Omit<TaskQuery, "limit">;
+type InfiniteTaskParams = Omit<TaskQuery, "page" | "limit">;
 
-export function usePaginatedTasksQuery(params: PaginatedTaskParams = {}, options?: { enabled?: boolean }) {
-  const queryParams = { ...params, page: params.page ?? 1, limit: TASKS_PAGE_SIZE };
-  return useQuery({
+export function useInfiniteTasksQuery(params: InfiniteTaskParams = {}, options?: { enabled?: boolean }) {
+  return useInfiniteQuery({
     enabled: options?.enabled,
-    placeholderData: keepPreviousData,
-    queryKey: ["tasks", "page", queryParams],
-    queryFn: () => fetchTasks(queryParams),
+    queryKey: ["tasks", "pages", params],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => fetchTasks({ ...params, page: pageParam, limit: 50 }),
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages
+        ? lastPage.meta.currentPage + 1
+        : undefined,
   });
 }
 
-export function useActiveTasksQuery(params: Omit<PaginatedTaskParams, "status"> = {}, options?: { enabled?: boolean }) {
-  return usePaginatedTasksQuery({ ...params, status: ["PENDING", "IN_PROGRESS"] }, options);
+export function useActiveTasksQuery(params: Omit<InfiniteTaskParams, "status"> = {}, options?: { enabled?: boolean }) {
+  return useInfiniteTasksQuery({ ...params, status: ["PENDING", "IN_PROGRESS"] }, options);
 }
 
 export function useTaskQuery(id: string | null) {
   return useQuery({ queryKey: ["task", id], queryFn: () => fetchTask(id as string), enabled: Boolean(id) });
 }
 
-export function useUnplannedTasksQuery(params: Omit<TaskQuery, "limit" | "scheduled" | "status"> = {}) {
-  return usePaginatedTasksQuery({
-    ...params,
-    scheduled: "UNPLANNED",
-    status: ["PENDING", "IN_PROGRESS"],
-    sort: "priority",
-    order: "desc",
+export function useUnplannedTasksQuery(params: Omit<TaskQuery, "page" | "limit" | "scheduled" | "status"> = {}) {
+  return useInfiniteQuery({
+    queryKey: ["tasks", "unplanned", params],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => fetchTasks({
+      ...params,
+      page: pageParam,
+      limit: 50,
+      scheduled: "UNPLANNED",
+      status: ["PENDING", "IN_PROGRESS"],
+      sort: "priority",
+      order: "desc",
+    }),
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages
+        ? lastPage.meta.currentPage + 1
+        : undefined,
   });
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 export const PROJECT_COLORS = [
-  "#0f172a",
+  "#303e51",
   "#006d77",
   "#8b5e3c",
   "#6b4f4f",

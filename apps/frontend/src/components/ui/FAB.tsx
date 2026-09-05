@@ -6,7 +6,7 @@ export function FAB({ onClick, ariaLabel, raised = false }: { onClick: () => voi
   return (
     <button
       aria-label={ariaLabel}
-      className={`fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-primary-container bg-primary text-on-primary shadow-cadence-3 transition-all duration-200 ease-out hover:bg-primary-container hover:text-on-primary-container active:scale-[0.98] ${raised ? "bottom-[calc(8.75rem+env(safe-area-inset-bottom,0px))]" : "bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))]"}`}
+      className={`fixed right-4 z-40 flex h-12 w-12 items-center justify-center border border-outline-variant bg-primary text-on-primary transition-all duration-200 ease-out hover:bg-primary-container hover:text-on-primary-container ${raised ? "bottom-20" : "bottom-4"}`}
       onClick={onClick}
       type="button"
     >

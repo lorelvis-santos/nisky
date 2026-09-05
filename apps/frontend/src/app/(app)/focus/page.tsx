@@ -10,7 +10,6 @@ import type {
   PomodoroSettings,
 } from "@/types/entities";
 import { TaskFocusDetails } from "@/features/pomodoro/components/TaskFocusDetails";
-import { TaskPagination } from "@/features/tasks/components/TaskPagination";
 import { useActiveTasksQuery, useTaskMutations, useTaskQuery } from "@/features/tasks/hooks/useTasks";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { useActiveBlockQuery } from "@/features/timeblocks/hooks/useTimeBlocks";
@@ -58,9 +57,8 @@ function FocusPageContent() {
     projectIdFromUrl ?? "",
   );
   const [showAllTasks, setShowAllTasks] = useState(false);
-  const [taskPage, setTaskPage] = useState(1);
   const tasksQuery = useActiveTasksQuery(
-    { ...(showAllTasks ? {} : { projectId: selectedProjectId || undefined }), page: taskPage },
+    showAllTasks ? {} : { projectId: selectedProjectId || undefined },
   );
   const todayKey = localDateKey(new Date());
   const schedulesQuery = useTaskSchedulesQuery({ from: todayKey, to: todayKey });
@@ -87,7 +85,7 @@ function FocusPageContent() {
     .filter((schedule) => !selectedProjectId || schedule.task.projectId === selectedProjectId)
     .sort((a, b) => Number(b.timeBlockId === activeBlockId) - Number(a.timeBlockId === activeBlockId) || a.order - b.order)
     .map((schedule) => schedule.task);
-  const fallbackTasks = tasksQuery.data?.data ?? [];
+  const fallbackTasks = tasksQuery.data?.pages.flatMap((page) => page.data) ?? [];
   const tasks = (showAllTasks || scheduledTodayTasks.length === 0 ? fallbackTasks : scheduledTodayTasks).filter(
     (task) => task.status !== "COMPLETED" && task.status !== "CANCELLED",
   );
@@ -261,7 +259,6 @@ function FocusPageContent() {
   };
 
   const handleProjectChange = (projectId: string) => {
-    setTaskPage(1);
     setSelectedProjectId(projectId);
     setSelectedTaskId("");
     setShowAllTasks(false);
@@ -271,7 +268,6 @@ function FocusPageContent() {
   };
 
   const handleToggleShowAll = () => {
-    setTaskPage(1);
     setShowAllTasks((value) => !value);
     setSelectedTaskId("");
   };
@@ -373,8 +369,10 @@ function FocusPageContent() {
           >
             {showAllTasks ? "Mostrando todas las tareas" : "Ver todas las tareas"}
           </button>
-          {tasksQuery.data && (showAllTasks || scheduledTodayTasks.length === 0) && (
-            <TaskPagination isFetching={tasksQuery.isFetching} meta={tasksQuery.data.meta} onPageChange={setTaskPage} />
+          {tasksQuery.hasNextPage && (showAllTasks || scheduledTodayTasks.length === 0) && (
+            <button className="self-start border border-outline-variant px-3 py-1.5 font-label-caps text-[10px] uppercase text-primary hover:bg-surface-container-low" onClick={() => void tasksQuery.fetchNextPage()} type="button">
+              Cargar más tareas
+            </button>
           )}
         </div>
         {selectedTask && (

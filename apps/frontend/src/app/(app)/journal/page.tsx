@@ -24,12 +24,12 @@ export default function JournalPage() {
   const selected = entries.find((entry) => entry.id === selectedId) ?? null;
 
   if (query.isLoading) {
-    return <div className="flex h-full items-center justify-center bg-background font-body-sm text-body-sm text-on-surface-variant">Cargando diario...</div>;
+    return <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando diario...</div>;
   }
 
   if (query.isError) {
     if (isForbidden(query.error)) return <JournalLocked />;
-    return <div className="flex h-full items-center justify-center bg-background font-body-sm text-body-sm text-error">Ups, no pudimos abrir tu diario. Inténtalo de nuevo en un momento.</div>;
+    return <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos abrir tu diario. Inténtalo de nuevo en un momento.</div>;
   }
 
   const openNew = () => {
@@ -65,8 +65,8 @@ export default function JournalPage() {
   const editing = selected;
 
   return (
-    <section className="flex h-full min-h-0 flex-col bg-background">
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-section-gap p-container-padding sm:p-section-gap lg:grid-cols-[20rem_1fr]">
+    <section className="flex h-full min-h-0 flex-col bg-surface">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-section-gap p-container-padding lg:grid-cols-[20rem_1fr]">
         {editing || creating ? (
           <>
             <div className="hidden lg:block">
@@ -98,14 +98,14 @@ export default function JournalPage() {
               onSelect={openEntry}
               selectedId={selectedId}
             />
-            <article className="flex min-h-[20rem] flex-col items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface p-section-gap text-center shadow-cadence-1">
+            <article className="flex min-h-[20rem] flex-col items-center justify-center gap-2 border border-outline-variant bg-surface-container-lowest p-section-gap text-center">
               <NotebookPen className="text-primary" size={28} />
               <p className="font-label-caps text-label-caps text-on-surface-variant">MI DIARIO</p>
-              <h1 className="font-headline-md text-headline-md text-on-surface">Una pausa para pensar</h1>
+              <h1 className="font-headline-sm text-headline-sm text-primary">Una pausa para pensar</h1>
               <p className="max-w-xl font-body-sm text-body-sm text-on-surface-variant">
                 Escribe tranquilo: tus entradas solo se abren para ti, y solo mientras estás conectado.
               </p>
-              <button className="mt-2 min-h-11 rounded-md bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary shadow-cadence-1 transition-colors hover:bg-primary/90" onClick={openNew} type="button">
+              <button className="mt-2 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={openNew} type="button">
                 Nueva entrada
               </button>
             </article>

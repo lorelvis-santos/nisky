@@ -74,20 +74,20 @@ export default function KnowledgePage() {
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex shrink-0 flex-col gap-4 bg-transparent p-container-padding sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-0 sm:pt-8 lg:px-10">
+    <section className="flex h-full min-h-0 flex-col bg-surface">
+      <div className="flex shrink-0 flex-col gap-3 border-b border-outline-variant bg-surface-bright p-container-padding sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">MIS NOTAS</p>
-          <h1 className="mt-1 font-display-hero-mobile text-display-hero-mobile text-on-surface sm:font-display-hero sm:text-display-hero">Notas y referencias</h1>
+          <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">Notas y referencias</h1>
         </div>
-        <div className="flex w-full items-center gap-3 sm:w-auto">
+        <div className="flex items-center gap-3">
           <input
-            className="field h-10 w-full rounded-full border-0 bg-surface-container-lowest px-4 shadow-sm sm:w-56"
+            className="field h-9 w-full sm:w-56"
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Buscar notas..."
             value={search}
           />
-          <button className="shrink-0 rounded-lg bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary shadow-sm hover:bg-primary-container" onClick={openNew} type="button">
+          <button className="shrink-0 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={openNew} type="button">
             Nueva nota
           </button>
         </div>
@@ -98,10 +98,10 @@ export default function KnowledgePage() {
         ) : query.isError ? (
           <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus notas. Inténtalo de nuevo.</div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 p-container-padding sm:gap-6 sm:px-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:px-10">
+          <div className="grid grid-cols-1 gap-section-gap p-container-padding lg:grid-cols-[16rem_1fr]">
             <KnowledgeSidebar active={filter} facets={facetsQuery.data} onFilter={setFilter} />
             {notes.length === 0 ? (
-              <div className="flex min-h-[16rem] flex-col items-center justify-center gap-2 rounded-xl border border-outline-variant/70 bg-surface-container-lowest p-section-gap text-center shadow-sm">
+              <div className="flex min-h-[16rem] flex-col items-center justify-center gap-2 border border-outline-variant bg-surface-container-lowest p-section-gap text-center">
                 <BookOpen className="text-primary" size={28} />
                 <p className="font-label-caps text-label-caps text-on-surface-variant">MIS NOTAS</p>
                 <p className="max-w-xl font-body-sm text-body-sm text-on-surface-variant">
@@ -114,7 +114,7 @@ export default function KnowledgePage() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 content-start gap-section-gap sm:grid-cols-2 xl:grid-cols-3">
                 {notes.map((note) => (
                   <NoteCard key={note.id} note={note} onEdit={openEdit} onTogglePin={togglePin} />
                 ))}

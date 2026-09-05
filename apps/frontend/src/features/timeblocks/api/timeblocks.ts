@@ -28,6 +28,7 @@ export async function updateTimeBlockSettings(payload: { dayStartMin: number; da
 
 export type CreateTimeBlockPayload = {
   projectId?: string | null;
+  date?: string | null;
   name?: string | null;
   daysOfWeek: number[];
   startMin: number;

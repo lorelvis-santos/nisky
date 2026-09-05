@@ -1,12 +1,14 @@
 "use client";
 
-import { CalendarClock, ChevronLeft, ChevronRight, ListTodo, Plus, SlidersHorizontal, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Plus, SlidersHorizontal, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { TimeBlockEditor } from "@/features/timeblocks/components/TimeBlockEditor";
 import { TimeBlockWeekGrid } from "@/features/timeblocks/components/TimeBlockWeekGrid";
 import { TaskAssignmentPanel } from "@/features/timeblocks/components/TaskAssignmentPanel";
+import { AgendaEntryChooser, type AgendaEntryKind } from "@/features/timeblocks/components/AgendaEntryChooser";
+import { EventEditorModal } from "@/features/events/components/EventEditorModal";
 import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
 import {
   useTimeBlockMutations,
@@ -19,9 +21,6 @@ import { useEventsQuery, useEventMutations } from "@/features/events/hooks/useEv
 import { minToTime, parseDateOnly, timeToMin } from "@/features/timeblocks/lib/time";
 import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { TasksSidebar } from "@/features/tasks/components/TasksSidebar";
-import { useTasksSidebar } from "@/context/TasksSidebarContext";
-import { groupTasksByDueDate, useTodayTasksQuery } from "@/features/tasks/hooks/useTasks";
 import type { TimeBlock, CalendarEvent } from "@/types/entities";
 import {
   Dialog,
@@ -40,7 +39,13 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 
-type SlotPrefill = { dayOfWeek: number; startMin: number; endMin: number };
+type SlotPrefill = { dayOfWeek: number; startMin: number; endMin: number; date: string; oneOff?: boolean };
+type EventEditorState = {
+  event: CalendarEvent | null;
+  initialDate?: string;
+  initialStartMin?: number;
+  initialEndMin?: number;
+};
 
 function toISODateString(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -67,7 +72,7 @@ function EventMoveModal({
 }) {
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onCancel(); }}>
-      <DialogContent className="max-w-md rounded-lg border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
+      <DialogContent className="max-w-md rounded-2xl border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
         <DialogHeader className="text-left">
           <DialogTitle className="font-headline-xs text-headline-xs normal-case tracking-normal">Mover «{title}» solo hoy</DialogTitle>
           <DialogDescription className="font-body-md text-body-md text-on-surface-variant">
@@ -127,7 +132,7 @@ function ResizeResolveModal({
 }) {
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onCancel(); }}>
-      <DialogContent className="max-w-md rounded-lg border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
+      <DialogContent className="max-w-md rounded-2xl border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
         <DialogHeader className="text-left">
           <DialogTitle className="font-headline-xs text-headline-xs normal-case tracking-normal">¿Aplicar cambio a un solo día?</DialogTitle>
           <DialogDescription className="font-body-md text-body-md text-on-surface-variant">
@@ -171,7 +176,7 @@ function MobileEditorModal({
 }) {
   return (
     <Drawer open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DrawerContent className="max-h-[85vh] rounded-t-lg border-outline-variant bg-surface shadow-cadence-3 lg:hidden">
+      <DrawerContent className="max-h-[85vh] rounded-t-2xl border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-cadence-3 lg:hidden">
         <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface px-5 py-4 text-left">
           <div>
             <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{title}</DrawerTitle>
@@ -191,6 +196,37 @@ function MobileEditorModal({
   );
 }
 
+function DesktopEditorModal({
+  children,
+  title,
+  onClose,
+}: {
+  children: React.ReactNode;
+  title: string;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DialogContent className="flex max-h-[90vh] w-full max-w-md flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0 shadow-cadence-3" showCloseButton={false}>
+        <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+          <div>
+            <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{title}</DialogTitle>
+            <DialogDescription className="sr-only">Editor de bloque de tiempo.</DialogDescription>
+          </div>
+          <DialogClose asChild>
+            <button aria-label="Cerrar" className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface" type="button">
+              <X size={19} />
+            </button>
+          </DialogClose>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5" data-modal-scroll>
+          {children}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function TimeBlocksContent() {
   const query = useTimeBlocksQuery();
   const mutations = useTimeBlockMutations();
@@ -201,13 +237,12 @@ function TimeBlocksContent() {
   const settings = settingsQuery.data;
   const isMobile = useIsMobile(1023);
   const blocks = query.data ?? [];
-  const { isOpen: tasksSidebarOpen, setIsOpen: setTasksSidebarOpen, toggle: toggleTasksSidebar } = useTasksSidebar();
-  const todayTasksQuery = useTodayTasksQuery();
-  const { overdue, todayTasks, tomorrowTasks } = groupTasksByDueDate(todayTasksQuery.data?.data ?? []);
-  const tasksTotal = overdue.length + todayTasks.length + tomorrowTasks.length;
   const [editing, setEditing] = useState<TimeBlock | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<SlotPrefill | null>(null);
+  const [entryChooserOpen, setEntryChooserOpen] = useState(false);
+  const [entrySlot, setEntrySlot] = useState<SlotPrefill | null>(null);
+  const [eventEditor, setEventEditor] = useState<EventEditorState | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -277,32 +312,44 @@ function TimeBlocksContent() {
     }
   };
 
-  const activeBlocks = blocks.filter((block) => block.isActive);
-  const reservedHours =
-    activeBlocks.reduce(
-      (acc, block) => acc + (block.endMin - block.startMin),
-      0,
-    ) / 60;
   const busy =
     mutations.create.isPending ||
     mutations.update.isPending ||
     mutations.remove.isPending;
 
-  const createAtSlot = async (dayOfWeek: number, startMin: number) => {
-    try {
-      await mutations.create.mutateAsync({
-        daysOfWeek: [dayOfWeek],
-        startMin,
-        endMin: Math.min(startMin + 60, 24 * 60),
+  const defaultAgendaSlot = (): SlotPrefill => {
+    const now = new Date();
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+    const startMin = Math.min(Math.max(Math.ceil(currentMin / 15) * 15, 9 * 60), 22 * 60);
+    return {
+      dayOfWeek: now.getDay(),
+      startMin,
+      endMin: startMin + 60,
+      date: toISODateString(now),
+    };
+  };
+
+  const openEntryChooser = (slot?: SlotPrefill) => {
+    setEntrySlot(slot ?? defaultAgendaSlot());
+    setEntryChooserOpen(true);
+  };
+
+  const selectAgendaEntry = (kind: AgendaEntryKind) => {
+    const slot = entrySlot ?? defaultAgendaSlot();
+    setEntryChooserOpen(false);
+    if (kind === "event") {
+      setEventEditor({
+        event: null,
+        initialDate: slot.date,
+        initialStartMin: slot.startMin,
+        initialEndMin: slot.endMin,
       });
-      toast.success(
-        isMobile
-          ? "Bloque creado. Tócalo para ajustarlo."
-          : "Bloque creado. Arrastra sus bordes para ajustarlo.",
-      );
-    } catch (err) {
-      toast.error((err as { message?: string })?.message ?? "Ups, no pudimos crear el bloque. Inténtalo de nuevo.");
+      return;
     }
+    setEditing(null);
+    setEditDate(null);
+    setPrefill({ ...slot, oneOff: true });
+    setMobileFormOpen(isMobile);
   };
 
   const openBlock = (block: TimeBlock, date?: Date) => {
@@ -311,31 +358,6 @@ function TimeBlocksContent() {
     setEditDate(date ? toISODateString(date) : null);
     if (isMobile) setMobileFormOpen(true);
   };
-
-  const previewResize = (block: TimeBlock, startMin: number, endMin: number, days: number[]) => {
-    setEditing({ ...block, startMin, endMin, daysOfWeek: days });
-    setPrefill(null);
-  };
-
-  useEffect(() => {
-    if (blocks.length === 0) return;
-    const now = new Date();
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    const today = now.getDay();
-    const current = blocks.find(
-      (block) =>
-        block.isActive &&
-        block.daysOfWeek.includes(today) &&
-        block.startMin <= nowMin &&
-        nowMin < block.endMin,
-    );
-    if (current) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- abrir el editor con el bloque activo solo en la primera carga (comportamiento deliberado)
-      setEditing(current);
-      setPrefill(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- se reactiva solo cuando llega el primer lote de bloques
-  }, [blocks.length]);
 
   const resizeBlock = async (block: TimeBlock, startMin: number, endMin: number, days: number[], draggedDate?: string) => {
     const daysChanged =
@@ -379,8 +401,7 @@ function TimeBlocksContent() {
         id: block.id,
         payload: { startMin, endMin, daysOfWeek: days },
       });
-      setEditing({ ...block, startMin, endMin, daysOfWeek: days });
-      setPrefill(null);
+      toast.success("Bloque actualizado en la Agenda");
     } catch {
       toast.error("Ups, no pudimos ajustar el bloque. Inténtalo de nuevo.");
     }
@@ -398,12 +419,14 @@ function TimeBlocksContent() {
         endMin,
       });
       toast.success("Excepción guardada para este día");
-      setEditing({ ...block, startMin, endMin });
+      setEditing(null);
+      setPrefill(null);
       setEditDate(null);
+      setMobileFormOpen(false);
+      setResolveDraft(null);
     } catch (err) {
       toast.error((err as { message?: string })?.message ?? "Ups, no pudimos crear la excepción.");
     }
-    setResolveDraft(null);
   };
 
   const resolveAsOriginal = async () => {
@@ -414,9 +437,7 @@ function TimeBlocksContent() {
         id: block.id,
         payload: { startMin, endMin, daysOfWeek: days },
       });
-      setEditing({ ...block, startMin, endMin, daysOfWeek: days });
-      setPrefill(null);
-      setEditDate(null);
+      toast.success("Horario actualizado para todos los días");
     } catch {
       toast.error("Ups, no pudimos ajustar el bloque. Inténtalo de nuevo.");
     }
@@ -427,7 +448,10 @@ function TimeBlocksContent() {
     setEditing(null);
     setPrefill(null);
     setMobileFormOpen(false);
-    if (isMobile) setTasksSidebarOpen(false);
+  };
+
+  const openEvent = (event: CalendarEvent, date: Date) => {
+    setEventEditor({ event, initialDate: toISODateString(date) });
   };
 
   const save = async (data: CreateTimeBlockPayload) => {
@@ -523,6 +547,35 @@ function TimeBlocksContent() {
     setEventMoveDraft({ event, date });
   };
 
+  const handleEventMove = async (
+    event: CalendarEvent,
+    sourceDate: Date,
+    targetDate: Date,
+    startMin: number,
+    endMin: number,
+  ) => {
+    if (event.recurrenceType) {
+      setEventMoveStart(minToTime(startMin));
+      setEventMoveEnd(minToTime(endMin));
+      setEventMoveDraft({ event, date: sourceDate });
+      return;
+    }
+
+    try {
+      await eventMutations.updateEvent.mutateAsync({
+        id: event.id,
+        payload: {
+          date: toISODateString(targetDate),
+          startMin,
+          endMin,
+        },
+      });
+      toast.success("Evento movido");
+    } catch (err) {
+      toast.error((err as { message?: string })?.message ?? "Ups, no pudimos mover el evento.");
+    }
+  };
+
   const saveEventMove = async () => {
     if (!eventMoveDraft) return;
     const startMin = timeToMin(eventMoveStart);
@@ -546,7 +599,7 @@ function TimeBlocksContent() {
   const editor = (
     <TimeBlockEditor
       busy={busy}
-      key={editing?.id ?? `create-${formKey}-${prefill?.dayOfWeek ?? ""}-${prefill?.startMin ?? ""}-${prefill?.endMin ?? ""}`}
+      key={editing?.id ?? `create-${formKey}-${prefill?.date ?? ""}-${prefill?.dayOfWeek ?? ""}-${prefill?.startMin ?? ""}-${prefill?.endMin ?? ""}`}
       onDelete={remove}
       onSave={save}
       onSkipToday={skipToday}
@@ -574,6 +627,16 @@ function TimeBlocksContent() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {weekOffset !== 0 && (
+            <button
+              className="min-h-11 rounded-md px-2.5 font-body-sm text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-secondary sm:min-h-10"
+              onClick={() => setWeekOffset(0)}
+              title="Volver a la semana actual"
+              type="button"
+            >
+              Volver a hoy
+            </button>
+          )}
           <div className="flex items-center overflow-hidden rounded-md border border-outline-variant bg-surface">
             <button
               aria-label="Semana anterior"
@@ -600,42 +663,22 @@ function TimeBlocksContent() {
             </button>
           </div>
           <button
-            className="min-h-11 rounded-md border border-outline-variant bg-surface px-3 font-data-mono text-data-mono text-xs text-on-surface-variant transition-colors hover:border-secondary hover:text-secondary disabled:opacity-50 sm:min-h-10"
-            disabled={weekOffset === 0}
-            onClick={() => setWeekOffset(0)}
-            title="Ir a la semana actual"
-            type="button"
-          >
-            Hoy
-          </button>
-          <button
-            aria-expanded={tasksSidebarOpen}
-            aria-label={tasksSidebarOpen ? "Ocultar tareas" : "Mostrar tareas"}
-            className={`hidden min-h-11 items-center gap-1.5 rounded-md border border-outline-variant bg-surface px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant transition-colors hover:border-secondary hover:text-secondary lg:flex ${tasksSidebarOpen ? "border-primary bg-primary text-on-primary" : ""}`}
-            onClick={toggleTasksSidebar}
-            type="button"
-          >
-            <ListTodo size={14} />
-            <span className="hidden sm:inline">Tareas</span>
-            {tasksTotal > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-data-mono text-[10px] text-on-primary">{tasksTotal > 9 ? "9+" : tasksTotal}</span>}
-          </button>
-          <button
-            aria-label="Ajustar rango del día"
-            className="flex min-h-11 items-center gap-2 rounded-md border border-outline-variant bg-surface px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant transition-colors hover:border-secondary hover:text-secondary"
+            aria-label={`Configurar horario (${minToTime(settings?.dayStartMin ?? 6 * 60)} – ${minToTime(settings?.dayEndMin ?? 23 * 60)})`}
+            className="flex min-h-11 items-center gap-2 rounded-md px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-secondary"
             onClick={openSettings}
             type="button"
           >
             <SlidersHorizontal size={14} />
-            {minToTime(settings?.dayStartMin ?? 6 * 60)} – {minToTime(settings?.dayEndMin ?? 23 * 60)}
+            <span>Horario</span>
           </button>
-          <span className="flex min-h-11 items-center gap-2 rounded-full border border-outline-variant bg-surface px-3 py-1.5 font-data-mono text-data-mono text-xs text-secondary">
-            <CalendarClock size={14} />
-            {reservedHours.toFixed(1)}h reservadas
-          </span>
-          <span className="flex min-h-11 items-center rounded-full border border-outline-variant bg-surface px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant">
-            {activeBlocks.length}{" "}
-            {activeBlocks.length === 1 ? "bloque" : "bloques"}
-          </span>
+          <button
+            className="hidden min-h-11 items-center gap-2 rounded-xl bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90 sm:flex sm:min-h-10"
+            onClick={() => openEntryChooser()}
+            type="button"
+          >
+            <Plus size={16} />
+            Añadir
+          </button>
         </div>
       </div>
 
@@ -678,69 +721,54 @@ function TimeBlocksContent() {
         </div>
       )}
 
-      <div className="flex items-start gap-4 lg:min-h-0 lg:flex-1">
-        <TasksSidebar
-          isMobileOpen={tasksSidebarOpen && isMobile}
-          onMobileClose={() => setTasksSidebarOpen(false)}
+      <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-outline-variant bg-surface shadow-cadence-1 lg:overflow-y-auto">
+        <TimeBlockWeekGrid
+          blocks={blocks}
+          events={events}
+          exceptions={exceptions}
+          dayEndMin={settings?.dayEndMin ?? 23 * 60}
+          dayStartMin={settings?.dayStartMin ?? 6 * 60}
+          moveEnabled={!isMobile}
+           onBlockClick={openBlock}
+           onEventClick={openEvent}
+           onEventMove={handleEventMove}
+           onEventAction={handleEventAction}
+          onResize={resizeBlock}
+          onSlotClick={(dayOfWeek, startMin, date) => openEntryChooser({
+            dayOfWeek,
+            startMin,
+            endMin: Math.min(startMin + 60, 24 * 60),
+            date: toISODateString(date),
+          })}
+          projects={projects}
+          taskCounts={taskCounts}
+          weekStart={weekStart}
         />
-        <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-outline-variant bg-surface shadow-cadence-1 lg:min-h-0 lg:overflow-y-auto">
-          <TimeBlockWeekGrid
-            blocks={blocks}
-            events={events}
-            exceptions={exceptions}
-            dayEndMin={settings?.dayEndMin ?? 23 * 60}
-            dayStartMin={settings?.dayStartMin ?? 6 * 60}
-            moveEnabled={!isMobile}
-            onBlockClick={openBlock}
-            onEventAction={handleEventAction}
-            onResize={resizeBlock}
-            onResizePreview={previewResize}
-            onSlotClick={createAtSlot}
-            projects={projects}
-            taskCounts={taskCounts}
-            weekStart={weekStart}
-          />
-        </div>
-        <aside className="hidden w-[20rem] shrink-0 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface shadow-cadence-1 lg:flex lg:max-h-full">
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-outline-variant bg-surface-container-low px-4 py-3">
-            <h2 className="font-headline-xs text-headline-xs">
-              {editing ? "Editar bloque" : "Nuevo bloque"}
-            </h2>
-            {editing && (
-              <button
-                aria-label="Nuevo bloque"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface hover:text-secondary"
-                onClick={() => closeEditor()}
-                type="button"
-              >
-                <Plus size={16} />
-              </button>
-            )}
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            {editor}
-            {editing && editDate && <TaskAssignmentPanel block={editing} date={editDate} />}
-          </div>
-        </aside>
       </div>
 
       <button
-        aria-label="Nuevo bloque"
-         className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-outline-variant bg-primary text-on-primary shadow-cadence-2 transition-colors hover:bg-primary/90 lg:hidden"
-        onClick={() => {
-          setEditing(null);
-          setPrefill(null);
-          setMobileFormOpen(true);
-        }}
+        aria-label="Añadir a Agenda"
+        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-outline-variant bg-primary text-on-primary shadow-cadence-2 transition-colors hover:bg-primary/90 lg:hidden"
+        onClick={() => openEntryChooser()}
         type="button"
       >
         <Plus size={22} />
       </button>
 
-      {mobileFormOpen && (
+      {!isMobile && (editing || prefill) && (
+        <DesktopEditorModal
+          onClose={closeEditor}
+          title={editing ? "Editar bloque" : "Tiempo para trabajar"}
+        >
+          {editor}
+          {editing && editDate && <TaskAssignmentPanel block={editing} date={editDate} />}
+        </DesktopEditorModal>
+      )}
+
+      {isMobile && mobileFormOpen && (
         <MobileEditorModal
           onClose={closeEditor}
-          title={editing ? "Editar bloque" : "Nuevo bloque"}
+          title={editing ? "Editar bloque" : "Tiempo para trabajar"}
         >
           {editor}
           {editing && editDate && <TaskAssignmentPanel block={editing} date={editDate} />}
@@ -754,6 +782,24 @@ function TimeBlocksContent() {
           onCancel={() => setResolveDraft(null)}
           onException={() => void resolveAsException()}
           onOriginal={() => void resolveAsOriginal()}
+         />
+       )}
+
+      {entryChooserOpen && (
+        <AgendaEntryChooser
+          onClose={() => setEntryChooserOpen(false)}
+          onSelect={selectAgendaEntry}
+        />
+      )}
+
+      {eventEditor && (
+        <EventEditorModal
+          event={eventEditor.event}
+          initialDate={eventEditor.initialDate}
+          initialEndMin={eventEditor.initialEndMin}
+          initialStartMin={eventEditor.initialStartMin}
+          key={eventEditor.event?.id ?? `new-${eventEditor.initialDate ?? ""}`}
+          onClose={() => setEventEditor(null)}
         />
       )}
 

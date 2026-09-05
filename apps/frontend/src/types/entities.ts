@@ -73,6 +73,7 @@ export interface TimeBlock {
   id: string;
   userId: string;
   projectId: string | null;
+  date: string | null;
   name: string | null;
   daysOfWeek: number[];
   startMin: number;
@@ -127,9 +128,12 @@ export interface CalendarEvent {
   userId: string;
   title: string;
   date: string;
+  baseDate?: string;
   allDay: boolean;
   startMin: number | null;
   endMin: number | null;
+  baseStartMin?: number | null;
+  baseEndMin?: number | null;
   location: string | null;
   color: string | null;
   recurrenceType: EventRecurrenceType | null;

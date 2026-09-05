@@ -21,7 +21,13 @@ export function TimeBlockEditor({
   initialSkipDate,
 }: {
   target: TimeBlock | null;
-  prefill?: { dayOfWeek: number; startMin: number; endMin: number };
+  prefill?: {
+    dayOfWeek: number;
+    startMin: number;
+    endMin: number;
+    date?: string;
+    oneOff?: boolean;
+  };
   projects: Project[];
   busy: boolean;
   onSave: (data: CreateTimeBlockPayload) => Promise<void>;
@@ -38,6 +44,8 @@ export function TimeBlockEditor({
   const [repeatEveryWeeks, setRepeatEveryWeeks] = useState(target?.repeatEveryWeeks ?? 1);
   const [repeatEndsAt, setRepeatEndsAt] = useState(target?.repeatEndsAt ? target.repeatEndsAt.slice(0, 10) : "");
   const [remindBeforeMin, setRemindBeforeMin] = useState(target?.remindBeforeMin ?? 0);
+  const [oneOff, setOneOff] = useState(Boolean(target?.date || prefill?.oneOff));
+  const [oneOffDate, setOneOffDate] = useState(target?.date?.slice(0, 10) ?? prefill?.date ?? "");
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
   const [exceptionToDelete, setExceptionToDelete] = useState<TimeBlockException | null>(null);
 
@@ -79,7 +87,17 @@ export function TimeBlockEditor({
     });
   };
 
+  const changeOneOffDate = (value: string) => {
+    setOneOffDate(value);
+    const next = parseDateOnly(value);
+    if (!Number.isNaN(next.getTime())) setDaysOfWeek([next.getDay()]);
+  };
+
   const save = async () => {
+    if (oneOff && !oneOffDate) {
+      toast.error("Selecciona la fecha del bloque.");
+      return;
+    }
     const startMin = timeToMin(startTime);
     const endMin = timeToMin(endTime);
     if (endMin - startMin < 5) {
@@ -89,11 +107,12 @@ export function TimeBlockEditor({
     await onSave({
       name: name.trim() || undefined,
       projectId: projectId || null,
+      date: oneOff ? oneOffDate || null : null,
       daysOfWeek: [...daysOfWeek].sort((a, b) => a - b),
       startMin,
       endMin,
-      repeatEveryWeeks,
-      repeatEndsAt: repeatEndsAt || null,
+      repeatEveryWeeks: oneOff ? 1 : repeatEveryWeeks,
+      repeatEndsAt: oneOff ? null : repeatEndsAt || null,
       remindBeforeMin,
     });
   };
@@ -126,22 +145,29 @@ export function TimeBlockEditor({
           ))}
         </select>
       </label>
-      <div>
-        <span className="font-label-md text-label-md text-on-surface-variant">Días</span>
-        <div className="mt-1 flex flex-wrap gap-1.5">
-          {DAY_ORDER.map((day) => (
-            <button
-              aria-pressed={daysOfWeek.includes(day)}
-              className={`min-h-11 rounded-md border px-3 py-1.5 font-body-sm text-body-sm transition-colors ${daysOfWeek.includes(day) ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface hover:bg-surface-container-low hover:text-secondary"}`}
-              key={day}
-              onClick={() => toggleDay(day)}
-              type="button"
-            >
-              {DAY_NAMES[day]}
-            </button>
-          ))}
+      {oneOff ? (
+        <label className="block">
+          <span className="font-label-md text-label-md text-on-surface-variant">Fecha</span>
+          <input className="field mt-1" onChange={(event) => changeOneOffDate(event.target.value)} type="date" value={oneOffDate} />
+        </label>
+      ) : (
+        <div>
+          <span className="font-label-md text-label-md text-on-surface-variant">Días</span>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {DAY_ORDER.map((day) => (
+              <button
+                aria-pressed={daysOfWeek.includes(day)}
+                className={`min-h-11 rounded-md border px-3 py-1.5 font-body-sm text-body-sm transition-colors ${daysOfWeek.includes(day) ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface hover:bg-surface-container-low hover:text-secondary"}`}
+                key={day}
+                onClick={() => toggleDay(day)}
+                type="button"
+              >
+                {DAY_NAMES[day]}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
           <span className="font-label-md text-label-md text-on-surface-variant">Inicio</span>
@@ -168,33 +194,65 @@ export function TimeBlockEditor({
         </select>
       </label>
       <section className="border-t border-outline-variant pt-3">
-        <span className="font-label-md text-label-md text-on-surface-variant">Repetir</span>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {[
-            [1, "Cada semana"],
-            [2, "Cada 2 semanas"],
-            [3, "Cada 3 semanas"],
-            [4, "Cada 4 semanas"],
-          ].map(([weeks, label]) => (
+        <span className="font-label-md text-label-md text-on-surface-variant">Tipo de bloque</span>
+        {prefill?.oneOff || target?.date ? (
+          <div className="mt-2 flex flex-wrap gap-1.5">
             <button
-              className={`min-h-11 rounded-md border px-3 py-1.5 font-body-sm text-body-sm transition-colors ${repeatEveryWeeks === weeks ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface hover:bg-surface-container-low hover:text-secondary"}`}
-              key={weeks}
-              onClick={() => setRepeatEveryWeeks(weeks as number)}
+              aria-pressed={oneOff}
+              className={`min-h-11 rounded-md border px-3 py-1.5 font-body-sm text-body-sm transition-colors ${oneOff ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface hover:bg-surface-container-low hover:text-secondary"}`}
+              onClick={() => {
+                setOneOff(true);
+                setRepeatEveryWeeks(1);
+              }}
               type="button"
             >
-              {label}
+              Solo este día
             </button>
-          ))}
-        </div>
-        <label className="mt-3 block">
-          <span className="font-label-md text-label-md text-on-surface-variant">Hasta (opcional)</span>
-          <input
-            className="field mt-1"
-            onChange={(event) => setRepeatEndsAt(event.target.value)}
-            type="date"
-            value={repeatEndsAt}
-          />
-        </label>
+            <button
+              aria-pressed={!oneOff}
+              className={`min-h-11 rounded-md border px-3 py-1.5 font-body-sm text-body-sm transition-colors ${!oneOff ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface hover:bg-surface-container-low hover:text-secondary"}`}
+              onClick={() => {
+                setOneOff(false);
+                setRepeatEndsAt("");
+              }}
+              type="button"
+            >
+              Repetir
+            </button>
+          </div>
+        ) : null}
+        {oneOff ? (
+          <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant">Se reserva únicamente para la fecha seleccionada.</p>
+        ) : (
+          <>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {[
+                [1, "Cada semana"],
+                [2, "Cada 2 semanas"],
+                [3, "Cada 3 semanas"],
+                [4, "Cada 4 semanas"],
+              ].map(([weeks, label]) => (
+                <button
+                  className={`min-h-11 rounded-md border px-3 py-1.5 font-body-sm text-body-sm transition-colors ${repeatEveryWeeks === weeks ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface hover:bg-surface-container-low hover:text-secondary"}`}
+                  key={weeks}
+                  onClick={() => setRepeatEveryWeeks(weeks as number)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <label className="mt-3 block">
+              <span className="font-label-md text-label-md text-on-surface-variant">Hasta (opcional)</span>
+              <input
+                className="field mt-1"
+                onChange={(event) => setRepeatEndsAt(event.target.value)}
+                type="date"
+                value={repeatEndsAt}
+              />
+            </label>
+          </>
+        )}
       </section>
       <button
         className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary shadow-cadence-1 transition-colors hover:bg-primary/90 disabled:opacity-50"

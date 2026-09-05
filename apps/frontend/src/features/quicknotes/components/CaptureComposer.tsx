@@ -158,8 +158,8 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
   const busy = taskMutations.create.isPending || noteMutations.create.isPending || reminderMutations.create.isPending;
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <div className="border-b border-outline-variant bg-surface-container-low px-4 py-3 sm:px-5">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="shrink-0 border-b border-outline-variant bg-surface-container-low px-4 py-3 sm:px-5">
         <div className="grid grid-cols-3 gap-1 rounded-xl border border-outline-variant bg-surface-bright p-1" role="tablist" aria-label="Tipo de captura">
           {modes.map((item) => {
             const active = mode === item.value;
@@ -184,8 +184,9 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
         </p>
       </div>
 
+      <div className="min-h-0 flex-1 overflow-y-auto" data-modal-scroll>
       {mode === "TASK" && (
-        <form className="flex flex-col gap-4 p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); void saveTask(); }}>
+        <form id="capture-task-form" className="flex flex-col gap-4 p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); void saveTask(); }}>
           <label className="block">
             <FieldLabel>TÍTULO DE LA TAREA</FieldLabel>
             <input autoFocus className="field mt-1.5" onChange={(event) => setTaskTitle(event.target.value)} placeholder="Ej: preparar la presentación" value={taskTitle} />
@@ -231,10 +232,6 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
               </div>
             </div>
           )}
-          <div className="mt-1 flex items-center justify-between gap-3 border-t border-outline-variant pt-4">
-            <span className="font-body-sm text-body-sm text-on-surface-variant">Enter para crear</span>
-            <Button disabled={busy || !taskTitle.trim()} type="submit"><Plus size={16} /> Crear tarea</Button>
-          </div>
         </form>
       )}
 
@@ -244,10 +241,6 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
           <div className="flex min-h-5 items-center justify-between gap-3">
             {detected ? <span className="inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha detectada: {detected.label}</span> : <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{noteDraft.length} caracteres</span>}
             <span className="font-body-sm text-body-sm text-on-surface-variant">Ctrl/Cmd + Enter</span>
-          </div>
-          <div className="flex items-center justify-between gap-3 border-t border-outline-variant pt-4">
-            <button className="font-label-md text-label-md text-secondary hover:underline" onClick={() => setNoteManagerOpen(true)} type="button">Ver archivadas</button>
-            <Button disabled={busy || !noteDraft.trim()} onClick={() => void saveNote()} type="button"><StickyNote size={16} /> Guardar nota</Button>
           </div>
           {noteQuery.isError && <p className="font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus notas.</p>}
           {notes.length > 0 && (
@@ -270,7 +263,7 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
       )}
 
       {mode === "REMINDER" && (
-        <form className="flex flex-col gap-4 p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); void saveReminder(); }}>
+        <form id="capture-reminder-form" className="flex flex-col gap-4 p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); void saveReminder(); }}>
           <label className="block">
             <FieldLabel>QUÉ RECORDAR</FieldLabel>
             <input autoFocus className="field mt-1.5" onChange={(event) => setReminderTitle(event.target.value)} placeholder="Ej: llamar al médico" value={reminderTitle} />
@@ -294,11 +287,29 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
               </select>
             </label>
           </div>
-          <div className="flex items-center justify-between gap-3 border-t border-outline-variant pt-4">
-            <span className="inline-flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-variant"><FileText size={15} /> Se guardará en tu zona horaria</span>
-            <Button disabled={busy} type="submit"><AlarmClock size={16} /> Guardar aviso</Button>
-          </div>
         </form>
+      )}
+      </div>
+
+      {mode === "TASK" && (
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-outline-variant bg-surface-bright/95 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur-sm sm:px-5">
+          <span className="font-body-sm text-body-sm text-on-surface-variant">Enter para crear</span>
+          <Button disabled={busy || !taskTitle.trim()} form="capture-task-form" type="submit"><Plus size={16} /> Crear tarea</Button>
+        </div>
+      )}
+
+      {mode === "NOTE" && (
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-outline-variant bg-surface-bright/95 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur-sm sm:px-5">
+          <button className="font-label-md text-label-md text-secondary hover:underline" onClick={() => setNoteManagerOpen(true)} type="button">Ver archivadas</button>
+          <Button disabled={busy || !noteDraft.trim()} onClick={() => void saveNote()} type="button"><StickyNote size={16} /> Guardar nota</Button>
+        </div>
+      )}
+
+      {mode === "REMINDER" && (
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-outline-variant bg-surface-bright/95 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur-sm sm:px-5">
+          <span className="inline-flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-variant"><FileText size={15} /> Se guardará en tu zona horaria</span>
+          <Button disabled={busy} form="capture-reminder-form" type="submit"><AlarmClock size={16} /> Guardar aviso</Button>
+        </div>
       )}
     </div>
   );

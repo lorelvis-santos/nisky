@@ -323,7 +323,7 @@ export function PlanningBoard({
               const isToday = key === dateKey(new Date());
               return (
                 <section className="flex min-h-[360px] min-w-0 flex-col gap-2" key={key}>
-                  <header className={cn("flex items-center justify-between border-b px-3 py-2", isToday ? "border-t-2 border-t-primary bg-secondary-container text-primary" : "border-outline-variant bg-surface-container-lowest")}>
+                  <header className={cn("flex items-center justify-between border-b px-3 py-2", isToday ? "border-t-2 border-t-primary bg-secondary-container/40 text-primary" : "border-outline-variant bg-surface-container-lowest")}>
                     <span className={cn("font-data-mono text-data-mono text-xs", isToday ? "font-bold" : "text-on-surface-variant")}>
                       {isToday ? "HOY · " : ""}{dayLabel(day)}
                     </span>

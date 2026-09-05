@@ -66,7 +66,7 @@ export default function DashboardPage() {
           <header className="space-y-4">
             <div>
               <p className="whitespace-nowrap font-label-caps text-label-caps uppercase tracking-[0.08em] text-on-surface-variant">{todayLabel}</p>
-              <h1 className="mt-1 font-display-hero-mobile text-on-surface sm:font-display-hero">Hoy</h1>
+              <h1 className="mt-1 font-display-hero-mobile font-bold text-on-surface sm:font-display-hero">Hoy</h1>
             </div>
             <button
               aria-label="Abrir captura rápida"
@@ -137,10 +137,9 @@ export default function DashboardPage() {
             <div className="min-w-0 space-y-6 lg:col-span-5">
               <QuickNotesPanel />
               <FutureView blocks={overview?.futureBlocks ?? []} tasks={overview?.futureTasks ?? []} />
+              <ActivityHeatmap activity={activityQuery.data} />
             </div>
           </div>
-
-          <ActivityHeatmap activity={activityQuery.data} />
         </div>
       </div>
 

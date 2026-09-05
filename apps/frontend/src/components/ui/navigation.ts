@@ -37,7 +37,6 @@ export const desktopPrimaryItems = [
   navigation.home,
   navigation.projects,
   navigation.tasks,
-  navigation.events,
   navigation.timeblocks,
   navigation.focus,
   navigation.journal,
@@ -56,7 +55,6 @@ export const mobilePrimaryItems = [
 
 export const mobileMoreItems = [
   navigation.projects,
-  navigation.events,
   navigation.timeblocks,
   navigation.journal,
   navigation.reminders,

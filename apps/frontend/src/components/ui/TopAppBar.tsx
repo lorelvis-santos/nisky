@@ -12,7 +12,6 @@ import { useRemindersQuery, usePendingRemindersQuery } from "@/features/reminder
 import { InvitationsPanel } from "@/features/projects/components/InvitationsPanel";
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import { useQuickNotesQuery } from "@/features/quicknotes/hooks/useQuickNotes";
-import { useTasksSidebar } from "@/context/TasksSidebarContext";
 import type { QuickNote, Reminder, Task } from "@/types/entities";
 
 const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
@@ -37,7 +36,6 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   const { user, logout } = useAuth();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const tasksSidebar = useTasksSidebar();
   const remindersQuery = useRemindersQuery();
   const pendingQuery = usePendingRemindersQuery();
   const tasksQuery = useTasksQuery({ limit: 20, sort: "dueDate", order: "asc" });
@@ -57,9 +55,9 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-container-padding lg:px-8">
       <div className="flex items-center gap-element-gap-sm">
-        <div className="hidden items-center gap-element-gap-md sm:flex lg:hidden">
-          <button aria-label="Abrir menú" className="rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={onMenu} type="button"><Menu size={20} /></button>
-          <Link aria-label="Ir a Inicio" className="font-headline-lg text-headline-lg font-bold tracking-tight text-primary hover:underline" href="/">Nisky</Link>
+        <div className="flex items-center gap-element-gap-md">
+          <button aria-label="Abrir menú" className="hidden rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary sm:flex lg:hidden" onClick={onMenu} type="button"><Menu size={20} /></button>
+          <Link aria-label="Ir a Inicio" className="font-headline-lg text-headline-lg font-bold tracking-tight text-primary hover:underline lg:hidden" href="/">Nisky</Link>
         </div>
         {pomodoro.activeSession && pomodoro.remainingSec !== null && <div className="flex items-center gap-1 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1"><button aria-label={pomodoro.activeSession.status === "PAUSED" ? "Reanudar Pomodoro" : "Pausar Pomodoro"} className="rounded-md p-1 text-primary hover:bg-surface-container-low hover:text-primary-container" onClick={() => void togglePause()} type="button">{pomodoro.activeSession.status === "PAUSED" ? <Play size={14} /> : <Pause size={14} />}</button><button aria-label="Abrir Pomodoro" className="font-data-mono text-data-mono text-xs text-primary hover:underline" onClick={() => router.push(`/focus${pomodoro.activeSession?.taskId ? `?taskId=${encodeURIComponent(pomodoro.activeSession.taskId)}` : ""}`)} type="button">{formatPomodoroTime(pomodoro.remainingSec)}</button><button aria-label="Cancelar Pomodoro" className="rounded-md p-1 text-on-surface-variant hover:bg-error-container hover:text-error" onClick={() => void cancel()} type="button"><Square size={13} /></button></div>}
       </div>
@@ -78,17 +76,6 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
           <kbd className="font-data-mono text-data-mono text-[10px] text-on-surface-variant">Alt+N</kbd>
         </button>
 <InvitationsPanel />
-          {pathname === "/timeblocks" && (
-            <button
-              aria-label="Tareas de hoy"
-              className="flex items-center gap-1.5 rounded-lg border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary lg:hidden"
-              onClick={tasksSidebar.toggle}
-              type="button"
-            >
-              <ListTodo size={15} />
-              <span className="font-body-sm text-body-sm">Tareas</span>
-            </button>
-          )}
           <div className="relative">
             <button aria-expanded={notificationsOpen} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setNotificationsOpen((open) => !open)} type="button">
             <Bell size={19} />

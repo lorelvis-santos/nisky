@@ -35,8 +35,8 @@ export function FutureView({
   ];
 
   return (
-    <section className="space-y-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
-      <header className="flex items-center justify-between gap-2">
+    <section className="space-y-5 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
+      <header className="flex items-center justify-between gap-2 border-b border-outline-variant pb-3">
         <div>
           <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Próximos días</h2>
           <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Tu siguiente ritmo</p>
@@ -45,7 +45,7 @@ export function FutureView({
           AGENDA <span aria-hidden="true">→</span>
         </Link>
       </header>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1">
         {days.map((day) => {
           const dayTasks = tasks.filter((task) => task.dueDate && localDateKey(task.dueDate) === day.key).slice(0, 3);
           const dayBlocks = blocks
@@ -57,12 +57,12 @@ export function FutureView({
                 <h3 className="font-headline-xs text-headline-xs font-semibold text-on-surface">{day.label}</h3>
                 <p className="capitalize font-data-mono text-data-mono text-xs text-on-surface-variant">{day.title}</p>
               </div>
-              <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-bright">
-                <div className="px-3 py-3">
+              <div className="rounded-xl border border-outline-variant/70 bg-surface-container-low p-3">
+                <div className="space-y-3">
                   {dayBlocks.length === 0 ? (
                     <p className="font-body-sm text-body-sm text-on-surface-variant">Sin bloques</p>
                   ) : (
-                    <ul className="space-y-1">
+                    <ul className="space-y-2">
                       {dayBlocks.map((block) => (
                         <li className="flex items-center gap-2 font-body-sm text-body-sm" key={block.id}>
                           <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: block.project?.color ?? "#0f172a" }} />
@@ -75,12 +75,12 @@ export function FutureView({
                     </ul>
                   )}
 
-                  <div className="my-3 border-t border-outline-variant" />
+                  {dayBlocks.length > 0 && dayTasks.length > 0 && <div className="border-t border-outline-variant/70" />}
 
                   {dayTasks.length === 0 ? (
                     <p className="font-body-sm text-body-sm text-on-surface-variant">Sin tareas</p>
                   ) : (
-                    <ul className="space-y-1">
+                    <ul className="space-y-2">
                       {dayTasks.map((task) => (
                         <li className="flex items-center gap-2 font-body-sm text-body-sm" key={task.id}>
                           {task.project && <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: task.project.color }} />}

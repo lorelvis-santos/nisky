@@ -51,10 +51,19 @@ function dueBadge(task: Task) {
   if (!task.dueDate) return null;
   return (
     <span
-      className={`flex items-center gap-1 whitespace-nowrap font-data-mono text-data-mono text-xs ${overdue ? "text-error" : "text-on-surface-variant"}`}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 font-data-mono text-[11px] font-medium ${overdue ? "bg-error-container text-error" : today ? "bg-secondary-fixed text-secondary" : "bg-surface-container-low text-on-surface-variant"}`}
     >
       {overdue ? <AlertCircle size={12} /> : <CalendarDays size={12} />}
       {overdue ? "Atrasada" : today ? "Hoy" : localDateKey(task.dueDate)}
+    </span>
+  );
+}
+
+function priorityBadge(task: Task) {
+  if (task.dueDate || (task.priority !== "HIGH" && task.priority !== "URGENT")) return null;
+  return (
+    <span className="inline-flex items-center rounded-md bg-warning-container px-2 py-0.5 font-data-mono text-[11px] font-medium text-on-warning-container">
+      {task.priority === "URGENT" ? "Urgente" : "Alta"}
     </span>
   );
 }
@@ -67,7 +76,7 @@ function TodayTaskRow({
   onToggle: (task: Task) => void;
 }) {
   return (
-    <div className="group flex items-start gap-3 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-4 shadow-sm transition-colors hover:border-outline hover:bg-surface-container-low">
+    <div className="group flex items-start gap-3 rounded-xl border border-outline-variant/60 bg-surface-container-lowest p-3 shadow-sm transition-colors hover:border-outline hover:bg-surface-container-low">
       <button
         aria-label={`Completar ${task.title}`}
         aria-pressed={task.status === "COMPLETED"}
@@ -96,13 +105,14 @@ function TodayTaskRow({
               <span className="truncate">{task.project.name}</span>
             </span>
           )}
+          {priorityBadge(task)}
           {(task.commentCount ?? 0) > 0 && (
             <span className="flex items-center gap-1 font-data-mono text-data-mono text-[11px] text-on-surface-variant" title="Comentarios">
               <MessageSquare size={11} /> {task.commentCount}
             </span>
           )}
           {"scheduleState" in task && task.scheduleState === "REPLAN" && (
-            <span className="font-label-caps text-[10px] uppercase text-error">Replanificar</span>
+            <span className="inline-flex items-center rounded-md bg-error-container px-2 py-0.5 font-label-caps text-[10px] uppercase text-error">Replanificar</span>
           )}
         </div>
       </Link>
@@ -121,36 +131,15 @@ export function TodayTasksPanel({
   onToggle: (task: Task) => void;
   emptyMessage?: string;
 }) {
-  const todayKey = localDateKey(new Date());
-  const overdue = tasks.filter(
-    (task) =>
-      task.dueDate &&
-      localDateKey(task.dueDate) < todayKey &&
-      task.status === "PENDING",
-  );
-  const today = tasks.filter(
-    (task) =>
-      task.dueDate &&
-      localDateKey(task.dueDate) === todayKey &&
-      task.status === "PENDING",
-  );
-  const highPriority = tasks.filter(
-    (task) =>
-      !task.dueDate && task.priority === "HIGH" && task.status === "PENDING",
-  );
-  const totalTasks = plannedTasks.length + tasks.length;
+  const allTasks = [...plannedTasks, ...tasks];
+  const totalTasks = allTasks.length;
 
   return (
     <section className="space-y-3">
-      <header className="flex items-start justify-between gap-3 px-1">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Por hacer</h2>
-            <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{totalTasks} tareas</span>
-          </div>
-          <p className="mt-0.5 hidden font-body-sm text-body-sm text-on-surface-variant sm:block">
-             Lo planificado, lo que vence hoy y lo ya vencido.
-          </p>
+      <header className="flex items-center justify-between gap-3 px-1">
+        <div className="flex items-center gap-2">
+          <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Por hacer</h2>
+          <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{totalTasks} tareas</span>
         </div>
         <Link
           className="flex shrink-0 items-center gap-1 font-label-caps text-label-caps text-primary hover:underline"
@@ -165,47 +154,10 @@ export function TodayTasksPanel({
           {emptyMessage}
         </div>
       ) : (
-        <div className="space-y-3">
-          {plannedTasks.length > 0 && (
-            <div className="space-y-2">
-              <p className="flex items-center gap-1.5 px-1 font-label-caps text-label-caps text-primary">
-                <CalendarDays size={12} /> PLANIFICADAS HOY ({plannedTasks.length})
-              </p>
-              {plannedTasks.map((task) => (
-                <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
-              ))}
-            </div>
-          )}
-          {overdue.length > 0 && (
-            <div className="space-y-2">
-              <p className="flex items-center gap-1.5 px-1 font-label-caps text-label-caps text-error">
-                <AlertCircle size={12} /> ATRASADAS ({overdue.length})
-              </p>
-              {overdue.map((task) => (
-                <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
-              ))}
-            </div>
-          )}
-          {today.length > 0 && (
-            <div className="space-y-2">
-              <p className="flex items-center gap-1.5 px-1 font-label-caps text-label-caps text-on-surface-variant">
-                <CalendarDays size={12} /> VENCEN HOY ({today.length})
-              </p>
-              {today.map((task) => (
-                <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
-              ))}
-            </div>
-          )}
-          {highPriority.length > 0 && (
-            <div className="space-y-2">
-              <p className="flex items-center gap-1.5 px-1 font-label-caps text-label-caps text-on-surface-variant">
-                ALTA PRIORIDAD ({highPriority.length})
-              </p>
-              {highPriority.map((task) => (
-                <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
-              ))}
-            </div>
-          )}
+        <div className="flex flex-col gap-1.5">
+          {allTasks.map((task) => (
+            <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
+          ))}
         </div>
       )}
     </section>

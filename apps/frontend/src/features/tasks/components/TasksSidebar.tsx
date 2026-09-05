@@ -229,7 +229,7 @@ function MobileSheet({
 }) {
   return (
     <Drawer open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DrawerContent className="max-h-[85vh] border-outline-variant bg-surface lg:hidden">
+      <DrawerContent className="max-h-[85vh] border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:hidden">
         <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
             <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Tareas de hoy</DrawerTitle>

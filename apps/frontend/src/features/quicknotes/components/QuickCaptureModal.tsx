@@ -37,7 +37,7 @@ function CaptureHeading({ mode, kind }: { mode: CaptureMode; kind: "dialog" | "d
   const description = "Captura una idea, tarea o recordatorio sin perder el contexto.";
   if (kind === "drawer") {
     return (
-      <DrawerHeader className="flex flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+      <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary-container text-secondary"><ModeIcon mode={mode} /></span>
           <div className="min-w-0">
@@ -52,7 +52,7 @@ function CaptureHeading({ mode, kind }: { mode: CaptureMode; kind: "dialog" | "d
     );
   }
   return (
-    <DialogHeader className="flex flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+    <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
       <div className="flex min-w-0 items-center gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary-container text-secondary"><ModeIcon mode={mode} /></span>
         <div className="min-w-0">
@@ -73,11 +73,9 @@ export function QuickCaptureModal({ open, onClose, initialMode = "TASK" }: { ope
   if (isSmallScreen) {
     return (
       <Drawer open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-        <DrawerContent className="max-h-[92dvh] rounded-t-3xl border-outline-variant bg-surface-bright pb-safe">
+        <DrawerContent className="max-h-[92dvh] rounded-t-3xl border-outline-variant bg-surface-bright">
           <CaptureHeading kind="drawer" mode={initialMode} />
-          <div className="min-h-0 overflow-y-auto" data-modal-scroll>
-            <CaptureComposer initialMode={initialMode} key={`${open ? "open" : "closed"}-${initialMode}`} onClose={onClose} />
-          </div>
+          <CaptureComposer initialMode={initialMode} key={`${open ? "open" : "closed"}-${initialMode}`} onClose={onClose} />
         </DrawerContent>
       </Drawer>
     );
@@ -87,9 +85,7 @@ export function QuickCaptureModal({ open, onClose, initialMode = "TASK" }: { ope
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
       <DialogContent className="flex max-h-[88dvh] w-full max-w-xl flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface-bright p-0" showCloseButton={false}>
         <CaptureHeading kind="dialog" mode={initialMode} />
-        <div className="min-h-0 overflow-y-auto" data-modal-scroll>
-          <CaptureComposer initialMode={initialMode} key={`${open ? "open" : "closed"}-${initialMode}`} onClose={onClose} />
-        </div>
+        <CaptureComposer initialMode={initialMode} key={`${open ? "open" : "closed"}-${initialMode}`} onClose={onClose} />
       </DialogContent>
     </Dialog>
   );

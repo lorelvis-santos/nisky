@@ -13,9 +13,9 @@ colors:
   on-surface-variant: '#475569'
   outline: '#cbd5e1'
   outline-variant: '#e2e8f0'
-  primary: '#0f172a'
+  primary: '#1e3a5f'
   on-primary: '#ffffff'
-  primary-container: '#0f172a'
+  primary-container: '#304b6a'
   secondary: '#2563eb'
   on-secondary: '#ffffff'
   tertiary: '#059669'
@@ -154,7 +154,7 @@ The descriptive semantic palette is authoritative when it differs from generated
 - Subdued surface: `#f1f5f9`
 - Border: `#e2e8f0`
 - Border hover / focus: `#cbd5e1`
-- Primary action: `#0f172a`
+- Primary action: `#1e3a5f`
 - Secondary action: `#2563eb`
 - Success: `#059669`
 - Warning: `#d97706`

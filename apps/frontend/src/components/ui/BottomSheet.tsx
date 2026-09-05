@@ -31,7 +31,7 @@ export function BottomSheet({
   if (!open) return null;
   return (
     <Drawer open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DrawerContent className="max-h-[85dvh] rounded-t-3xl border-outline-variant bg-surface pb-[env(safe-area-inset-bottom)] shadow-xl">
+      <DrawerContent className="max-h-[85dvh] rounded-t-3xl border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-xl">
         <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface/95 px-5 py-3 text-left backdrop-blur-md">
           <div>
             <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">

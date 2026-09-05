@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CalendarDays, CheckCircle2, Circle, ListChecks, MapPin, Play } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarDays, CheckCircle2, Circle, ListChecks, MapPin, Play } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { localDateKey } from "@/lib/utils";
@@ -84,7 +84,7 @@ export function ActiveBlockBanner({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: color }} />
               <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
             </span>
-            <p className="font-label-caps text-label-caps text-secondary">AHORA MISMO</p>
+            <p className="inline-flex items-center rounded-full bg-secondary-fixed/70 px-2.5 py-1 font-body-sm text-body-sm font-semibold text-secondary">Ahora mismo</p>
           </div>
           <p className="font-data-mono text-data-mono text-xs text-on-surface-variant">{timeLabel}</p>
         </div>
@@ -100,9 +100,9 @@ export function ActiveBlockBanner({
           </div>
           <Link
             className="rounded-xl border border-outline-variant px-3 py-2 font-label-caps text-label-caps text-primary hover:bg-surface-container-low"
-            href="/events"
+            href="/timeblocks"
           >
-            VER AGENDA
+            VER EN AGENDA
           </Link>
         </div>
       </div>
@@ -116,36 +116,33 @@ export function ActiveBlockBanner({
       const dayDiff = Math.floor(diffMs / 86_400_000);
       const whenLabel =
         dayDiff >= 1
-          ? `Mañana ${minToTime(nextBlock.startMin)}`
+          ? "Mañana"
           : `En ${formatDuration(diffMin)}`;
       const label = nextBlock.project?.name ?? nextBlock.name ?? "Bloque de enfoque";
       const color = nextBlock.project?.color ?? "#303e51";
       return (
         <div className="flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2">
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-1 rounded-md bg-secondary-fixed/70 px-2 py-0.5 font-label-caps text-label-caps font-semibold text-secondary">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-secondary/70" />
+              Próximo bloque
+            </span>
+            <div className="mt-1.5 flex min-w-0 items-center gap-2">
               <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-              <div className="min-w-0">
-                <p className="truncate font-headline-xs text-headline-xs font-bold" style={{ color }}>
-                  Próximo bloque
-                </p>
-                <p className="truncate font-body-sm text-body-sm text-on-surface-variant">{label}</p>
-              </div>
+              <p className="min-w-0 truncate font-headline-xs text-headline-xs font-semibold text-on-surface">{label}</p>
             </div>
-            <p className="flex shrink-0 items-center gap-1.5 rounded-xl border border-outline-variant bg-surface-container-low px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant">
-              <CalendarDays size={13} />
-              {whenLabel}
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
+              <span className="inline-flex items-center gap-1.5 text-secondary"><CalendarDays size={13} /> {whenLabel}</span>
+              <span aria-hidden="true" className="text-outline">·</span>
+              <span>{minToTime(nextBlock.startMin)}–{minToTime(nextBlock.endMin)}</span>
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-outline-variant pt-3">
-            <p className="font-data-mono text-data-mono text-xs text-on-surface-variant">
-              {minToTime(nextBlock.startMin)}–{minToTime(nextBlock.endMin)}
-            </p>
-            <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
-              VER HORARIO
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-outline-variant pt-3">
+            <Link className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-outline-variant px-3 py-2 font-body-sm text-body-sm font-medium text-on-surface-variant hover:border-secondary hover:bg-surface-container-low hover:text-secondary" href="/timeblocks">
+              Ver horario <ArrowRight size={14} />
             </Link>
             <button
-              className="ml-auto flex h-9 items-center gap-2 rounded-xl border border-primary bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
+              className="flex h-9 items-center gap-2 rounded-xl border border-primary bg-primary px-4 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container"
               onClick={() => onPlayPomodoro()}
               type="button"
             >
@@ -153,7 +150,7 @@ export function ActiveBlockBanner({
             </button>
           </div>
         </div>
-    );
+      );
     }
     return (
       <div className="flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
@@ -199,16 +196,16 @@ export function ActiveBlockBanner({
 
   return (
     <div
-      className="flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm"
+      className="flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-cadence-2"
       style={{ borderTop: `3px solid ${color}` }}
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant pb-3">
         <div className="flex items-center gap-2">
           <span aria-hidden="true" className="relative flex h-2 w-2 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: color }} />
-            <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-secondary" />
           </span>
-          <p className="font-label-caps text-label-caps text-secondary">AHORA MISMO</p>
+          <p className="inline-flex items-center rounded-full bg-secondary-fixed/70 px-2.5 py-1 font-body-sm text-body-sm font-semibold text-secondary">Ahora mismo</p>
         </div>
         <p className="font-data-mono text-data-mono text-xs text-on-surface-variant">
           {minToTime(block.startMin)}–{minToTime(block.endMin)}
@@ -217,14 +214,14 @@ export function ActiveBlockBanner({
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-headline-sm text-headline-sm font-bold text-on-surface">{label}</p>
+          <p className="truncate font-headline-md text-headline-md font-bold text-on-surface">{label}</p>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
             Restan {formatDuration(remaining)}
-            {tasks.length > 0 && ` · ${completedTasks} de ${tasks.length} tareas`}
+            {tasks.length > 0 && ` · ${taskProgress}% completado`}
           </p>
         </div>
         <button
-          className="flex h-9 shrink-0 items-center gap-2 rounded-xl border border-primary bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container active:scale-[0.98]"
+          className="flex h-9 shrink-0 items-center gap-2 rounded-xl border border-primary bg-primary px-4 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary/90 active:scale-[0.98]"
           onClick={() => onPlayPomodoro(firstTask?.id, block.projectId ?? undefined)}
           type="button"
         >
@@ -233,8 +230,8 @@ export function ActiveBlockBanner({
       </div>
 
       {tasks.length > 0 && (
-        <div className="h-2 overflow-hidden rounded-full bg-surface-container-high" role="progressbar" aria-label="Tareas del bloque completadas" aria-valuemax={100} aria-valuemin={0} aria-valuenow={taskProgress}>
-          <div className="h-full rounded-full bg-tertiary" style={{ width: `${taskProgress}%` }} />
+        <div className="h-2 overflow-hidden rounded-full bg-secondary-fixed/60" role="progressbar" aria-label="Tareas del bloque completadas" aria-valuemax={100} aria-valuemin={0} aria-valuenow={taskProgress}>
+          <div className="h-full rounded-full bg-secondary transition-[width] duration-500" style={{ width: `${taskProgress}%` }} />
         </div>
       )}
 

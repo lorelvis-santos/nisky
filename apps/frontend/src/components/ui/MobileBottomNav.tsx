@@ -26,7 +26,7 @@ export function MobileBottomNav() {
 
   return (
     <>
-      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-outline-variant bg-surface-bright/95 pb-safe shadow-[0_-8px_24px_-16px_rgba(15,23,42,0.24)] backdrop-blur-md sm:hidden">
+      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-outline-variant bg-surface-bright/95 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] shadow-[0_-8px_24px_-16px_rgba(15,23,42,0.24)] backdrop-blur-md sm:hidden">
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1 px-2 pt-1">
           {mobilePrimaryItems.map((item) => {
             const active = isNavigationItemActive(pathname, item.href);
@@ -57,7 +57,7 @@ export function MobileBottomNav() {
       </nav>
 
       <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
-        <DrawerContent className="max-h-[88dvh] rounded-t-3xl border-outline-variant bg-surface-bright pb-safe">
+        <DrawerContent className="max-h-[88dvh] rounded-t-3xl border-outline-variant bg-surface-bright pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
           <DrawerHeader className="flex flex-row items-start justify-between border-b border-outline-variant px-5 pb-4 pt-5 text-left">
             <div className="flex min-w-0 items-center gap-3">
               <Avatar avatarUrl={user?.avatarUrl} className="h-10 w-10" email={user?.email} name={user?.name} size="md" />

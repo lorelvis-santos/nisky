@@ -14,7 +14,7 @@ import { detectDate, type DetectedDate } from "../utils/detectDate";
 import { QuickNoteItem } from "./QuickNoteItem";
 import { QuickNoteManager } from "./QuickNoteManager";
 
-export type CaptureMode = "TASK" | "NOTE" | "REMINDER";
+export type CaptureMode = "TASK" | "QUICK_NOTE" | "REMINDER";
 
 type CaptureComposerProps = {
   initialMode?: CaptureMode;
@@ -23,7 +23,7 @@ type CaptureComposerProps = {
 
 const modes: { value: CaptureMode; label: string; icon: typeof CircleCheck }[] = [
   { value: "TASK", label: "Tarea", icon: CircleCheck },
-  { value: "NOTE", label: "Nota", icon: StickyNote },
+  { value: "QUICK_NOTE", label: "Nota rápida", icon: StickyNote },
   { value: "REMINDER", label: "Recordatorio", icon: AlarmClock },
 ];
 
@@ -94,9 +94,9 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
     try {
       await noteMutations.create.mutateAsync(content);
       setNoteDraft("");
-      toast.success("¡Nota guardada!");
+      toast.success("¡Captura rápida guardada!");
     } catch {
-      toast.error("Ups, no pudimos guardar tu nota. Inténtalo de nuevo.");
+      toast.error("Ups, no pudimos guardar la captura. Inténtalo de nuevo.");
     }
   };
 
@@ -180,7 +180,7 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
           })}
         </div>
         <p className="mt-2 px-1 font-body-sm text-body-sm text-on-surface-variant">
-          {mode === "TASK" ? "Saca la próxima acción de tu cabeza." : mode === "NOTE" ? "Guárdalo ahora y revísalo cuando tengas espacio." : "Elige cuándo quieres que Nisky te lo recuerde."}
+          {mode === "TASK" ? "Saca la próxima acción de tu cabeza." : mode === "QUICK_NOTE" ? "Captura la idea ahora y procésala después." : "Elige cuándo quieres que Nisky te lo recuerde."}
         </p>
       </div>
 
@@ -235,9 +235,9 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
         </form>
       )}
 
-      {mode === "NOTE" && (
+      {mode === "QUICK_NOTE" && (
         <div className="flex min-h-0 flex-col gap-4 p-4 sm:p-5">
-          <textarea aria-label="Nota rápida" className="field h-auto min-h-36 resize-none rounded-2xl bg-surface-container-low p-4 text-base leading-7" onChange={(event) => setNoteDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void saveNote(); } }} placeholder="Escribe algo para revisarlo después..." value={noteDraft} />
+          <textarea aria-label="Captura rápida" className="field h-auto min-h-36 resize-none rounded-2xl bg-surface-container-low p-4 text-base leading-7" onChange={(event) => setNoteDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void saveNote(); } }} placeholder="Escribe una idea para procesarla después..." value={noteDraft} />
           <div className="flex min-h-5 items-center justify-between gap-3">
             {detected ? <span className="inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha detectada: {detected.label}</span> : <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{noteDraft.length} caracteres</span>}
             <span className="font-body-sm text-body-sm text-on-surface-variant">Ctrl/Cmd + Enter</span>
@@ -247,8 +247,8 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
             <section className="border-t border-outline-variant pt-4">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-label-caps text-label-caps text-on-surface-variant">BANDEJA DE ENTRADA</p>
-                  <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">{notes.length} {notes.length === 1 ? "nota pendiente" : "notas pendientes"}</p>
+                  <p className="font-label-caps text-label-caps text-on-surface-variant">CAPTURAS PENDIENTES</p>
+                  <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">{notes.length} {notes.length === 1 ? "captura pendiente" : "capturas pendientes"}</p>
                 </div>
                 {notes.length > 8 && <button className="font-label-caps text-label-caps text-secondary hover:underline" onClick={() => setAllNotesOpen(true)} type="button">VER TODAS</button>}
               </div>
@@ -298,10 +298,10 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
         </div>
       )}
 
-      {mode === "NOTE" && (
+      {mode === "QUICK_NOTE" && (
         <div className="flex shrink-0 items-center justify-between gap-3 border-t border-outline-variant bg-surface-bright/95 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur-sm sm:px-5">
           <button className="font-label-md text-label-md text-secondary hover:underline" onClick={() => setNoteManagerOpen(true)} type="button">Ver archivadas</button>
-          <Button disabled={busy || !noteDraft.trim()} onClick={() => void saveNote()} type="button"><StickyNote size={16} /> Guardar nota</Button>
+          <Button disabled={busy || !noteDraft.trim()} onClick={() => void saveNote()} type="button"><StickyNote size={16} /> Guardar captura</Button>
         </div>
       )}
 

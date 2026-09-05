@@ -25,9 +25,9 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
   const restore = async (note: QuickNote) => {
     try {
       await mutations.update.mutateAsync({ id: note.id, payload: { status: "INBOX" } });
-      toast.success("¡Nota restaurada!");
+      toast.success("¡Captura restaurada!");
     } catch {
-      toast.error("Ups, no pudimos restaurar la nota. Inténtalo de nuevo.");
+      toast.error("Ups, no pudimos restaurar la captura. Inténtalo de nuevo.");
     }
   };
 
@@ -39,9 +39,9 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
     try {
       await mutations.remove.mutateAsync(note.id);
       setDeleteId(null);
-      toast.success("¡Nota eliminada!");
+      toast.success("¡Captura eliminada!");
     } catch {
-      toast.error("Ups, no pudimos eliminar la nota. Inténtalo de nuevo.");
+      toast.error("Ups, no pudimos eliminar la captura. Inténtalo de nuevo.");
     }
   };
 
@@ -53,23 +53,23 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
       <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
-            <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{inbox ? "BANDEJA DE ENTRADA" : "BANDEJA"}</p>
-            <DialogTitle className="mt-1 font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{inbox ? "Todas mis notas" : "Notas archivadas"}</DialogTitle>
-            <DialogDescription className="sr-only">Gestiona tus notas rápidas.</DialogDescription>
+            <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">CAPTURAS RÁPIDAS</p>
+            <DialogTitle className="mt-1 font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{inbox ? "Capturas pendientes" : "Capturas archivadas"}</DialogTitle>
+            <DialogDescription className="sr-only">Gestiona tus capturas rápidas.</DialogDescription>
           </div>
           <DialogClose asChild>
             <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button"><X size={19} /></button>
           </DialogClose>
         </DialogHeader>
         <div className="min-h-0 flex-1 overflow-y-auto p-5" data-modal-scroll>
-          {query.isLoading ? <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando notas...</p> : query.isError ? <p className="font-body-sm text-body-sm text-error">{inbox ? "Ups, no pudimos cargar tus notas. Inténtalo de nuevo." : "Ups, no pudimos cargar las notas archivadas. Inténtalo de nuevo."}</p> : notes.length === 0 ? <p className="font-body-sm text-body-sm text-on-surface-variant">{inbox ? "Aún no tienes notas." : "Aún no hay notas archivadas."}</p> : inbox && onConvertToTask ? (
+          {query.isLoading ? <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando capturas...</p> : query.isError ? <p className="font-body-sm text-body-sm text-error">{inbox ? "Ups, no pudimos cargar tus capturas. Inténtalo de nuevo." : "Ups, no pudimos cargar las capturas archivadas. Inténtalo de nuevo."}</p> : notes.length === 0 ? <p className="font-body-sm text-body-sm text-on-surface-variant">{inbox ? "Aún no tienes capturas pendientes." : "Aún no hay capturas archivadas."}</p> : inbox && onConvertToTask ? (
             notes.map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)
           ) : (
             <div className="divide-y divide-outline-variant border-y border-outline-variant">
               {notes.map((note) => (
                 <div className="py-3" key={note.id}>
                   <p className="font-body-sm text-body-sm text-on-surface">{note.content}</p>
-                  <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">Creada {formatCreatedAt(note.createdAt)}</p>
+                  <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">Capturada {formatCreatedAt(note.createdAt)}</p>
                   <div className="mt-2 flex items-center gap-3">
                     <button className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => void restore(note)} type="button"><ArchiveRestore size={14} /> Restaurar</button>
                     <button aria-label={`Eliminar ${note.content}`} className={`flex items-center gap-1 font-body-sm text-body-sm ${deleteId === note.id ? "bg-error px-2 py-1 text-error-foreground" : "text-on-surface-variant hover:text-error"}`} onClick={() => void remove(note)} type="button"><Trash2 className={deleteId === note.id ? "text-on-primary" : undefined} size={14} />{deleteId === note.id ? "Confirmar" : "Eliminar"}</button>

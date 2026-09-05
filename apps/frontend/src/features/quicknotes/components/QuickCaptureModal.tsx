@@ -21,20 +21,22 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { CaptureComposer, type CaptureMode } from "./CaptureComposer";
 
 const modeLabels: Record<CaptureMode, string> = {
-  TASK: "Nueva captura",
-  NOTE: "Nueva nota",
+  TASK: "Nueva tarea",
+  QUICK_NOTE: "Nueva nota rápida",
   REMINDER: "Nuevo recordatorio",
 };
 
 function ModeIcon({ mode }: { mode: CaptureMode }) {
-  if (mode === "NOTE") return <StickyNote aria-hidden="true" size={18} />;
+  if (mode === "QUICK_NOTE") return <StickyNote aria-hidden="true" size={18} />;
   if (mode === "REMINDER") return <AlarmClock aria-hidden="true" size={18} />;
   return <FileText aria-hidden="true" size={18} />;
 }
 
 function CaptureHeading({ mode, kind }: { mode: CaptureMode; kind: "dialog" | "drawer" }) {
   const title = modeLabels[mode];
-  const description = "Captura una idea, tarea o recordatorio sin perder el contexto.";
+  const description = mode === "QUICK_NOTE"
+    ? "Guárdala en Capturas rápidas para procesarla después."
+    : "Captura una idea, tarea o recordatorio sin perder el contexto.";
   if (kind === "drawer") {
     return (
       <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">

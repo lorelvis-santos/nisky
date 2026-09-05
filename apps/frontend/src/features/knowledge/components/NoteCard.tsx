@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { ArrowRightLeft, Pin, Pencil } from "lucide-react";
+import { Pin, Pencil } from "lucide-react";
 import type { Note } from "@/types/entities";
 
 function noteDate(value: string) {
@@ -17,13 +16,6 @@ export function NoteCard({
   onEdit: (note: Note) => void;
   onTogglePin: (note: Note) => Promise<void>;
 }) {
-  const router = useRouter();
-
-  const convertToTask = () => {
-    const prefill = encodeURIComponent(JSON.stringify({ title: note.title }));
-    router.push(`/tasks?modal=create&prefill=${prefill}`);
-  };
-
   return (
     <article className="group flex min-w-0 flex-col rounded-xl border border-outline-variant/70 bg-surface-container-lowest shadow-sm transition-shadow hover:shadow-md">
       <div className="flex min-w-0 items-start justify-between gap-2 p-5 pb-0">
@@ -56,10 +48,6 @@ export function NoteCard({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <button aria-label="Convertir en tarea" className="flex items-center gap-1.5 rounded-lg bg-surface-container px-2.5 py-1.5 font-label-md text-label-md font-semibold text-on-surface hover:bg-surface-container-high" onClick={convertToTask} title="Convertir en tarea" type="button">
-            <ArrowRightLeft className="text-secondary" size={14} />
-            <span className="hidden sm:inline">Convertir</span>
-          </button>
           <button aria-label="Editar" className="rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => onEdit(note)} title="Editar" type="button">
             <Pencil size={14} />
           </button>

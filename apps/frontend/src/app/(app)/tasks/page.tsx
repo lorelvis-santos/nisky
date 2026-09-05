@@ -407,7 +407,7 @@ function TasksPageContent() {
             await archiveQuickNote(modalUrl.state.quickNoteId);
           } catch {
             toast.warning(
-              "La tarea se creó, pero no pudimos guardar tu nota original.",
+              "La tarea se creó, pero no pudimos archivar la captura original.",
             );
           }
         }

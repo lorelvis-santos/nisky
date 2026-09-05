@@ -22,7 +22,8 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       { name: "Nueva tarea", short_name: "Tarea", url: "/tasks?modal=create", icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }] },
-      { name: "Nueva nota", short_name: "Nota", url: "/knowledge?modal=create", icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }] },
+      { name: "Nueva captura", short_name: "Captura", url: "/quick-notes", icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }] },
+      { name: "Nueva nota permanente", short_name: "Nota", url: "/knowledge?modal=create", icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }] },
     ],
   };
 }

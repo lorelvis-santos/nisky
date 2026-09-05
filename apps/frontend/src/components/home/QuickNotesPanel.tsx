@@ -14,14 +14,14 @@ export function QuickNotesPanel() {
     <section className="pt-1">
       <Link
         className="group flex items-center justify-between rounded-xl bg-surface-container-lowest p-3 shadow-sm transition-colors hover:bg-surface-container-low"
-        href="/knowledge"
+        href="/quick-notes"
       >
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-container text-on-surface-variant transition-colors group-hover:text-secondary">
             <StickyNote size={16} strokeWidth={1.8} />
           </span>
           <div className="min-w-0">
-            <p className="font-body-sm text-body-sm font-medium text-on-surface">Bandeja de notas</p>
+            <p className="font-body-sm text-body-sm font-medium text-on-surface">Capturas rápidas</p>
             <p className="mt-0.5 truncate font-label-md text-label-md text-on-surface-variant">
               {notes.length} {notes.length === 1 ? "nota rápida pendiente" : "notas rápidas pendientes"}
             </p>

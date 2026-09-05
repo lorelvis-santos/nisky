@@ -24,6 +24,7 @@ const titles: Record<string, string> = {
   "/focus": "Modo enfoque",
   "/journal": "Diario",
   "/knowledge": "Mis notas",
+  "/quick-notes": "Capturas rápidas",
   "/reminders": "Recordatorios",
   "/settings": "Ajustes",
   "/support": "Ayuda",
@@ -147,9 +148,9 @@ function buildNotices(tasks: Task[], reminders: Reminder[], pending: Reminder[],
       ? [{
           id: "quick-notes",
           kind: "quick" as const,
-          title: `Notas rápidas sin revisar (${quickNotes.length})`,
-          detail: quickNotes.length === 1 ? "Pendiente de revisar" : "Pendientes de revisar, archivar o convertir",
-          url: "/",
+          title: `Capturas rápidas sin revisar (${quickNotes.length})`,
+          detail: quickNotes.length === 1 ? "Pendiente de revisar" : "Pendientes de revisar, archivar o convertir en tareas",
+          url: "/quick-notes",
         }]
       : [];
   const taskNotices: Notice[] = tasks

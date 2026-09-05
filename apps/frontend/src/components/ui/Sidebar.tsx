@@ -34,7 +34,7 @@ function NavItem({
 
   return (
     <Link
-      className={`flex items-center gap-element-gap-md rounded-xl px-3.5 py-2.5 font-body-md text-body-md transition-colors ${active ? "bg-secondary-fixed font-semibold text-secondary shadow-sm" : "font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"} ${collapsed ? "lg:mx-0 lg:w-12 lg:justify-center lg:gap-0 lg:px-0" : ""}`}
+      className={`flex min-h-11 items-center gap-element-gap-md rounded-xl px-3.5 py-2.5 font-body-md text-body-md transition-colors ${active ? "bg-secondary-fixed font-semibold text-secondary shadow-sm" : "font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"} ${collapsed ? "lg:mx-0 lg:w-12 lg:justify-center lg:gap-0 lg:px-0" : ""}`}
       href={href}
       onClick={onNavigate}
       title={collapsed ? label : undefined}
@@ -117,9 +117,13 @@ export function Sidebar({
           ))}
         </nav>
         <div className={`border-t border-outline-variant/70 px-4 py-4 ${collapsed ? "lg:px-2" : ""}`}>
+          <p className={`mb-2 px-3 font-label-caps text-label-caps text-on-surface-variant ${collapsed ? "lg:hidden" : ""}`}>CUENTA Y AYUDA</p>
           <div className="space-y-1">
+            {desktopSecondaryItems.map((item) => (
+              <NavItem {...item} collapsed={collapsed} key={item.href} onNavigate={onClose} />
+            ))}
             <button
-              className={`flex min-h-8 w-full items-center gap-element-gap-md rounded-lg px-3 py-1.5 text-left font-label-md text-label-md text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface ${collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""}`}
+              className={`flex min-h-11 w-full items-center gap-element-gap-md rounded-xl px-3.5 py-2.5 text-left font-body-md text-body-md font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface ${collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""}`}
               onClick={() => {
                 onClose();
                 setFeedbackOpen(true);
@@ -127,24 +131,20 @@ export function Sidebar({
               title={collapsed ? "Feedback" : undefined}
               type="button"
             >
-              <MessageSquarePlus size={17} strokeWidth={1.8} />
+              <MessageSquarePlus size={20} strokeWidth={1.8} />
               <span className={collapsed ? "lg:hidden" : undefined}>Feedback</span>
             </button>
-            {desktopSecondaryItems.map((item) => (
-              <NavItem {...item} collapsed={collapsed} key={item.href} onNavigate={onClose} />
-            ))}
+          </div>
+          <div className="mt-3 border-t border-outline-variant/60 pt-3">
             <button
-              className={`flex min-h-8 w-full items-center gap-element-gap-md rounded-lg px-3 py-1.5 text-left font-label-md text-label-md text-on-surface-variant transition-colors hover:bg-error-container hover:text-error ${collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""}`}
+              className={`flex min-h-11 w-full items-center gap-element-gap-md rounded-xl px-3.5 py-2.5 text-left font-body-md text-body-md font-medium text-on-surface-variant transition-colors hover:bg-error-container hover:text-error ${collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""}`}
               onClick={() => void logout()}
               title={collapsed ? "Cerrar sesión" : undefined}
               type="button"
             >
-              <LogOut size={17} strokeWidth={1.8} />
+              <LogOut size={20} strokeWidth={1.8} />
               <span className={collapsed ? "lg:hidden" : undefined}>Cerrar sesión</span>
             </button>
-          </div>
-          <div className={`mt-3 flex items-center border-t border-outline-variant/60 px-3 pt-3 ${collapsed ? "lg:hidden" : ""}`}>
-            <span className="font-label-caps text-label-caps font-bold tracking-[0.18em] text-on-surface-variant">LAS</span>
           </div>
         </div>
         <button

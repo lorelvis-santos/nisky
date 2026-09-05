@@ -6,6 +6,7 @@ import {
   CalendarDays,
   FolderKanban,
   HelpCircle,
+  Inbox,
   LayoutDashboard,
   ListTodo,
   PencilLine,
@@ -28,6 +29,7 @@ export const navigation = {
   focus: { href: "/focus", label: "Modo enfoque", icon: Timer },
   journal: { href: "/journal", label: "Diario", icon: PencilLine },
   knowledge: { href: "/knowledge", label: "Mis notas", icon: BookOpen },
+  quickNotes: { href: "/quick-notes", label: "Capturas rápidas", icon: Inbox },
   reminders: { href: "/reminders", label: "Recordatorios", icon: AlarmClock },
   settings: { href: "/settings", label: "Ajustes", icon: Settings },
   support: { href: "/support", label: "Ayuda", icon: HelpCircle },
@@ -55,12 +57,13 @@ export const mobilePrimaryItems = [
 
 export const mobileMoreItems = [
   navigation.projects,
+  navigation.quickNotes,
   navigation.timeblocks,
   navigation.journal,
   navigation.reminders,
-  navigation.settings,
-  navigation.support,
 ] satisfies NavigationItem[];
+
+export const mobileMoreAccountItems = [navigation.settings, navigation.support] satisfies NavigationItem[];
 
 export function isNavigationItemActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);

@@ -52,7 +52,7 @@ function AuthenticatedAppLayout({ children }: { children: React.ReactNode }) {
     const handler = (event: KeyboardEvent) => {
       if (event.altKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "n") {
         event.preventDefault();
-        capture.open("NOTE");
+        capture.open("QUICK_NOTE");
       }
       if (event.altKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "b") {
         event.preventDefault();
@@ -85,7 +85,7 @@ function AuthenticatedAppLayout({ children }: { children: React.ReactNode }) {
       <TasksSidebarProvider>
         <Sidebar user={user} open={menuOpen} onClose={() => setMenuOpen(false)} collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden pb-16 sm:pb-0">
-          <TopAppBar onMenu={() => setMenuOpen(true)} onOpenCapture={() => capture.open("NOTE")} />
+          <TopAppBar onMenu={() => setMenuOpen(true)} onOpenCapture={() => capture.open("QUICK_NOTE")} />
           <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
         </main>
       </TasksSidebarProvider>

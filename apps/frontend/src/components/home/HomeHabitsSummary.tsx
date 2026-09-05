@@ -6,14 +6,10 @@ import type { HabitsMatrix } from "@/types/entities";
 
 export function HomeHabitsSummary({
   matrix,
-  isError = false,
-  onRetry,
   onToggle,
   onOpenManager,
 }: {
   matrix: HabitsMatrix | undefined;
-  isError?: boolean;
-  onRetry?: () => void;
   onToggle: (habitId: string, date: string) => void;
   onOpenManager: () => void;
 }) {
@@ -41,12 +37,7 @@ export function HomeHabitsSummary({
         </button>
       </header>
 
-      {isError ? (
-        <div className="rounded-xl border border-error/30 bg-error-container px-4 py-3 text-on-error-container">
-          <p className="font-body-sm text-body-sm">No pudimos cargar tus hábitos.</p>
-          {onRetry && <button className="mt-2 font-label-md text-label-md underline" onClick={onRetry} type="button">Reintentar</button>}
-        </div>
-      ) : habits.length === 0 ? (
+      {habits.length === 0 ? (
         <p className="font-body-sm text-body-sm text-on-surface-variant">
           Aún no tienes hábitos.{" "}
           <button className="text-primary hover:underline" onClick={onOpenManager} type="button">

@@ -22,7 +22,7 @@ function levelClass(level: number) {
   return "bg-surface-container-high";
 }
 
-export function ActivityHeatmap({ activity, isLoading = false }: { activity: HomeActivityPoint[] | undefined; isLoading?: boolean }) {
+export function ActivityHeatmap({ activity }: { activity: HomeActivityPoint[] | undefined }) {
   const grid = useMemo(() => {
     const byDate = new Map<string, HomeActivityPoint>();
     for (const point of activity ?? []) byDate.set(point.date, point);
@@ -66,9 +66,7 @@ export function ActivityHeatmap({ activity, isLoading = false }: { activity: Hom
         </div>
       </header>
 
-      {isLoading ? (
-        <div aria-label="Cargando actividad" className="h-24 animate-pulse rounded-xl bg-surface-container-low" role="status" />
-      ) : hasActivity ? (
+      {hasActivity ? (
         <div className="overflow-x-auto no-scrollbar">
           <div className="mx-auto flex w-full min-w-[20rem] flex-col gap-1 sm:min-w-0">
             <div className="flex gap-1">

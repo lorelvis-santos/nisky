@@ -18,8 +18,7 @@ import type { QuickNote, Reminder, Task } from "@/types/entities";
 const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
 
 const titles: Record<string, string> = {
-  "/": "Hoy",
-  "/projects": "Proyectos",
+  "/": "Inicio",
   "/tasks": "Planificación y tareas",
   "/events": "Eventos",
   "/timeblocks": "Agenda",
@@ -58,7 +57,6 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-container-padding lg:px-8">
       <div className="flex items-center gap-element-gap-sm">
-        <div className="max-w-[12rem] truncate font-headline-sm text-headline-sm font-semibold text-on-surface sm:hidden">{title}</div>
         <div className="hidden items-center gap-element-gap-md sm:flex lg:hidden">
           <button aria-label="Abrir menú" className="rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={onMenu} type="button"><Menu size={20} /></button>
           <Link aria-label="Ir a Inicio" className="font-headline-lg text-headline-lg font-bold tracking-tight text-primary hover:underline" href="/">Nisky</Link>

@@ -145,11 +145,11 @@ export function TodayTasksPanel({
       <header className="flex items-start justify-between gap-3 px-1">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Prioridades de hoy</h2>
+            <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Por hacer</h2>
             <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{totalTasks} tareas</span>
           </div>
           <p className="mt-0.5 hidden font-body-sm text-body-sm text-on-surface-variant sm:block">
-             Lo planificado, lo urgente y lo que necesita atención.
+             Lo planificado, lo que vence hoy y lo ya vencido.
           </p>
         </div>
         <Link

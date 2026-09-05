@@ -69,7 +69,7 @@ export function ActiveBlockBanner({
   const nowTimestamp = useNowTimestamp();
 
   if (activeEvent) {
-    const color = activeEvent.color ?? "#0f172a";
+    const color = activeEvent.color ?? "#303e51";
     const timeLabel = activeEvent.allDay
       ? "Todo el día"
       : `${minToTime(activeEvent.startMin ?? 0)}–${minToTime(activeEvent.endMin ?? 0)}`;
@@ -119,7 +119,7 @@ export function ActiveBlockBanner({
           ? `Mañana ${minToTime(nextBlock.startMin)}`
           : `En ${formatDuration(diffMin)}`;
       const label = nextBlock.project?.name ?? nextBlock.name ?? "Bloque de enfoque";
-      const color = nextBlock.project?.color ?? "#0f172a";
+      const color = nextBlock.project?.color ?? "#303e51";
       return (
         <div className="flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -158,24 +158,28 @@ export function ActiveBlockBanner({
     return (
       <div className="flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
             <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-outline-variant" />
-            <p className="mt-2 font-label-caps text-label-caps text-on-surface-variant">SIGUIENTE PASO</p>
-            <p className="mt-1 font-headline-sm text-headline-sm font-bold text-on-surface">Elige qué avanzar ahora</p>
-            <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">No hay un bloque de enfoque activo en este momento.</p>
+            <p className="truncate font-headline-xs text-headline-xs font-bold text-on-surface">
+              Sin bloque activo ahora
+            </p>
           </div>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">Organiza tu siguiente espacio de enfoque.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant pt-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-outline-variant pt-3">
+          <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
+            VER HORARIO
+          </Link>
+          <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
+            NUEVO BLOQUE
+          </Link>
           <button
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-primary bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary/90"
+            className="ml-auto flex h-9 items-center gap-2 rounded-xl border border-primary bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
             onClick={() => onPlayPomodoro()}
             type="button"
           >
             <Play size={15} /> Comenzar enfoque
           </button>
-          <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
-            Configurar horario
-          </Link>
         </div>
       </div>
     );
@@ -189,7 +193,7 @@ export function ActiveBlockBanner({
   const taskProgress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
   const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
-  const color = block.project?.color ?? "#0f172a";
+  const color = block.project?.color ?? "#303e51";
   const remaining = Math.max(0, block.endMin - nowMin);
   const firstTask = tasks[0];
 

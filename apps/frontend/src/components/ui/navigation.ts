@@ -20,7 +20,7 @@ export type NavigationItem = {
 };
 
 export const navigation = {
-  home: { href: "/", label: "Hoy", icon: LayoutDashboard },
+  home: { href: "/", label: "Inicio", icon: LayoutDashboard },
   projects: { href: "/projects", label: "Proyectos", icon: FolderKanban },
   tasks: { href: "/tasks", label: "Planificación y tareas", icon: ListTodo },
   events: { href: "/events", label: "Eventos", icon: CalendarDays },

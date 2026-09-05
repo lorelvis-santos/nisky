@@ -39,7 +39,7 @@ export function FutureView({
       <header className="flex items-center justify-between gap-2">
         <div>
           <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Próximos días</h2>
-          <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Lo que viene después</p>
+          <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Tu siguiente ritmo</p>
         </div>
         <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/tasks?view=week">
           AGENDA <span aria-hidden="true">→</span>

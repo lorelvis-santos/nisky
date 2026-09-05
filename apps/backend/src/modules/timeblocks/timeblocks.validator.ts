@@ -6,11 +6,12 @@ const dateValue = z.string().refine((value) => !Number.isNaN(Date.parse(value)),
 
 const timeBlockFields = {
   projectId: z.uuid("El proyecto no es válido").nullable().optional(),
+  date: dateValue.nullable().optional(),
   name: z.string().trim().max(100).nullable().optional(),
   daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1, "Elige al menos un día"),
   startMin: z.number().int().min(0).max(1439),
   endMin: z.number().int().min(1).max(1440),
-  repeatEveryWeeks: z.number().int().min(0).max(52).optional(),
+  repeatEveryWeeks: z.number().int().min(1).max(52).optional(),
   repeatEndsAt: dateValue.nullable().optional(),
   remindBeforeMin: z.number().int().min(0).max(1440).optional(),
 };

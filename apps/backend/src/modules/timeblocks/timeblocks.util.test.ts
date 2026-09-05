@@ -52,4 +52,17 @@ describe("block occurrences", () => {
     const nextDay = DateTime.fromJSDate(date, { zone: "America/Santo_Domingo" }).plus({ days: 1 }).toJSDate();
     expect(blockOccurrenceOn(block, nextDay)).toEqual({ occurs: false });
   });
+
+  test("supports a one-off block on its selected date", () => {
+    const oneOff = { ...block, date };
+    const nextWeek = DateTime.fromJSDate(date, { zone: "America/Santo_Domingo" }).plus({ weeks: 1 }).toJSDate();
+
+    expect(blockOccurrenceOn(oneOff, date)).toEqual({
+      occurs: true,
+      startMin: 540,
+      endMin: 600,
+      exceptionId: null,
+    });
+    expect(blockOccurrenceOn(oneOff, nextWeek)).toEqual({ occurs: false });
+  });
 });

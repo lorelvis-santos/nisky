@@ -2,6 +2,7 @@ import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { blockOccurrenceOn, dayOfWeek, nowMinutes, TIME_BLOCKS_TZ } from "./timeblocks.util";
 import { DateTime } from "luxon";
+import { eventOccurrenceOn } from "../events/events.util";
 import type { CreateTimeBlockDto, UpdateTimeBlockDto, UpdateTimeBlockSettingsDto } from "./timeblocks.validator";
 
 const settingsDefaults = {
@@ -81,7 +82,38 @@ export class TimeBlockService {
       .sort((a, b) => a.startMin - b.startMin || a.createdAt.getTime() - b.createdAt.getTime());
   }
 
-  private async assertNoOverlap(userId: string, daysOfWeek: number[], startMin: number, endMin: number, excludeId?: string) {
+  private async assertNoOverlap(
+    userId: string,
+    daysOfWeek: number[],
+    startMin: number,
+    endMin: number,
+    date: Date | null,
+    excludeId?: string,
+  ) {
+    if (date) {
+      const [blocks, events, exceptions] = await Promise.all([
+        prisma.timeBlock.findMany({ where: { userId, id: excludeId ? { not: excludeId } : undefined } }),
+        prisma.calendarEvent.findMany({ where: { userId }, include: { exceptions: true } }),
+        prisma.timeBlockException.findMany({ where: { userId, date } }),
+      ]);
+      const blockClash = blocks.some((block) => {
+        const occurrence = blockOccurrenceOn(block, date, exceptions);
+        return occurrence.occurs && occurrence.startMin < endMin && occurrence.endMin > startMin;
+      });
+      if (blockClash) {
+        throw new AppError("CONFLICT", "Ya tienes un bloque que se cruza con este horario");
+      }
+      const eventClash = events.some((event) => {
+        const occurrence = eventOccurrenceOn(event, date, event.exceptions);
+        if (!occurrence.occurs || event.allDay || occurrence.startMin == null || occurrence.endMin == null) return false;
+        return occurrence.startMin < endMin && occurrence.endMin > startMin;
+      });
+      if (eventClash) {
+        throw new AppError("CONFLICT", "Ya tienes un evento que se cruza con este horario");
+      }
+      return;
+    }
+
     const overlapping = await prisma.timeBlock.findFirst({
       where: {
         userId,
@@ -136,11 +168,15 @@ export class TimeBlockService {
       const project = await prisma.project.findFirst({ where: { id: data.projectId, userId } });
       if (!project) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
     }
-    await this.assertNoOverlap(userId, data.daysOfWeek, data.startMin, data.endMin);
+    const blockDate = data.date
+      ? DateTime.fromISO(data.date, { zone: TIME_BLOCKS_TZ }).startOf("day").toJSDate()
+      : null;
+    await this.assertNoOverlap(userId, data.daysOfWeek, data.startMin, data.endMin, blockDate);
     return prisma.timeBlock.create({
       data: {
         userId,
         projectId: data.projectId ?? null,
+        date: blockDate,
         name: data.name ?? null,
         daysOfWeek: data.daysOfWeek,
         startMin: data.startMin,
@@ -161,7 +197,10 @@ export class TimeBlockService {
     const daysOfWeek = data.daysOfWeek ?? current.daysOfWeek;
     const startMin = data.startMin ?? current.startMin;
     const endMin = data.endMin ?? current.endMin;
-    await this.assertNoOverlap(userId, daysOfWeek, startMin, endMin, id);
+    const blockDate = data.date !== undefined
+      ? (data.date ? DateTime.fromISO(data.date, { zone: TIME_BLOCKS_TZ }).startOf("day").toJSDate() : null)
+      : current.date;
+    await this.assertNoOverlap(userId, daysOfWeek, startMin, endMin, blockDate, id);
     const timingChanged =
       data.startMin !== undefined ||
       data.endMin !== undefined ||
@@ -187,6 +226,7 @@ export class TimeBlockService {
       where: { id },
       data: {
         ...(data.projectId !== undefined ? { projectId: data.projectId } : {}),
+        ...(data.date !== undefined ? { date: blockDate } : {}),
         ...(data.name !== undefined ? { name: data.name } : {}),
         ...(data.daysOfWeek !== undefined ? { daysOfWeek: data.daysOfWeek } : {}),
         ...(data.startMin !== undefined ? { startMin: data.startMin } : {}),

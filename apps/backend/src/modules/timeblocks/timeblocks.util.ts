@@ -15,6 +15,7 @@ export function dayOfWeek(now: Date = new Date(), zone = TIME_BLOCKS_TZ): number
 
 export interface TimeBlockOccurrence {
   id: string;
+  date?: Date | null;
   startMin: number;
   endMin: number;
   createdAt: Date;
@@ -51,6 +52,7 @@ export function blockOccurrenceOn(
   exceptions: TimeBlockExceptionRow[] = [],
   zone = TIME_BLOCKS_TZ,
 ): BlockOccurrence {
+  if (block.date && !sameDay(block.date, date, zone)) return { occurs: false };
   if (!block.daysOfWeek.includes(dayOfWeek(date, zone))) return { occurs: false };
   if (block.repeatEndsAt && mondayInTz(date, zone) > mondayInTz(block.repeatEndsAt, zone)) return { occurs: false };
   if (block.repeatEveryWeeks > 1) {

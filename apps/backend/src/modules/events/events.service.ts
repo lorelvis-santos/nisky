@@ -23,6 +23,9 @@ function randomEventColor() {
 
 export type EventOccurrenceWithBase = CalendarEvent & {
   date: Date;
+  baseDate: Date;
+  baseStartMin: number | null;
+  baseEndMin: number | null;
   isException: boolean;
   exceptionAction?: "skip" | "move";
 };
@@ -43,6 +46,9 @@ export class EventsService {
         allOccurrences.push({
           ...event,
           date: occ.date,
+          baseDate: event.date,
+          baseStartMin: event.startMin,
+          baseEndMin: event.endMin,
           startMin: occ.startMin,
           endMin: occ.endMin,
           isException: occ.isException,
@@ -69,6 +75,9 @@ export class EventsService {
       .map((event) => ({
         ...event,
         date: todayStart,
+        baseDate: event.date,
+        baseStartMin: event.startMin,
+        baseEndMin: event.endMin,
         isException: false,
         exceptionAction: undefined,
       }))
@@ -126,6 +135,7 @@ export class EventsService {
     const startMin = data.allDay ? null : data.startMin ?? null;
     const endMin = data.allDay ? null : data.endMin ?? null;
     await this.assertNoBlockOverlap(userId, localDate, startMin, endMin);
+    await this.assertNoEventOverlap(userId, localDate, startMin, endMin);
     return prisma.calendarEvent.create({
       data: {
         userId,
@@ -153,6 +163,7 @@ export class EventsService {
     const startMin = allDay ? null : (data.startMin ?? current.startMin);
     const endMin = allDay ? null : (data.endMin ?? current.endMin);
     await this.assertNoBlockOverlap(userId, localDate, startMin, endMin);
+    await this.assertNoEventOverlap(userId, localDate, startMin, endMin, id);
 
     const timingChanged =
       data.date !== undefined ||

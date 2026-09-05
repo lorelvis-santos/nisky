@@ -123,6 +123,7 @@ model TimeBlock {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   projectId String?
   project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  date      DateTime?
   name      String?
   daysOfWeek Int[]
   startMin  Int
@@ -140,6 +141,7 @@ model TimeBlock {
   updatedAt DateTime @updatedAt
 
   @@index([userId, isActive])
+  @@index([userId, date])
   @@index([projectId])
 }
 

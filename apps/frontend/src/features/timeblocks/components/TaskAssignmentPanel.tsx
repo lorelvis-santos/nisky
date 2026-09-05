@@ -5,12 +5,14 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Task, TaskSchedule, TimeBlock, TimeBlockWithProject } from "@/types/entities";
 import { useTaskSchedulesQuery, useTaskScheduleMutations } from "@/features/task-schedules/hooks/useTaskSchedules";
+import { TaskPagination } from "@/features/tasks/components/TaskPagination";
 import { useActiveTasksQuery } from "@/features/tasks/hooks/useTasks";
 
 export function TaskAssignmentPanel({ block, date }: { block: TimeBlock; date: string }) {
   const [search, setSearch] = useState("");
+  const [taskPage, setTaskPage] = useState(1);
   const schedulesQuery = useTaskSchedulesQuery({ from: date, to: date });
-  const tasksQuery = useActiveTasksQuery();
+  const tasksQuery = useActiveTasksQuery({ page: taskPage });
   const mutations = useTaskScheduleMutations();
   const assigned = useMemo(
     () => (schedulesQuery.data ?? []).filter((schedule) => schedule.timeBlockId === block.id),
@@ -20,7 +22,7 @@ export function TaskAssignmentPanel({ block, date }: { block: TimeBlock; date: s
   const tasks = useMemo(() => {
     const byId = new Map<string, Task>();
     for (const schedule of assigned) byId.set(schedule.task.id, schedule.task);
-    for (const task of tasksQuery.data?.pages.flatMap((page) => page.data) ?? []) byId.set(task.id, task);
+    for (const task of tasksQuery.data?.data ?? []) byId.set(task.id, task);
     return [...byId.values()]
       .filter((task) => `${task.title} ${task.description ?? ""}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
       .sort((a, b) => Number(assignedIds.has(b.id)) - Number(assignedIds.has(a.id)) || a.title.localeCompare(b.title));
@@ -52,6 +54,11 @@ export function TaskAssignmentPanel({ block, date }: { block: TimeBlock; date: s
     }
   };
 
+  const handleSearch = (value: string) => {
+    setTaskPage(1);
+    setSearch(value);
+  };
+
   return (
     <section className="mt-4 border-t border-outline-variant pt-4">
       <div className="flex items-center justify-between gap-2">
@@ -63,7 +70,7 @@ export function TaskAssignmentPanel({ block, date }: { block: TimeBlock; date: s
       </div>
       <div className="relative mt-3">
         <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant" size={14} />
-        <input aria-label="Buscar tarea para el bloque" className="field h-8 pl-7 text-xs" onChange={(event) => setSearch(event.target.value)} placeholder="Buscar tarea..." type="search" value={search} />
+        <input aria-label="Buscar tarea para el bloque" className="field h-8 pl-7 text-xs" onChange={(event) => handleSearch(event.target.value)} placeholder="Buscar tarea..." type="search" value={search} />
       </div>
       <div className="mt-3 flex max-h-64 flex-col gap-1 overflow-y-auto">
         {tasksQuery.isLoading || schedulesQuery.isLoading ? (
@@ -86,10 +93,8 @@ export function TaskAssignmentPanel({ block, date }: { block: TimeBlock; date: s
           })
         )}
       </div>
-      {tasksQuery.hasNextPage && (
-        <button className="mt-2 w-full border border-outline-variant px-3 py-2 font-label-caps text-[10px] uppercase text-primary hover:bg-surface-container-low" onClick={() => void tasksQuery.fetchNextPage()} type="button">
-          Cargar más tareas
-        </button>
+      {tasksQuery.data && (
+        <TaskPagination isFetching={tasksQuery.isFetching} meta={tasksQuery.data.meta} onPageChange={setTaskPage} />
       )}
     </section>
   );

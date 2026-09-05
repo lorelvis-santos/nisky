@@ -491,11 +491,11 @@ export function TimeBlockWeekGrid({
         }
         aria-hidden={hidden ? true : undefined}
         className={cn(
-          "absolute inset-x-1 z-10 border-l-2 px-2 py-1 text-left",
+          "absolute inset-x-1 z-10 rounded-md border-l-2 px-2 py-1 text-left shadow-cadence-1 transition-shadow",
           moveEnabled
             ? "cursor-grab touch-none active:cursor-grabbing"
             : "cursor-pointer",
-          block.isActive ? "" : "opacity-40",
+          block.isActive ? "hover:shadow-cadence-2" : "opacity-40",
           hidden && "opacity-0",
         )}
         key={block.id}
@@ -576,7 +576,7 @@ export function TimeBlockWeekGrid({
       <div
         key={event.id}
         className={cn(
-          "absolute inset-x-1 z-0 overflow-hidden border-l-2 px-2 py-1 text-left",
+          "absolute inset-x-1 z-0 overflow-hidden rounded-md border-l-2 px-2 py-1 text-left shadow-cadence-1",
           conflict && "border-l-error",
         )}
         style={{
@@ -603,7 +603,7 @@ export function TimeBlockWeekGrid({
           >
             <button
               aria-label="Opciones del evento recurrente"
-              className="flex h-5 w-5 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high lg:h-6 lg:w-6"
               onClick={(e) => {
                 e.stopPropagation();
                 setEventMenu((m) => (m?.eventId === event.id ? null : { eventId: event.id, date: dayDate }));
@@ -613,9 +613,9 @@ export function TimeBlockWeekGrid({
               <MoreVertical size={12} />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-6 z-40 flex w-40 flex-col border border-outline-variant bg-surface-container-lowest">
+              <div className="absolute right-0 top-11 z-40 flex w-40 flex-col rounded-md border border-outline-variant bg-surface shadow-cadence-2 lg:top-6">
                 <button
-                  className="px-3 py-2 text-left font-body-sm text-body-sm text-on-surface hover:bg-surface-container-high"
+                  className="min-h-11 rounded-t-md px-3 py-2 text-left font-body-sm text-body-sm text-on-surface transition-colors hover:bg-surface-container-low lg:min-h-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     setEventMenu(null);
@@ -626,7 +626,7 @@ export function TimeBlockWeekGrid({
                   Saltar solo hoy
                 </button>
                 <button
-                  className="border-t border-outline-variant px-3 py-2 text-left font-body-sm text-body-sm text-on-surface hover:bg-surface-container-high"
+                  className="min-h-11 rounded-b-md border-t border-outline-variant px-3 py-2 text-left font-body-sm text-body-sm text-on-surface transition-colors hover:bg-surface-container-low lg:min-h-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     setEventMenu(null);
@@ -662,7 +662,7 @@ export function TimeBlockWeekGrid({
     <div className={cn("flex min-w-0 flex-col", draft && "select-none")}>
       <div
         ref={scrollRef}
-        className="max-h-[calc(100dvh-16rem)] overflow-auto bg-surface-container-low lg:max-h-[calc(100vh-15rem)]"
+        className="max-h-[calc(100dvh-16rem)] overflow-auto bg-surface lg:max-h-[calc(100vh-15rem)]"
       >
         <div className="min-w-[820px] pb-3 pr-3">
           <div
@@ -676,16 +676,16 @@ export function TimeBlockWeekGrid({
             {days.map((day) => (
               <div
                 className={cn(
-                  "sticky top-0 z-20 border-b bg-surface-container-low px-2 py-2 text-center",
+                    "sticky top-0 z-20 border-b bg-surface-container-low px-2 py-2 text-center",
                   day.key === todayKey
-                    ? "border-t-2 border-t-primary text-primary"
+                    ? "border-t-2 border-t-secondary bg-secondary-container/30 text-secondary"
                     : "border-t border-t-outline-variant text-on-surface-variant",
                 )}
                 key={day.key}
               >
                 <span
                   className={cn(
-                    "flex flex-col items-center py-1",
+                    "flex flex-col items-center rounded-md py-1",
                     day.key === todayKey && "bg-secondary-container/40",
                   )}
                 >
@@ -700,7 +700,7 @@ export function TimeBlockWeekGrid({
                   {events
                     .filter((e) => e.allDay && sameLocalDay(parseDateOnly(e.date), day.date))
                     .map((e) => (
-                      <div key={e.id} className="truncate rounded-sm bg-surface-container-high px-1 text-[10px] font-medium text-on-surface" title={e.title}>
+                      <div key={e.id} className="truncate rounded-full bg-surface-container-high px-2 text-[10px] font-medium text-on-surface" title={e.title}>
                         {e.title}
                       </div>
                     ))}
@@ -732,7 +732,7 @@ export function TimeBlockWeekGrid({
               return (
                 <div
                   className={cn(
-                    "relative cursor-pointer border-l border-outline-variant transition-colors hover:bg-surface-container-high/40",
+                    "relative cursor-pointer border-l border-outline-variant transition-colors hover:bg-surface-container-low",
                     isToday && "bg-secondary-container/15",
                   )}
                   data-day={day.dayOfWeek}

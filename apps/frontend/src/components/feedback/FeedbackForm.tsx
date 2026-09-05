@@ -36,14 +36,14 @@ export function FeedbackForm() {
   }
 
   return (
-    <form className="border border-outline-variant bg-surface-container-lowest p-container-padding" onSubmit={submit}>
-      <h2 className="font-headline-xs text-headline-xs">Cuéntanos qué pasó</h2>
+    <form className="rounded-lg border border-outline-variant bg-surface p-container-padding shadow-cadence-1" onSubmit={submit}>
+      <h2 className="font-headline-xs text-headline-xs text-on-surface">Cuéntanos qué pasó</h2>
       <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
         Tu feedback llega directamente al equipo de Nisky.
       </p>
 
       <label className="mt-4 block">
-        <span className="font-label-caps text-label-caps text-on-surface-variant">CATEGORÍA</span>
+         <span className="font-label-md text-label-md text-on-surface-variant">Categoría</span>
         <select className="field mt-1" onChange={(e) => setCategory(e.target.value as FeedbackCategory)} value={category}>
           {CATEGORIES.map((c) => (
             <option key={c.value} value={c.value}>{c.label}</option>
@@ -52,7 +52,7 @@ export function FeedbackForm() {
       </label>
 
       <label className="mt-3 block">
-        <span className="font-label-caps text-label-caps text-on-surface-variant">MENSAJE</span>
+         <span className="font-label-md text-label-md text-on-surface-variant">Mensaje</span>
         <textarea
           className="field mt-1 h-28 resize-y py-2"
           maxLength={5000}
@@ -65,9 +65,9 @@ export function FeedbackForm() {
       </label>
 
       <label className="mt-3 flex cursor-pointer items-start gap-2">
-        <input
-          checked={includeEmail}
-          className="mt-1"
+         <input
+           checked={includeEmail}
+           className="mt-1 size-5 accent-tertiary"
           onChange={(e) => setIncludeEmail(e.target.checked)}
           type="checkbox"
         />
@@ -76,8 +76,8 @@ export function FeedbackForm() {
         </span>
       </label>
 
-      <button
-        className="mt-4 bg-primary-container px-4 py-2 font-body-md text-body-md text-on-primary hover:bg-primary disabled:opacity-50"
+       <button
+         className="mt-4 min-h-11 rounded-md bg-primary px-4 py-2 font-body-md text-body-md text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
         disabled={mutation.isPending || message.trim().length < 5}
         type="submit"
       >

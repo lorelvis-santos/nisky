@@ -21,10 +21,10 @@ export function JournalSidebar({
   onNew: () => void;
 }) {
   return (
-    <aside className="flex min-h-0 flex-col border border-outline-variant bg-surface-container-lowest lg:h-full">
-      <div className="flex shrink-0 items-center justify-between border-b border-outline-variant p-container-padding">
+    <aside className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface shadow-cadence-1 lg:h-full">
+      <div className="flex shrink-0 items-center justify-between border-b border-outline-variant bg-surface-container-low p-container-padding">
         <span className="font-label-caps text-label-caps text-on-surface-variant">MIS ENTRADAS</span>
-        <button aria-label="Nueva entrada" className="flex h-10 w-10 items-center justify-center bg-primary-container text-on-primary hover:bg-primary lg:h-8 lg:w-8" onClick={onNew} type="button">
+        <button aria-label="Nueva entrada" className="flex h-11 w-11 items-center justify-center rounded-md bg-primary text-on-primary shadow-cadence-1 transition-colors hover:bg-primary/90 lg:h-10 lg:w-10" onClick={onNew} type="button">
           <Plus size={18} />
         </button>
       </div>
@@ -38,7 +38,7 @@ export function JournalSidebar({
               return (
                 <li key={entry.id}>
                   <button
-                    className={`flex w-full flex-col gap-1 border-b border-outline-variant px-container-padding py-3 text-left hover:bg-surface-container-low ${active ? "bg-surface-container-high" : ""}`}
+                    className={`flex min-h-16 w-full flex-col gap-1 border-b border-l-2 border-outline-variant px-container-padding py-3 text-left transition-colors hover:bg-surface-container-low ${active ? "border-l-secondary bg-secondary-container/40" : "border-l-transparent"}`}
                     onClick={() => onSelect(entry.id)}
                     type="button"
                   >

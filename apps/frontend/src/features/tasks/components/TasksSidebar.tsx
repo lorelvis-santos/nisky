@@ -10,7 +10,14 @@ import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal"
 import { groupOverdueByDay, groupTasksByDueDate, useTaskMutations, useTodayTasksQuery } from "@/features/tasks/hooks/useTasks";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { useTasksSidebar } from "@/context/TasksSidebarContext";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 interface SectionProps {
   title: string;
@@ -220,34 +227,25 @@ function MobileSheet({
   children: React.ReactNode;
   onClose: () => void;
 }) {
-  useModalScrollLock();
   return (
-    <div
-      aria-modal="true"
-      className="fixed inset-0 z-[60] flex items-end bg-on-surface/20 backdrop-blur-[1px]"
-      onClick={onClose}
-      role="dialog"
-    >
-      <div
-        className="flex max-h-[85vh] w-full flex-col border border-outline-variant bg-surface"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
-          <h2 className="font-headline-xs text-headline-xs font-bold text-primary">Tareas de hoy</h2>
-          <button
-            aria-label="Cerrar"
-            className="text-on-surface-variant hover:text-on-surface"
-            onClick={onClose}
-            type="button"
-          >
-            <X size={19} />
-          </button>
-        </div>
+    <Drawer open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DrawerContent className="max-h-[85vh] border-outline-variant bg-surface lg:hidden">
+        <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+          <div>
+            <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Tareas de hoy</DrawerTitle>
+            <DrawerDescription className="sr-only">Lista de tareas pendientes para hoy, mañana y atrasadas.</DrawerDescription>
+          </div>
+          <DrawerClose asChild>
+            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+              <X size={19} />
+            </button>
+          </DrawerClose>
+        </DrawerHeader>
         <div className="min-h-0 flex-1 overflow-y-auto" data-modal-scroll>
           {children}
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

@@ -104,24 +104,24 @@ export function JournalEditor({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-container-padding p-container-padding sm:p-section-gap">
+    <div className="flex h-full min-h-0 flex-col gap-container-padding overflow-hidden rounded-lg border border-outline-variant bg-surface p-container-padding shadow-cadence-1 sm:p-section-gap">
       <div>
         <p className="font-label-caps text-label-caps text-on-surface-variant">MI DIARIO</p>
         <div className="flex items-center gap-2">
           {onBack && (
-            <button aria-label="Volver a mis entradas" className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center text-on-surface-variant hover:text-on-surface lg:hidden" onClick={onBack} type="button">
+            <button aria-label="Volver a mis entradas" className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface lg:hidden" onClick={onBack} type="button">
               <ArrowLeft size={20} />
             </button>
           )}
-          <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">{entry ? "Editar entrada" : "Nueva entrada"}</h1>
+          <h1 className="mt-1 font-headline-md text-headline-md text-on-surface">{entry ? "Editar entrada" : "Nueva entrada"}</h1>
         </div>
       </div>
 
       {restoredAt && (
-        <p className="flex items-center justify-between gap-2 border border-outline-variant bg-surface-container-low px-3 py-2 font-body-sm text-body-sm text-on-surface-variant">
+        <p className="flex items-center justify-between gap-2 rounded-md border border-outline-variant bg-surface-container-low px-3 py-2 font-body-sm text-body-sm text-on-surface-variant">
           <span>Se restauró tu borrador de {restoredAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.</span>
           <button
-            className="font-body-sm text-body-sm text-error hover:underline"
+            className="min-h-11 rounded-md px-2 font-body-sm text-body-sm text-error transition-colors hover:bg-error-container/40 hover:underline"
             onClick={() => {
               setForm({ title: "", content: "", classification: undefined, tags: [] });
               setTagsText("");
@@ -136,34 +136,34 @@ export function JournalEditor({
       )}
 
       <label className="block">
-        <span className="font-label-caps text-label-caps text-on-surface-variant">TÍTULO</span>
+          <span className="font-label-md text-label-md text-on-surface-variant">Título</span>
         <input autoFocus className="field mt-1" maxLength={200} onChange={(event) => set("title", event.target.value)} placeholder="¿Sobre qué escribes hoy?" value={form.title} />
       </label>
 
       <div className="grid grid-cols-1 gap-container-padding sm:grid-cols-2">
         <label className="block">
-          <span className="font-label-caps text-label-caps text-on-surface-variant">CLASIFICACIÓN (OPCIONAL)</span>
+          <span className="font-label-md text-label-md text-on-surface-variant">Clasificación (opcional)</span>
           <input className="field mt-1" maxLength={60} onChange={(event) => set("classification", event.target.value || undefined)} placeholder="Ej: Reflexión" value={form.classification ?? ""} />
         </label>
         <label className="block">
-          <span className="font-label-caps text-label-caps text-on-surface-variant">ETIQUETAS (OPCIONAL)</span>
+          <span className="font-label-md text-label-md text-on-surface-variant">Etiquetas (opcional)</span>
           <input className="field mt-1" onChange={(event) => setTagsText(event.target.value)} placeholder="ideas, diario" value={tagsText} />
         </label>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
-        <span className="mb-1 font-label-caps text-label-caps text-on-surface-variant">CONTENIDO</span>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <span className="mb-1 font-label-md text-label-md text-on-surface-variant">Contenido</span>
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-md">
           <MarkdownEditor minHeight="min(24rem, 45vh)" onChange={(content) => set("content", content)} placeholder="Escribe libremente..." value={form.content} />
         </div>
       </div>
 
-      {error && <p className="border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
+      {error && <p className="rounded-md border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
 
       <div className={`sticky bottom-0 z-10 -mx-container-padding flex items-center gap-3 border-t border-outline-variant bg-surface px-container-padding pt-container-padding sm:-mx-section-gap sm:px-section-gap ${entry ? "justify-between" : "justify-end"}`}>
         {entry && onDelete ? (
           <button
-            className={`min-h-11 ${confirmDelete ? "bg-error px-4 font-body-sm text-body-sm text-error-foreground" : "px-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"}`}
+            className={`min-h-11 rounded-md ${confirmDelete ? "bg-error px-4 font-body-sm text-body-sm text-error-foreground" : "px-2 font-body-sm text-body-sm text-error transition-colors hover:bg-error-container/30"}`}
             onClick={() => {
               if (!confirmDelete) {
                 setConfirmDelete(true);
@@ -177,11 +177,11 @@ export function JournalEditor({
           </button>
         ) : null}
         {isNew && (
-          <span className="min-h-11 shrink-0 font-body-sm text-body-sm text-on-surface-variant">
+          <span className="flex min-h-11 shrink-0 items-center font-body-sm text-body-sm text-on-surface-variant">
             {draft.state === "saving" ? "Guardando borrador..." : draft.state === "error" ? "Error al guardar el borrador" : draft.state === "saved" ? "Borrador guardado" : ""}
           </span>
         )}
-        <button className="min-h-11 flex-1 bg-primary-container px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary sm:flex-none" onClick={() => void submit()} type="button">
+        <button className="min-h-11 flex-1 rounded-md bg-primary px-4 font-body-sm text-body-sm text-on-primary shadow-cadence-1 transition-colors hover:bg-primary/90 sm:flex-none" onClick={() => void submit()} type="button">
           {entry ? "Guardar cambios" : "Guardar entrada"}
         </button>
       </div>

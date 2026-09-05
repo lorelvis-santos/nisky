@@ -12,7 +12,7 @@ Lee este archivo antes de modificar el proyecto.
 - No guardar access tokens en `localStorage` ni `sessionStorage`.
 - Access token en memoria; refresh token en cookie `httpOnly` y hash en base de datos.
 - Todo dato de negocio debe estar aislado por `userId`.
-- Design system Steel Monolith: fondo claro, bordes de 1px, sin sombras, radius pequeño.
+- Design system Serene Cadence: superficies claras azuladas, tipografía Plus Jakarta Sans + Inter, radios suaves y sombras sutiles.
 - No añadir secretos a Git.
 
 ## Comandos

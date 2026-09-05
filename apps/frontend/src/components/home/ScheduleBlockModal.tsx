@@ -7,7 +7,14 @@ import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { TimeBlockEditor } from "@/features/timeblocks/components/TimeBlockEditor";
 import { useTimeBlockMutations } from "@/features/timeblocks/hooks/useTimeBlocks";
 import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Project, TimeBlock } from "@/types/entities";
 
 export function ScheduleBlockModal({
@@ -46,8 +53,6 @@ function ModalBody({
   setFormKey: (updater: (key: number) => number) => void;
   target: TimeBlock | null;
 }) {
-  useModalScrollLock();
-
   const save = async (data: CreateTimeBlockPayload) => {
     try {
       if (target) {
@@ -89,15 +94,18 @@ function ModalBody({
     : async () => {};
 
   return (
-    <div aria-modal="true" className="fixed inset-0 z-50 flex items-end bg-on-surface/20 backdrop-blur-[1px] sm:items-center sm:justify-center sm:p-4" onClick={onClose} role="dialog">
-      <div className="flex max-h-[85vh] w-full max-w-md flex-col border border-outline-variant bg-surface" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
-          <h2 className="font-headline-xs text-headline-xs font-bold text-primary">{target ? "Editar bloque" : "Programar bloque"}</h2>
-          <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button">
-            <X size={19} />
-          </button>
-        </div>
-        <div className="overflow-y-auto p-5" data-modal-scroll>
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DialogContent className="top-auto bottom-0 flex max-h-[85vh] w-full max-w-md translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl rounded-b-none border-outline-variant bg-surface p-0 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:rounded-2xl" showCloseButton={false}>
+        <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+          <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{target ? "Editar bloque" : "Programar bloque"}</DialogTitle>
+          <DialogDescription className="sr-only">Configura el horario de un bloque de tiempo.</DialogDescription>
+          <DialogClose asChild>
+            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+              <X size={19} />
+            </button>
+          </DialogClose>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5" data-modal-scroll>
           <TimeBlockEditor
             busy={busy}
             key={target?.id ?? `schedule-${formKey}`}
@@ -122,7 +130,7 @@ function ModalBody({
             target={target}
           />
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

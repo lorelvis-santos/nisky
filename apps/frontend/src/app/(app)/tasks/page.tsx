@@ -15,13 +15,14 @@ import { MonthDayModal } from "@/features/tasks/components/MonthDayModal";
 import { MonthlyCalendar } from "@/features/tasks/components/MonthlyCalendar";
 import { PeriodNav } from "@/features/tasks/components/PeriodNav";
 import { TaskList } from "@/features/tasks/components/TaskList";
+import { TaskPagination } from "@/features/tasks/components/TaskPagination";
 import {
   TaskModal,
   type TaskForm,
 } from "@/features/tasks/components/TaskModal";
 import { PlanningBoard } from "@/features/tasks/components/PlanningBoard";
 import {
-  useInfiniteTasksQuery,
+  usePaginatedTasksQuery,
   useTaskMutations,
   useTaskQuery,
 } from "@/features/tasks/hooks/useTasks";
@@ -184,13 +185,16 @@ function TasksPageContent() {
     () => searchParams.get("projectId") ?? initialProjectFilter(),
   );
   const [view, setView] = useState<TaskView>(initialTaskView);
+  const [taskPage, setTaskPage] = useState(1);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const isMobile = useIsMobile(1023);
   const selection = useTaskSelection();
   const modalUrl = useModalUrl();
-  const query = useInfiniteTasksQuery({
+  const query = usePaginatedTasksQuery({
     q: search || undefined,
     priority: priority === "ALL" ? undefined : priority,
+    page: taskPage,
+    projectId: selectedProjectId ?? undefined,
   }, { enabled: view !== "week" });
   const urlTaskQuery = useTaskQuery(modalUrl.state.taskId);
   const mutations = useTaskMutations();
@@ -203,7 +207,7 @@ function TasksPageContent() {
     }
     return merged;
   }, [projectsQuery.data, accessibleProjectsQuery.data]);
-  const allTasks = query.data?.pages.flatMap((page) => page.data) ?? emptyTasks;
+  const allTasks = query.data?.data ?? emptyTasks;
   const tasks = useMemo(
     () =>
       selectedProjectId
@@ -211,19 +215,10 @@ function TasksPageContent() {
         : allTasks,
     [allTasks, selectedProjectId],
   );
-  const taskCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const task of allTasks) {
-      if (
-        !task.projectId ||
-        task.status === "COMPLETED" ||
-        task.status === "CANCELLED"
-      )
-        continue;
-      counts[task.projectId] = (counts[task.projectId] ?? 0) + 1;
-    }
-    return counts;
-  }, [allTasks]);
+  const taskCounts = useMemo(
+    () => Object.fromEntries(allProjects.map((project) => [project.id, project._count?.tasks ?? 0])),
+    [allProjects],
+  );
   const backlog = useMemo(() => tasks.filter((task) => !task.dueDate), [tasks]);
   const selectedTasks = useMemo(
     () => tasks.filter((task) => selection.selectedIds.has(task.id)),
@@ -298,8 +293,19 @@ function TasksPageContent() {
     if (next === "month") {
       setMonthStart(firstOfMonth(weekStart));
     }
+    setTaskPage(1);
     setView(next);
     localStorage.setItem(TASK_VIEW_KEY, next);
+  };
+
+  const setTaskSearch = (value: string) => {
+    setTaskPage(1);
+    setSearch(value);
+  };
+
+  const setTaskPriority = (value: TaskPriority | "ALL") => {
+    setTaskPage(1);
+    setPriority(value);
   };
 
   const toggleTask = async (task: Task) => {
@@ -421,6 +427,7 @@ function TasksPageContent() {
   const closeModal = () => modalUrl.close();
 
   const selectProject = (projectId: string | null) => {
+    setTaskPage(1);
     setSelectedProjectId(projectId);
     if (projectId === null) localStorage.removeItem(TASK_PROJECT_FILTER_KEY);
     else localStorage.setItem(TASK_PROJECT_FILTER_KEY, projectId);
@@ -465,8 +472,8 @@ function TasksPageContent() {
     <BacklogPanel
       onCreate={openCreate}
       onOpen={openEdit}
-      onPriority={setPriority}
-      onSearch={setSearch}
+      onPriority={setTaskPriority}
+      onSearch={setTaskSearch}
       onStartPomodoro={openFocus}
       onToggle={(task) => void toggleTask(task)}
       priority={priority}
@@ -475,10 +482,8 @@ function TasksPageContent() {
     />
   );
 
-  const loadMoreTasks = query.hasNextPage ? (
-    <button className="mx-auto my-3 block border border-outline-variant px-4 py-2 font-label-caps text-[10px] uppercase text-primary hover:bg-surface-container-low" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()} type="button">
-      {query.isFetchingNextPage ? "Cargando..." : "Cargar más tareas"}
-    </button>
+  const taskPagination = query.data ? (
+    <TaskPagination isFetching={query.isFetching} meta={query.data.meta} onPageChange={setTaskPage} />
   ) : null;
 
   return (
@@ -685,12 +690,13 @@ function TasksPageContent() {
                   weekStart={weekStart}
                 />
               )}
+              {taskPagination}
               {view !== "month" && (
                 <MobileBacklog
                   onCreate={openCreate}
                   onOpen={openEdit}
-                  onPriority={setPriority}
-                  onSearch={setSearch}
+                  onPriority={setTaskPriority}
+                  onSearch={setTaskSearch}
                   onStartPomodoro={openFocus}
                   onToggle={(task) => void toggleTask(task)}
                   priority={priority}
@@ -698,10 +704,9 @@ function TasksPageContent() {
                   tasks={backlog}
                 />
               )}
-              {loadMoreTasks}
-            </div>
-          ) : (
-            <div className="min-h-0 flex-1 lg:flex">
+             </div>
+           ) : (
+             <div className="min-h-0 flex-1 lg:flex">
               <aside className="hidden w-60 shrink-0 flex-col border-r border-outline-variant bg-surface lg:flex">
                 <ProjectsSidebar
                   onSelect={selectProject}
@@ -713,31 +718,36 @@ function TasksPageContent() {
               <div className="min-h-0 min-w-0 flex-1 lg:flex">
                 {view === "month" ? (
                   <>
-                    <MonthlyCalendar
-                      monthStart={monthStart}
-                      onSelectDay={setSelectedMonthDay}
-                      projects={allProjects}
-                      selectedDayKey={selectedMonthDay}
-                      tasks={tasks}
-                    />
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                      <MonthlyCalendar
+                        monthStart={monthStart}
+                        onSelectDay={setSelectedMonthDay}
+                        projects={allProjects}
+                        selectedDayKey={selectedMonthDay}
+                        tasks={tasks}
+                      />
+                      {taskPagination}
+                    </div>
                     {rightPanel}
                   </>
                 ) : (
                   <>
-                    <TaskList
-                      onCreate={openCreate}
-                      onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
-                      onOpen={openEdit}
-                      onStartPomodoro={openFocus}
-                      onToggle={(task) => void toggleTask(task)}
-                      tasks={tasks}
-                    />
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                      <TaskList
+                        onCreate={openCreate}
+                        onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
+                        onOpen={openEdit}
+                        onStartPomodoro={openFocus}
+                        onToggle={(task) => void toggleTask(task)}
+                        tasks={tasks}
+                      />
+                      {taskPagination}
+                    </div>
                     {rightPanel}
                   </>
                 )}
-                {loadMoreTasks}
+                </div>
               </div>
-            </div>
           )}
         </TasksDnDProvider>
       )}

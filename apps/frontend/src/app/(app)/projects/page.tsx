@@ -7,9 +7,16 @@ import { toast } from "sonner";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { useAuth } from "@/context/AuthProvider";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { formatShortDate } from "@/lib/utils";
 import { useAccessibleProjects, useProjectMutations } from "@/features/projects/hooks/useProjects";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function ProjectsPage() {
   const { user } = useAuth();
@@ -169,7 +176,6 @@ function CreateProjectModal({
   const [name, setName] = useState("");
   const [color, setColor] = useState("#303e51");
   const [busy, setBusy] = useState(false);
-  useModalScrollLock();
 
   const submit = async () => {
     const trimmed = name.trim();
@@ -187,21 +193,19 @@ function CreateProjectModal({
   };
 
   return (
-    <div
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end bg-on-surface/20 backdrop-blur-[1px] sm:items-center sm:justify-center sm:p-4"
-      onClick={onClose}
-      role="dialog"
-    >
-      <div className="flex max-h-[85vh] w-full flex-col border border-outline-variant bg-surface md:max-w-md" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
-          <h2 className="flex items-center gap-2 font-headline-xs text-headline-xs font-bold text-primary">
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DialogContent className="top-auto bottom-0 flex max-h-[85vh] w-full max-w-md translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl rounded-b-none border-outline-variant bg-surface p-0 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:rounded-2xl" showCloseButton={false}>
+        <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+          <DialogTitle className="flex items-center gap-2 font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
             <FolderKanban size={16} /> Nuevo proyecto
-          </h2>
-          <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button">
-            <X size={19} />
-          </button>
-        </div>
+          </DialogTitle>
+          <DialogDescription className="sr-only">Crea un proyecto para agrupar tareas y trabajo en equipo.</DialogDescription>
+          <DialogClose asChild>
+            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+              <X size={19} />
+            </button>
+          </DialogClose>
+        </DialogHeader>
         <div className="flex flex-col gap-4 p-5">
           <label className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">NOMBRE</span>
@@ -232,16 +236,12 @@ function CreateProjectModal({
             >
               <Check size={14} /> Crear
             </button>
-            <button
-              className="flex-1 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high"
-              onClick={onClose}
-              type="button"
-            >
-              Cancelar
-            </button>
+            <DialogClose asChild>
+              <button className="flex-1 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high" type="button">Cancelar</button>
+            </DialogClose>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

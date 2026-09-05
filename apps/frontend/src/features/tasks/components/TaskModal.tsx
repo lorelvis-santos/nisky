@@ -3,7 +3,14 @@
 import { Bell, Timer, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Project, Task, TaskPriority, TaskStatus } from "@/types/entities";
 import { useProjectMembers } from "@/features/projects/hooks/useProjects";
 import { CommentThread } from "@/features/comments/CommentThread";
@@ -127,8 +134,6 @@ export function TaskModal({
     (reminder) => reminder.payload?.taskId === current?.id,
   );
 
-  useModalScrollLock();
-
   if (!task && current) return null;
   const subtasks = current?.subtasks ?? [];
   const submit = async () => {
@@ -192,16 +197,13 @@ export function TaskModal({
   };
 
   return (
-    <div
-      aria-modal="true"
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]"
-      role="dialog"
-    >
-      <div className="flex max-h-[90vh] w-full max-w-lg flex-col border border-outline-variant bg-surface shadow-none">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant bg-surface-bright px-5 py-4">
-          <h2 className="font-headline-xs text-headline-xs font-bold text-primary">
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+        <DialogHeader className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+          <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
             {task ? "Editar tarea" : "Nueva tarea"}
-          </h2>
+          </DialogTitle>
+          <DialogDescription className="sr-only">Edita los detalles, recordatorios y subtareas de la tarea.</DialogDescription>
           <div className="flex flex-1 items-center justify-between gap-2 sm:flex-none sm:justify-start">
             <div className="flex items-center gap-2">
               {task && onStartPomodoro && (
@@ -214,17 +216,14 @@ export function TaskModal({
                 </button>
               )}
             </div>
-            <button
-              aria-label="Cerrar"
-              className="text-on-surface-variant hover:text-on-surface"
-              onClick={onClose}
-              type="button"
-            >
-              <X size={19} />
-            </button>
+            <DialogClose asChild>
+              <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+                <X size={19} />
+              </button>
+            </DialogClose>
           </div>
-        </div>
-        <div className="space-y-4 overflow-y-auto p-5" data-modal-scroll>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5" data-modal-scroll>
            <label className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">
               TÍTULO
@@ -581,7 +580,7 @@ export function TaskModal({
             <p className="font-body-sm text-body-sm text-error">{error}</p>
           )}
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
           {task && onDelete ? (
             <button
               className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap`}
@@ -598,13 +597,11 @@ export function TaskModal({
             </button>
           ) : <span />}
           <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-            <button
-              className="whitespace-nowrap border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high"
-              onClick={onClose}
-              type="button"
-            >
-              Cancelar
-            </button>
+            <DialogClose asChild>
+              <button className="whitespace-nowrap border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">
+                Cancelar
+              </button>
+            </DialogClose>
             <button
               className="whitespace-nowrap bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
               onClick={() => void submit()}
@@ -614,7 +611,7 @@ export function TaskModal({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

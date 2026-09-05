@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { Archive, ArchiveRestore, ChevronDown, ChevronUp, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useHabitsQuery, useHabitMutations } from "../hooks/useHabits";
 import type { Habit, HabitFrequency } from "@/types/entities";
 import { cn } from "@/lib/utils";
@@ -64,8 +71,6 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
   const [editFrequency, setEditFrequency] = useState<Record<string, HabitFrequency>>({});
   const [editDays, setEditDays] = useState<Record<string, number[]>>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  useModalScrollLock();
 
   const create = async () => {
     const name = newName.trim();
@@ -177,13 +182,18 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div aria-modal="true" className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]" role="dialog">
-      <div className="flex max-h-[90vh] w-full max-w-lg flex-col border border-outline-variant bg-surface">
-        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
-          <h2 className="font-headline-xs text-headline-xs font-bold text-primary">Gestionar hábitos</h2>
-          <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button"><X size={19} /></button>
-        </div>
-        <div className="space-y-4 overflow-y-auto p-5" data-modal-scroll>
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+        <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+          <div>
+            <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Gestionar hábitos</DialogTitle>
+            <DialogDescription className="sr-only">Crea, edita, archiva o elimina tus hábitos.</DialogDescription>
+          </div>
+          <DialogClose asChild>
+            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button"><X size={19} /></button>
+          </DialogClose>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5" data-modal-scroll>
           <div className="space-y-3">
             <div className="flex gap-2">
               <input className="field" onChange={(event) => setNewName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void create(); }} placeholder="Nuevo hábito..." value={newName} />
@@ -253,8 +263,12 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
             </div>
           )}
         </div>
-        <div className="flex justify-end border-t border-outline-variant bg-surface-container-low px-5 py-4"><button className="border border-outline-variant px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={onClose} type="button">Cerrar</button></div>
-      </div>
-    </div>
+        <div className="flex shrink-0 justify-end border-t border-outline-variant bg-surface-container-low px-5 py-4">
+          <DialogClose asChild>
+            <button className="border border-outline-variant px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">Cerrar</button>
+          </DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -22,7 +22,7 @@ function levelClass(level: number) {
   return "bg-surface-container-high";
 }
 
-export function ActivityHeatmap({ activity }: { activity: HomeActivityPoint[] | undefined }) {
+export function ActivityHeatmap({ activity, isLoading = false }: { activity: HomeActivityPoint[] | undefined; isLoading?: boolean }) {
   const grid = useMemo(() => {
     const byDate = new Map<string, HomeActivityPoint>();
     for (const point of activity ?? []) byDate.set(point.date, point);
@@ -54,9 +54,9 @@ export function ActivityHeatmap({ activity }: { activity: HomeActivityPoint[] | 
   const hasActivity = Boolean(activity && activity.length > 0);
 
   return (
-    <section className="border border-outline-variant bg-surface-container-lowest p-container-padding">
+    <section className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-headline-xs text-headline-xs font-bold text-primary">Actividad · últimas 12 semanas</h2>
+        <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Actividad · últimas 12 semanas</h2>
         <div className="flex items-center gap-1.5 font-label-caps text-label-caps text-on-surface-variant">
           <span>Menos</span>
           {[0, 1, 2, 3, 4].map((level) => (
@@ -66,28 +66,32 @@ export function ActivityHeatmap({ activity }: { activity: HomeActivityPoint[] | 
         </div>
       </header>
 
-      {hasActivity ? (
-        <div className="mx-auto flex w-full min-w-0 flex-col gap-1">
-          <div className="flex gap-1">
-            <div className="flex w-4 shrink-0 flex-col gap-1 sm:w-5">
-              {WEEK_LABELS.map((label, index) => (
-                <span className="flex h-3 items-center font-data-mono text-data-mono text-[9px] text-on-surface-variant" key={label}>
-                  {index % 2 === 0 ? label : ""}
-                </span>
-              ))}
-            </div>
-            {grid.map((week, weekIndex) => (
-              <div className="flex min-w-0 flex-1 flex-col gap-1" key={weekIndex}>
-                {week.map((day) => (
-                  <span
-                    aria-hidden="true"
-                    className={`h-3 w-full rounded-[2px] ${levelClass(day.level)}`}
-                    key={day.date}
-                    title={day.label}
-                  />
+      {isLoading ? (
+        <div aria-label="Cargando actividad" className="h-24 animate-pulse rounded-xl bg-surface-container-low" role="status" />
+      ) : hasActivity ? (
+        <div className="overflow-x-auto no-scrollbar">
+          <div className="mx-auto flex w-full min-w-[20rem] flex-col gap-1 sm:min-w-0">
+            <div className="flex gap-1">
+              <div className="flex w-4 shrink-0 flex-col gap-1 sm:w-5">
+                {WEEK_LABELS.map((label, index) => (
+                  <span className="flex h-3 items-center font-data-mono text-data-mono text-[9px] text-on-surface-variant" key={label}>
+                    {index % 2 === 0 ? label : ""}
+                  </span>
                 ))}
               </div>
-            ))}
+              {grid.map((week, weekIndex) => (
+                <div className="flex min-w-0 flex-1 flex-col gap-1" key={weekIndex}>
+                  {week.map((day) => (
+                    <span
+                      aria-hidden="true"
+                      className={`h-3 w-full rounded-[2px] ${levelClass(day.level)}`}
+                      key={day.date}
+                      title={day.label}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ) : (

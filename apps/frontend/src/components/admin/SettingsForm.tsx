@@ -25,22 +25,22 @@ export function SettingsForm() {
   }
 
   return (
-    <div className="border border-outline-variant bg-surface-container-lowest">
+    <div className="rounded-lg border border-outline-variant bg-surface shadow-cadence-1">
       <div className="flex items-start justify-between gap-4 border-b border-outline-variant bg-surface-container-low p-container-padding">
         <div>
           <h3 className="font-headline-xs text-headline-xs">Permitir cuentas nuevas</h3>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Deja que cualquier persona cree su cuenta en Nisky.</p>
         </div>
-        <button
-          aria-checked={data.publicSignup}
-          aria-label="Activar o desactivar cuentas nuevas"
-          className={`relative h-6 w-11 shrink-0 border transition-colors ${data.publicSignup ? "border-primary bg-primary" : "border-outline-variant bg-surface-container-high"}`}
+         <button
+           aria-checked={data.publicSignup}
+           aria-label="Activar o desactivar cuentas nuevas"
+           className={`relative flex h-11 w-16 shrink-0 items-center rounded-full border transition-colors ${data.publicSignup ? "border-primary bg-primary" : "border-outline-variant bg-surface-container-high"}`}
           disabled={mutation.isPending}
           onClick={() => void toggle(!data.publicSignup)}
           role="switch"
           type="button"
         >
-          <span className={`absolute top-0.5 h-[18px] w-[18px] bg-surface transition-all ${data.publicSignup ? "left-[22px]" : "left-0.5"}`} />
+           <span className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-surface transition-all ${data.publicSignup ? "right-1" : "left-1"}`} />
         </button>
       </div>
       <p className="p-container-padding font-data-mono text-data-mono text-xs text-on-surface-variant">

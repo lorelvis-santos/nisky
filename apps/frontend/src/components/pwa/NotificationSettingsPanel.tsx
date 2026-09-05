@@ -26,7 +26,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       aria-checked={checked}
       aria-label={checked ? "Activo, pulsar para desactivar" : "Inactivo, pulsar para activar"}
       className={cn(
-        "relative h-6 w-11 shrink-0 rounded-full border transition-colors",
+         "relative flex h-11 w-16 shrink-0 items-center rounded-full border transition-colors",
         checked ? "border-primary bg-primary" : "border-outline-variant bg-surface-container-high",
         disabled && "opacity-40",
       )}
@@ -37,8 +37,8 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
     >
       <span
         className={cn(
-          "absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full transition-all",
-          checked ? "left-[calc(100%-1.25rem)] bg-on-primary" : "left-1 bg-on-surface-variant",
+           "absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full transition-all",
+           checked ? "right-1 bg-on-primary" : "left-1 bg-on-surface-variant",
         )}
       />
     </button>
@@ -94,8 +94,8 @@ function NotificationLogsPanel() {
 
   if (hidden) return null;
 
-  return (
-    <section className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding">
+   return (
+     <section className="max-w-2xl rounded-lg border border-outline-variant bg-surface p-container-padding shadow-cadence-1">
       <div className="flex items-start gap-3">
         <Activity className="mt-0.5 text-primary" size={20} />
         <div className="min-w-0 flex-1">
@@ -104,7 +104,7 @@ function NotificationLogsPanel() {
             Lo que Nisky ha intentado enviar últimamente, para confirmar que todo llega bien. Es solo para la etapa de pruebas.
           </p>
         </div>
-        <button aria-label="Quitar este registro" className="shrink-0 text-on-surface-variant hover:text-primary" onClick={hideForGood} type="button">
+         <button aria-label="Quitar este registro" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-secondary" onClick={hideForGood} type="button">
           <XIcon size={16} />
         </button>
       </div>
@@ -125,7 +125,7 @@ function NotificationLogsPanel() {
                 </p>
                 {log.error && <p className="mt-0.5 truncate font-body-sm text-body-sm text-error">{log.error}</p>}
               </div>
-              <span className={cn("mt-0.5 shrink-0 px-2 py-0.5 font-data-mono text-data-mono text-xs", STATUS_STYLES[log.status])}>
+               <span className={cn("mt-0.5 shrink-0 rounded-full px-2 py-0.5 font-data-mono text-data-mono text-xs", STATUS_STYLES[log.status])}>
                 {STATUS_LABELS[log.status]}
               </span>
             </li>
@@ -134,7 +134,7 @@ function NotificationLogsPanel() {
       )}
       {hasMore && (
         <button
-          className="mt-3 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+           className="mt-3 min-h-11 rounded-md border border-outline-variant bg-surface px-3 py-1.5 font-body-sm text-body-sm text-secondary transition-colors hover:bg-surface-container-low"
           onClick={() => setExpanded((value) => !value)}
           type="button"
         >
@@ -169,7 +169,7 @@ export function NotificationSettingsPanel() {
       ) : settingsQuery.isError ? (
         <p className="font-body-sm text-body-sm text-error">Ups, no pudimos cargar las preferencias.</p>
       ) : (
-        <section className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding">
+         <section className="max-w-2xl rounded-lg border border-outline-variant bg-surface p-container-padding shadow-cadence-1">
           <div className="flex items-start gap-3">
             <CalendarClock className="mt-0.5 text-primary" size={20} />
             <div>

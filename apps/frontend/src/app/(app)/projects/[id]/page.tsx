@@ -8,15 +8,23 @@ import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthProvider";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { CommentThread } from "@/features/comments/CommentThread";
 import { useProjectComments } from "@/features/comments/hooks/useComments";
 import { PriorityChip } from "@/features/tasks/components/PriorityChip";
+import { TaskPagination } from "@/features/tasks/components/TaskPagination";
 import { MembersPanel } from "@/features/projects/components/MembersPanel";
 import { useProjectMembers, useProjectMutations, useProjectQuery } from "@/features/projects/hooks/useProjects";
-import { useInfiniteTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { usePaginatedTasksQuery } from "@/features/tasks/hooks/useTasks";
 import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
 import { formatRelativeDate, isTaskOverdue } from "@/lib/utils";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Tab = "general" | "members" | "comments";
 
@@ -51,7 +59,8 @@ export default function ProjectDetailPage() {
   const projectQuery = useProjectQuery(projectId);
   const membersQuery = useProjectMembers(projectId);
   const commentsQuery = useProjectComments(projectId, { order: "desc", limit: 1 });
-  const tasksQuery = useInfiniteTasksQuery({ projectId });
+  const [taskPage, setTaskPage] = useState(1);
+  const tasksQuery = usePaginatedTasksQuery({ projectId, page: taskPage });
   const scheduleFrom = dateKey(new Date());
   const scheduleToDate = new Date();
   scheduleToDate.setDate(scheduleToDate.getDate() + 30);
@@ -67,7 +76,7 @@ export default function ProjectDetailPage() {
 
   const project = projectQuery.data;
   const projectTasks = useMemo(
-    () => tasksQuery.data?.pages.flatMap((page) => page.data) ?? [],
+    () => tasksQuery.data?.data ?? [],
     [tasksQuery.data],
   );
   if (!project) {
@@ -345,10 +354,8 @@ export default function ProjectDetailPage() {
                       );
                     })}
                     </ul>
-                    {tasksQuery.hasNextPage && (
-                      <button className="mt-3 w-full border border-outline-variant px-3 py-2 font-label-caps text-[10px] uppercase text-primary hover:bg-surface-container-low" onClick={() => void tasksQuery.fetchNextPage()} type="button">
-                        Cargar más tareas
-                      </button>
+                    {tasksQuery.data && (
+                      <TaskPagination isFetching={tasksQuery.isFetching} meta={tasksQuery.data.meta} onPageChange={setTaskPage} />
                     )}
                   </>
                 )}
@@ -428,16 +435,18 @@ function EditProjectModal({
   onSave: () => void;
   onClose: () => void;
 }) {
-  useModalScrollLock();
   return (
-    <div aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]" onClick={onClose} role="dialog">
-      <div className="w-full max-w-md border border-outline-variant bg-surface" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
-          <h2 className="font-headline-xs text-headline-xs font-bold text-primary">Editar proyecto</h2>
-          <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button">
-            <X size={19} />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DialogContent className="max-w-md rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+        <DialogHeader className="flex flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+          <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Editar proyecto</DialogTitle>
+          <DialogDescription className="sr-only">Edita el nombre, color y meta semanal del proyecto.</DialogDescription>
+          <DialogClose asChild>
+            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+              <X size={19} />
+            </button>
+          </DialogClose>
+        </DialogHeader>
         <div className="space-y-4 p-5">
           <label className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">NOMBRE</span>
@@ -481,12 +490,12 @@ function EditProjectModal({
             <button className="flex-1 bg-primary px-3 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50" disabled={!name.trim()} onClick={onSave} type="button">
               Guardar
             </button>
-            <button className="flex-1 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high" onClick={onClose} type="button">
-              Cancelar
-            </button>
+            <DialogClose asChild>
+              <button className="flex-1 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high" type="button">Cancelar</button>
+            </DialogClose>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

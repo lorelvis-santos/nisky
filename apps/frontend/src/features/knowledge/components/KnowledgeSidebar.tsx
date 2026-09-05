@@ -17,11 +17,11 @@ export function KnowledgeSidebar({
   const tags = facets?.tags ?? [];
 
   const chipClass = (selected: boolean) =>
-    `flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left font-body-sm text-body-sm hover:bg-surface-container-high ${selected ? "bg-surface-container-high font-medium text-primary" : "text-on-surface-variant"}`;
+    `flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left font-body-sm text-body-sm transition-colors hover:bg-surface-container-high ${selected ? "bg-secondary-fixed font-medium text-secondary" : "text-on-surface-variant"}`;
 
   return (
-    <aside className="min-h-0 flex-col border border-outline-variant bg-surface-container-lowest lg:flex lg:h-full">
-      <div className="flex shrink-0 items-center justify-between border-b border-outline-variant p-container-padding">
+    <aside className="min-h-0 flex-col rounded-xl border border-outline-variant/70 bg-surface-container-lowest shadow-sm lg:sticky lg:top-4 lg:flex lg:h-fit">
+      <div className="flex shrink-0 items-center justify-between border-b border-outline-variant p-4">
         <span className="font-label-caps text-label-caps text-on-surface-variant">FILTROS</span>
         <button
           className="font-body-sm text-body-sm text-primary hover:underline"
@@ -31,7 +31,7 @@ export function KnowledgeSidebar({
           Limpiar
         </button>
       </div>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-container-padding">
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
         <section>
           <h2 className="font-label-caps text-label-caps text-on-surface-variant">CATEGORÍAS</h2>
           <div className="mt-1 space-y-0.5">
@@ -50,7 +50,7 @@ export function KnowledgeSidebar({
                 <span className="font-data-mono text-data-mono text-xs">{item.count}</span>
               </button>
             ))}
-            {categories.length === 0 && <p className="px-2 py-1 font-body-sm text-body-sm text-on-surface-variant">Sin categorías aún.</p>}
+            {categories.length === 0 && <p className="px-3 py-2 font-body-sm text-body-sm text-on-surface-variant">Sin categorías aún.</p>}
           </div>
         </section>
         <section>
@@ -67,7 +67,7 @@ export function KnowledgeSidebar({
                 <span className="font-data-mono text-data-mono text-xs">{item.count}</span>
               </button>
             ))}
-            {tags.length === 0 && <p className="px-2 py-1 font-body-sm text-body-sm text-on-surface-variant">Sin etiquetas aún.</p>}
+            {tags.length === 0 && <p className="px-3 py-2 font-body-sm text-body-sm text-on-surface-variant">Sin etiquetas aún.</p>}
           </div>
         </section>
       </div>

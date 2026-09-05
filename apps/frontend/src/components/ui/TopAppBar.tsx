@@ -18,7 +18,8 @@ import type { QuickNote, Reminder, Task } from "@/types/entities";
 const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
 
 const titles: Record<string, string> = {
-  "/": "Inicio",
+  "/": "Hoy",
+  "/projects": "Proyectos",
   "/tasks": "Planificación y tareas",
   "/events": "Eventos",
   "/timeblocks": "Agenda",
@@ -55,20 +56,21 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   };
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-outline-variant bg-surface px-container-padding">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-container-padding lg:px-8">
       <div className="flex items-center gap-element-gap-sm">
-        <div className="flex items-center gap-element-gap-md md:hidden">
-          <button aria-label="Abrir menú" className="text-on-surface-variant hover:text-primary" onClick={onMenu} type="button"><Menu size={20} /></button>
-          <Link aria-label="Ir a Inicio" className="font-headline-sm text-headline-sm font-bold text-primary hover:underline" href="/">Nisky</Link>
+        <div className="max-w-[12rem] truncate font-headline-sm text-headline-sm font-semibold text-on-surface sm:hidden">{title}</div>
+        <div className="hidden items-center gap-element-gap-md sm:flex lg:hidden">
+          <button aria-label="Abrir menú" className="rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={onMenu} type="button"><Menu size={20} /></button>
+          <Link aria-label="Ir a Inicio" className="font-headline-lg text-headline-lg font-bold tracking-tight text-primary hover:underline" href="/">Nisky</Link>
         </div>
-        {pomodoro.activeSession && pomodoro.remainingSec !== null && <div className="flex items-center gap-1 border border-outline-variant bg-surface-container-lowest px-2 py-1"><button aria-label={pomodoro.activeSession.status === "PAUSED" ? "Reanudar Pomodoro" : "Pausar Pomodoro"} className="text-primary hover:text-primary-container" onClick={() => void togglePause()} type="button">{pomodoro.activeSession.status === "PAUSED" ? <Play size={14} /> : <Pause size={14} />}</button><button aria-label="Abrir Pomodoro" className="font-data-mono text-data-mono text-xs text-primary hover:underline" onClick={() => router.push(`/focus${pomodoro.activeSession?.taskId ? `?taskId=${encodeURIComponent(pomodoro.activeSession.taskId)}` : ""}`)} type="button">{formatPomodoroTime(pomodoro.remainingSec)}</button><button aria-label="Cancelar Pomodoro" className="text-on-surface-variant hover:text-error" onClick={() => void cancel()} type="button"><Square size={13} /></button></div>}
+        {pomodoro.activeSession && pomodoro.remainingSec !== null && <div className="flex items-center gap-1 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1"><button aria-label={pomodoro.activeSession.status === "PAUSED" ? "Reanudar Pomodoro" : "Pausar Pomodoro"} className="rounded-md p-1 text-primary hover:bg-surface-container-low hover:text-primary-container" onClick={() => void togglePause()} type="button">{pomodoro.activeSession.status === "PAUSED" ? <Play size={14} /> : <Pause size={14} />}</button><button aria-label="Abrir Pomodoro" className="font-data-mono text-data-mono text-xs text-primary hover:underline" onClick={() => router.push(`/focus${pomodoro.activeSession?.taskId ? `?taskId=${encodeURIComponent(pomodoro.activeSession.taskId)}` : ""}`)} type="button">{formatPomodoroTime(pomodoro.remainingSec)}</button><button aria-label="Cancelar Pomodoro" className="rounded-md p-1 text-on-surface-variant hover:bg-error-container hover:text-error" onClick={() => void cancel()} type="button"><Square size={13} /></button></div>}
       </div>
       <div className="hidden flex-1 md:block" />
       <h2 className="absolute left-1/2 hidden -translate-x-1/2 font-headline-sm text-headline-sm font-bold text-on-surface lg:block">{title}</h2>
       <div className="ml-auto flex items-center gap-element-gap-sm">
         <button
           aria-label="Nueva nota rápida"
-          className="hidden items-center gap-1.5 border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary lg:flex"
+          className="hidden items-center gap-1.5 rounded-lg border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary lg:flex"
           onClick={onOpenCapture}
           title="Nueva nota rápida (Alt+N)"
           type="button"
@@ -81,7 +83,7 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
           {pathname === "/timeblocks" && (
             <button
               aria-label="Tareas de hoy"
-              className="flex items-center gap-1.5 border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary lg:hidden"
+              className="flex items-center gap-1.5 rounded-lg border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary lg:hidden"
               onClick={tasksSidebar.toggle}
               type="button"
             >
@@ -90,19 +92,19 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
             </button>
           )}
           <div className="relative">
-            <button aria-expanded={notificationsOpen} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setNotificationsOpen((open) => !open)} type="button">
+            <button aria-expanded={notificationsOpen} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setNotificationsOpen((open) => !open)} type="button">
             <Bell size={19} />
             {pending.length > 0 && <span aria-hidden="true" className="absolute bottom-0.5 right-0.5 h-2 w-2 rounded-full bg-error" />}
             {notices.length > 0 && <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-data-mono text-[10px] text-on-primary">{notices.length > 9 ? "9+" : notices.length}</span>}
           </button>
-          {notificationsOpen && <NotificationPanel notices={notices} onClose={() => setNotificationsOpen(false)} onOpen={(url, kind) => { setNotificationsOpen(false); if (kind === "pending") { window.dispatchEvent(new CustomEvent(OPEN_PENDING_EVENT)); return; } router.push(url); }} />}
+           {notificationsOpen && <NotificationPanel notices={notices} onClose={() => setNotificationsOpen(false)} onOpen={(url, kind) => { setNotificationsOpen(false); if (kind === "pending") { window.dispatchEvent(new CustomEvent(OPEN_PENDING_EVENT)); return; } router.push(url); }} />}
         </div>
         <div className="relative">
           <button aria-expanded={profileOpen} aria-label="Perfil" className="rounded-full p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setProfileOpen((open) => !open)} type="button"><Avatar avatarUrl={user?.avatarUrl} email={user?.email} name={user?.name} size="sm" /></button>
           {profileOpen && (
             <>
               <button aria-label="Cerrar menú de perfil" className="fixed inset-0 z-40 cursor-default" onClick={() => setProfileOpen(false)} type="button" />
-              <div className="fixed inset-x-4 top-14 z-50 border border-outline-variant bg-surface-container-lowest p-3 text-left sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-56">
+              <div className="fixed inset-x-4 top-16 z-50 rounded-xl border border-outline-variant bg-surface-container-lowest p-3 text-left shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-56">
                 <div className="flex items-center gap-3 border-b border-outline-variant pb-3">
                   <Avatar avatarUrl={user?.avatarUrl} email={user?.email} name={user?.name} size="md" />
                   <div className="min-w-0">
@@ -180,7 +182,7 @@ function buildNotices(tasks: Task[], reminders: Reminder[], pending: Reminder[],
 
 function NotificationPanel({ notices, onClose, onOpen }: { notices: Notice[]; onClose: () => void; onOpen: (url: string, kind: Notice["kind"]) => void }) {
   return (
-    <div className="fixed inset-x-4 top-14 z-50 border border-outline-variant bg-surface-container-lowest p-3 text-left sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[22rem]">
+    <div className="fixed inset-x-4 top-16 z-50 rounded-xl border border-outline-variant bg-surface-container-lowest p-3 text-left shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[22rem]">
       <div className="flex items-center justify-between border-b border-outline-variant pb-3">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">AVISOS</p>

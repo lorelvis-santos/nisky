@@ -18,12 +18,27 @@ import {
 import { useEventsQuery, useEventMutations } from "@/features/events/hooks/useEvents";
 import { minToTime, parseDateOnly, timeToMin } from "@/features/timeblocks/lib/time";
 import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { TasksSidebar } from "@/features/tasks/components/TasksSidebar";
 import { useTasksSidebar } from "@/context/TasksSidebarContext";
 import { groupTasksByDueDate, useTodayTasksQuery } from "@/features/tasks/hooks/useTasks";
 import type { TimeBlock, CalendarEvent } from "@/types/entities";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 type SlotPrefill = { dayOfWeek: number; startMin: number; endMin: number };
 
@@ -50,26 +65,18 @@ function EventMoveModal({
   onCancel: () => void;
   onSave: () => void;
 }) {
-  useModalScrollLock();
   return (
-    <div
-      aria-modal="true"
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]"
-      onClick={onCancel}
-      role="dialog"
-    >
-      <div
-        className="w-full max-w-md border border-outline-variant bg-surface p-container-padding"
-        data-modal-scroll
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="font-headline-xs text-headline-xs">Mover «{title}» solo hoy</h2>
-        <p className="mt-2 font-body-md text-body-md text-on-surface-variant">
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onCancel(); }}>
+      <DialogContent className="max-w-md rounded-lg border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
+        <DialogHeader className="text-left">
+          <DialogTitle className="font-headline-xs text-headline-xs normal-case tracking-normal">Mover «{title}» solo hoy</DialogTitle>
+          <DialogDescription className="font-body-md text-body-md text-on-surface-variant">
           Este cambio solo aplica a la ocurrencia del día seleccionado.
-        </p>
+          </DialogDescription>
+        </DialogHeader>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="font-label-caps text-label-caps text-on-surface-variant">INICIO</span>
+            <span className="font-label-md text-label-md text-on-surface-variant">Inicio</span>
             <input
               className="field mt-1"
               onChange={(e) => onChangeStart(e.target.value)}
@@ -78,7 +85,7 @@ function EventMoveModal({
             />
           </label>
           <label className="block">
-            <span className="font-label-caps text-label-caps text-on-surface-variant">FIN</span>
+            <span className="font-label-md text-label-md text-on-surface-variant">Fin</span>
             <input
               className="field mt-1"
               onChange={(e) => onChangeEnd(e.target.value)}
@@ -88,16 +95,11 @@ function EventMoveModal({
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
+          <DialogClose asChild>
+            <button className="min-h-11 rounded-md border border-outline-variant bg-surface px-4 py-2 font-body-md text-body-md text-on-surface-variant transition-colors hover:bg-surface-container-low disabled:opacity-50" disabled={busy} type="button">Cancelar</button>
+          </DialogClose>
           <button
-            className="border border-outline-variant px-4 py-2 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
-            disabled={busy}
-            onClick={onCancel}
-            type="button"
-          >
-            Cancelar
-          </button>
-          <button
-            className="bg-primary-container px-4 py-2 font-body-md text-body-md text-on-primary hover:bg-primary disabled:opacity-50"
+            className="min-h-11 rounded-md bg-primary px-4 py-2 font-body-md text-body-md text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
             disabled={busy}
             onClick={onSave}
             type="button"
@@ -105,8 +107,8 @@ function EventMoveModal({
             Guardar
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -123,34 +125,21 @@ function ResizeResolveModal({
   onCancel: () => void;
   busy: boolean;
 }) {
-  useModalScrollLock();
   return (
-    <div
-      aria-modal="true"
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]"
-      onClick={onCancel}
-      role="dialog"
-    >
-      <div
-        className="w-full max-w-md border border-outline-variant bg-surface p-container-padding"
-        data-modal-scroll
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="font-headline-xs text-headline-xs">¿Aplicar cambio a un solo día?</h2>
-        <p className="mt-3 font-body-md text-body-md text-on-surface-variant">
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onCancel(); }}>
+      <DialogContent className="max-w-md rounded-lg border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
+        <DialogHeader className="text-left">
+          <DialogTitle className="font-headline-xs text-headline-xs normal-case tracking-normal">¿Aplicar cambio a un solo día?</DialogTitle>
+          <DialogDescription className="font-body-md text-body-md text-on-surface-variant">
           Este bloque se repite varios días. Puedes moverlo solo el {date} o cambiar el horario original para siempre.
-        </p>
+          </DialogDescription>
+        </DialogHeader>
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <DialogClose asChild>
+            <button className="min-h-11 rounded-md border border-outline-variant bg-surface px-4 py-2 font-body-md text-body-md text-on-surface-variant transition-colors hover:bg-surface-container-low disabled:opacity-50" disabled={busy} type="button">Cancelar</button>
+          </DialogClose>
           <button
-            className="border border-outline-variant px-4 py-2 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
-            disabled={busy}
-            onClick={onCancel}
-            type="button"
-          >
-            Cancelar
-          </button>
-          <button
-            className="border border-primary px-4 py-2 font-body-md text-body-md text-primary hover:bg-primary-container/40 disabled:opacity-50"
+            className="min-h-11 rounded-md border border-secondary px-4 py-2 font-body-md text-body-md text-secondary transition-colors hover:bg-secondary-container disabled:opacity-50"
             disabled={busy}
             onClick={onOriginal}
             type="button"
@@ -158,7 +147,7 @@ function ResizeResolveModal({
             Cambiar original
           </button>
           <button
-            className="bg-primary-container px-4 py-2 font-body-md text-body-md text-on-primary hover:bg-primary disabled:opacity-50"
+            className="min-h-11 rounded-md bg-primary px-4 py-2 font-body-md text-body-md text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
             disabled={busy}
             onClick={onException}
             type="button"
@@ -166,8 +155,8 @@ function ResizeResolveModal({
             Solo este día
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -180,32 +169,25 @@ function MobileEditorModal({
   title: string;
   onClose: () => void;
 }) {
-  useModalScrollLock();
   return (
-    <div
-      aria-modal="true"
-      className="fixed inset-0 z-[60] flex items-end bg-on-surface/20 backdrop-blur-[1px] sm:items-center sm:justify-center sm:p-4 lg:hidden"
-      role="dialog"
-    >
-      <div className="flex max-h-[85vh] w-full md:max-w-md flex-col border border-outline-variant bg-surface">
-        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
-          <h2 className="font-headline-xs text-headline-xs font-bold text-primary">
-            {title}
-          </h2>
-          <button
-            aria-label="Cerrar"
-            className="text-on-surface-variant hover:text-on-surface"
-            onClick={onClose}
-            type="button"
-          >
-            <X size={19} />
-          </button>
-        </div>
-        <div className="overflow-y-auto p-5" data-modal-scroll>
+    <Drawer open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DrawerContent className="max-h-[85vh] rounded-t-lg border-outline-variant bg-surface shadow-cadence-3 lg:hidden">
+        <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface px-5 py-4 text-left">
+          <div>
+            <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{title}</DrawerTitle>
+            <DrawerDescription className="sr-only">Editor de bloque de tiempo.</DrawerDescription>
+          </div>
+          <DrawerClose asChild>
+            <button aria-label="Cerrar" className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface" type="button">
+              <X size={19} />
+            </button>
+          </DrawerClose>
+        </DrawerHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5" data-modal-scroll>
           {children}
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
@@ -578,12 +560,12 @@ function TimeBlocksContent() {
 
   return (
     <section className="h-full overflow-y-auto bg-background p-container-padding sm:p-section-gap lg:flex lg:flex-col lg:overflow-hidden">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-outline-variant pb-4">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-outline-variant pb-5">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
             TU HORARIO SEMANAL
           </p>
-          <h1 className="mt-1 font-headline-sm text-headline-sm text-primary">
+          <h1 className="mt-1 font-headline-md text-headline-md text-on-surface">
             Agenda
           </h1>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
@@ -592,24 +574,24 @@ function TimeBlocksContent() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center border border-outline-variant bg-surface-container-lowest">
+          <div className="flex items-center overflow-hidden rounded-md border border-outline-variant bg-surface">
             <button
               aria-label="Semana anterior"
-              className="flex h-9 w-9 items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+              className="flex h-11 w-11 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-secondary sm:h-10 sm:w-10"
               onClick={() => setWeekOffset((offset) => offset - 1)}
               title="Semana anterior"
               type="button"
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="min-w-[9.5rem] border-x border-outline-variant px-3 text-center font-data-mono text-data-mono text-xs text-on-surface-variant">
+            <span className="flex min-h-11 min-w-[9.5rem] items-center justify-center border-x border-outline-variant px-3 text-center font-data-mono text-data-mono text-xs text-on-surface-variant sm:min-h-10">
               {weekStart.getDate() < weekEnd.getDate()
                 ? `${weekStart.getDate()}–${weekEnd.getDate()} ${weekEnd.toLocaleDateString("es", { month: "short" })}`
                 : `${weekStart.toLocaleDateString("es", { day: "numeric", month: "short" })} – ${weekEnd.toLocaleDateString("es", { day: "numeric", month: "short" })}`}
             </span>
             <button
               aria-label="Semana siguiente"
-              className="flex h-9 w-9 items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+              className="flex h-11 w-11 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-secondary sm:h-10 sm:w-10"
               onClick={() => setWeekOffset((offset) => offset + 1)}
               title="Semana siguiente"
               type="button"
@@ -618,7 +600,7 @@ function TimeBlocksContent() {
             </button>
           </div>
           <button
-            className="h-9 border border-outline-variant bg-surface-container-lowest px-3 font-data-mono text-data-mono text-xs text-on-surface-variant hover:border-primary hover:text-primary"
+            className="min-h-11 rounded-md border border-outline-variant bg-surface px-3 font-data-mono text-data-mono text-xs text-on-surface-variant transition-colors hover:border-secondary hover:text-secondary disabled:opacity-50 sm:min-h-10"
             disabled={weekOffset === 0}
             onClick={() => setWeekOffset(0)}
             title="Ir a la semana actual"
@@ -629,7 +611,7 @@ function TimeBlocksContent() {
           <button
             aria-expanded={tasksSidebarOpen}
             aria-label={tasksSidebarOpen ? "Ocultar tareas" : "Mostrar tareas"}
-            className={`hidden items-center gap-1.5 border border-outline-variant bg-surface-container-lowest px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant hover:border-primary hover:text-primary lg:flex ${tasksSidebarOpen ? "border-primary bg-primary-container text-on-primary" : ""}`}
+            className={`hidden min-h-11 items-center gap-1.5 rounded-md border border-outline-variant bg-surface px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant transition-colors hover:border-secondary hover:text-secondary lg:flex ${tasksSidebarOpen ? "border-primary bg-primary text-on-primary" : ""}`}
             onClick={toggleTasksSidebar}
             type="button"
           >
@@ -639,18 +621,18 @@ function TimeBlocksContent() {
           </button>
           <button
             aria-label="Ajustar rango del día"
-            className="flex items-center gap-2 border border-outline-variant bg-surface-container-lowest px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant hover:border-primary hover:text-primary"
+            className="flex min-h-11 items-center gap-2 rounded-md border border-outline-variant bg-surface px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant transition-colors hover:border-secondary hover:text-secondary"
             onClick={openSettings}
             type="button"
           >
             <SlidersHorizontal size={14} />
             {minToTime(settings?.dayStartMin ?? 6 * 60)} – {minToTime(settings?.dayEndMin ?? 23 * 60)}
           </button>
-          <span className="flex items-center gap-2 border border-outline-variant bg-surface-container-lowest px-3 py-1.5 font-data-mono text-data-mono text-xs text-primary">
+          <span className="flex min-h-11 items-center gap-2 rounded-full border border-outline-variant bg-surface px-3 py-1.5 font-data-mono text-data-mono text-xs text-secondary">
             <CalendarClock size={14} />
             {reservedHours.toFixed(1)}h reservadas
           </span>
-          <span className="border border-outline-variant bg-surface-container-lowest px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant">
+          <span className="flex min-h-11 items-center rounded-full border border-outline-variant bg-surface px-3 py-1.5 font-data-mono text-data-mono text-xs text-on-surface-variant">
             {activeBlocks.length}{" "}
             {activeBlocks.length === 1 ? "bloque" : "bloques"}
           </span>
@@ -658,7 +640,7 @@ function TimeBlocksContent() {
       </div>
 
       {settingsOpen && (
-        <div className="mb-6 border border-outline-variant bg-surface-container-lowest p-4">
+        <div className="mb-6 rounded-lg border border-outline-variant bg-surface p-5 shadow-cadence-1">
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
             RANGO DEL DÍA
           </p>
@@ -667,7 +649,7 @@ function TimeBlocksContent() {
           </p>
           <div className="mt-3 grid max-w-md grid-cols-2 gap-3">
             <label className="block">
-              <span className="font-label-caps text-label-caps text-on-surface-variant">INICIO</span>
+              <span className="font-label-md text-label-md text-on-surface-variant">Inicio</span>
               <input
                 className="field mt-1"
                 onChange={(event) => setDayStartTime(event.target.value)}
@@ -676,7 +658,7 @@ function TimeBlocksContent() {
               />
             </label>
             <label className="block">
-              <span className="font-label-caps text-label-caps text-on-surface-variant">FIN</span>
+              <span className="font-label-md text-label-md text-on-surface-variant">Fin</span>
               <input
                 className="field mt-1"
                 onChange={(event) => setDayEndTime(event.target.value)}
@@ -686,7 +668,7 @@ function TimeBlocksContent() {
             </label>
           </div>
           <button
-            className="mt-3 flex items-center justify-center gap-2 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary disabled:opacity-50"
+            className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
             disabled={settingsBusy}
             onClick={() => void saveDayRange()}
             type="button"
@@ -701,7 +683,7 @@ function TimeBlocksContent() {
           isMobileOpen={tasksSidebarOpen && isMobile}
           onMobileClose={() => setTasksSidebarOpen(false)}
         />
-        <div className="min-w-0 flex-1 border border-outline-variant bg-surface-container-lowest lg:min-h-0 lg:overflow-y-auto">
+        <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-outline-variant bg-surface shadow-cadence-1 lg:min-h-0 lg:overflow-y-auto">
           <TimeBlockWeekGrid
             blocks={blocks}
             events={events}
@@ -719,7 +701,7 @@ function TimeBlocksContent() {
             weekStart={weekStart}
           />
         </div>
-        <aside className="hidden w-[20rem] shrink-0 flex-col border border-outline-variant bg-surface-container-lowest lg:flex lg:max-h-full">
+        <aside className="hidden w-[20rem] shrink-0 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface shadow-cadence-1 lg:flex lg:max-h-full">
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-outline-variant bg-surface-container-low px-4 py-3">
             <h2 className="font-headline-xs text-headline-xs">
               {editing ? "Editar bloque" : "Nuevo bloque"}
@@ -727,7 +709,7 @@ function TimeBlocksContent() {
             {editing && (
               <button
                 aria-label="Nuevo bloque"
-                className="text-on-surface-variant hover:text-primary"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface hover:text-secondary"
                 onClick={() => closeEditor()}
                 type="button"
               >
@@ -744,7 +726,7 @@ function TimeBlocksContent() {
 
       <button
         aria-label="Nuevo bloque"
-        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center border border-outline-variant bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container lg:hidden"
+         className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-outline-variant bg-primary text-on-primary shadow-cadence-2 transition-colors hover:bg-primary/90 lg:hidden"
         onClick={() => {
           setEditing(null);
           setPrefill(null);

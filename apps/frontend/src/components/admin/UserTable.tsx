@@ -16,7 +16,7 @@ function formatDate(value: string | null) {
 export function UserTable({ users, onEdit }: Props) {
   const { user: me } = useAuth();
   return (
-    <div className="overflow-x-auto border border-outline-variant bg-surface-container-lowest">
+    <div className="overflow-x-auto rounded-lg border border-outline-variant bg-surface shadow-cadence-1">
       <table className="w-full min-w-[560px] text-left">
         <thead>
           <tr className="border-b border-outline-variant bg-surface-container-low">
@@ -46,7 +46,7 @@ export function UserTable({ users, onEdit }: Props) {
                 <td className="px-4 py-3 font-data-mono text-data-mono text-xs text-on-surface-variant">{formatDate(user.lastLoginAt)}</td>
                 <td className="px-4 py-3 font-data-mono text-data-mono text-xs text-on-surface-variant">{formatDate(user.createdAt)}</td>
                 <td className="px-4 py-3 text-right">
-                  <button className="px-2 py-1 text-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onClick={() => onEdit(user)} type="button">Editar</button>
+                  <button className="min-h-11 rounded-md px-2 py-1 text-xs text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface" onClick={() => onEdit(user)} type="button">Editar</button>
                 </td>
               </tr>
             );

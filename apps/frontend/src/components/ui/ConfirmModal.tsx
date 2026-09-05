@@ -1,7 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function ConfirmModal({
   title,
@@ -22,13 +29,14 @@ export function ConfirmModal({
   onConfirm: () => void;
   onClose: () => void;
 }) {
-  useModalScrollLock();
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]" onClick={onClose}>
-      <div className="w-full max-w-md border border-outline-variant bg-surface p-container-padding" data-modal-scroll onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-headline-xs text-headline-xs">{title}</h2>
-        <div className="mt-3 font-body-md text-body-md text-on-surface-variant">{message}</div>
-        <div className="mt-5 flex justify-end gap-2">
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <DialogContent className="max-w-md rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+        <DialogHeader className="border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+          <DialogTitle className="font-headline-xs text-headline-xs normal-case tracking-normal">{title}</DialogTitle>
+          <DialogDescription className="mt-3 font-body-md text-body-md text-on-surface-variant">{message}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="mt-0 flex-row justify-end border-t-0 bg-surface-container-low px-5 py-4">
           <button className="border border-outline-variant px-4 py-2 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50" disabled={loading} onClick={onClose} type="button">
             {cancelLabel}
           </button>
@@ -40,8 +48,8 @@ export function ConfirmModal({
           >
             {confirmLabel}
           </button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

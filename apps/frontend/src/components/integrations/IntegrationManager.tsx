@@ -101,7 +101,7 @@ export function IntegrationManager() {
   const isSupported = typeof window !== "undefined";
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-8">
       <div>
         <h2 className="font-headline-xs text-headline-xs">Selecciona tu universidad</h2>
         <p className="mt-1 max-w-2xl font-body-sm text-body-sm text-on-surface-variant">
@@ -110,7 +110,7 @@ export function IntegrationManager() {
         <div className="mt-3 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
           {UNIVERSITY_CATALOG.map((entry) => (
             <button
-              className={`flex min-h-20 flex-col items-center justify-center gap-2 border px-3 py-3 font-label-caps text-label-caps uppercase ${selected?.slug === entry.slug ? "border-primary bg-primary-fixed text-on-primary-fixed" : "border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-on-surface"}`}
+              className={`flex min-h-24 flex-col items-center justify-center gap-2 rounded-lg border px-3 py-3 font-label-caps text-label-caps uppercase shadow-cadence-1 transition-colors ${selected?.slug === entry.slug ? "border-secondary bg-secondary-container text-on-secondary-container" : "border-outline-variant bg-surface text-on-surface-variant hover:border-outline hover:bg-surface-container-low hover:text-on-surface"}`}
               key={entry.slug}
               onClick={() => setSelected(entry)}
               type="button"
@@ -125,7 +125,7 @@ export function IntegrationManager() {
       </div>
 
       {selected ? (
-        <div className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding">
+        <div className="max-w-2xl rounded-lg border border-outline-variant bg-surface p-container-padding shadow-cadence-1">
           <div className="flex items-start gap-3">
             {selected.logoUrl ? (
               <Image alt={`${selected.name} logo`} height={36} className="h-9 w-auto object-contain" src={selected.logoUrl} width={128} />
@@ -147,7 +147,7 @@ export function IntegrationManager() {
                 <div className="flex gap-2">
                   {(["MOODLE", "CANVAS"] as const).map((p) => (
                     <button
-                      className={`px-3 py-2 font-body-sm text-body-sm ${otherProvider === p ? "bg-primary-container text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+                       className={`min-h-11 rounded-md border px-3 py-2 font-body-sm text-body-sm transition-colors ${otherProvider === p ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
                       key={p}
                       onClick={() => setOtherProvider(p)}
                       type="button"
@@ -157,9 +157,9 @@ export function IntegrationManager() {
                   ))}
                 </div>
                 <label className="block">
-                  <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Dominio</span>
+                   <span className="font-label-md text-label-md text-on-surface-variant">Dominio</span>
                   <input
-                    className="mt-1 w-full border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-md text-body-md outline-none focus:border-primary"
+                     className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
                     onChange={(e) => setDomain(e.target.value)}
                     placeholder={otherProvider === "MOODLE" ? "https://moodle.miescuela.edu.do" : "https://instancia.instructure.com"}
                     required
@@ -170,9 +170,9 @@ export function IntegrationManager() {
               </>
             ) : (
               <label className="block">
-                <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Dominio</span>
+                 <span className="font-label-md text-label-md text-on-surface-variant">Dominio</span>
                 <input
-                  className="mt-1 w-full border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-md text-body-md outline-none focus:border-primary"
+                   className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
                   readOnly
                   type="text"
                   value={selected.domain}
@@ -186,7 +186,7 @@ export function IntegrationManager() {
                   <div className="flex gap-2">
                     {(["credentials", "token"] as const).map((m) => (
                       <button
-                        className={`px-3 py-2 font-body-sm text-body-sm ${connectMode === m ? "bg-primary-container text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+                         className={`min-h-11 rounded-md border px-3 py-2 font-body-sm text-body-sm transition-colors ${connectMode === m ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
                         key={m}
                         onClick={() => setConnectMode(m)}
                         type="button"
@@ -198,9 +198,9 @@ export function IntegrationManager() {
                   {connectMode === "credentials" ? (
                     <>
                       <label className="block">
-                        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Usuario</span>
+                         <span className="font-label-md text-label-md text-on-surface-variant">Usuario</span>
                         <input
-                          className="mt-1 w-full border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-base text-body-base outline-none focus:border-primary"
+                           className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
                           onChange={(e) => setUsername(e.target.value)}
                           placeholder="Tu usuario"
                           required
@@ -208,10 +208,10 @@ export function IntegrationManager() {
                         />
                       </label>
                       <label className="block">
-                        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Contraseña</span>
+                         <span className="font-label-md text-label-md text-on-surface-variant">Contraseña</span>
                         <input
                           autoComplete="current-password"
-                          className="mt-1 w-full border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-base text-body-base outline-none focus:border-primary"
+                           className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
                           onChange={(e) => setPassword(e.target.value)}
                           required
                           type="password"
@@ -221,9 +221,9 @@ export function IntegrationManager() {
                     </>
                   ) : (
                     <label className="block">
-                      <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Token del web service</span>
+                       <span className="font-label-md text-label-md text-on-surface-variant">Token del web service</span>
                       <input
-                        className="mt-1 w-full border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-md text-body-md outline-none focus:border-primary"
+                         className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
                         onChange={(e) => setToken(e.target.value)}
                         placeholder="Pega el token generado en Administración › Web services › Tokens"
                         required
@@ -236,7 +236,7 @@ export function IntegrationManager() {
               ) : (
                 <>
                   <label className="block">
-                    <span className="flex items-center gap-2 font-label-caps text-label-caps uppercase text-on-surface-variant">
+                     <span className="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant">
                       Token del web service
                       {selected.helpUrl ? (
                         <a className="inline-flex items-center gap-1 font-body-sm font-normal normal-case text-primary hover:text-on-surface" href={selected.helpUrl} rel="noreferrer" target="_blank">
@@ -245,7 +245,7 @@ export function IntegrationManager() {
                       ) : null}
                     </span>
                     <input
-                      className="mt-1 w-full border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-md text-body-md outline-none focus:border-primary"
+                       className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
                       onChange={(e) => setToken(e.target.value)}
                       placeholder="Pega tu token de Moodle"
                       required
@@ -258,7 +258,7 @@ export function IntegrationManager() {
             ) : (
               <>
                 <label className="block">
-                  <span className="flex items-center gap-2 font-label-caps text-label-caps uppercase text-on-surface-variant">
+                     <span className="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant">
                     Token de acceso personal
                     {selected.helpUrl ? (
                       <a className="inline-flex items-center gap-1 font-body-sm font-normal normal-case text-primary hover:text-on-surface" href={selected.helpUrl} rel="noreferrer" target="_blank">
@@ -267,7 +267,7 @@ export function IntegrationManager() {
                     ) : null}
                   </span>
                   <input
-                    className="mt-1 w-full border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-md text-body-md outline-none focus:border-primary"
+                       className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
                     onChange={(e) => setToken(e.target.value)}
                     placeholder="Pega tu token personal de Canvas"
                     required
@@ -280,8 +280,8 @@ export function IntegrationManager() {
 
             {connectMutation.isError && <p className="font-body-sm text-body-sm text-error">{connectMutation.error instanceof Error ? connectMutation.error.message : "No se pudo conectar."}</p>}
 
-            <button
-              className="bg-primary-container px-4 py-2 font-body-md text-body-md text-on-primary hover:bg-primary disabled:opacity-50"
+             <button
+              className="min-h-11 rounded-md bg-primary px-4 py-2 font-body-md text-body-md text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
               disabled={connectMutation.isPending || !isSupported}
               type="submit"
             >
@@ -298,13 +298,13 @@ export function IntegrationManager() {
         accounts.map((account) => {
           const Icon = providerIcon(account.provider);
           return (
-            <div className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding" key={account.id}>
+             <div className="max-w-2xl rounded-lg border border-outline-variant bg-surface p-container-padding shadow-cadence-1" key={account.id}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <Icon className="text-primary" size={18} />
                     <span className="font-headline-xs text-headline-xs">{new URL(account.domain).host}</span>
-                    <span className="bg-surface-container-high px-2 py-0.5 font-label-caps text-label-caps uppercase text-on-surface-variant">
+                     <span className="rounded-full bg-surface-container-high px-2 py-0.5 font-label-caps text-label-caps uppercase text-on-surface-variant">
                       {PROVIDER_LABEL[account.provider]}
                     </span>
                     {account.enabled ? <CheckCircle2 className="text-primary" size={16} /> : null}
@@ -317,7 +317,7 @@ export function IntegrationManager() {
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button
-                    className="border border-outline-variant px-3 py-2 text-sm text-primary hover:bg-surface-container-high disabled:opacity-50"
+                     className="flex h-11 w-11 items-center justify-center rounded-md border border-outline-variant text-secondary transition-colors hover:bg-surface-container-low disabled:opacity-50"
                     disabled={syncMutation.isPending}
                     onClick={() => syncMutation.mutate({ provider: account.provider, id: account.id })}
                     title="Sincronizar"
@@ -326,7 +326,7 @@ export function IntegrationManager() {
                     {syncMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
                   </button>
                   <button
-                    className="border border-outline-variant px-3 py-2 text-sm text-error hover:bg-error-container"
+                     className="flex h-11 w-11 items-center justify-center rounded-md border border-outline-variant text-error transition-colors hover:bg-error-container disabled:opacity-50"
                     onClick={() => setConfirm({ kind: "disconnect", account })}
                     title="Desconectar"
                     type="button"
@@ -339,18 +339,18 @@ export function IntegrationManager() {
           );
         })
       ) : (
-        <p className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding font-body-sm text-body-sm text-on-surface-variant">
+         <p className="max-w-2xl rounded-lg border border-outline-variant bg-surface p-container-padding font-body-sm text-body-sm text-on-surface-variant shadow-cadence-1">
           Aún no has conectado ninguna integración.
         </p>
       )}
 
-      <div className="max-w-2xl border border-outline-variant bg-surface-container-lowest p-container-padding">
+       <div className="max-w-2xl rounded-lg border border-outline-variant bg-surface p-container-padding shadow-cadence-1">
         <h3 className="font-headline-xs text-headline-xs">Zona peligrosa</h3>
         <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
           Elimina todas las tareas pendientes de las integraciones (de cuentas conectadas, desconectadas y ajenas). Se conservan las completadas o canceladas. Sincroniza de nuevo para traerlas.
         </p>
-        <button
-          className="mt-3 border border-outline-variant px-4 py-2 font-body-md text-body-md text-error hover:bg-error-container disabled:opacity-50"
+         <button
+           className="mt-3 min-h-11 rounded-md border border-error px-4 py-2 font-body-md text-body-md text-error transition-colors hover:bg-error-container disabled:opacity-50"
           disabled={cleanMutation.isPending}
           onClick={() => setConfirm({ kind: "clean" })}
           type="button"

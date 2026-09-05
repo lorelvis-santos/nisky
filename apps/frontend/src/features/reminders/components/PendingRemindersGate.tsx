@@ -3,7 +3,14 @@
 import { AlarmClock, Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useModalScrollLock } from "@/hooks/useModalScrollLock";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Reminder } from "@/types/entities";
 import { usePendingRemindersQuery, useReminderMutations } from "../hooks/useReminders";
 
@@ -85,19 +92,20 @@ function PendingReminderModal({ reminder, total, busy, customDate, onCustomDateC
   onDismiss: () => void;
   onSettle: (id: string, action: (reminder: Reminder) => { id: string; payload: { action: "accept" } | { action: "snooze"; triggerAt: string } }) => void;
 }) {
-  useModalScrollLock();
-
   return (
-    <div aria-modal="true" className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/20 p-4 backdrop-blur-[1px]" role="dialog">
-      <div className="flex max-h-[90vh] w-full max-w-md flex-col border border-outline-variant bg-surface">
-        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4">
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onDismiss(); }}>
+      <DialogContent className="flex max-h-[90vh] w-full max-w-md flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+        <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">RECORDATORIOS PENDIENTES · {total} {total === 1 ? "AVISO" : "AVISOS"}</p>
-            <h2 className="mt-1 font-headline-xs text-headline-xs font-bold text-primary">Recordatorio vencido</h2>
+            <DialogTitle className="mt-1 font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Recordatorio vencido</DialogTitle>
+            <DialogDescription className="sr-only">Revisa y pospone o completa el recordatorio vencido.</DialogDescription>
           </div>
-          <button aria-label="Cerrar" className="text-on-surface-variant hover:text-on-surface" onClick={onDismiss} type="button"><X size={19} /></button>
-        </div>
-        <div className="overflow-y-auto p-5" data-modal-scroll>
+          <DialogClose asChild>
+            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button"><X size={19} /></button>
+          </DialogClose>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5" data-modal-scroll>
           <div className="flex items-start gap-3">
             <span className="mt-0.5 shrink-0 text-primary"><AlarmClock size={18} /></span>
             <div className="min-w-0">
@@ -145,8 +153,10 @@ function PendingReminderModal({ reminder, total, busy, customDate, onCustomDateC
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-end gap-3 border-t border-outline-variant bg-surface-container-low px-5 py-4">
-          <button className="px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface disabled:opacity-50" disabled={busy} onClick={onDismiss} type="button">Ahora no</button>
+        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-outline-variant bg-surface-container-low px-5 py-4">
+          <DialogClose asChild>
+            <button className="px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface disabled:opacity-50" disabled={busy} type="button">Ahora no</button>
+          </DialogClose>
           <button
             className="flex items-center gap-1.5 bg-primary px-4 py-2 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50"
             disabled={busy}
@@ -156,7 +166,7 @@ function PendingReminderModal({ reminder, total, busy, customDate, onCustomDateC
             <Check size={15} /> Hecho
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

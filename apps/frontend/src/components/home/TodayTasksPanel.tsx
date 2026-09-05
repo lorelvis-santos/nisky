@@ -67,15 +67,16 @@ function TodayTaskRow({
   onToggle: (task: Task) => void;
 }) {
   return (
-    <div className="group flex items-start gap-3 border-b border-outline-variant px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-container-low">
+    <div className="group flex items-start gap-3 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest p-4 shadow-sm transition-colors hover:border-outline hover:bg-surface-container-low">
       <button
         aria-label={`Completar ${task.title}`}
-        className="mt-0.5 shrink-0 text-outline hover:text-primary"
+        aria-pressed={task.status === "COMPLETED"}
+        className="-ml-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-outline hover:text-secondary"
         onClick={() => onToggle(task)}
         type="button"
       >
         {task.status === "COMPLETED" ? (
-          <CheckCircle2 className="text-primary" size={18} />
+          <CheckCircle2 className="text-tertiary" size={18} />
         ) : (
           <Circle size={18} />
         )}
@@ -84,7 +85,7 @@ function TodayTaskRow({
         className="min-w-0 flex-1"
         href={`/tasks?taskId=${encodeURIComponent(task.id)}`}
       >
-        <p className="line-clamp-2 break-words font-body-md text-body-md font-medium hover:text-primary">
+        <p className={`line-clamp-2 break-words font-body-md text-body-md font-medium hover:text-primary ${task.status === "COMPLETED" ? "text-on-surface-variant line-through" : "text-on-surface"}`}>
           {task.title}
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -140,74 +141,73 @@ export function TodayTasksPanel({
   const totalTasks = plannedTasks.length + tasks.length;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-outline-variant bg-surface-bright px-4 py-3">
+    <section className="space-y-3">
+      <header className="flex items-start justify-between gap-3 px-1">
         <div>
-          <h2 className="font-headline-xs text-headline-xs font-bold text-primary">
-            Por hacer hoy ({totalTasks})
-          </h2>
-          <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">
-            Lo planificado, lo que vence hoy y lo ya vencido.
+          <div className="flex items-center gap-2">
+            <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Prioridades de hoy</h2>
+            <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{totalTasks} tareas</span>
+          </div>
+          <p className="mt-0.5 hidden font-body-sm text-body-sm text-on-surface-variant sm:block">
+             Lo planificado, lo urgente y lo que necesita atención.
           </p>
         </div>
         <Link
-          className="flex items-center gap-1 font-label-caps text-label-caps text-primary hover:underline"
+          className="flex shrink-0 items-center gap-1 font-label-caps text-label-caps text-primary hover:underline"
           href="/tasks"
         >
-          VER TODOS <ArrowRight size={13} />
+          VER TODAS <ArrowRight size={13} />
         </Link>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {totalTasks === 0 ? (
-          <p className="flex flex-col items-center gap-2 px-4 py-8 text-center font-body-sm text-body-sm text-on-surface-variant">
-            <Inbox size={20} className="text-outline" />
-            {emptyMessage}
-          </p>
-        ) : (
-          <>
-            {plannedTasks.length > 0 && (
-              <div>
-                <p className="flex items-center gap-1.5 px-4 pt-3 font-label-caps text-label-caps text-primary">
-                  <CalendarDays size={12} /> PLANIFICADAS HOY ({plannedTasks.length})
-                </p>
-                {plannedTasks.map((task) => (
-                  <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
-                ))}
-              </div>
-            )}
-            {overdue.length > 0 && (
-              <div>
-                <p className="flex items-center gap-1.5 px-4 pt-3 font-label-caps text-label-caps text-error">
-                  <AlertCircle size={12} /> ATRASADAS ({overdue.length})
-                </p>
-                {overdue.map((task) => (
-                  <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
-                ))}
-              </div>
-            )}
-            {today.length > 0 && (
-              <div>
-                <p className="flex items-center gap-1.5 px-4 pt-3 font-label-caps text-label-caps text-on-surface-variant">
-                  <CalendarDays size={12} /> VENCEN HOY ({today.length})
-                </p>
-                {today.map((task) => (
-                  <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
-                ))}
-              </div>
-            )}
-            {highPriority.length > 0 && (
-              <div>
-                <p className="flex items-center gap-1.5 px-4 pt-3 font-label-caps text-label-caps text-on-surface-variant">
-                  ALTA PRIORIDAD ({highPriority.length})
-                </p>
-                {highPriority.map((task) => (
-                  <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+      </header>
+      {totalTasks === 0 ? (
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-10 text-center font-body-sm text-body-sm text-on-surface-variant shadow-sm">
+          <Inbox size={20} className="text-outline" />
+          {emptyMessage}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {plannedTasks.length > 0 && (
+            <div className="space-y-2">
+              <p className="flex items-center gap-1.5 px-1 font-label-caps text-label-caps text-primary">
+                <CalendarDays size={12} /> PLANIFICADAS HOY ({plannedTasks.length})
+              </p>
+              {plannedTasks.map((task) => (
+                <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
+              ))}
+            </div>
+          )}
+          {overdue.length > 0 && (
+            <div className="space-y-2">
+              <p className="flex items-center gap-1.5 px-1 font-label-caps text-label-caps text-error">
+                <AlertCircle size={12} /> ATRASADAS ({overdue.length})
+              </p>
+              {overdue.map((task) => (
+                <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
+              ))}
+            </div>
+          )}
+          {today.length > 0 && (
+            <div className="space-y-2">
+              <p className="flex items-center gap-1.5 px-1 font-label-caps text-label-caps text-on-surface-variant">
+                <CalendarDays size={12} /> VENCEN HOY ({today.length})
+              </p>
+              {today.map((task) => (
+                <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
+              ))}
+            </div>
+          )}
+          {highPriority.length > 0 && (
+            <div className="space-y-2">
+              <p className="flex items-center gap-1.5 px-1 font-label-caps text-label-caps text-on-surface-variant">
+                ALTA PRIORIDAD ({highPriority.length})
+              </p>
+              {highPriority.map((task) => (
+                <TodayTaskRow key={task.id} onToggle={onToggle} task={task} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }

@@ -29,14 +29,14 @@ export default function SettingsPage() {
   const [active, setActive] = useState<Tab>(visibleTabs[0]?.id ?? "profile");
 
   return (
-    <section className="flex h-full min-h-0 flex-col p-container-padding sm:p-section-gap">
-      <div className="flex min-h-0 flex-1 flex-col border border-outline-variant bg-surface-container-lowest">
-        <div className="shrink-0 border-b border-outline-variant bg-surface-container-low px-4 pt-4">
-          <h2 className="px-0 pb-2 font-headline-xs text-headline-xs">Ajustes</h2>
+    <section className="flex h-full min-h-0 flex-col bg-background p-container-padding sm:p-section-gap">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface shadow-cadence-1">
+        <div className="shrink-0 border-b border-outline-variant bg-surface-container-low px-4 pt-4 sm:px-6 sm:pt-5">
+          <h2 className="px-0 pb-2 font-headline-md text-headline-md text-on-surface">Ajustes</h2>
           <div className="mt-2 flex gap-1 overflow-x-auto">
             {visibleTabs.map((tab) => (
               <button
-                className={`border-b-2 px-3 py-2 font-label-caps text-label-caps uppercase ${active === tab.id ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"}`}
+                className={`min-h-11 rounded-t-md border-b-2 px-3 py-2 font-label-md text-label-md transition-colors ${active === tab.id ? "border-secondary text-secondary" : "border-transparent text-on-surface-variant hover:bg-surface hover:text-on-surface"}`}
                 key={tab.id}
                 onClick={() => setActive(tab.id)}
                 type="button"
@@ -47,12 +47,12 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-container-padding">
+        <div className="min-h-0 flex-1 overflow-y-auto p-container-padding sm:p-section-gap">
           {active === "profile" && (
             <div className="space-y-6">
               <ProfileSection />
               <div>
-                <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Rol</span>
+                 <span className="font-label-md text-label-md text-on-surface-variant">Rol</span>
                 <p className="mt-1 font-data-mono text-data-mono">{user?.role === "ADMIN" ? "Administrador" : "Miembro"}</p>
               </div>
             </div>

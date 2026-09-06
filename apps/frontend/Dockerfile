@@ -5,16 +5,18 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 # Stage 2: Builder
-FROM oven/bun:1.3.11-slim AS builder
+# Next.js production builds run on Node to avoid Bun/Turbopack runtime incompatibilities.
+FROM node:24-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ARG NEXT_PUBLIC_API_URL=/api/v1
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN bun run build
+RUN npm run build
 
 # Stage 3: Runner
 FROM node:24-slim AS runner

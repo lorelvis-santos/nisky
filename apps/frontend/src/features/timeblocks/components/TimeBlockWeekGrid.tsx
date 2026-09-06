@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MapPin, MoreVertical } from "lucide-react";
-import type { Project, TimeBlock, CalendarEvent, TimeBlockException } from "@/types/entities";
+import type { CalendarEvent, Project, TaskSchedule, TimeBlock, TimeBlockException } from "@/types/entities";
 import { cn } from "@/lib/utils";
 import { DAY_NAMES_SHORT, DAY_ORDER, hexToRgba, minToTime, parseDateOnly, toDateKey } from "../lib/time";
 
@@ -111,6 +111,8 @@ export function TimeBlockWeekGrid({
   onEventMove,
   onEventAction,
   taskCounts = {},
+  taskSchedules = [],
+  onDayTasksClick,
   moveEnabled = true,
   dayStartMin = 6 * 60,
   dayEndMin = 23 * 60,
@@ -139,6 +141,8 @@ export function TimeBlockWeekGrid({
   ) => void;
   onEventAction?: (event: CalendarEvent, date: Date, action: "skip" | "move") => void;
   taskCounts?: Record<string, number>;
+  taskSchedules?: TaskSchedule[];
+  onDayTasksClick?: (date: string) => void;
   moveEnabled?: boolean;
   dayStartMin?: number;
   dayEndMin?: number;
@@ -189,6 +193,11 @@ export function TimeBlockWeekGrid({
     { length: Math.floor((dayEndMin - dayStartMin) / 60) },
     (_, index) => dayStartMin + (index + 1) * 60,
   );
+  const plannedTaskCountsByDate = taskSchedules.reduce<Record<string, number>>((counts, schedule) => {
+    const date = schedule.date.slice(0, 10);
+    counts[date] = (counts[date] ?? 0) + 1;
+    return counts;
+  }, {});
 
   const [initialScrollTop] = useState(() =>
     Math.max(((nowMin - (dayStartMin + 4 * 60)) * HOUR_PX) / 60, 0),
@@ -882,8 +891,22 @@ export function TimeBlockWeekGrid({
                   <p className="mt-0.5 font-data-mono text-data-mono text-xs">
                     {day.date.getDate()}
                   </p>
-                </span>
-                <div className="mt-1 flex flex-col gap-1">
+                 </span>
+                 {onDayTasksClick && (plannedTaskCountsByDate[toDateKey(day.date)] ?? 0) > 0 && (
+                   <button
+                     aria-label={`Ver ${plannedTaskCountsByDate[toDateKey(day.date)]} ${plannedTaskCountsByDate[toDateKey(day.date)] === 1 ? "tarea" : "tareas"} planificadas`}
+                     className="mx-auto mt-1 inline-flex max-w-full items-center truncate rounded-full bg-primary-container px-2 py-0.5 font-label-caps text-[10px] uppercase text-primary transition-colors hover:bg-primary-container/80"
+                     onClick={(event) => {
+                       event.stopPropagation();
+                       onDayTasksClick(toDateKey(day.date));
+                     }}
+                     title="Ver tareas planificadas"
+                     type="button"
+                   >
+                     {plannedTaskCountsByDate[toDateKey(day.date)]} {plannedTaskCountsByDate[toDateKey(day.date)] === 1 ? "tarea" : "tareas"}
+                   </button>
+                 )}
+                 <div className="mt-1 flex flex-col gap-1">
                   {events
                     .filter((e) => e.allDay && sameLocalDay(parseDateOnly(e.date), day.date))
                     .map((e) => (

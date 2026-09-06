@@ -8,6 +8,7 @@ import { TimeBlockEditor } from "@/features/timeblocks/components/TimeBlockEdito
 import { TimeBlockWeekGrid } from "@/features/timeblocks/components/TimeBlockWeekGrid";
 import { TaskAssignmentPanel } from "@/features/timeblocks/components/TaskAssignmentPanel";
 import { AgendaEntryChooser, type AgendaEntryKind } from "@/features/timeblocks/components/AgendaEntryChooser";
+import { AgendaDayTasksDialog } from "@/features/timeblocks/components/AgendaDayTasksDialog";
 import { EventEditorModal } from "@/features/events/components/EventEditorModal";
 import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
 import {
@@ -21,7 +22,7 @@ import { useEventsQuery, useEventMutations } from "@/features/events/hooks/useEv
 import { minToTime, parseDateOnly, timeToMin } from "@/features/timeblocks/lib/time";
 import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import type { TimeBlock, CalendarEvent } from "@/types/entities";
+import type { CalendarEvent, TimeBlock } from "@/types/entities";
 import {
   Dialog,
   DialogClose,
@@ -245,6 +246,7 @@ function TimeBlocksContent() {
   const [eventEditor, setEventEditor] = useState<EventEditorState | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
+  const [dayTaskDate, setDayTaskDate] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [resolveDraft, setResolveDraft] = useState<{
     block: TimeBlock;
@@ -280,15 +282,23 @@ function TimeBlocksContent() {
   const exceptionsQuery = useWeekExceptionsQuery(from, to);
   const exceptions = exceptionsQuery.data ?? [];
   const schedulesQuery = useTaskSchedulesQuery({ from, to });
+  const taskSchedules = useMemo(
+    () => (schedulesQuery.data ?? []).filter((schedule) => schedule.occurrence?.occurs !== false),
+    [schedulesQuery.data],
+  );
   const taskCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const schedule of schedulesQuery.data ?? []) {
-      if (!schedule.timeBlockId || schedule.occurrence?.occurs === false) continue;
-      const key = `${schedule.timeBlockId}:${schedule.date}`;
+    for (const schedule of taskSchedules) {
+      if (!schedule.timeBlockId) continue;
+      const key = `${schedule.timeBlockId}:${schedule.date.slice(0, 10)}`;
       counts[key] = (counts[key] ?? 0) + 1;
     }
     return counts;
-  }, [schedulesQuery.data]);
+  }, [taskSchedules]);
+  const dayTaskSchedules = useMemo(
+    () => dayTaskDate ? taskSchedules.filter((schedule) => schedule.date.slice(0, 10) === dayTaskDate) : [],
+    [dayTaskDate, taskSchedules],
+  );
 
   const openSettings = () => {
     setDayStartTime(minToTime(settings?.dayStartMin ?? 6 * 60));
@@ -728,6 +738,7 @@ function TimeBlocksContent() {
           dayEndMin={settings?.dayEndMin ?? 23 * 60}
           dayStartMin={settings?.dayStartMin ?? 6 * 60}
           moveEnabled={!isMobile}
+          onDayTasksClick={(date) => setDayTaskDate(date)}
            onBlockClick={openBlock}
            onEventClick={openEvent}
            onEventMove={handleEventMove}
@@ -741,6 +752,7 @@ function TimeBlocksContent() {
           })}
           projects={projects}
           taskCounts={taskCounts}
+          taskSchedules={taskSchedules}
           weekStart={weekStart}
         />
       </div>
@@ -788,6 +800,14 @@ function TimeBlocksContent() {
         <AgendaEntryChooser
           onClose={() => setEntryChooserOpen(false)}
           onSelect={selectAgendaEntry}
+        />
+      )}
+
+      {dayTaskDate && (
+        <AgendaDayTasksDialog
+          date={dayTaskDate}
+          onClose={() => setDayTaskDate(null)}
+          schedules={dayTaskSchedules}
         />
       )}
 

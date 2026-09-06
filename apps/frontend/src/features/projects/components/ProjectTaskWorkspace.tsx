@@ -64,6 +64,7 @@ export function ProjectTaskWorkspace({
   onToggle,
   onStartPomodoro,
   onPageChange,
+  onCreateTask,
   onQuickAdd,
 }: {
   tasks: Task[];
@@ -86,6 +87,7 @@ export function ProjectTaskWorkspace({
   onToggle: (task: Task) => void;
   onStartPomodoro: (task: Task) => void;
   onPageChange: (page: number) => void;
+  onCreateTask: () => void;
   onQuickAdd: (title: string) => Promise<void>;
 }) {
   const quickAddRef = useRef<HTMLInputElement>(null);
@@ -93,11 +95,6 @@ export function ProjectTaskWorkspace({
   const [quickTitle, setQuickTitle] = useState("");
   const hasAdvancedFilters = priority !== "ALL" || Boolean(assigneeId);
   const orderedTasks = [...tasks].sort(compareProjectTasks);
-
-  const focusQuickAdd = () => {
-    quickAddRef.current?.focus();
-    quickAddRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
 
   const submitQuickAdd = async () => {
     const title = quickTitle.trim();
@@ -136,13 +133,13 @@ export function ProjectTaskWorkspace({
                 </button>
                 {filtersOpen && <AdvancedFilters assigneeId={assigneeId} members={members} onAssigneeChange={onAssigneeChange} onClose={() => setFiltersOpen(false)} onPriorityChange={onPriorityChange} priority={priority} onReset={onResetFilters} />}
               </div>
-               <button className="flex h-10 shrink-0 items-center gap-1.5 rounded-md bg-[#1e3a5f] px-3.5 text-[13px] font-semibold text-white shadow-[0_2px_6px_rgba(30,58,95,0.18)] hover:bg-[#152c48]" onClick={focusQuickAdd} type="button"><Plus size={16} /> <span className="hidden sm:inline">Tarea</span></button>
+               <button className="flex h-10 shrink-0 items-center gap-1.5 rounded-md bg-[#1e3a5f] px-3.5 text-[13px] font-semibold text-white shadow-[0_2px_6px_rgba(30,58,95,0.18)] hover:bg-[#152c48]" onClick={onCreateTask} type="button"><Plus size={16} /> <span className="hidden sm:inline">Nueva tarea</span></button>
             </div>
           </div>
         </div>
 
         <div className="project-panel overflow-visible">
-           <div className="hidden grid-cols-[44px_minmax(0,1fr)_7.25rem_6.5rem_7.5rem_7rem_2.75rem] items-center gap-2 border-b border-[#e7e9e8] bg-[#fafaf8] px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#858d91] md:grid lg:px-4">
+           <div className="hidden rounded-t-lg grid-cols-[44px_minmax(0,1fr)_7.25rem_6.5rem_7.5rem_7rem_2.75rem] items-center gap-2 border-b border-[#e7e9e8] bg-[#fafaf8] px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#858d91] md:grid lg:px-4">
             <span />
             <span>Tarea</span>
             <span>Estado</span>
@@ -151,7 +148,7 @@ export function ProjectTaskWorkspace({
             <span>Responsable</span>
             <span />
           </div>
-          {isLoading ? <TaskSkeleton /> : isError ? <TaskError onRetry={onRetry} /> : tasks.length === 0 ? <TaskEmpty hasFilters={mode === "MINE" || Boolean(search) || hasAdvancedFilters} mode={mode} onReset={onResetFilters} onFocus={focusQuickAdd} /> : (
+          {isLoading ? <TaskSkeleton /> : isError ? <TaskError onRetry={onRetry} /> : tasks.length === 0 ? <TaskEmpty hasFilters={mode === "MINE" || Boolean(search) || hasAdvancedFilters} mode={mode} onReset={onResetFilters} onCreate={onCreateTask} /> : (
             <>
                <div className="divide-y divide-[#e7e9e8]">
                  {orderedTasks.map((task) => <ProjectTaskRow key={task.id} onOpen={() => onOpen(task)} onStartPomodoro={() => onStartPomodoro(task)} onToggle={() => onToggle(task)} task={task} />)}
@@ -180,7 +177,7 @@ function ProjectTaskRow({ task, onOpen, onToggle, onStartPomodoro }: { task: Tas
   const completed = task.status === "COMPLETED";
   const overdue = isTaskOverdue(task);
   return (
-    <article className={cn("grid grid-cols-[44px_minmax(0,1fr)] gap-2 px-2 py-2 transition-colors hover:bg-[#fafaf8] sm:px-3 md:grid-cols-[44px_minmax(0,1fr)_7.25rem_6.5rem_7.5rem_7rem_2.75rem] md:items-center lg:px-4", completed && "bg-[#fdfdfb]")}>
+    <article className={cn("first:rounded-t-lg last:rounded-b-lg grid grid-cols-[44px_minmax(0,1fr)] gap-2 px-2 py-2 transition-colors hover:bg-[#fafaf8] sm:px-3 md:grid-cols-[44px_minmax(0,1fr)_7.25rem_6.5rem_7.5rem_7rem_2.75rem] md:items-center lg:px-4", completed && "bg-[#fdfdfb]")}>
       <button aria-label={completed ? "Marcar tarea como pendiente" : "Marcar tarea como completada"} className="flex h-11 w-11 items-center justify-center rounded-full text-[#9aa2a5] hover:bg-[#e7e9e8] hover:text-[#1e3a5f]" onClick={onToggle} type="button">{completed ? <CheckCircle2 className="text-[#4a7c59]" size={20} /> : <Circle size={20} />}</button>
       <div className="flex min-w-0 items-start gap-2 md:hidden">
          <button className="min-w-0 flex-1 rounded-md text-left" onClick={onOpen} type="button">
@@ -214,7 +211,7 @@ function StatusBadge({ status }: { status: Task["status"] }) {
 }
 
 function QuickAddInput({ inputRef, value, onChange, onSubmit }: { inputRef: React.RefObject<HTMLInputElement | null>; value: string; onChange: (value: string) => void; onSubmit: () => void }) {
-  return <form className="flex items-center gap-2 border-t border-[#e7e9e8] bg-[#fafaf8] px-3 py-2.5 sm:px-4" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e7e9e8] text-[#1e3a5f]"><Plus size={15} /></span><input aria-label="Añadir tarea rápida" className="h-10 min-w-0 flex-1 bg-transparent text-[13px] text-[#2f3b45] outline-none placeholder:text-[#9aa2a5]" onChange={(event) => onChange(event.target.value)} placeholder="Añadir una tarea rápida..." ref={inputRef} value={value} /><button aria-label="Crear tarea rápida" className="flex h-9 w-9 items-center justify-center rounded-md text-[#1e3a5f] hover:bg-[#e7e9e8] disabled:opacity-40" disabled={!value.trim()} type="submit"><Check size={16} /></button></form>;
+  return <form className="flex items-center gap-2 rounded-b-lg border-t border-[#e7e9e8] bg-[#fafaf8] px-3 py-2.5 sm:px-4" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e7e9e8] text-[#1e3a5f]"><Plus size={15} /></span><input aria-label="Añadir tarea rápida" className="h-10 min-w-0 flex-1 bg-transparent text-[13px] text-[#2f3b45] outline-none placeholder:text-[#9aa2a5]" onChange={(event) => onChange(event.target.value)} placeholder="Añadir una tarea rápida..." ref={inputRef} value={value} /><button aria-label="Crear tarea rápida" className="flex h-9 w-9 items-center justify-center rounded-md text-[#1e3a5f] hover:bg-[#e7e9e8] disabled:opacity-40" disabled={!value.trim()} type="submit"><Check size={16} /></button></form>;
 }
 
 function TaskSkeleton() {
@@ -225,8 +222,8 @@ function TaskError({ onRetry }: { onRetry: () => void }) {
   return <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-4 text-center"><RefreshCw className="text-[#c73b52]" size={22} /><p className="text-[13px] text-[#5f6872]">No pudimos cargar las tareas del proyecto.</p><button className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#dde1e2] px-3 text-[13px] font-semibold text-[#1e3a5f] hover:bg-[#eff1f0]" onClick={onRetry} type="button"><RefreshCw size={14} /> Reintentar</button></div>;
 }
 
-function TaskEmpty({ hasFilters, mode, onReset, onFocus }: { hasFilters: boolean; mode: ProjectTaskMode; onReset: () => void; onFocus: () => void }) {
+function TaskEmpty({ hasFilters, mode, onReset, onCreate }: { hasFilters: boolean; mode: ProjectTaskMode; onReset: () => void; onCreate: () => void }) {
   const title = hasFilters ? "No hay tareas con estos filtros." : mode === "ACTIVE" ? "No hay tareas activas en este proyecto." : mode === "MINE" ? "No tienes tareas asignadas." : "Todavía no hay tareas en este proyecto.";
   const description = hasFilters ? "Prueba otra combinación o limpia los filtros." : mode === "ACTIVE" ? "Las tareas completadas siguen disponibles en Todas." : mode === "MINE" ? "Crea una tarea o revisa la vista Todas." : "Crea la primera tarea desde la entrada rápida.";
-  return <div className="flex min-h-64 flex-col items-center justify-center gap-2 px-4 text-center"><Circle className="text-[#1e3a5f]" size={23} /><p className="mt-1 text-[13px] font-medium text-[#2f3b45]">{title}</p><p className="text-[12px] text-[#5f6872]">{description}</p><button className="mt-2 rounded-lg border border-[#dde1e2] px-3 py-2 text-[12px] font-semibold text-[#1e3a5f] hover:bg-[#eff1f0]" onClick={hasFilters ? onReset : onFocus} type="button">{hasFilters ? "Limpiar filtros" : "Añadir tarea"}</button></div>;
+  return <div className="flex min-h-64 flex-col items-center justify-center gap-2 px-4 text-center"><Circle className="text-[#1e3a5f]" size={23} /><p className="mt-1 text-[13px] font-medium text-[#2f3b45]">{title}</p><p className="text-[12px] text-[#5f6872]">{description}</p><button className="mt-2 rounded-lg border border-[#dde1e2] px-3 py-2 text-[12px] font-semibold text-[#1e3a5f] hover:bg-[#eff1f0]" onClick={hasFilters ? onReset : onCreate} type="button">{hasFilters ? "Limpiar filtros" : "Añadir tarea"}</button></div>;
 }

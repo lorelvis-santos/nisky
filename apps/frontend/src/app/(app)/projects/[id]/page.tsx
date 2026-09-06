@@ -103,6 +103,7 @@ function ProjectDetailPageContent() {
 
   const resetTaskPage = () => setTaskPage(1);
   const openTask = (task: Task) => { setEditingTask(task); setTaskModalOpen(true); };
+  const openCreateTask = () => { setEditingTask(null); setTaskModalOpen(true); };
   const closeTaskModal = () => { setEditingTask(null); setTaskModalOpen(false); };
 
   const saveTask = async (form: TaskForm) => {
@@ -268,6 +269,7 @@ function ProjectDetailPageContent() {
               onOpen={openTask}
               onPageChange={setTaskPage}
               onPriorityChange={(value) => { resetTaskPage(); setTaskPriority(value); }}
+              onCreateTask={openCreateTask}
               onQuickAdd={quickAdd}
               onResetFilters={() => { resetTaskPage(); setTaskMode("ACTIVE"); setTaskSearch(""); setTaskPriority("ALL"); setTaskAssigneeId(""); }}
               onRetry={() => void tasksQuery.refetch()}

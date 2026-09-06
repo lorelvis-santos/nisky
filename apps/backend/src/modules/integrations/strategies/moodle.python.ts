@@ -12,22 +12,33 @@ type PythonResult = { ok: true; count?: number; token?: string; events?: Record<
   | { ok: false; error: string };
 
 export function runMoodleScript(args: string[]): PythonResult {
+  const operation = args[0] ?? "unknown";
   const result = spawnSync(PYTHON_BIN, [SCRIPT_PATH, ...args], {
     encoding: "utf8",
     timeout: 60_000,
     maxBuffer: 4 * 1024 * 1024,
   });
   if (result.error) {
-    return { ok: false, error: `No se pudo ejecutar el cliente Moodle: ${result.error.message}` };
+    const error = `No se pudo ejecutar el cliente Moodle: ${result.error.message}`;
+    console.error(`[moodle:${operation}] ${error}`);
+    return { ok: false, error };
   }
+  const stderr = result.stderr?.trim();
+  if (stderr) console.error(`[moodle:${operation}] ${stderr}`);
   const raw = result.stdout?.trim();
   if (!raw) {
-    return { ok: false, error: `El cliente Moodle no devolvió salida (stderr: ${result.stderr?.split("\n").filter((l) => l.trim()).slice(-5).join(" · ") ?? ""})` };
+    const error = `El cliente Moodle no devolvió salida (stderr: ${stderr?.split("\n").filter((l) => l.trim()).slice(-5).join(" · ") ?? ""})`;
+    console.error(`[moodle:${operation}] ${error}`);
+    return { ok: false, error };
   }
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as PythonResult;
+    if (!parsed.ok) console.error(`[moodle:${operation}] ${parsed.error}`);
+    return parsed;
   } catch {
-    return { ok: false, error: `El cliente Moodle devolvió algo inesperado: ${raw.slice(0, 200)}` };
+    const error = `El cliente Moodle devolvió algo inesperado: ${raw.slice(0, 200)}`;
+    console.error(`[moodle:${operation}] ${error}`);
+    return { ok: false, error };
   }
 }
 

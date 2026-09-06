@@ -15,6 +15,7 @@ import re
 import sys
 import time
 from datetime import datetime
+from urllib.parse import urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
 
 from curl_cffi import requests
@@ -85,6 +86,21 @@ WSDL_SERVICE_URL = "/webservice/rest/server.php"
 LOGIN_TOKEN_PATH = "/login/token.php"
 
 
+def _safe_url(value):
+    parsed = urlsplit(value)
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
+
+
+def _response_context(resp):
+    body = re.sub(r"\s+", " ", (resp.text or "")).strip()
+    if len(body) > 180:
+        body = body[:180] + "..."
+    content_type = resp.headers.get("content-type", "unknown")
+    server = resp.headers.get("server", "unknown")
+    html_hint = "; posible WAF/Cloudflare" if "html" in content_type.lower() or "<html" in body.lower() else ""
+    return f"url={_safe_url(str(resp.url))}; server={server}; content-type={content_type}; body={body!r}{html_hint}"
+
+
 def _get(base, path, params, impersonate="chrome"):
     headers = {
         "Accept": "application/json",
@@ -92,12 +108,20 @@ def _get(base, path, params, impersonate="chrome"):
         "Referer": base + "/",
     }
     resp = requests.get(base + path, impersonate=impersonate, headers=headers, params=params, timeout=40)
+    safe_url = _safe_url(str(resp.url))
+    server = resp.headers.get("server", "unknown")
+    content_type = resp.headers.get("content-type", "unknown")
+    print(
+        f"[moodle] GET {safe_url} -> HTTP {resp.status_code} server={server} content-type={content_type}",
+        file=sys.stderr,
+        flush=True,
+    )
     if resp.status_code != 200:
-        raise ValueError(f"HTTP {resp.status_code} desde el servidor Moodle")
+        raise ValueError(f"HTTP {resp.status_code} desde el servidor Moodle ({_response_context(resp)})")
     try:
         return resp.json()
     except Exception:
-        raise ValueError(f"No se recibió JSON (probablemente Cloudflare). Exp: {resp.text[:120]!r}")
+        raise ValueError(f"No se recibio JSON desde Moodle ({_response_context(resp)})")
 
 
 def request_token(base, username, password, service=SERVICE_DEFAULT):

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Flame, Settings } from "lucide-react";
+import { Check, Flame, Settings, Sparkles } from "lucide-react";
 import { localDateKey } from "@/lib/utils";
 import type { HabitsMatrix } from "@/types/entities";
 
@@ -43,12 +43,20 @@ export function HomeHabitsSummary({
       {isLoading ? (
         <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando hábitos...</p>
       ) : matrix?.habits.length === 0 ? (
-        <p className="font-body-sm text-body-sm text-on-surface-variant">
-          Aún no tienes hábitos.{" "}
-          <button className="rounded-md px-1 py-0.5 text-primary hover:bg-surface-container-low hover:underline" onClick={onOpenManager} type="button">
-            Crea el primero.
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-primary/30 bg-primary-fixed/30 px-4 py-6 text-center">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-fixed text-primary">
+            <Sparkles aria-hidden="true" size={18} />
+          </span>
+          <div>
+            <p className="font-body-sm text-body-sm font-semibold text-on-surface">Empieza tu ritmo</p>
+            <p className="mt-1 max-w-xs font-body-sm text-body-sm text-on-surface-variant">
+              Crea un hábito pequeño y márcalo cada día para ver tu progreso.
+            </p>
+          </div>
+          <button className="min-h-10 rounded-md bg-primary px-3.5 py-2 font-label-md text-label-md font-semibold text-on-primary transition-colors hover:bg-primary/90" onClick={onOpenManager} type="button">
+            Crear primer hábito
           </button>
-        </p>
+        </div>
       ) : habits.length === 0 ? (
         <p className="font-body-sm text-body-sm text-on-surface-variant">
           No hay hábitos programados para hoy.

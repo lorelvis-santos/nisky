@@ -29,8 +29,8 @@ export default function QuickNotesPage() {
   const openCapture = () => capture.open("QUICK_NOTE");
 
   return (
-    <section className="flex h-full min-h-0 flex-col bg-background">
-      <header className="mx-auto flex w-full max-w-6xl shrink-0 flex-col gap-4 bg-transparent p-container-padding sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-0 sm:pt-8 lg:px-10">
+    <section className="h-full min-h-0 overflow-y-auto bg-background">
+      <header className="mx-auto flex w-full max-w-6xl flex-col gap-4 bg-transparent p-container-padding sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-0 sm:pt-8 lg:px-10">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">CAPTURAS RÁPIDAS</p>
           <h1 className="mt-1 font-display-hero-mobile text-display-hero-mobile text-on-surface sm:font-display-hero sm:text-display-hero">{view === "INBOX" ? "Bandeja de entrada" : "Capturas archivadas"}</h1>
@@ -43,7 +43,7 @@ export default function QuickNotesPage() {
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div>
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-container-padding pb-24 sm:px-6 sm:py-8 lg:px-10">
           <div className="grid grid-cols-2 gap-1 rounded-lg border border-outline-variant bg-surface-container-low p-1" role="tablist" aria-label="Estado de las capturas">
             {([

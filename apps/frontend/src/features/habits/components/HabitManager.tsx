@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, ArchiveRestore, ChevronDown, ChevronUp, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, ChevronDown, ChevronUp, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -212,7 +212,19 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
               {newFrequency === "WEEKLY" && <DaysPicker onChange={setNewDays} value={newDays} />}
             </div>
           </div>
-          {query.isLoading ? <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando hábitos...</p> : (query.data ?? []).length === 0 ? <p className="font-body-sm text-body-sm text-on-surface-variant">No tienes hábitos configurados.</p> : (
+          {query.isLoading ? <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando hábitos...</p> : (query.data ?? []).length === 0 ? (
+            <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-primary/30 bg-primary-fixed/30 px-4 py-6 text-center">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-fixed text-primary">
+                <Sparkles aria-hidden="true" size={18} />
+              </span>
+              <div>
+                <p className="font-body-sm text-body-sm font-semibold text-on-surface">Tu primer hábito empieza aquí</p>
+                <p className="mt-1 max-w-sm font-body-sm text-body-sm text-on-surface-variant">
+                  Elige algo sencillo que quieras repetir y conviértelo en parte de tu ritmo.
+                </p>
+              </div>
+            </div>
+          ) : (
             <div className="space-y-4">
               <div className="divide-y divide-outline-variant border-y border-outline-variant">
               {(query.data ?? []).filter((habit) => !habit.archived).map((habit) => (

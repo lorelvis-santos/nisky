@@ -86,8 +86,8 @@ export default function KnowledgePage() {
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex shrink-0 flex-col gap-4 bg-transparent p-container-padding sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-0 sm:pt-8 lg:px-10">
+    <section className="h-full min-h-0 overflow-y-auto bg-background">
+      <div className="flex flex-col gap-4 bg-transparent p-container-padding sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-0 sm:pt-8 lg:px-10">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">MIS NOTAS</p>
           <h1 className="mt-1 font-display-hero-mobile text-display-hero-mobile text-on-surface sm:font-display-hero sm:text-display-hero">Notas y referencias</h1>
@@ -104,7 +104,7 @@ export default function KnowledgePage() {
           </button>
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div>
         {query.isLoading ? (
           <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">Cargando notas...</div>
         ) : query.isError ? (

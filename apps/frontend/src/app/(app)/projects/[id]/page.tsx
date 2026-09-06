@@ -105,6 +105,9 @@ function ProjectDetailPageContent() {
   const openTask = (task: Task) => { setEditingTask(task); setTaskModalOpen(true); };
   const openCreateTask = () => { setEditingTask(null); setTaskModalOpen(true); };
   const closeTaskModal = () => { setEditingTask(null); setTaskModalOpen(false); };
+  const saveProjectDescription = async (description: string) => {
+    await projectMutations.update.mutateAsync({ id: project.id, payload: { description: description || null } });
+  };
 
   const saveTask = async (form: TaskForm) => {
     const common = {
@@ -249,7 +252,7 @@ function ProjectDetailPageContent() {
 
   return (
     <ProjectWorkspaceShell>
-       <ProjectHeader canDelete={permissions.canDeleteProject} canEdit={permissions.canEditProject} members={members} onBack={() => router.push("/projects")} onDelete={() => setConfirmDelete(true)} onEdit={openEditProject} project={project} />
+       <ProjectHeader canDelete={permissions.canDeleteProject} canEdit={permissions.canEditProject} members={members} onBack={() => router.push("/projects")} onDelete={() => setConfirmDelete(true)} onEdit={openEditProject} onSaveDescription={saveProjectDescription} project={project} />
        <ProjectSectionNav activeTab={activeTab} onNavigate={(tab) => navigateToTab(tab)} />
 
       <main className="min-h-0 flex-1 pb-8 pt-7">

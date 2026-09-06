@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Flame, Settings } from "lucide-react";
+import { Check, Flame, Settings, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { localDateKey } from "@/lib/utils";
 import type { HabitsMatrix } from "@/types/entities";
@@ -56,12 +56,20 @@ export function HomeHabitsMatrix({
       </header>
 
       {habits.length === 0 ? (
-        <p className="font-body-sm text-body-sm text-on-surface-variant">
-          Aún no tienes hábitos.{" "}
-           <button className="rounded-md px-1 py-0.5 text-primary hover:bg-surface-container-low hover:underline" onClick={onOpenManager} type="button">
-            Crea el primero.
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-primary/30 bg-primary-fixed/30 px-4 py-7 text-center">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-fixed text-primary">
+            <Sparkles aria-hidden="true" size={18} />
+          </span>
+          <div>
+            <p className="font-body-sm text-body-sm font-semibold text-on-surface">Empieza tu ritmo</p>
+            <p className="mt-1 max-w-sm font-body-sm text-body-sm text-on-surface-variant">
+              Crea un hábito pequeño y usa este registro para ver cómo avanzas durante la semana.
+            </p>
+          </div>
+          <button className="min-h-10 rounded-md bg-primary px-3.5 py-2 font-label-md text-label-md font-semibold text-on-primary transition-colors hover:bg-primary/90" onClick={onOpenManager} type="button">
+            Crear primer hábito
           </button>
-        </p>
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[24rem] border-collapse">

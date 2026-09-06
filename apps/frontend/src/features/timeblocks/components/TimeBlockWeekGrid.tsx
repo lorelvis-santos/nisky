@@ -895,7 +895,7 @@ export function TimeBlockWeekGrid({
                  {onDayTasksClick && (plannedTaskCountsByDate[toDateKey(day.date)] ?? 0) > 0 && (
                    <button
                      aria-label={`Ver ${plannedTaskCountsByDate[toDateKey(day.date)]} ${plannedTaskCountsByDate[toDateKey(day.date)] === 1 ? "tarea" : "tareas"} planificadas`}
-                     className="mx-auto mt-1 inline-flex max-w-full items-center truncate rounded-full bg-primary-container px-2 py-0.5 font-label-caps text-[10px] uppercase text-primary transition-colors hover:bg-primary-container/80"
+                     className="mx-auto mt-1 inline-flex max-w-full items-center truncate rounded-full bg-primary-container px-2 py-0.5 font-label-caps text-[10px] uppercase text-on-primary transition-colors hover:bg-primary-container/80"
                      onClick={(event) => {
                        event.stopPropagation();
                        onDayTasksClick(toDateKey(day.date));

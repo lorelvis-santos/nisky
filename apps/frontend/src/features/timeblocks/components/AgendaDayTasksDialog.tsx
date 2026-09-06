@@ -22,7 +22,7 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 
 const STATUS_STYLES: Record<TaskStatus, string> = {
   PENDING: "bg-surface-container-high text-on-surface-variant",
-  IN_PROGRESS: "bg-primary-container text-primary",
+  IN_PROGRESS: "bg-primary-container text-on-primary",
   COMPLETED: "bg-tertiary-container text-tertiary",
   CANCELLED: "bg-error-container text-error",
 };
@@ -59,9 +59,9 @@ export function AgendaDayTasksDialog({
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="max-h-[78vh] max-w-md overflow-hidden rounded-lg border-outline-variant bg-surface p-0" showCloseButton={false}>
+      <DialogContent className="fixed bottom-0 left-0 right-0 top-auto flex max-h-[92dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl border-outline-variant bg-surface p-0 sm:bottom-0 sm:left-auto sm:right-0 sm:top-0 sm:h-full sm:max-h-none sm:w-[min(32rem,100vw)] sm:translate-x-0 sm:translate-y-0 sm:rounded-l-2xl sm:rounded-r-none" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
-          <div>
+          <div className="min-w-0 flex-1">
             <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
               Tareas del {formatDay(date)}
             </DialogTitle>
@@ -80,7 +80,7 @@ export function AgendaDayTasksDialog({
           </DialogClose>
         </DialogHeader>
 
-        <div className="min-h-0 overflow-y-auto p-4" data-modal-scroll>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5" data-modal-scroll>
           <div className="space-y-2">
             {ordered.map((schedule) => {
               const time = scheduleTime(schedule);

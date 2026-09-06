@@ -16,6 +16,7 @@ export function BottomSheet({
   onClose,
   children,
   title,
+  description = "Panel de captura rápida",
   collapsible = false,
   defaultCollapsed = false,
 }: {
@@ -23,6 +24,7 @@ export function BottomSheet({
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
+  description?: string;
   collapsible?: boolean;
   defaultCollapsed?: boolean;
 }) {
@@ -30,14 +32,14 @@ export function BottomSheet({
 
   if (!open) return null;
   return (
-    <Drawer open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DrawerContent className="max-h-[85dvh] rounded-t-lg border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-xl">
+    <Drawer fixed open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }} repositionInputs>
+      <DrawerContent className="flex min-h-0 max-h-[85dvh] overflow-hidden rounded-t-lg border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-xl">
         <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface/95 px-5 py-3 text-left backdrop-blur-md">
           <div>
             <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
               {title ?? "Panel"}
             </DrawerTitle>
-            <DrawerDescription className="sr-only">Panel de captura rápida</DrawerDescription>
+            <DrawerDescription className="sr-only">{description}</DrawerDescription>
           </div>
           <div className="flex items-center gap-1">
             {collapsible && (
@@ -57,7 +59,7 @@ export function BottomSheet({
             </DrawerClose>
           </div>
         </DrawerHeader>
-        {!collapsed && <div className="overflow-y-auto" data-modal-scroll>{children}</div>}
+        {!collapsed && <div className="min-h-0 flex-1 overflow-y-auto" data-modal-scroll>{children}</div>}
       </DrawerContent>
     </Drawer>
   );

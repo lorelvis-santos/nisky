@@ -74,8 +74,8 @@ export function QuickCaptureModal({ open, onClose, initialMode = "TASK" }: { ope
 
   if (isSmallScreen) {
     return (
-      <Drawer open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-         <DrawerContent className="max-h-[92dvh] rounded-t-lg border-outline-variant bg-surface-bright">
+      <Drawer fixed open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }} repositionInputs>
+         <DrawerContent className="flex h-[min(92dvh,48rem)] min-h-0 max-h-[92dvh] overflow-hidden rounded-t-lg border-outline-variant bg-surface-bright">
           <CaptureHeading kind="drawer" mode={initialMode} />
           <CaptureComposer initialMode={initialMode} key={`${open ? "open" : "closed"}-${initialMode}`} onClose={onClose} />
         </DrawerContent>

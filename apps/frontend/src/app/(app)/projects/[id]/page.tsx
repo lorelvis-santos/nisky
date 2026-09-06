@@ -289,7 +289,7 @@ function ProjectDetailPageContent() {
         {activeTab === "notes" && <ProjectNotes project={project} />}
         {activeTab === "activity" && <ProjectActivityContent projectId={project.id} />}
         {activeTab === "team" && <section className="max-w-3xl"><div className="mb-5"><p className="project-eyebrow">COLABORACIÓN</p><h2 className="mt-1 text-[19px] font-semibold text-[#131b2e]">Equipo del proyecto</h2><p className="mt-1 text-[13px] text-[#69758a]">Gestiona las personas que pueden trabajar con este proyecto.</p></div><div className="project-panel p-5 sm:p-6"><MembersPanel project={project} /></div></section>}
-         {activeTab === "chat" && <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]"><div className="project-panel flex min-h-[34rem] min-w-0 flex-col p-5 sm:p-6"><div className="mb-5"><p className="project-eyebrow">COLABORACIÓN</p><h2 className="mt-1 text-[19px] font-semibold text-[#131b2e]">Conversación del proyecto</h2><p className="mt-1 text-[13px] text-[#69758a]">Comparte avances sin sacar la conversación del contexto.</p></div><CommentThread kind="project" id={project.id} /></div><ProjectContextPanel isError={summaryQuery.isError} onOpenTask={openTask} onRetry={() => void summaryQuery.refetch()} summary={summary ?? null} /></section>}
+          {activeTab === "chat" && <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]"><div className="project-panel flex h-[min(42rem,calc(100dvh-12rem))] min-h-[34rem] min-w-0 flex-col overflow-hidden p-5 sm:p-6"><div className="mb-5"><p className="project-eyebrow">COLABORACIÓN</p><h2 className="mt-1 text-[19px] font-semibold text-[#131b2e]">Conversación del proyecto</h2><p className="mt-1 text-[13px] text-[#69758a]">Comparte avances sin sacar la conversación del contexto.</p></div><CommentThread kind="project" id={project.id} /></div><ProjectContextPanel isError={summaryQuery.isError} onOpenTask={openTask} onRetry={() => void summaryQuery.refetch()} summary={summary ?? null} /></section>}
         {activeTab === "resources" && <ProjectResources project={project} />}
       </main>
 
@@ -308,7 +308,61 @@ function ProjectActivityContent({ projectId }: { projectId: string }) {
 }
 
 function EditProjectModal({ canRename, name, description, targetDate, color, targetHours, targetMinutes, onNameChange, onDescriptionChange, onTargetDateChange, onColorChange, onTargetHoursChange, onTargetMinutesChange, onSave, onClose }: { canRename: boolean; name: string; description: string; targetDate: string; color: string; targetHours: string; targetMinutes: string; onNameChange: (value: string) => void; onDescriptionChange: (value: string) => void; onTargetDateChange: (value: string) => void; onColorChange: (value: string) => void; onTargetHoursChange: (value: string) => void; onTargetMinutesChange: (value: string) => void; onSave: () => void; onClose: () => void }) {
-  return <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}><DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl border-[#dde1e2] bg-white p-0" showCloseButton={false}><DialogHeader className="flex flex-row items-center justify-between border-b border-[#e7e9e8] px-5 py-4 text-left"><div><DialogTitle className="text-[17px] font-semibold text-[#1f2933]">Editar proyecto</DialogTitle><DialogDescription className="sr-only">Edita la información visible del proyecto.</DialogDescription></div><DialogClose asChild><button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-lg text-[#5f6872] hover:bg-[#eff1f0]" type="button">×</button></DialogClose></DialogHeader><div className="space-y-4 p-5"><label className="block"><span className="project-eyebrow">NOMBRE</span><input autoFocus className="project-input mt-1 disabled:cursor-not-allowed disabled:bg-[#eff1f0]" disabled={!canRename} maxLength={100} onChange={(event) => onNameChange(event.target.value)} value={name} />{!canRename && <span className="mt-1 block text-[11px] text-[#858d91]">El proyecto personal no se puede renombrar.</span>}</label><label className="block"><span className="project-eyebrow">DESCRIPCIÓN</span><textarea className="project-input mt-1 min-h-24 resize-y py-2" maxLength={2000} onChange={(event) => onDescriptionChange(event.target.value)} placeholder="Qué contexto debe conocer el equipo..." value={description} /></label><div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="project-eyebrow">FECHA OBJETIVO</span><input className="project-input mt-1" onChange={(event) => onTargetDateChange(event.target.value)} type="date" value={targetDate} /></label><div><span className="project-eyebrow">COLOR</span><div className="mt-1"><ColorPicker onChange={onColorChange} value={color} /></div></div></div><div><span className="project-eyebrow">META SEMANAL (OPCIONAL)</span><div className="mt-1 flex items-center gap-2"><input aria-label="Horas de meta semanal" className="project-input w-20 text-center" maxLength={3} onChange={(event) => onTargetHoursChange(event.target.value.replace(/\D/g, ""))} placeholder="0" value={targetHours} /><span className="text-[13px] text-[#5f6872]">h</span><input aria-label="Minutos de meta semanal" className="project-input w-20 text-center" maxLength={2} onChange={(event) => onTargetMinutesChange(event.target.value.replace(/\D/g, ""))} placeholder="0" value={targetMinutes} /><span className="text-[13px] text-[#5f6872]">min</span></div></div><div className="flex justify-end gap-2 border-t border-[#e7e9e8] pt-4"><DialogClose asChild><button className="min-h-10 rounded-lg border border-[#dde1e2] px-3 text-[13px] font-semibold text-[#5f6872]" type="button">Cancelar</button></DialogClose><button className="min-h-10 rounded-lg bg-[#1e3a5f] px-4 text-[13px] font-semibold text-white hover:bg-[#152c48]" disabled={!name.trim()} onClick={onSave} type="button">Guardar cambios</button></div></div></DialogContent></Dialog>;
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent
+        className="top-auto bottom-0 flex h-[min(90dvh,48rem)] max-h-[90dvh] w-full max-w-none translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl rounded-b-none border-[#dde1e2] bg-white p-0 sm:top-1/2 sm:bottom-auto sm:h-auto sm:max-h-[90vh] sm:w-[calc(100%-2rem)] sm:max-w-lg sm:-translate-y-1/2 sm:rounded-2xl"
+        data-keyboard-sheet
+        showCloseButton={false}
+      >
+        <DialogHeader className="flex flex-row items-center justify-between border-b border-[#e7e9e8] px-5 py-4 text-left">
+          <div>
+            <DialogTitle className="text-[17px] font-semibold text-[#1f2933]">Editar proyecto</DialogTitle>
+            <DialogDescription className="sr-only">Edita la información visible del proyecto.</DialogDescription>
+          </div>
+          <DialogClose asChild>
+            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-lg text-[#5f6872] hover:bg-[#eff1f0]" type="button">×</button>
+          </DialogClose>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5" data-modal-scroll>
+          <label className="block">
+            <span className="project-eyebrow">NOMBRE</span>
+            <input autoFocus className="project-input mt-1 disabled:cursor-not-allowed disabled:bg-[#eff1f0]" disabled={!canRename} maxLength={100} onChange={(event) => onNameChange(event.target.value)} value={name} />
+            {!canRename && <span className="mt-1 block text-[11px] text-[#858d91]">El proyecto personal no se puede renombrar.</span>}
+          </label>
+          <label className="block">
+            <span className="project-eyebrow">DESCRIPCIÓN</span>
+            <textarea className="project-input mt-1 min-h-24 resize-y py-2" maxLength={2000} onChange={(event) => onDescriptionChange(event.target.value)} placeholder="Qué contexto debe conocer el equipo..." value={description} />
+          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="project-eyebrow">FECHA OBJETIVO</span>
+              <input className="project-input mt-1" onChange={(event) => onTargetDateChange(event.target.value)} type="date" value={targetDate} />
+            </label>
+            <div>
+              <span className="project-eyebrow">COLOR</span>
+              <div className="mt-1"><ColorPicker onChange={onColorChange} value={color} /></div>
+            </div>
+          </div>
+          <div>
+            <span className="project-eyebrow">META SEMANAL (OPCIONAL)</span>
+            <div className="mt-1 flex items-center gap-2">
+              <input aria-label="Horas de meta semanal" className="project-input w-20 text-center" maxLength={3} onChange={(event) => onTargetHoursChange(event.target.value.replace(/\D/g, ""))} placeholder="0" value={targetHours} />
+              <span className="text-[13px] text-[#5f6872]">h</span>
+              <input aria-label="Minutos de meta semanal" className="project-input w-20 text-center" maxLength={2} onChange={(event) => onTargetMinutesChange(event.target.value.replace(/\D/g, ""))} placeholder="0" value={targetMinutes} />
+              <span className="text-[13px] text-[#5f6872]">min</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex shrink-0 justify-end gap-2 border-t border-[#e7e9e8] p-5 pt-4">
+          <DialogClose asChild>
+            <button className="min-h-10 rounded-lg border border-[#dde1e2] px-3 text-[13px] font-semibold text-[#5f6872]" type="button">Cancelar</button>
+          </DialogClose>
+          <button className="min-h-10 rounded-lg bg-[#1e3a5f] px-4 text-[13px] font-semibold text-white hover:bg-[#152c48]" disabled={!name.trim()} onClick={onSave} type="button">Guardar cambios</button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function ProjectDetailPage() {

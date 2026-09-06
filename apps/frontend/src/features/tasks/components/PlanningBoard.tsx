@@ -400,7 +400,7 @@ export function PlanningBoard({
         )}
         <aside className={cn(
            "w-full shrink-0 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest lg:w-80 lg:flex",
-          isMobile ? (mobileUnplannedOpen ? "fixed inset-x-3 bottom-3 z-40 flex max-h-[70vh]" : "hidden") : "flex",
+          isMobile ? (mobileUnplannedOpen ? "fixed inset-x-3 bottom-3 z-40 flex max-h-[70dvh] overflow-hidden" : "hidden") : "flex",
         )}>
           <div className="flex items-center justify-between border-b border-outline-variant p-3">
             <div>
@@ -421,7 +421,10 @@ export function PlanningBoard({
                 {unplannedTasks.map((task) => (
                   <SortableTaskCard
                     key={task.id}
-                    onOpen={() => onOpen(task)}
+                    onOpen={() => {
+                      setMobileUnplannedOpen(false);
+                      onOpen(task);
+                    }}
                     onStartPomodoro={() => onStartPomodoro(task)}
                     onToggle={() => onToggle(task)}
                     task={task}

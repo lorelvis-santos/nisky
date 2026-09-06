@@ -232,7 +232,7 @@ function CreateProjectModal({
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="top-auto bottom-0 flex max-h-[85vh] w-full max-w-md translate-y-0 flex-col gap-0 overflow-hidden rounded-t-lg rounded-b-none border-outline-variant bg-surface p-0 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:rounded-lg" showCloseButton={false}>
+      <DialogContent className="top-auto bottom-0 flex h-[min(85dvh,42rem)] max-h-[85dvh] w-full max-w-md translate-y-0 flex-col gap-0 overflow-hidden rounded-t-lg rounded-b-none border-outline-variant bg-surface p-0 sm:top-1/2 sm:bottom-auto sm:h-auto sm:max-h-[85vh] sm:-translate-y-1/2 sm:rounded-lg" data-keyboard-sheet showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <DialogTitle className="flex items-center gap-2 font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
             <FolderKanban size={16} /> Nuevo proyecto
@@ -244,7 +244,7 @@ function CreateProjectModal({
             </button>
           </DialogClose>
         </DialogHeader>
-        <div className="flex flex-col gap-4 overflow-y-auto p-5">
+        <div className="min-h-0 flex-1 flex flex-col gap-4 overflow-y-auto p-5" data-modal-scroll>
           <label className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">NOMBRE</span>
             <input

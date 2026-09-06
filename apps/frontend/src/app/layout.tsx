@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/providers";
@@ -33,6 +33,13 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-capable": "yes",
     "theme-color": "#1e3a5f",
   },
+};
+
+export const viewport: Viewport = {
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
+  viewportFit: "cover",
+  width: "device-width",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

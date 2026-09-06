@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 
 import { Button } from "@/components/ui/button"
+import { useKeyboardAwareViewport } from "@/hooks/useKeyboardAwareViewport"
 import { XIcon } from "lucide-react"
 
 function Dialog({
@@ -55,6 +56,8 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
+  const viewportRef = useKeyboardAwareViewport<HTMLDivElement>();
+
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -65,6 +68,7 @@ function DialogContent({
           className
         )}
         {...props}
+        ref={viewportRef}
       >
         {children}
         {showCloseButton && (
@@ -74,8 +78,7 @@ function DialogContent({
               className="absolute right-4 top-4 rounded-full"
               size="icon-sm"
             >
-              <XIcon
-              />
+              <XIcon />
               <span className="sr-only">Close</span>
             </Button>
           </DialogPrimitive.Close>

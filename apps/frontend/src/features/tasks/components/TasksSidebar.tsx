@@ -175,8 +175,8 @@ function MobileSheet({
   onClose: () => void;
 }) {
   return (
-    <Drawer open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-         <DrawerContent className="max-h-[85vh] overflow-hidden border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:hidden">
+    <Drawer fixed open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }} repositionInputs>
+         <DrawerContent className="flex h-[min(85dvh,42rem)] min-h-0 max-h-[85dvh] overflow-hidden border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:hidden">
         <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
              <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Por organizar</DrawerTitle>
@@ -274,8 +274,14 @@ export function TasksSidebar({
   const content = (
     <TasksSidebarContent
       onComplete={(task) => void handleComplete(task)}
-      onOpenCreate={() => setModal({ task: null, creating: true })}
-      onOpenTask={(task) => setModal({ task, creating: false })}
+      onOpenCreate={() => {
+        onMobileClose?.();
+        setModal({ task: null, creating: true });
+      }}
+      onOpenTask={(task) => {
+        onMobileClose?.();
+        setModal({ task, creating: false });
+      }}
     />
   );
 

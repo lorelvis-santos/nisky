@@ -645,8 +645,8 @@ function TasksPageContent() {
           </div>
         </div>
       </header>
-      <Drawer open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <DrawerContent className="max-h-[85dvh] border-outline-variant bg-surface-bright lg:hidden">
+      <Drawer fixed open={filtersOpen} onOpenChange={setFiltersOpen} repositionInputs>
+        <DrawerContent className="flex h-[min(85dvh,42rem)] min-h-0 max-h-[85dvh] overflow-hidden border-outline-variant bg-surface-bright lg:hidden">
           <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant px-5 py-4 text-left">
             <div>
               <DrawerTitle className="text-left">Filtrar tareas</DrawerTitle>
@@ -664,7 +664,7 @@ function TasksPageContent() {
               </button>
             </DrawerClose>
           </DrawerHeader>
-          <div className="grid gap-4 overflow-y-auto p-5">
+          <div className="min-h-0 flex-1 grid gap-4 overflow-y-auto p-5">
             <label className="grid gap-1.5">
               <span className="font-label-caps text-label-caps text-on-surface-variant">
                 PROYECTO

@@ -12,6 +12,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AvatarStack } from "@/components/ui/Avatar";
+import { BottomSheet } from "@/components/ui/BottomSheet";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import type { Project, ProjectMember } from "@/types/entities";
 
 function targetDateLabel(value: string) {
@@ -45,6 +47,7 @@ export function ProjectHeader({
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [descriptionSaving, setDescriptionSaving] = useState(false);
+  const isMobile = useIsMobile(639);
   const isShared = !project.isDefault && members.length > 1;
   const hasDescription = Boolean(project.description?.trim());
 
@@ -74,6 +77,16 @@ export function ProjectHeader({
     } finally {
       setDescriptionSaving(false);
     }
+  };
+
+  const closeMore = () => setMoreOpen(false);
+  const editProject = () => {
+    closeMore();
+    onEdit();
+  };
+  const deleteProject = () => {
+    closeMore();
+    onDelete();
   };
 
   return (
@@ -139,9 +152,21 @@ export function ProjectHeader({
               </div>
             </div>
           ) : hasDescription ? (
-             <p className="mt-3 max-w-2xl text-[14px] leading-6 text-[#5f6872]">
-               {project.description}
-             </p>
+            canEdit ? (
+              <button
+                aria-label="Editar descripción del proyecto"
+                className="mt-3 block w-full max-w-2xl rounded-md text-left text-[14px] leading-6 text-[#5f6872] transition-colors hover:bg-white hover:text-[#1e3a5f]"
+                onClick={openDescriptionEditor}
+                title="Editar descripción"
+                type="button"
+              >
+                {project.description}
+              </button>
+            ) : (
+              <p className="mt-3 max-w-2xl text-[14px] leading-6 text-[#5f6872]">
+                {project.description}
+              </p>
+            )
           ) : canEdit ? (
             <button className="mt-3 text-left text-[14px] text-[#858d91] underline decoration-dashed underline-offset-4 hover:text-[#1e3a5f]" onClick={openDescriptionEditor} type="button">
               Añade una descripción para dar contexto a este proyecto.
@@ -177,7 +202,7 @@ export function ProjectHeader({
           <div className="relative">
             <button
               aria-expanded={moreOpen}
-              aria-haspopup="menu"
+              aria-haspopup={isMobile ? "dialog" : "menu"}
                className="flex h-10 items-center gap-1.5 rounded-md border border-[#dde1e2] bg-white px-3 text-[13px] font-semibold text-[#5f6872] shadow-[0_1px_2px_rgba(31,41,51,0.03)] transition-colors hover:border-[#b8c0c4] hover:text-[#1e3a5f]"
               onClick={() => setMoreOpen((open) => !open)}
               type="button"
@@ -186,33 +211,30 @@ export function ProjectHeader({
               <span className="hidden sm:inline">Más</span>
               <ChevronDown size={13} />
             </button>
-            {moreOpen && (
+            {moreOpen && !isMobile && (
               <>
                 <button
                   aria-label="Cerrar menú"
                   className="fixed inset-0 z-20 cursor-default"
-                  onClick={() => setMoreOpen(false)}
+                  onClick={closeMore}
                   type="button"
                 />
-                  <div
-                   className="fixed inset-x-4 bottom-4 z-30 w-auto rounded-lg border border-[#dde1e2] bg-white p-1.5 shadow-[0_12px_32px_rgba(31,41,51,0.12)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:bottom-auto sm:w-52"
+                <div
+                  className="absolute right-0 top-12 z-30 w-52 rounded-lg border border-[#dde1e2] bg-white p-1.5 shadow-[0_12px_32px_rgba(31,41,51,0.12)]"
                   role="menu"
                 >
                   <Link
-                     className="flex min-h-10 items-center gap-2 rounded-md px-3 text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]"
+                    className="flex min-h-10 items-center gap-2 rounded-md px-3 text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]"
                     href={`/tasks?projectId=${encodeURIComponent(project.id)}`}
-                    onClick={() => setMoreOpen(false)}
+                    onClick={closeMore}
                     role="menuitem"
                   >
                     Planificación global
                   </Link>
                   {canEdit && (
                     <button
-                       className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]"
-                      onClick={() => {
-                        setMoreOpen(false);
-                        onEdit();
-                      }}
+                      className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]"
+                      onClick={editProject}
                       role="menuitem"
                       type="button"
                     >
@@ -222,10 +244,7 @@ export function ProjectHeader({
                   {canDelete && (
                     <button
                       className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-[13px] text-[#c73b52] hover:bg-[#fff1f3]"
-                      onClick={() => {
-                        setMoreOpen(false);
-                        onDelete();
-                      }}
+                      onClick={deleteProject}
                       role="menuitem"
                       type="button"
                     >
@@ -235,6 +254,43 @@ export function ProjectHeader({
                 </div>
               </>
             )}
+            <BottomSheet
+              description="Acciones disponibles para este proyecto."
+              onClose={closeMore}
+              open={moreOpen && isMobile}
+              title="Acciones del proyecto"
+            >
+              <div className="space-y-1 p-4">
+                <Link
+                  className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-[14px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]"
+                  href={`/tasks?projectId=${encodeURIComponent(project.id)}`}
+                  onClick={closeMore}
+                >
+                  <CalendarDays size={17} />
+                  Planificación global
+                </Link>
+                {canEdit && (
+                  <button
+                    className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-[14px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]"
+                    onClick={editProject}
+                    type="button"
+                  >
+                    <Pencil size={17} />
+                    Editar proyecto
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-[14px] text-[#c73b52] hover:bg-[#fff1f3]"
+                    onClick={deleteProject}
+                    type="button"
+                  >
+                    <Trash2 size={17} />
+                    Eliminar proyecto
+                  </button>
+                )}
+              </div>
+            </BottomSheet>
           </div>
         </div>
       </div>

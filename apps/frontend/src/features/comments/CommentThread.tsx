@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageSquare, Pencil, Send, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -55,7 +55,10 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
   const [olderAsc, setOlderAsc] = useState<Comment[]>([]);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
-  const prevNewestLength = useRef<number>(0);
+  const newestCommentId = useRef<string | null>(null);
+  const nextOlderPage = useRef(2);
+  const shouldScrollToBottom = useRef(false);
+  const restoreScroll = useRef<{ top: number; height: number } | null>(null);
 
   const presenceProjectId = kind === "project" ? id : (projectId ?? null);
   const presenceTaskId = kind === "task" ? id : null;
@@ -69,7 +72,9 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
     // Clear locally fetched older pages when switching between entities.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setOlderAsc([]);
-    prevNewestLength.current = 0;
+    newestCommentId.current = null;
+    nextOlderPage.current = 2;
+    restoreScroll.current = null;
   }, [kind, id]);
 
   const newest = query.data?.data ?? [];
@@ -83,21 +88,37 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
     if (el) el.scrollTop = el.scrollHeight;
   };
 
+  useLayoutEffect(() => {
+    const previous = restoreScroll.current;
+    if (!previous || !listRef.current) return;
+    listRef.current.scrollTop = previous.top + (listRef.current.scrollHeight - previous.height);
+    restoreScroll.current = null;
+  }, [olderAsc.length]);
+
+  const latestCommentId = baseAsc[baseAsc.length - 1]?.id ?? null;
   useEffect(() => {
     if (query.isLoading) return;
-    if (baseAsc.length > prevNewestLength.current) scrollToBottom();
-    prevNewestLength.current = baseAsc.length;
-  }, [baseAsc.length, query.isLoading]);
+    const latestChanged = latestCommentId !== newestCommentId.current;
+    if (shouldScrollToBottom.current || latestChanged) scrollToBottom();
+    shouldScrollToBottom.current = false;
+    newestCommentId.current = latestCommentId;
+  }, [latestCommentId, query.isLoading]);
 
   const loadOlder = async () => {
     if (loadingOlder) return;
-    const page = Math.floor(comments.length / PAGE_SIZE) + 1;
+    const page = nextOlderPage.current;
     setLoadingOlder(true);
     try {
       const result = kind === "project"
         ? await listProjectComments(id, { order: "desc", limit: PAGE_SIZE, page })
         : await listTaskComments(id, { order: "desc", limit: PAGE_SIZE, page });
-      setOlderAsc((prev) => [...[...result.data].reverse(), ...prev]);
+      const older = [...result.data].reverse();
+      if (older.length > 0) {
+        const el = listRef.current;
+        restoreScroll.current = { top: el?.scrollTop ?? 0, height: el?.scrollHeight ?? 0 };
+        nextOlderPage.current += 1;
+        setOlderAsc((prev) => [...older, ...prev]);
+      }
     } catch {
       toast.error("Ups, no pudimos cargar mensajes anteriores.");
     } finally {
@@ -108,11 +129,12 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
   const handleCreate = async () => {
     const body = newBody.trim();
     if (!body) return;
+    shouldScrollToBottom.current = true;
     try {
       await create.mutateAsync({ kind, id, body });
       setNewBody("");
-      scrollToBottom();
     } catch {
+      shouldScrollToBottom.current = false;
       toast.error("Ups, no pudimos publicar el comentario.");
     }
   };

@@ -214,7 +214,7 @@ export function TaskModal({
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="fixed bottom-0 left-0 right-0 top-auto flex max-h-[92dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl border-outline-variant bg-surface p-0 sm:bottom-0 sm:left-auto sm:right-0 sm:top-0 sm:h-full sm:max-h-none sm:w-[min(32rem,100vw)] sm:translate-x-0 sm:translate-y-0 sm:rounded-l-2xl sm:rounded-r-none" showCloseButton={false}>
+      <DialogContent className="fixed bottom-0 left-0 right-0 top-auto flex h-[min(92dvh,48rem)] max-h-[92dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl border-outline-variant bg-surface p-0 sm:bottom-0 sm:left-auto sm:right-0 sm:top-0 sm:h-full sm:max-h-none sm:w-[min(32rem,100vw)] sm:translate-x-0 sm:translate-y-0 sm:rounded-l-2xl sm:rounded-r-none" data-keyboard-sheet showCloseButton={false}>
          <DialogHeader className="flex shrink-0 flex-row items-center justify-between gap-3 border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
            <div className="min-w-0 flex-1">
              <DialogTitle className="truncate font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">

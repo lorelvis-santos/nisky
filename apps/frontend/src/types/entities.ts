@@ -38,6 +38,8 @@ export interface Project {
   id: string;
   userId: string;
   name: string;
+  description: string | null;
+  targetDate: string | null;
   color: string;
   isDefault: boolean;
   weeklyTargetMinutes: number | null;
@@ -56,6 +58,36 @@ export interface ProjectMember {
   user: { id: string; email: string; name: string | null; username: string | null; avatarUrl: string | null };
   role: ProjectRole;
   createdAt: string;
+}
+
+export interface ProjectSummary {
+  project: Project;
+  permissions: {
+    role: ProjectRole | null;
+    canEditProject: boolean;
+    canDeleteProject: boolean;
+    canManageMembers: boolean;
+    canCreateTasks: boolean;
+    canEditTasks: boolean;
+  };
+  members: ProjectMember[];
+  totalTasks: number;
+  counts: {
+    PENDING: number;
+    IN_PROGRESS: number;
+    COMPLETED: number;
+    CANCELLED: number;
+    completed: number;
+    overdue: number;
+  };
+  progress: number;
+  upcomingTasks: Task[];
+  taskCountsByMember: Array<{
+    userId: string;
+    count: number;
+    user: ProjectMember["user"];
+    role: ProjectRole;
+  }>;
 }
 
 export interface ProjectInvitation {
@@ -264,6 +296,10 @@ export interface Habit {
   updatedAt: string;
 }
 
+export interface HabitMatrixHabit extends Habit {
+  isDueToday: boolean;
+}
+
 export interface HabitEntry {
   id: string;
   habitId: string;
@@ -373,6 +409,7 @@ export interface Note {
   projectId: string | null;
   createdAt: string;
   updatedAt: string;
+  user?: { id: string; email: string; name: string | null; username: string | null; avatarUrl: string | null };
 }
 
 export interface NoteDraft {
@@ -391,6 +428,30 @@ export interface Comment {
   projectId: string | null;
   taskId: string | null;
   author: { id: string; email: string; name: string | null; avatarUrl: string | null };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectActivity {
+  id: string;
+  projectId: string;
+  actorId: string;
+  actor: { id: string; email: string; name: string | null; username: string | null; avatarUrl: string | null };
+  type: string;
+  entityId: string | null;
+  entityTitle: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ProjectResource {
+  id: string;
+  projectId: string;
+  createdById: string;
+  createdBy: { id: string; email: string; name: string | null; username: string | null; avatarUrl: string | null };
+  title: string;
+  url: string;
+  description: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -466,6 +527,6 @@ export interface HabitMatrixEntry {
 }
 
 export interface HabitsMatrix {
-  habits: Habit[];
+  habits: HabitMatrixHabit[];
   entries: HabitMatrixEntry[];
 }

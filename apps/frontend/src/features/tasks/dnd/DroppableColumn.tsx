@@ -18,8 +18,8 @@ export function DroppableColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   const { overContainerId } = useTasksDnd();
-  return (
-    <div ref={setNodeRef} className={cn(className, (isOver || overContainerId === id) && highlightClassName)}>
+   return (
+     <div ref={setNodeRef} className={cn("rounded-lg", className, (isOver || overContainerId === id) && highlightClassName)}>
       {children}
     </div>
   );

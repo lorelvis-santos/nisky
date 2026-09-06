@@ -70,6 +70,8 @@ export function useProjectMemberMutations(projectId: string) {
   const invalidate = async () => {
     await client.invalidateQueries({ queryKey: ["projects", projectId, "members"] });
     await client.invalidateQueries({ queryKey: ["projects", projectId, "invitations"] });
+    await client.invalidateQueries({ queryKey: ["projects", projectId, "summary"] });
+    await client.invalidateQueries({ queryKey: ["projects", projectId, "activity"] });
     await client.invalidateQueries({ queryKey: ["invitations", "pending"] });
     await client.invalidateQueries({ queryKey: ["projects"] });
     await client.invalidateQueries({ queryKey: ["tasks"] });

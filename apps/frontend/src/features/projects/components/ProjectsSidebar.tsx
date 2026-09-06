@@ -29,7 +29,7 @@ export function ProjectsSidebar({
         <h2 className="font-label-caps text-label-caps text-on-surface-variant">PROYECTOS</h2>
         <Link
           aria-label="Ver todos los proyectos"
-          className="p-1 text-on-surface-variant hover:text-primary"
+          className="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary"
           href="/projects"
           title="Ver todos los proyectos"
         >
@@ -40,7 +40,7 @@ export function ProjectsSidebar({
       <nav className="min-h-0 flex-1 overflow-y-auto py-2">
         <button
           aria-current={selectedProjectId === null ? "page" : undefined}
-          className={`flex w-full items-center gap-2 border-l-2 px-4 py-2 text-left font-body-md text-body-md ${selectedProjectId === null ? "border-primary bg-surface-container-low font-medium" : "border-transparent text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+          className={`flex w-full items-center gap-2 rounded-md border-l-2 px-4 py-2 text-left font-body-md text-body-md ${selectedProjectId === null ? "border-primary bg-surface-container-low font-medium" : "border-transparent text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
           onClick={() => onSelect(null)}
           type="button"
         >
@@ -54,7 +54,7 @@ export function ProjectsSidebar({
           return (
             <button
               aria-current={active ? "page" : undefined}
-              className={`flex w-full items-center gap-2 border-l-2 px-4 py-2 text-left font-body-md text-body-md ${active ? "border-primary bg-surface-container-low font-medium" : "border-transparent text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+              className={`flex w-full items-center gap-2 rounded-md border-l-2 px-4 py-2 text-left font-body-md text-body-md ${active ? "border-primary bg-surface-container-low font-medium" : "border-transparent text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
               key={project.id}
               onClick={() => onSelect(project.id)}
               type="button"

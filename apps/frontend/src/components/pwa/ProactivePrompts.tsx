@@ -182,7 +182,7 @@ export function ProactivePrompts() {
     <>
       {(notifPromptOpen) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4">
-          <div className="w-full max-w-md border border-outline-variant bg-surface-container-lowest p-6">
+          <div className="w-full max-w-md rounded-lg border border-outline-variant bg-surface-container-lowest p-6 shadow-cadence-2">
             <div className="flex items-start gap-3">
               <Bell className="mt-0.5 shrink-0 text-primary" size={20} />
               <div className="min-w-0 flex-1">
@@ -199,7 +199,7 @@ export function ProactivePrompts() {
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {notifBlocked ? (
                     <button
-                      className="bg-primary px-3 py-2 font-body-sm text-body-sm font-bold text-on-primary hover:bg-primary-container"
+                      className="min-h-11 rounded-md bg-primary px-3 py-2 font-body-sm text-body-sm font-bold text-on-primary hover:bg-primary-container"
                       onClick={() => router.push("/settings")}
                       type="button"
                     >
@@ -207,7 +207,7 @@ export function ProactivePrompts() {
                     </button>
                   ) : (
                     <button
-                      className="bg-primary px-3 py-2 font-body-sm text-body-sm font-bold text-on-primary hover:bg-primary-container"
+                      className="min-h-11 rounded-md bg-primary px-3 py-2 font-body-sm text-body-sm font-bold text-on-primary hover:bg-primary-container"
                       onClick={() => void acceptNotif()}
                       type="button"
                     >
@@ -215,7 +215,7 @@ export function ProactivePrompts() {
                     </button>
                   )}
                   <button
-                    className="border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+                    className="min-h-11 rounded-md border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
                     onClick={dismissNotif}
                     type="button"
                   >
@@ -223,7 +223,7 @@ export function ProactivePrompts() {
                   </button>
                 </div>
                 {!notifBlocked && (notifGranted || notifDismissCount >= 1) && (
-                  <button className="mt-2 font-body-xs text-body-xs text-on-surface-variant underline hover:text-primary" onClick={neverAskNotif} type="button">
+                  <button className="mt-2 rounded-md px-2 py-1 font-body-xs text-body-xs text-on-surface-variant underline hover:bg-surface-container-low hover:text-primary" onClick={neverAskNotif} type="button">
                     No me preguntes más
                   </button>
                 )}
@@ -234,7 +234,7 @@ export function ProactivePrompts() {
       )}
       {showInstall && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4">
-          <div className="w-full max-w-md border border-outline-variant bg-surface-container-lowest p-6">
+          <div className="w-full max-w-md rounded-lg border border-outline-variant bg-surface-container-lowest p-6 shadow-cadence-2">
             <div className="flex items-start gap-3">
               <Download className="mt-0.5 shrink-0 text-primary" size={20} />
               <div className="min-w-0 flex-1">
@@ -245,7 +245,7 @@ export function ProactivePrompts() {
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {isIos ? (
                     <button
-                      className="bg-primary px-3 py-2 font-body-sm text-body-sm font-bold text-on-primary hover:bg-primary-container"
+                      className="min-h-11 rounded-md bg-primary px-3 py-2 font-body-sm text-body-sm font-bold text-on-primary hover:bg-primary-container"
                       onClick={dismissInstall}
                       type="button"
                     >
@@ -253,7 +253,7 @@ export function ProactivePrompts() {
                     </button>
                   ) : (
                     <button
-                      className="bg-primary px-3 py-2 font-body-sm text-body-sm font-bold text-on-primary hover:bg-primary-container"
+                      className="min-h-11 rounded-md bg-primary px-3 py-2 font-body-sm text-body-sm font-bold text-on-primary hover:bg-primary-container"
                       onClick={() => void acceptInstall()}
                       type="button"
                     >
@@ -261,7 +261,7 @@ export function ProactivePrompts() {
                     </button>
                   )}
                   <button
-                    className="border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+                    className="min-h-11 rounded-md border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
                     onClick={dismissInstall}
                     type="button"
                   >
@@ -269,7 +269,7 @@ export function ProactivePrompts() {
                   </button>
                 </div>
                 {installDismissCount >= 1 && (
-                  <button className="mt-2 font-body-xs text-body-xs text-on-surface-variant underline hover:text-primary" onClick={neverAskInstall} type="button">
+                  <button className="mt-2 rounded-md px-2 py-1 font-body-xs text-body-xs text-on-surface-variant underline hover:bg-surface-container-low hover:text-primary" onClick={neverAskInstall} type="button">
                     No me preguntes más
                   </button>
                 )}

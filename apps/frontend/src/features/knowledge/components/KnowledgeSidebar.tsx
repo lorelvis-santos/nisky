@@ -2,7 +2,7 @@
 
 import type { KnowledgeFacets } from "@/types/entities";
 
-type Filter = { type: "category" | "tag"; name: string } | null;
+export type KnowledgeFilter = { type: "category" | "tag"; name: string } | null;
 
 export function KnowledgeSidebar({
   facets,
@@ -10,8 +10,8 @@ export function KnowledgeSidebar({
   onFilter,
 }: {
   facets: KnowledgeFacets | undefined;
-  active: Filter;
-  onFilter: (filter: Filter) => void;
+  active: KnowledgeFilter;
+  onFilter: (filter: KnowledgeFilter) => void;
 }) {
   const categories = facets?.categories ?? [];
   const tags = facets?.tags ?? [];
@@ -20,11 +20,11 @@ export function KnowledgeSidebar({
     `flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left font-body-sm text-body-sm transition-colors hover:bg-surface-container-high ${selected ? "bg-secondary-fixed font-medium text-secondary" : "text-on-surface-variant"}`;
 
   return (
-    <aside className="min-h-0 flex-col rounded-xl border border-outline-variant/70 bg-surface-container-lowest shadow-sm lg:sticky lg:top-4 lg:flex lg:h-fit">
+    <aside className="min-h-0 flex-col rounded-lg border border-outline-variant/70 bg-surface-container-lowest shadow-sm lg:sticky lg:top-4 lg:flex lg:h-fit">
       <div className="flex shrink-0 items-center justify-between border-b border-outline-variant p-4">
         <span className="font-label-caps text-label-caps text-on-surface-variant">FILTROS</span>
         <button
-          className="font-body-sm text-body-sm text-primary hover:underline"
+           className="rounded-md px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-surface-container-low hover:underline"
           onClick={() => onFilter(null)}
           type="button"
         >

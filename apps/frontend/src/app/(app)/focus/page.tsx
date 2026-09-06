@@ -300,7 +300,7 @@ function FocusPageContent() {
   return (
     <main className="relative flex min-h-screen w-full flex-col items-center overflow-y-auto bg-surface px-4 py-6 sm:px-8 sm:py-10">
       <button
-        className="absolute left-4 top-4 flex items-center gap-2 border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:border-outline hover:text-primary sm:left-6 sm:top-6"
+         className="absolute left-4 top-4 flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:border-outline hover:text-primary sm:left-6 sm:top-6"
         onClick={() => router.push("/")}
         type="button"
       >
@@ -308,14 +308,14 @@ function FocusPageContent() {
       </button>
       <button
         aria-label="Configuración Pomodoro"
-        className="absolute right-4 top-4 border border-outline-variant bg-surface-container-lowest p-2 text-on-surface-variant hover:border-outline hover:text-primary sm:right-6 sm:top-6"
+         className="absolute right-4 top-4 rounded-md border border-outline-variant bg-surface-container-lowest p-2 text-on-surface-variant hover:border-outline hover:text-primary sm:right-6 sm:top-6"
         onClick={() => setSettingsOpen(true)}
         type="button"
       >
         <Settings size={17} />
       </button>
       <div className="flex w-full max-w-2xl flex-col items-center gap-8 pt-16 sm:gap-12 sm:pt-10">
-        <div className="flex w-full flex-col gap-3 border border-outline-variant bg-surface-container-lowest p-4 sm:p-5">
+         <div className="flex w-full flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
               ENFOQUE
@@ -323,7 +323,7 @@ function FocusPageContent() {
             {activeBlockQuery.data?.projectId &&
               activeBlockQuery.data.projectId === selectedProjectId &&
               !showAllTasks && (
-                <span className="border border-outline-variant bg-surface-container-low px-2 py-0.5 font-label-caps text-[10px] uppercase text-primary">
+                 <span className="rounded-md border border-outline-variant bg-surface-container-low px-2 py-0.5 font-label-caps text-[10px] uppercase text-primary">
                   Bloque activo
                 </span>
               )}
@@ -366,7 +366,7 @@ function FocusPageContent() {
           </label>
           <button
             aria-pressed={showAllTasks}
-            className={`flex items-center gap-2 self-start border px-3 py-1.5 font-body-sm text-body-sm ${showAllTasks ? "border-primary bg-primary-container text-on-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-container-low hover:text-primary"}`}
+             className={`flex items-center gap-2 self-start rounded-md border px-3 py-1.5 font-body-sm text-body-sm ${showAllTasks ? "border-primary bg-primary-container text-on-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-container-low hover:text-primary"}`}
             disabled={running}
             onClick={handleToggleShowAll}
             type="button"

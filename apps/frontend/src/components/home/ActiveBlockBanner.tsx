@@ -1,12 +1,25 @@
 "use client";
 
-import { AlertCircle, ArrowRight, CalendarDays, CheckCircle2, Circle, ListChecks, MapPin, Play } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  Circle,
+  ListChecks,
+  MapPin,
+  Play,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { localDateKey } from "@/lib/utils";
 import { PriorityChip } from "@/features/tasks/components/PriorityChip";
 import { minToTime } from "@/features/timeblocks/lib/time";
-import type { CalendarEvent, Task, TimeBlockWithProject } from "@/types/entities";
+import type {
+  CalendarEvent,
+  Task,
+  TimeBlockWithProject,
+} from "@/types/entities";
 
 function formatDuration(minutes: number) {
   const hours = Math.floor(minutes / 60);
@@ -16,7 +29,9 @@ function formatDuration(minutes: number) {
 }
 
 function useNowMinutes() {
-  const [nowMin, setNowMin] = useState(() => new Date().getHours() * 60 + new Date().getMinutes());
+  const [nowMin, setNowMin] = useState(
+    () => new Date().getHours() * 60 + new Date().getMinutes(),
+  );
   useEffect(() => {
     const interval = window.setInterval(() => {
       setNowMin(new Date().getHours() * 60 + new Date().getMinutes());
@@ -41,7 +56,9 @@ function dueBadge(task: Task) {
   const today = task.dueDate && localDateKey(task.dueDate) === todayKey;
   if (!task.dueDate) return null;
   return (
-    <span className={`flex shrink-0 items-center gap-1 whitespace-nowrap font-data-mono text-data-mono text-[11px] ${overdue ? "text-error" : "text-on-surface-variant"}`}>
+    <span
+      className={`flex shrink-0 items-center gap-1 whitespace-nowrap font-data-mono text-data-mono text-[11px] ${overdue ? "text-error" : "text-on-surface-variant"}`}
+    >
       {overdue ? <AlertCircle size={11} /> : <CalendarDays size={11} />}
       {overdue ? "Atrasada" : today ? "Hoy" : localDateKey(task.dueDate)}
     </span>
@@ -75,22 +92,34 @@ export function ActiveBlockBanner({
       : `${minToTime(activeEvent.startMin ?? 0)}–${minToTime(activeEvent.endMin ?? 0)}`;
     return (
       <div
-        className="flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm"
+        className="flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm"
         style={{ borderTop: `3px solid ${color}` }}
       >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant pb-3">
           <div className="flex min-w-0 items-center gap-2">
             <span aria-hidden="true" className="relative flex h-2 w-2 shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: color }} />
-              <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+              <span
+                className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+                style={{ backgroundColor: color }}
+              />
+              <span
+                className="relative inline-flex h-2 w-2 rounded-full"
+                style={{ backgroundColor: color }}
+              />
             </span>
-            <p className="inline-flex items-center rounded-full bg-secondary-fixed/70 px-2.5 py-1 font-body-sm text-body-sm font-semibold text-secondary">Ahora mismo</p>
+            <p className="inline-flex items-center rounded-full bg-secondary-fixed/70 px-2.5 py-1 font-body-sm text-body-sm font-semibold text-secondary">
+              Ahora mismo
+            </p>
           </div>
-          <p className="font-data-mono text-data-mono text-xs text-on-surface-variant">{timeLabel}</p>
+          <p className="font-data-mono text-data-mono text-xs text-on-surface-variant">
+            {timeLabel}
+          </p>
         </div>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate font-headline-sm text-headline-sm font-bold text-on-surface">{activeEvent.title}</p>
+            <p className="truncate font-headline-sm text-headline-sm font-bold text-on-surface">
+              {activeEvent.title}
+            </p>
             {activeEvent.location && (
               <p className="mt-1 flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-variant">
                 <MapPin size={13} className="shrink-0" />
@@ -99,7 +128,7 @@ export function ActiveBlockBanner({
             )}
           </div>
           <Link
-            className="rounded-xl border border-outline-variant px-3 py-2 font-label-caps text-label-caps text-primary hover:bg-surface-container-low"
+            className="rounded-md border border-outline-variant px-3 py-2 font-label-caps text-label-caps text-primary hover:bg-surface-container-low"
             href="/timeblocks"
           >
             VER EN AGENDA
@@ -115,34 +144,51 @@ export function ActiveBlockBanner({
       const diffMin = Math.max(0, Math.round(diffMs / 60_000));
       const dayDiff = Math.floor(diffMs / 86_400_000);
       const whenLabel =
-        dayDiff >= 1
-          ? "Mañana"
-          : `En ${formatDuration(diffMin)}`;
-      const label = nextBlock.project?.name ?? nextBlock.name ?? "Bloque de enfoque";
+        dayDiff >= 1 ? "Mañana" : `En ${formatDuration(diffMin)}`;
+      const label =
+        nextBlock.project?.name ?? nextBlock.name ?? "Bloque de enfoque";
       const color = nextBlock.project?.color ?? "#303e51";
       return (
-        <div className="flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
+        <div className="flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
           <div className="min-w-0">
             <span className="inline-flex items-center gap-1 rounded-md bg-secondary-fixed/70 px-2 py-0.5 font-label-caps text-label-caps font-semibold text-secondary">
-              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-secondary/70" />
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 rounded-full bg-secondary/70"
+              />
               Próximo bloque
             </span>
             <div className="mt-1.5 flex min-w-0 items-center gap-2">
-              <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-              <p className="min-w-0 truncate font-headline-xs text-headline-xs font-semibold text-on-surface">{label}</p>
+              <span
+                aria-hidden="true"
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+              <p className="min-w-0 truncate font-headline-xs text-headline-xs font-semibold text-on-surface">
+                {label}
+              </p>
             </div>
             <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
-              <span className="inline-flex items-center gap-1.5 text-secondary"><CalendarDays size={13} /> {whenLabel}</span>
-              <span aria-hidden="true" className="text-outline">·</span>
-              <span>{minToTime(nextBlock.startMin)}–{minToTime(nextBlock.endMin)}</span>
+              <span className="inline-flex items-center gap-1.5 text-secondary">
+                <CalendarDays size={13} /> {whenLabel}
+              </span>
+              <span aria-hidden="true" className="text-outline">
+                ·
+              </span>
+              <span>
+                {minToTime(nextBlock.startMin)}–{minToTime(nextBlock.endMin)}
+              </span>
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-outline-variant pt-3">
-            <Link className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-outline-variant px-3 py-2 font-body-sm text-body-sm font-medium text-on-surface-variant hover:border-secondary hover:bg-surface-container-low hover:text-secondary" href="/timeblocks">
-              Ver horario <ArrowRight size={14} />
+            <Link
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-outline-variant px-3 py-2 font-body-sm text-body-sm font-medium text-on-surface-variant hover:border-secondary hover:bg-surface-container-low hover:text-secondary"
+              href="/timeblocks"
+            >
+              Ver agenda <ArrowRight size={14} />
             </Link>
             <button
-              className="flex h-9 items-center gap-2 rounded-xl border border-primary bg-primary px-4 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container"
+              className="flex h-9 items-center gap-2 rounded-md border border-primary bg-primary px-4 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container"
               onClick={() => onPlayPomodoro()}
               type="button"
             >
@@ -153,25 +199,36 @@ export function ActiveBlockBanner({
       );
     }
     return (
-      <div className="flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
+      <div className="flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-outline-variant" />
+            <span
+              aria-hidden="true"
+              className="h-2.5 w-2.5 shrink-0 rounded-full bg-outline-variant"
+            />
             <p className="truncate font-headline-xs text-headline-xs font-bold text-on-surface">
               Sin bloque activo ahora
             </p>
           </div>
-          <p className="font-body-sm text-body-sm text-on-surface-variant">Organiza tu siguiente espacio de enfoque.</p>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">
+            Organiza tu siguiente espacio de enfoque.
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-outline-variant pt-3">
-          <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
+          <Link
+            className="font-label-caps text-label-caps text-primary hover:underline"
+            href="/timeblocks"
+          >
             VER HORARIO
           </Link>
-          <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
+          <Link
+            className="font-label-caps text-label-caps text-primary hover:underline"
+            href="/timeblocks"
+          >
             NUEVO BLOQUE
           </Link>
           <button
-            className="ml-auto flex h-9 items-center gap-2 rounded-xl border border-primary bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
+            className="ml-auto flex h-9 items-center gap-2 rounded-md border border-primary bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
             onClick={() => onPlayPomodoro()}
             type="button"
           >
@@ -186,8 +243,11 @@ export function ActiveBlockBanner({
   const visibleTasks = tasks.slice(0, MAX_VISIBLE_TASKS);
   const remainingTasks = tasks.length - visibleTasks.length;
   const nextTask = visibleTasks[0];
-  const completedTasks = tasks.filter((task) => task.status === "COMPLETED").length;
-  const taskProgress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+  const completedTasks = tasks.filter(
+    (task) => task.status === "COMPLETED",
+  ).length;
+  const taskProgress =
+    tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
   const label = block.project?.name ?? block.name ?? "Bloque de enfoque";
   const color = block.project?.color ?? "#303e51";
@@ -196,7 +256,7 @@ export function ActiveBlockBanner({
 
   return (
     <div
-      className="flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-cadence-2"
+      className="flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-cadence-2"
       style={{ borderTop: `3px solid ${color}` }}
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant pb-3">
@@ -205,7 +265,9 @@ export function ActiveBlockBanner({
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-60" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-secondary" />
           </span>
-          <p className="inline-flex items-center rounded-full bg-secondary-fixed/70 px-2.5 py-1 font-body-sm text-body-sm font-semibold text-secondary">Ahora mismo</p>
+          <p className="inline-flex items-center rounded-full bg-secondary-fixed/70 px-2.5 py-1 font-body-sm text-body-sm font-semibold text-secondary">
+            Ahora mismo
+          </p>
         </div>
         <p className="font-data-mono text-data-mono text-xs text-on-surface-variant">
           {minToTime(block.startMin)}–{minToTime(block.endMin)}
@@ -214,15 +276,19 @@ export function ActiveBlockBanner({
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-headline-md text-headline-md font-bold text-on-surface">{label}</p>
+          <p className="truncate font-headline-md text-headline-md font-bold text-on-surface">
+            {label}
+          </p>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
             Restan {formatDuration(remaining)}
             {tasks.length > 0 && ` · ${taskProgress}% completado`}
           </p>
         </div>
         <button
-          className="flex h-9 shrink-0 items-center gap-2 rounded-xl border border-primary bg-primary px-4 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary/90 active:scale-[0.98]"
-          onClick={() => onPlayPomodoro(firstTask?.id, block.projectId ?? undefined)}
+          className="flex h-9 shrink-0 items-center gap-2 rounded-md border border-primary bg-primary px-4 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary/90 active:scale-[0.98]"
+          onClick={() =>
+            onPlayPomodoro(firstTask?.id, block.projectId ?? undefined)
+          }
           type="button"
         >
           <Play size={15} /> Enfoque
@@ -230,8 +296,18 @@ export function ActiveBlockBanner({
       </div>
 
       {tasks.length > 0 && (
-        <div className="h-2 overflow-hidden rounded-full bg-secondary-fixed/60" role="progressbar" aria-label="Tareas del bloque completadas" aria-valuemax={100} aria-valuemin={0} aria-valuenow={taskProgress}>
-          <div className="h-full rounded-full bg-secondary transition-[width] duration-500" style={{ width: `${taskProgress}%` }} />
+        <div
+          className="h-2 overflow-hidden rounded-full bg-secondary-fixed/60"
+          role="progressbar"
+          aria-label="Tareas del bloque completadas"
+          aria-valuemax={100}
+          aria-valuemin={0}
+          aria-valuenow={taskProgress}
+        >
+          <div
+            className="h-full rounded-full bg-secondary transition-[width] duration-500"
+            style={{ width: `${taskProgress}%` }}
+          />
         </div>
       )}
 
@@ -243,17 +319,18 @@ export function ActiveBlockBanner({
           </p>
           <ul className="flex flex-col divide-y divide-outline-variant">
             {visibleTasks.map((task) => (
-              <li
-                className="flex items-center gap-2 py-1.5"
-                key={task.id}
-              >
+              <li className="flex items-center gap-2 py-1.5" key={task.id}>
                 <button
                   aria-label={`Completar ${task.title}`}
-                  className="shrink-0 text-outline hover:text-primary"
+                   className="shrink-0 rounded-md p-1 text-outline hover:bg-surface-container-low hover:text-primary"
                   onClick={() => onToggleTask(task)}
                   type="button"
                 >
-                  {task.status === "COMPLETED" ? <CheckCircle2 className="text-primary" size={15} /> : <Circle size={15} />}
+                  {task.status === "COMPLETED" ? (
+                    <CheckCircle2 className="text-primary" size={15} />
+                  ) : (
+                    <Circle size={15} />
+                  )}
                 </button>
                 <Link
                   className="line-clamp-1 min-w-0 flex-1 font-body-sm text-body-sm font-medium hover:text-primary"
@@ -262,7 +339,7 @@ export function ActiveBlockBanner({
                   {task.title}
                 </Link>
                 {task.id === nextTask?.id && task.status !== "COMPLETED" && (
-                  <span className="shrink-0 border border-primary px-1.5 py-0.5 font-label-caps text-label-caps text-[10px] uppercase text-primary">
+                   <span className="shrink-0 rounded-md border border-primary px-1.5 py-0.5 font-label-caps text-label-caps text-[10px] uppercase text-primary">
                     Siguiente
                   </span>
                 )}
@@ -276,14 +353,17 @@ export function ActiveBlockBanner({
               className="mt-1 inline-flex items-center gap-1 font-label-caps text-label-caps text-primary hover:underline"
               href="/tasks"
             >
-              Ver {remainingTasks} más en Planificación y tareas
+              Ver {remainingTasks} más en Tareas
             </Link>
           )}
         </div>
       )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-outline-variant pt-3">
-        <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
+        <Link
+          className="font-label-caps text-label-caps text-primary hover:underline"
+          href="/timeblocks"
+        >
           VER HORARIO
         </Link>
       </div>

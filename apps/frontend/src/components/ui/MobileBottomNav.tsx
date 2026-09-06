@@ -50,7 +50,7 @@ export function MobileBottomNav() {
             return (
               <Link
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-center transition-colors ${active ? "bg-secondary-fixed text-secondary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+                 className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-center transition-colors ${active ? "bg-secondary-fixed text-secondary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
                 href={item.href}
                 key={item.href}
               >
@@ -68,7 +68,7 @@ export function MobileBottomNav() {
           <button
             aria-expanded={moreOpen}
             aria-label="Abrir más opciones"
-            className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-center transition-colors ${moreActive || moreOpen ? "bg-secondary-fixed text-secondary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
+             className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-center transition-colors ${moreActive || moreOpen ? "bg-secondary-fixed text-secondary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
             onClick={() => setMoreOpen(true)}
             type="button"
           >
@@ -85,11 +85,11 @@ export function MobileBottomNav() {
       </nav>
 
       <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
-        <DrawerContent className="max-h-[88dvh] rounded-t-3xl border-outline-variant bg-surface-bright pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+         <DrawerContent className="max-h-[88dvh] rounded-t-lg border-outline-variant bg-surface-bright pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
           <DrawerHeader className="flex flex-row items-center justify-between gap-3 border-b border-outline-variant px-4 py-3 text-left">
             <Link
               aria-label="Abrir ajustes de cuenta"
-              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-surface-container-low"
+              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md p-1.5 transition-colors hover:bg-surface-container-low"
               href="/settings"
               onClick={() => setMoreOpen(false)}
             >
@@ -134,7 +134,7 @@ export function MobileBottomNav() {
                 return (
                   <Link
                     aria-current={active ? "page" : undefined}
-                    className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-left font-body-md text-body-md transition-colors ${active ? "bg-secondary-fixed text-secondary font-semibold" : "text-on-surface hover:bg-surface-container-low"}`}
+                     className={`flex min-h-12 items-center gap-3 rounded-md px-3 text-left font-body-md text-body-md transition-colors ${active ? "bg-secondary-fixed text-secondary font-semibold" : "text-on-surface hover:bg-surface-container-low"}`}
                     href={item.href}
                     key={item.href}
                     onClick={() => setMoreOpen(false)}
@@ -160,7 +160,7 @@ export function MobileBottomNav() {
                   return (
                     <Link
                       aria-current={active ? "page" : undefined}
-                      className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-left font-body-md text-body-md transition-colors ${active ? "bg-secondary-fixed font-semibold text-secondary" : "text-on-surface hover:bg-surface-container-low"}`}
+                       className={`flex min-h-12 items-center gap-3 rounded-md px-3 text-left font-body-md text-body-md transition-colors ${active ? "bg-secondary-fixed font-semibold text-secondary" : "text-on-surface hover:bg-surface-container-low"}`}
                       href={item.href}
                       key={item.href}
                       onClick={() => setMoreOpen(false)}
@@ -175,7 +175,7 @@ export function MobileBottomNav() {
                   );
                 })}
                 <button
-                  className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left font-body-md text-body-md text-on-surface hover:bg-surface-container-low"
+                   className="flex min-h-12 w-full items-center gap-3 rounded-md px-3 text-left font-body-md text-body-md text-on-surface hover:bg-surface-container-low"
                   onClick={() => {
                     setMoreOpen(false);
                     setFeedbackOpen(true);
@@ -193,7 +193,7 @@ export function MobileBottomNav() {
             </div>
             <div className="mt-3 border-t border-outline-variant pt-3">
               <button
-                className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left font-body-md text-body-md text-error hover:bg-error-container"
+                 className="flex min-h-12 w-full items-center gap-3 rounded-md px-3 text-left font-body-md text-body-md text-error hover:bg-error-container"
                 onClick={() => {
                   setMoreOpen(false);
                   void logout();

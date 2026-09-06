@@ -806,3 +806,208 @@ La app se construye en base a las necesidades propias, pero no todos los usuario
 - Un módulo desactivado **no aparece en la navegación**; se eliminan los placeholders "próximamente" para quien no los necesita.
 - Backend: middleware por módulo (`requireModule("clients")`) para que el flag no sea solo cosmético.
 - Defaults: el propietario activa todo; un usuario nuevo arranca con el núcleo (tareas, hábitos, capturas, Pomodoro) y activa el resto desde Configuración.
+
+## 19. Reorganización de Proyectos y Planificación
+
+### 19.1 Decisiones de producto
+
+El proyecto es un workspace con la misma estructura tanto para uso personal como colaborativo. La colaboración añade información compartida, chat, miembros y asignación de tareas; no crea un tipo distinto de proyecto.
+
+Reglas acordadas:
+
+- La descripción del proyecto es opcional.
+- La fecha objetivo del proyecto es opcional.
+- Estado, prioridad y milestones de proyecto quedan fuera de la primera versión.
+- El proyecto abre inicialmente en `Resumen`.
+- El proyecto permite crear, editar, completar, asignar y eliminar tareas sin salir de `/projects/:id`.
+- La vista de tareas del proyecto será una lista; no se implementa Kanban ni drag-and-drop en la primera versión.
+- Los filtros iniciales son estado, prioridad, asignado y búsqueda; la fecha límite se muestra en la lista y el orden sigue siendo server-side.
+- Las tareas pueden quedar sin asignar; no se asignan automáticamente al creador.
+- Todos los miembros pueden ver y administrar las tareas del proyecto.
+- Las notas del proyecto son compartidas con todos sus miembros y conservan filtros, categorías, etiquetas, fijado y Markdown.
+- Quick Notes, eventos, timeblocks y planificación personal no forman parte del workspace compartido.
+- Los recursos compartidos se incorporan por fases: enlaces primero, archivos y documentos después.
+- `/tasks` conserva todas las tareas de todos los proyectos como planner global.
+
+### 19.2 Arquitectura de navegación
+
+`/projects` será la vista de portafolio. Debe mostrar proyectos propios y compartidos y permitir abrir el workspace.
+
+`/projects/:id` será el centro operativo del proyecto. Las secciones se agrupan para no convertir la navegación en siete pestañas con el mismo peso:
+
+- Trabajo: `Resumen`, `Tareas`, `Notas`; `Recursos` vive en el menú secundario.
+- Colaboración: `Actividad`, `Equipo`; `Chat` vive en el menú secundario.
+
+La selección de sección debe ser enlazable por URL, por ejemplo `?tab=tasks`, y debe sobrevivir a recargas y enlaces compartidos.
+
+`/tasks` será la vista global:
+
+- `Lista`: cola global de tareas de todos los proyectos.
+- `Semana`: planificación por día de trabajo.
+- `Mes`: calendario y resumen de fechas.
+
+La fecha límite y el día planificado son conceptos distintos. El proyecto muestra fechas límite; la planificación semanal decide cuándo se trabajará cada tarea.
+
+### 19.3 Fase A: workspace frontend con APIs existentes (completada)
+
+Objetivo: convertir `/projects/:id` en un workspace usable sin duplicar el planner completo. El workspace ya consume endpoints reales y mantiene los recursos fuera de las pestañas principales.
+
+Archivos principales:
+
+- `apps/frontend/src/app/(app)/projects/[id]/page.tsx`
+- `apps/frontend/src/features/projects/hooks/useProjects.ts`
+- `apps/frontend/src/features/tasks/hooks/useTasks.ts`
+- `apps/frontend/src/features/tasks/components/TaskModal.tsx`
+- `apps/frontend/src/features/comments/CommentThread.tsx`
+- `apps/frontend/src/components/ui/TopAppBar.tsx`
+
+Implementación:
+
+1. Reorganizar el encabezado siguiendo `Desktop/prompt 1 reiterado`: breadcrumb, nombre, descripción cuando exista, miembros, progreso y acciones contextuales.
+2. Usar `Resumen` como sección inicial.
+3. Añadir navegación interna con estado URL para `Resumen`, `Tareas`, `Notas`, `Recursos`, `Chat`, `Actividad` y `Equipo`, mostrando únicamente contenido funcional en esta fase.
+4. Mantener la sección actual de miembros y conversación, pero integrarla dentro de la nueva jerarquía.
+5. Crear una sección `Tareas` contextual con lista del proyecto, estados, prioridad, asignado, fecha límite y acciones rápidas.
+6. Crear tareas desde el proyecto con el proyecto preseleccionado, sin redirigir obligatoriamente a `/tasks`.
+7. Reutilizar `TaskModal`; no crear un segundo editor de tareas.
+8. Mantener una acción secundaria `Planificación` que abra `/tasks` con el proyecto seleccionado.
+9. No mostrar datos inventados de milestones ni roles personalizados; los recursos y la fecha objetivo solo se muestran cuando vienen de persistencia.
+10. Adaptar la composición a desktop y móvil: tabla/lista en desktop, tarjetas y controles apilados en móvil.
+11. Mantener la navegación global y el flujo de Quick Notes sin mezclarlos con el workspace.
+12. Mostrar estados de carga, error, vacío y reintento en las consultas del workspace.
+
+Criterios de aceptación:
+
+- Entrar a un proyecto abre `Resumen`.
+- El usuario puede llegar a `Tareas` mediante URL y recarga sin perder la sección.
+- Crear y editar una tarea desde el proyecto no requiere cambiar de pantalla.
+- Las tareas creadas quedan vinculadas al proyecto correcto.
+- La lista no implementa Kanban ni drag-and-drop.
+- El layout funciona en desktop y móvil sin overflow horizontal.
+- Los miembros y la conversación existentes siguen funcionando.
+- Los recursos y la actividad se consultan desde sus endpoints persistentes.
+
+### 19.4 Fase B: contrato backend y permisos de proyecto (completada, salvo `IN_REVIEW`)
+
+Objetivo: hacer que el workspace use datos completos y reglas consistentes antes de añadir recursos compartidos.
+
+Backend:
+
+- [x] Añadir `description` y `targetDate` opcionales a `Project`.
+- [ ] Añadir `IN_REVIEW` a `Task`; queda diferido hasta tener confirmación del contrato de estados.
+- [x] Crear `GET /projects/:id/summary` con conteos globales, progreso, vencidas, próximas tareas y miembros.
+- [x] Hacer que las operaciones masivas respeten `assertTaskAccess` y validen asignados.
+- [x] Permitir a los miembros autorizados crear, editar, completar, asignar y eliminar tareas compartidas.
+- [x] Desasignar tareas al quitar una tarea del proyecto o a un miembro.
+- [x] Mantener el comportamiento de eliminación: las tareas propias pasan al proyecto personal y los bloques se desvinculan.
+- [x] Ocultar o deshabilitar eliminar y renombrar para el proyecto default.
+
+Frontend:
+
+- [x] Sustituir métricas calculadas sobre una página de tareas por el resumen del backend.
+- [ ] Mostrar `IN_REVIEW` como `En revisión` cuando exista en el contrato.
+- [x] Mostrar `Sin asignar` como estado válido de responsable.
+- [x] Invalidar `projects`, summary, tasks, members y home después de mutations.
+
+Criterios de aceptación:
+
+- El progreso representa todo el proyecto, no solo la página visible.
+- Un miembro autorizado puede ejecutar las acciones permitidas sobre tareas compartidas.
+- Las operaciones no autorizadas responden con el mismo criterio en acciones individuales y masivas.
+- Las fechas y estados de la UI coinciden con el contrato backend.
+
+### 19.5 Fase C: notas compartidas del proyecto (base completada)
+
+Objetivo: añadir documentación compartida con la misma versatilidad de la base de conocimiento personal.
+
+Implementación:
+
+- [x] Añadir `projectId` a los parámetros de consulta de knowledge.
+- [x] Definir lectura compartida para miembros del proyecto mediante `assertNoteAccess` específico de proyecto.
+- [x] Mantener el aislamiento de notas personales sin proyecto.
+- [x] Reutilizar `NoteEditorModal` y `MarkdownEditor`.
+- [x] Añadir listado, categoría, tags, fijado y edición para la pestaña `Notas`.
+- [ ] Añadir búsqueda y filtros de listado específicos dentro de la pestaña `Notas`.
+- [x] No incluir Quick Notes en esta vista.
+
+Política actual: todos los miembros pueden leer notas compartidas; solo el autor puede editar, fijar o eliminar su nota.
+
+Criterios de aceptación:
+
+- Todos los miembros pueden ver y editar las notas del proyecto según la política acordada.
+- Una nota personal sin proyecto no aparece en ningún workspace.
+- La creación de una nota desde el proyecto queda vinculada al proyecto.
+- Markdown, filtros y etiquetas funcionan igual que en `Mis notas`.
+
+### 19.6 Fase D: recursos compartidos (en progreso)
+
+Orden de implementación:
+
+1. Enlaces externos con título, URL y descripción opcional.
+2. Documentos Markdown editables usando el editor existente.
+3. Archivos adjuntos con almacenamiento, tamaño máximo, tipo MIME y permisos.
+4. Carpetas o integraciones externas únicamente si existe una necesidad concreta.
+
+- [x] Enlaces externos persistentes con título, URL y descripción opcional.
+- [x] Recursos scoped por `projectId`, protegidos por acceso al proyecto y con actividad registrada.
+- [ ] Documentos Markdown editables usando el editor existente.
+- [ ] Archivos adjuntos con almacenamiento, tamaño máximo, tipo MIME y permisos.
+
+No mostrar recursos simulados. Cada recurso debe estar scoped por `projectId` y protegido por acceso al proyecto.
+
+### 19.7 Fase E: simplificación de Planificación y tareas
+
+Objetivo: eliminar el salto obligatorio entre proyecto y planner y corregir la semántica de planificación.
+
+Implementación:
+
+- Mantener todas las tareas de todos los proyectos en `/tasks`.
+- Hacer `Lista` la vista principal para gestión global.
+- Renombrar el concepto visual de backlog a `Sin planificar`.
+- Usar `TaskSchedule` únicamente para el día planificado.
+- Usar `Task.dueDate` únicamente para la fecha límite.
+- Mantener el proyecto como filtro global y sincronizarlo con la URL.
+- Hacer que `view`, `projectId`, período y `taskId` sean estados URL confiables.
+- Unificar o retirar el DnD duplicado entre semana y las vistas antiguas.
+- Corregir paginación, filtros, selección masiva y estados terminales.
+- Mantener la vista mensual como calendario secundario, no como centro de edición.
+
+Criterios de aceptación:
+
+- Ninguna vista llama backlog a una tarea que simplemente no tiene fecha límite.
+- El usuario distingue fecha límite de día planificado.
+- Las tres vistas consultan y muestran el mismo conjunto coherente de tareas.
+- Cambiar filtros o proyecto no deja selecciones obsoletas.
+- El planner global sigue permitiendo organizar tareas de todos los proyectos.
+
+### 19.8 Fase F: actividad, colaboración y calidad (en progreso)
+
+- [x] Feed persistente de actividad para cambios de tareas, notas, miembros, comentarios y recursos.
+- [x] Mantener `Chat` como conversación de proyecto con realtime.
+- Añadir pruebas de permisos, notas compartidas y operaciones de tareas compartidas.
+- Añadir pruebas de navegación por URL en desktop y móvil.
+- Añadir pruebas de fechas, estados, paginación y diferencias entre `dueDate` y `TaskSchedule`.
+- Verificar accesibilidad, teclado, touch targets y overflow responsive.
+- Ejecutar smoke tests completos antes de cada checkpoint.
+
+### 19.9 Orden de ejecución y checkpoints
+
+1. Guardar checkpoint UX actual. Completado en `dd4391e`.
+2. Implementar Fase A en `/projects/:id`. Completado.
+3. Implementar Fase B con migración y endpoint de summary. Completado; migración aplicada localmente.
+4. Implementar la base de Fase C para notas compartidas. Completado; quedan filtros de listado.
+5. Implementar la primera fase de recursos externos. Completado.
+6. Implementar actividad persistente y realtime. Completado; faltan pruebas específicas.
+7. Ejecutar QA visual, accesibilidad y smoke tests completos.
+8. Ejecutar Fase E para simplificar el planner global.
+9. Completar filtros de notas, documentos/archivos y actualizar `PROJECT_STATUS.md` con resultados finales.
+
+### 19.10 Fuera de alcance inicial
+
+- Kanban dentro de proyectos.
+- Drag-and-drop de tareas en el workspace del proyecto.
+- Roles personalizados.
+- Eventos y bloques de tiempo compartidos.
+- Milestones y estados de proyecto avanzados.
+- Recursos simulados sin persistencia.
+- Conversión o mezcla de Quick Notes con notas compartidas.

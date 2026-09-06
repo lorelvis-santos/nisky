@@ -13,7 +13,7 @@ export function QuickNotesPanel() {
   return (
     <section className="pt-1">
       <Link
-        className="group flex items-center justify-between rounded-xl bg-surface-container-lowest p-3 shadow-sm transition-colors hover:bg-surface-container-low"
+        className="group flex items-center justify-between rounded-lg bg-surface-container-lowest p-3 shadow-sm transition-colors hover:bg-surface-container-low"
         href="/quick-notes"
       >
         <div className="flex min-w-0 items-center gap-2.5">

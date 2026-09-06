@@ -6,8 +6,8 @@ import { socket, SocketEvents, type DataChangedPayload, type Domain } from "@/li
 import { useAuth } from "@/context/AuthProvider";
 
 const INVALIDATIONS: Record<Domain, string[][]> = {
-  tasks: [["tasks"], ["task"], ["task-schedules"], ["home"]],
-  comments: [["comments"]],
+  tasks: [["tasks"], ["task"], ["task-schedules"], ["projects"], ["home"]],
+  comments: [["comments"], ["projects"]],
   projects: [
     ["projects"],
     ["projects", "accessible"],
@@ -42,6 +42,8 @@ export function RealtimeSync() {
       if (payload.domain === "projects" && payload.projectId) {
         void client.invalidateQueries({ queryKey: ["projects", payload.projectId, "members"] });
         void client.invalidateQueries({ queryKey: ["projects", payload.projectId] });
+        void client.invalidateQueries({ queryKey: ["projects", payload.projectId, "activity"] });
+        void client.invalidateQueries({ queryKey: ["projects", payload.projectId, "resources"] });
       }
       invalidate(INVALIDATIONS[payload.domain] ?? []);
     };

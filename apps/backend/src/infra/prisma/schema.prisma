@@ -43,6 +43,8 @@ model User {
   notes          Note[]
   noteDraft      NoteDraft?
   comments       Comment[]
+  projectActivities ProjectActivity[] @relation("ProjectActivityActor")
+  createdProjectResources ProjectResource[] @relation("ProjectResourceCreator")
   pushSubscriptions PushSubscription[]
   reminders      Reminder[]
   moodleAccounts MoodleAccount[]
@@ -70,6 +72,8 @@ model Project {
   userId     String
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   name       String
+  description String?
+  targetDate DateTime?
   color      String      @default("#303e51")
   isDefault  Boolean     @default(false)
   weeklyTargetMinutes Int?
@@ -81,6 +85,8 @@ model Project {
   invitations ProjectInvitation[]
   notes      Note[]
   comments   Comment[]
+  activities ProjectActivity[]
+  resources  ProjectResource[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
@@ -543,6 +549,38 @@ model Comment {
   @@index([projectId, createdAt])
   @@index([taskId, createdAt])
   @@index([authorId])
+}
+
+model ProjectActivity {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User     @relation("ProjectActivityActor", fields: [actorId], references: [id], onDelete: Cascade)
+  type        String
+  entityId    String?
+  entityTitle String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([actorId])
+}
+
+model ProjectResource {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation("ProjectResourceCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  title       String
+  url         String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId, createdAt])
+  @@index([createdById])
 }
 
 model RefreshToken {

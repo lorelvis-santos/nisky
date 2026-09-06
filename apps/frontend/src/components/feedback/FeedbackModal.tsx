@@ -14,12 +14,12 @@ import {
 export function FeedbackModal({ onClose }: { onClose: () => void }) {
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-md flex-col overflow-y-auto rounded-2xl border-outline-variant bg-surface p-5" showCloseButton={false}>
+      <DialogContent className="flex max-h-[90vh] max-w-md flex-col overflow-y-auto rounded-lg border-outline-variant bg-surface p-5" showCloseButton={false}>
         <DialogHeader className="mb-4 flex-row items-center justify-between text-left">
           <DialogTitle className="font-headline-sm text-headline-sm normal-case tracking-normal">Enviar feedback</DialogTitle>
           <DialogDescription className="sr-only">Comparte tus comentarios sobre Nisky.</DialogDescription>
           <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
               <X size={20} />
             </button>
           </DialogClose>

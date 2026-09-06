@@ -41,7 +41,7 @@ function CaptureHeading({ mode, kind }: { mode: CaptureMode; kind: "dialog" | "d
     return (
       <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary-container text-secondary"><ModeIcon mode={mode} /></span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-secondary-container text-secondary"><ModeIcon mode={mode} /></span>
           <div className="min-w-0">
             <DrawerTitle className="font-headline-sm text-headline-sm font-semibold normal-case tracking-normal text-on-surface">{title}</DrawerTitle>
             <DrawerDescription className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">{description}</DrawerDescription>
@@ -56,7 +56,7 @@ function CaptureHeading({ mode, kind }: { mode: CaptureMode; kind: "dialog" | "d
   return (
     <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary-container text-secondary"><ModeIcon mode={mode} /></span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-secondary-container text-secondary"><ModeIcon mode={mode} /></span>
         <div className="min-w-0">
           <DialogTitle className="font-headline-sm text-headline-sm font-semibold text-on-surface">{title}</DialogTitle>
           <DialogDescription className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">{description}</DialogDescription>
@@ -75,7 +75,7 @@ export function QuickCaptureModal({ open, onClose, initialMode = "TASK" }: { ope
   if (isSmallScreen) {
     return (
       <Drawer open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-        <DrawerContent className="max-h-[92dvh] rounded-t-3xl border-outline-variant bg-surface-bright">
+         <DrawerContent className="max-h-[92dvh] rounded-t-lg border-outline-variant bg-surface-bright">
           <CaptureHeading kind="drawer" mode={initialMode} />
           <CaptureComposer initialMode={initialMode} key={`${open ? "open" : "closed"}-${initialMode}`} onClose={onClose} />
         </DrawerContent>
@@ -85,7 +85,7 @@ export function QuickCaptureModal({ open, onClose, initialMode = "TASK" }: { ope
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[88dvh] w-full max-w-xl flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface-bright p-0" showCloseButton={false}>
+      <DialogContent className="flex max-h-[88dvh] max-w-xl flex-col gap-0 overflow-hidden rounded-lg border-outline-variant bg-surface-bright p-0" showCloseButton={false}>
         <CaptureHeading kind="dialog" mode={initialMode} />
         <CaptureComposer initialMode={initialMode} key={`${open ? "open" : "closed"}-${initialMode}`} onClose={onClose} />
       </DialogContent>

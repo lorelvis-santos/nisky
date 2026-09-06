@@ -44,14 +44,14 @@ export function SettingsModal({ settings, onClose }: { settings: PomodoroSetting
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-md flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+      <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 overflow-hidden rounded-lg border-outline-variant bg-surface p-0" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
             <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Configuración Pomodoro</DialogTitle>
             <DialogDescription className="sr-only">Configura la duración y el comportamiento del temporizador Pomodoro.</DialogDescription>
           </div>
           <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+             <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
               <X size={19} />
             </button>
           </DialogClose>
@@ -82,9 +82,9 @@ export function SettingsModal({ settings, onClose }: { settings: PomodoroSetting
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
           <DialogClose asChild>
-            <button className="border border-outline-variant px-4 py-2 font-body-sm text-body-sm" type="button">Cancelar</button>
+            <button className="min-h-11 rounded-md border border-outline-variant px-4 py-2 font-body-sm text-body-sm" type="button">Cancelar</button>
           </DialogClose>
-          <button className="bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary" onClick={() => void save()} type="button">Guardar</button>
+           <button className="rounded-md bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary" onClick={() => void save()} type="button">Guardar</button>
         </div>
       </DialogContent>
     </Dialog>

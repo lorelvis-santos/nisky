@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Timer, X } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Timer, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -24,6 +24,8 @@ export type TaskForm = {
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
+  plannedDate?: string;
+  scheduleChanged?: boolean;
   dueDate?: string;
   pomodoroEstimate: number;
   projectId?: string;
@@ -43,6 +45,8 @@ const emptyForm: TaskForm = {
   description: "",
   status: "PENDING",
   priority: "NORMAL",
+  plannedDate: "",
+  scheduleChanged: false,
   dueDate: "",
   pomodoroEstimate: 0,
   recurrence: emptyRecurrence,
@@ -103,8 +107,10 @@ export function TaskModal({
           description: task.description ?? "",
           status: task.status,
           priority: task.priority,
-          dueDate: task.dueDate ? toDatetimeLocal(task.dueDate) : "",
-          pomodoroEstimate: task.pomodoroEstimate,
+           dueDate: task.dueDate ? toDatetimeLocal(task.dueDate) : "",
+           plannedDate: initialForm?.plannedDate ?? "",
+           scheduleChanged: false,
+           pomodoroEstimate: task.pomodoroEstimate,
           projectId: task.projectId ?? defaultProjectId ?? defaultProject?.id ?? "",
           assigneeId: task.assigneeId ?? null,
           recurrence: task.recurrenceType
@@ -119,11 +125,17 @@ export function TaskModal({
               }
             : emptyRecurrence,
         }
-      : { ...emptyForm, ...initialForm, projectId: initialForm?.projectId ?? defaultProjectId ?? defaultProject?.id ?? "" },
-  );
+      : {
+          ...emptyForm,
+          ...initialForm,
+          projectId: initialForm?.projectId ?? defaultProjectId ?? defaultProject?.id ?? "",
+          scheduleChanged: initialForm?.scheduleChanged ?? Boolean(initialForm?.plannedDate),
+        },
+   );
   const [subtaskTitle, setSubtaskTitle] = useState("");
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(Boolean(task));
   const currentProjectId = form.projectId && form.projectId !== "" ? form.projectId : null;
   const membersQuery = useProjectMembers(currentProjectId);
   const members = membersQuery.data ?? [];
@@ -143,7 +155,11 @@ export function TaskModal({
       return;
     }
     setError("");
-    await onSave(result.data);
+    await onSave({
+      ...result.data,
+      plannedDate: form.plannedDate,
+      scheduleChanged: form.scheduleChanged,
+    });
   };
   const addSubtask = async () => {
     if (!current || !subtaskTitle.trim()) return;
@@ -198,31 +214,31 @@ export function TaskModal({
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
-        <DialogHeader className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
-          <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
-            {task ? "Editar tarea" : "Nueva tarea"}
-          </DialogTitle>
-          <DialogDescription className="sr-only">Edita los detalles, recordatorios y subtareas de la tarea.</DialogDescription>
-          <div className="flex flex-1 items-center justify-between gap-2 sm:flex-none sm:justify-start">
-            <div className="flex items-center gap-2">
-              {task && onStartPomodoro && (
-                <button
-                  className="flex items-center gap-1 border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
-                  onClick={onStartPomodoro}
-                  type="button"
-                >
-                  <Timer size={14} /> Pomodoro
-                </button>
-              )}
-            </div>
-            <DialogClose asChild>
-              <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
-                <X size={19} />
-              </button>
-            </DialogClose>
-          </div>
-        </DialogHeader>
+      <DialogContent className="fixed bottom-0 left-0 right-0 top-auto flex max-h-[92dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl border-outline-variant bg-surface p-0 sm:bottom-0 sm:left-auto sm:right-0 sm:top-0 sm:h-full sm:max-h-none sm:w-[min(32rem,100vw)] sm:translate-x-0 sm:translate-y-0 sm:rounded-l-2xl sm:rounded-r-none" showCloseButton={false}>
+         <DialogHeader className="flex shrink-0 flex-row items-center justify-between gap-3 border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+           <div className="min-w-0 flex-1">
+             <DialogTitle className="truncate font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
+               {task ? "Editar tarea" : "Nueva tarea"}
+             </DialogTitle>
+             <DialogDescription className="sr-only">Edita los detalles, recordatorios y subtareas de la tarea.</DialogDescription>
+           </div>
+           <div className="flex shrink-0 items-center gap-2">
+             {task && onStartPomodoro && (
+               <button
+                 className="flex items-center gap-1 rounded-md border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+                 onClick={onStartPomodoro}
+                 type="button"
+               >
+                 <Timer size={14} /> <span className="hidden sm:inline">Pomodoro</span>
+               </button>
+             )}
+             <DialogClose asChild>
+               <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
+                 <X size={19} />
+               </button>
+             </DialogClose>
+           </div>
+         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5" data-modal-scroll>
            <label className="block">
             <span className="font-label-caps text-label-caps text-on-surface-variant">
@@ -237,20 +253,8 @@ export function TaskModal({
               value={form.title}
             />
           </label>
-          <label className="block">
-            <span className="font-label-caps text-label-caps text-on-surface-variant">
-              DESCRIPCIÓN
-            </span>
-            <textarea
-              className="field mt-1 h-20 resize-y py-2"
-              onChange={(event) =>
-                setForm({ ...form, description: event.target.value })
-              }
-              value={form.description}
-            />
-          </label>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block">
+           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+             <label className="block">
               <span className="font-label-caps text-label-caps text-on-surface-variant">
                 PROYECTO
               </span>
@@ -265,32 +269,28 @@ export function TaskModal({
                   <option key={project.id} value={project.id}>
                     {project.name}
                   </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="font-label-caps text-label-caps text-on-surface-variant">
-                ASIGNADO A
-              </span>
-              <select
-                className="field mt-1"
-                disabled={!currentProjectId}
-                onChange={(event) =>
-                  setForm({ ...form, assigneeId: event.target.value || null })
-                }
-                value={form.assigneeId ?? ""}
-              >
-                <option value="">Sin asignar</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.userId}>
-                    {member.user.name ?? member.user.email}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="font-label-caps text-label-caps text-on-surface-variant">
-                PRIORIDAD
+                 ))}
+               </select>
+             </label>
+             <label className="block">
+               <span className="font-label-caps text-label-caps text-on-surface-variant">
+                 PLANIFICAR PARA (OPCIONAL)
+               </span>
+               <input
+                 className="field mt-1"
+                 onChange={(event) =>
+                   setForm({ ...form, plannedDate: event.target.value, scheduleChanged: true })
+                 }
+                 type="date"
+                 value={form.plannedDate ?? ""}
+               />
+               <p className="mt-1 font-body-xs text-body-xs text-on-surface-variant">
+                 Asigna un día de trabajo sin cambiar la fecha límite.
+               </p>
+             </label>
+             <label className="block">
+               <span className="font-label-caps text-label-caps text-on-surface-variant">
+                 PRIORIDAD
               </span>
               <select
                 className="field mt-1"
@@ -300,17 +300,17 @@ export function TaskModal({
                     priority: event.target.value as TaskPriority,
                   })
                 }
-                value={form.priority}
-              >
+                 value={form.priority}
+               >
                 <option value="URGENT">Urgente</option>
                 <option value="HIGH">Alta</option>
                 <option value="NORMAL">Normal</option>
                 <option value="LOW">Baja</option>
-              </select>
-            </label>
-            <label className="block">
+               </select>
+             </label>
+             <label className="block">
               <span className="font-label-caps text-label-caps text-on-surface-variant">
-                FECHA Y HORA LÍMITE
+                 VENCE (OPCIONAL)
               </span>
               <input
                 className="field mt-1"
@@ -318,48 +318,99 @@ export function TaskModal({
                   setForm({ ...form, dueDate: event.target.value })
                 }
                 type="datetime-local"
-                value={form.dueDate}
-              />
-            </label>
+                 value={form.dueDate}
+               />
+             </label>
+           </div>
+           <button
+             aria-controls="task-advanced-options"
+             aria-expanded={showAdvanced}
+             className="flex w-full items-center gap-2 border-t border-outline-variant pt-4 text-left font-body-sm text-body-sm text-primary hover:text-primary"
+             onClick={() => setShowAdvanced((open) => !open)}
+             type="button"
+           >
+             <span>{showAdvanced ? "Ocultar opciones avanzadas" : "Más opciones"}</span>
+             <span aria-hidden="true" className="h-px flex-1 bg-outline-variant" />
+             {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+             {showAdvanced && (
+              <>
+              <div className="space-y-4 rounded-lg border border-outline-variant bg-surface-container-low/40 p-4" id="task-advanced-options">
+            <p className="font-label-caps text-label-caps text-on-surface-variant">
+              OPCIONES AVANZADAS
+            </p>
             <label className="block">
               <span className="font-label-caps text-label-caps text-on-surface-variant">
-                ESTIMADO POMODOROS
+                DESCRIPCIÓN
               </span>
-              <input
-                className="field mt-1"
-                min={0}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    pomodoroEstimate: Number(event.target.value) || 0,
-                  })
-                }
-                type="number"
-                value={form.pomodoroEstimate}
+             <textarea
+               className="field mt-1 h-20 resize-y py-2"
+               onChange={(event) =>
+                 setForm({ ...form, description: event.target.value })
+               }
+                value={form.description}
               />
             </label>
-            <label className="block">
-              <span className="font-label-caps text-label-caps text-on-surface-variant">
-                ESTADO
-              </span>
-              <select
-                className="field mt-1"
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    status: event.target.value as TaskStatus,
-                  })
-                }
-                value={form.status}
-              >
-                <option value="PENDING">Pendiente</option>
-                <option value="IN_PROGRESS">En progreso</option>
-                <option value="COMPLETED">Completada</option>
-                <option value="CANCELLED">Cancelada</option>
-              </select>
-            </label>
-          </div>
-          <section className="border-t border-outline-variant pt-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="font-label-caps text-label-caps text-on-surface-variant">
+                  ASIGNADO A
+                </span>
+                <select
+                  className="field mt-1"
+                  disabled={!currentProjectId}
+                  onChange={(event) =>
+                    setForm({ ...form, assigneeId: event.target.value || null })
+                  }
+                  value={form.assigneeId ?? ""}
+                >
+                  <option value="">Sin asignar</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.userId}>
+                      {member.user.name ?? member.user.email}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="font-label-caps text-label-caps text-on-surface-variant">
+                  ESTIMADO POMODOROS
+                </span>
+                <input
+                  className="field mt-1"
+                  min={0}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      pomodoroEstimate: Number(event.target.value) || 0,
+                    })
+                  }
+                  type="number"
+                  value={form.pomodoroEstimate}
+                />
+              </label>
+              <label className="block">
+                <span className="font-label-caps text-label-caps text-on-surface-variant">
+                  ESTADO
+                </span>
+                <select
+                  className="field mt-1"
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      status: event.target.value as TaskStatus,
+                    })
+                  }
+                  value={form.status}
+                >
+                  <option value="PENDING">Pendiente</option>
+                  <option value="IN_PROGRESS">En progreso</option>
+                  <option value="COMPLETED">Completada</option>
+                  <option value="CANCELLED">Cancelada</option>
+                </select>
+              </label>
+            </div>
+            <section className="border-t border-outline-variant pt-4">
             <span className="font-label-caps text-label-caps text-on-surface-variant">
               REPETIR
             </span>
@@ -371,7 +422,7 @@ export function TaskModal({
                 ["MONTHLY", "Cada mes"],
               ] as const).map(([value, label]) => (
                 <button
-                  className={`border px-3 py-1.5 font-body-sm text-body-sm ${form.recurrence?.repeatType === value ? "bg-primary-container text-on-primary" : "border-outline-variant hover:bg-surface-container-low hover:text-primary"}`}
+                   className={`rounded-md border px-3 py-1.5 font-body-sm text-body-sm ${form.recurrence?.repeatType === value ? "bg-primary-container text-on-primary" : "border-outline-variant hover:bg-surface-container-low hover:text-primary"}`}
                   key={value}
                   onClick={() =>
                     setRecurrence({
@@ -390,7 +441,7 @@ export function TaskModal({
                 {WEEKDAY_LETTERS.map((letter, day) => (
                   <button
                     aria-label={`${letter}${form.recurrence?.repeatDaysOfWeek.includes(day) ? " (seleccionado)" : ""}`}
-                    className={`h-8 w-8 border font-data-mono text-data-mono text-sm ${form.recurrence?.repeatDaysOfWeek.includes(day) ? "border-primary bg-primary-container text-on-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-container-low"}`}
+                     className={`h-8 w-8 rounded-md border font-data-mono text-data-mono text-sm ${form.recurrence?.repeatDaysOfWeek.includes(day) ? "border-primary bg-primary-container text-on-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-container-low"}`}
                     key={day}
                     onClick={() => toggleWeekday(day)}
                     type="button"
@@ -433,8 +484,8 @@ export function TaskModal({
               </div>
             )}
           </section>
-          {task && current && (
-            <section className="border-t border-outline-variant pt-4">
+           {task && current && (
+             <section className="border-t border-outline-variant pt-4">
               <div className="mb-2 flex items-center justify-between">
                 <span className="font-label-caps text-label-caps text-on-surface-variant">
                   RECORDATORIOS
@@ -460,7 +511,7 @@ export function TaskModal({
                       </span>
                       <button
                         aria-label="Eliminar recordatorio"
-                        className="text-xs text-on-surface-variant hover:text-error"
+                         className="rounded-md px-2 py-1 text-xs text-on-surface-variant hover:bg-error-container/30 hover:text-error"
                         onClick={() => void removeReminder(reminder.id)}
                         type="button"
                       >
@@ -484,7 +535,7 @@ export function TaskModal({
                   ))}
                 </select>
                 <button
-                  className="flex items-center gap-1 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+                   className="flex items-center gap-1 rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
                   onClick={() => void createReminder()}
                   type="button"
                 >
@@ -520,7 +571,7 @@ export function TaskModal({
                   value={subtaskTitle}
                 />
                 <button
-                  className="border border-outline-variant px-3 text-body-sm hover:bg-surface-container-high"
+                   className="rounded-md border border-outline-variant px-3 text-body-sm hover:bg-surface-container-high"
                   onClick={() => void addSubtask()}
                   type="button"
                 >
@@ -551,7 +602,7 @@ export function TaskModal({
                       {subtask.title}
                     </span>
                     <button
-                      className="text-xs text-on-surface-variant hover:text-error"
+                       className="rounded-md px-2 py-1 text-xs text-on-surface-variant hover:bg-error-container/30 hover:text-error"
                       onClick={() =>
                         void onDeleteSubtask(current.id, subtask.id)
                       }
@@ -571,19 +622,22 @@ export function TaskModal({
                   COMENTARIOS
                 </span>
               </div>
-              <div className="h-64">
+              <div className="h-64 min-h-0 min-w-0 overflow-hidden rounded-lg">
                 <CommentThread kind="task" id={current.id} projectId={current.projectId ?? form.projectId} />
-              </div>
-            </section>
-          )}
-          {error && (
+               </div>
+               </section>
+             )}
+               </div>
+              </>
+             )}
+           {error && (
             <p className="font-body-sm text-body-sm text-error">{error}</p>
           )}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:gap-3 sm:pb-4">
           {task && onDelete ? (
             <button
-              className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap`}
+               className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap rounded-md`}
               onClick={() => {
                 if (!confirmDelete) {
                   setConfirmDelete(true);
@@ -598,12 +652,12 @@ export function TaskModal({
           ) : <span />}
           <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
             <DialogClose asChild>
-              <button className="whitespace-nowrap border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">
+              <button className="min-h-11 whitespace-nowrap rounded-md border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">
                 Cancelar
               </button>
             </DialogClose>
             <button
-              className="whitespace-nowrap bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
+               className="whitespace-nowrap rounded-md bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
               onClick={() => void submit()}
               type="button"
             >

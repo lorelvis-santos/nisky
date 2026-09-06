@@ -1,12 +1,15 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
+import { projectActivityService } from "./project-activity.service";
+import { projectResourceService } from "./project-resources.service";
 import { projectService } from "./projects.service";
-import type { CreateProjectDto, InviteMemberDto, UpdateMemberRoleDto, UpdateProjectDto } from "./projects.validator";
+import type { CreateProjectDto, CreateResourceDto, InviteMemberDto, ProjectActivityQueryDto, UpdateMemberRoleDto, UpdateProjectDto } from "./projects.validator";
 
 type IdParams = { id: string };
 type ProjectIdParams = { projectId: string };
 type MemberIdParams = { projectId: string; memberId: string };
 type InvitationIdParams = { invitationId: string };
+type ResourceIdParams = { projectId: string; resourceId: string };
 
 function userId(req: Request) {
   if (!req.user) throw new AppError("UNAUTHORIZED");
@@ -20,6 +23,10 @@ export class ProjectController {
 
   getById = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
     try { res.success(await projectService.getById(userId(req), req.params.id)); } catch (error) { next(error); }
+  };
+
+  summary = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
+    try { res.success(await projectService.getSummary(userId(req), req.params.id)); } catch (error) { next(error); }
   };
 
   create = async (req: Request<{}, {}, CreateProjectDto>, res: Response, next: NextFunction) => {
@@ -80,5 +87,21 @@ export class ProjectController {
 
   updateMemberRole = async (req: Request<MemberIdParams, {}, UpdateMemberRoleDto>, res: Response, next: NextFunction) => {
     try { res.success(await projectService.updateMemberRole(userId(req), req.params.projectId, req.params.memberId, req.body.role)); } catch (error) { next(error); }
+  };
+
+  listActivity = async (req: Request<ProjectIdParams>, res: Response, next: NextFunction) => {
+    try { res.success(await projectActivityService.list(userId(req), req.params.projectId, req.query as unknown as ProjectActivityQueryDto)); } catch (error) { next(error); }
+  };
+
+  listResources = async (req: Request<ProjectIdParams>, res: Response, next: NextFunction) => {
+    try { res.success(await projectResourceService.list(userId(req), req.params.projectId)); } catch (error) { next(error); }
+  };
+
+  createResource = async (req: Request<ProjectIdParams, {}, CreateResourceDto>, res: Response, next: NextFunction) => {
+    try { res.success(await projectResourceService.create(userId(req), req.params.projectId, req.body), 201); } catch (error) { next(error); }
+  };
+
+  deleteResource = async (req: Request<ResourceIdParams>, res: Response, next: NextFunction) => {
+    try { res.success(await projectResourceService.delete(userId(req), req.params.projectId, req.params.resourceId)); } catch (error) { next(error); }
   };
 }

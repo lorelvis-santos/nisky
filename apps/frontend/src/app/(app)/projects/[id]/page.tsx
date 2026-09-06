@@ -1,22 +1,10 @@
 "use client";
 
-import { ArrowUpRight, CalendarDays, FolderKanban, ListTodo, MessageSquare, Pencil, Plus, Star, Trash2, Users, X } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { Suspense, useDeferredValue, useState } from "react";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { useAuth } from "@/context/AuthProvider";
-import { CommentThread } from "@/features/comments/CommentThread";
-import { useProjectComments } from "@/features/comments/hooks/useComments";
-import { PriorityChip } from "@/features/tasks/components/PriorityChip";
-import { TaskPagination } from "@/features/tasks/components/TaskPagination";
-import { MembersPanel } from "@/features/projects/components/MembersPanel";
-import { useProjectMembers, useProjectMutations, useProjectQuery } from "@/features/projects/hooks/useProjects";
-import { usePaginatedTasksQuery } from "@/features/tasks/hooks/useTasks";
-import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
-import { formatRelativeDate, isTaskOverdue } from "@/lib/utils";
 import {
   Dialog,
   DialogClose,
@@ -25,91 +13,216 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAuth } from "@/context/AuthProvider";
+import { CommentThread } from "@/features/comments/CommentThread";
+import { MembersPanel } from "@/features/projects/components/MembersPanel";
+import { ProjectActivityTimeline } from "@/features/projects/components/ProjectActivityTimeline";
+import { ProjectContextPanel } from "@/features/projects/components/ProjectContextPanel";
+import { ProjectHeader } from "@/features/projects/components/ProjectHeader";
+import { ProjectNotes } from "@/features/projects/components/ProjectNotes";
+import { ProjectOverview } from "@/features/projects/components/ProjectOverview";
+import { ProjectResources } from "@/features/projects/components/ProjectResources";
+import { ProjectSectionNav, type ProjectVisibleTab } from "@/features/projects/components/ProjectSectionNav";
+import { ProjectTaskMode, ProjectTaskWorkspace } from "@/features/projects/components/ProjectTaskWorkspace";
+import { ProjectWorkspaceShell } from "@/features/projects/components/ProjectWorkspaceShell";
+import { useProjectActivity, useProjectSummary } from "@/features/projects/hooks/useProjectWorkspace";
+import { useProjectMembers, useProjectMutations, useProjectQuery } from "@/features/projects/hooks/useProjects";
+import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
+import { usePaginatedTasksQuery, useTaskMutations } from "@/features/tasks/hooks/useTasks";
+import { useTaskScheduleMutations } from "@/features/task-schedules/hooks/useTaskSchedules";
+import type { Task, TaskPriority } from "@/types/entities";
 
-type Tab = "general" | "members" | "comments";
+type ProjectTab = ProjectVisibleTab;
 
-function timeAgo(value: string | Date): string {
-  const date = value instanceof Date ? value : new Date(value);
-  const diffMs = Date.now() - date.getTime();
-  const sec = Math.floor(diffMs / 1000);
-  if (sec < 60) return "hace un momento";
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `hace ${min} min`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `hace ${hr} h`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `hace ${day} d`;
-  const wk = Math.floor(day / 7);
-  if (wk < 4) return `hace ${wk} sem`;
-  const month = Math.floor(day / 30);
-  if (month < 12) return `hace ${month} mes${month > 1 ? "es" : ""}`;
-  const yr = Math.floor(day / 365);
-  return `hace ${yr} año${yr > 1 ? "s" : ""}`;
+const validTabs = new Set<ProjectTab>(["overview", "tasks", "notes", "activity", "team", "chat", "resources"]);
+
+function parseTab(value: string | null): ProjectTab {
+  return value && validTabs.has(value as ProjectTab) ? (value as ProjectTab) : "overview";
 }
 
-function dateKey(value: Date) {
-  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
-}
-
-export default function ProjectDetailPage() {
+function ProjectDetailPageContent() {
   const params = useParams<{ id: string }>();
+  const pathname = usePathname();
   const router = useRouter();
-  const projectId = params.id;
+  const searchParams = useSearchParams();
   const { user } = useAuth();
+  const projectId = params.id;
   const projectQuery = useProjectQuery(projectId);
+  const summaryQuery = useProjectSummary(projectId);
   const membersQuery = useProjectMembers(projectId);
-  const commentsQuery = useProjectComments(projectId, { order: "desc", limit: 1 });
-  const [taskPage, setTaskPage] = useState(1);
-  const tasksQuery = usePaginatedTasksQuery({ projectId, page: taskPage });
-  const scheduleFrom = dateKey(new Date());
-  const scheduleToDate = new Date();
-  scheduleToDate.setDate(scheduleToDate.getDate() + 30);
-  const schedulesQuery = useTaskSchedulesQuery({ from: scheduleFrom, to: dateKey(scheduleToDate), projectId });
   const projectMutations = useProjectMutations();
-  const [tab, setTab] = useState<Tab>("general");
+  const taskMutations = useTaskMutations();
+  const scheduleMutations = useTaskScheduleMutations();
+
+  const [taskPage, setTaskPage] = useState(1);
+  const [taskMode, setTaskMode] = useState<ProjectTaskMode>("ACTIVE");
+  const [taskSearch, setTaskSearch] = useState("");
+  const [taskPriority, setTaskPriority] = useState<TaskPriority | "ALL">("ALL");
+  const [taskAssigneeId, setTaskAssigneeId] = useState("");
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
-  const [editColor, setEditColor] = useState("#303e51");
+  const [editDescription, setEditDescription] = useState("");
+  const [editTargetDate, setEditTargetDate] = useState("");
+  const [editColor, setEditColor] = useState("#1e3a5f");
   const [editTargetHours, setEditTargetHours] = useState("");
   const [editTargetMinutes, setEditTargetMinutes] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const project = projectQuery.data;
-  const projectTasks = useMemo(
-    () => tasksQuery.data?.data ?? [],
-    [tasksQuery.data],
+  const summary = summaryQuery.data;
+  const members = summary?.members ?? membersQuery.data ?? [];
+  const activeTab = parseTab(searchParams.get("tab"));
+  const deferredSearch = useDeferredValue(taskSearch);
+  const tasksQuery = usePaginatedTasksQuery(
+    {
+      projectId,
+      page: taskPage,
+      status: taskMode === "ALL" ? undefined : ["PENDING", "IN_PROGRESS"],
+      assigneeId: taskMode === "MINE" ? user?.id : taskAssigneeId || undefined,
+      priority: taskPriority === "ALL" ? undefined : taskPriority,
+      q: deferredSearch.trim() || undefined,
+       sort: "dueDate",
+       order: "asc",
+    },
+    { enabled: activeTab === "tasks", pageSize: 20 },
   );
+
   if (!project) {
-    return (
-      <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-on-surface-variant">
-        {projectQuery.isLoading ? "Cargando proyecto..." : "El proyecto no existe o no tienes acceso."}
-      </div>
-    );
+    return <div className="flex h-full items-center justify-center bg-[#f7f7f5] text-[13px] text-[#5f6872]">{projectQuery.isLoading ? "Cargando proyecto..." : "El proyecto no existe o no tienes acceso."}</div>;
   }
 
-  const isOwner = project.userId === user?.id;
-  const scheduleByTask = new Map((schedulesQuery.data ?? []).map((schedule) => [schedule.taskId, schedule]));
-  const activeTasks = projectTasks.filter((task) => task.status === "PENDING" || task.status === "IN_PROGRESS");
-  const members = membersQuery.data ?? [];
-  const commentsCount = commentsQuery.data?.meta.totalItems ?? 0;
-  const lastComment = commentsQuery.data?.data[0];
-  const activeTab = project.isDefault && tab === "members" ? "general" : tab;
+  const navigateToTab = (nextTab: ProjectTab) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (nextTab === "overview") nextParams.delete("tab");
+    else nextParams.set("tab", nextTab);
+    const query = nextParams.toString();
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
 
-  const saveEdit = async () => {
+  const resetTaskPage = () => setTaskPage(1);
+  const openTask = (task: Task) => { setEditingTask(task); setTaskModalOpen(true); };
+  const closeTaskModal = () => { setEditingTask(null); setTaskModalOpen(false); };
+
+  const saveTask = async (form: TaskForm) => {
+    const common = {
+      title: form.title,
+      status: form.status,
+      priority: form.priority,
+      pomodoroEstimate: form.pomodoroEstimate,
+      projectId: project.id,
+      assigneeId: form.assigneeId ?? null,
+      recurrence: form.recurrence,
+    };
     try {
-      const totalMinutes = (parseInt(editTargetHours) || 0) * 60 + (parseInt(editTargetMinutes) || 0);
+      if (editingTask) {
+        await taskMutations.update.mutateAsync({
+          id: editingTask.id,
+          payload: { ...common, description: form.description?.trim() || null, dueDate: form.dueDate || null },
+        });
+        if (form.scheduleChanged) {
+          if (form.plannedDate) {
+            await scheduleMutations.save.mutateAsync({
+              taskId: editingTask.id,
+              payload: { date: form.plannedDate, timeBlockId: null },
+            });
+          } else {
+            await scheduleMutations.remove.mutateAsync(editingTask.id);
+          }
+        }
+      } else {
+        const createdTask = await taskMutations.create.mutateAsync({
+          ...common,
+          description: form.description?.trim() || undefined,
+          dueDate: form.dueDate || undefined,
+        });
+        if (form.plannedDate) {
+          try {
+            await scheduleMutations.save.mutateAsync({
+              taskId: createdTask.id,
+              payload: { date: form.plannedDate, timeBlockId: null },
+            });
+          } catch {
+            toast.warning("La tarea se creó, pero no pudimos planificarla.");
+          }
+        }
+      }
+      closeTaskModal();
+      toast.success(editingTask ? "Tarea actualizada" : "Tarea creada en el proyecto");
+    } catch {
+      toast.error("No pudimos guardar la tarea. Inténtalo de nuevo.");
+    }
+  };
+
+  const quickAdd = async (title: string) => {
+    try {
+      await taskMutations.create.mutateAsync({ title, status: "PENDING", priority: "NORMAL", projectId: project.id, pomodoroEstimate: 0 });
+      toast.success("Tarea añadida");
+    } catch {
+      toast.error("No pudimos crear la tarea. Inténtalo de nuevo.");
+      throw new Error("quick-add-failed");
+    }
+  };
+
+  const toggleTask = async (task: Task) => {
+    const wasCompleted = task.status === "COMPLETED";
+    const previousStatus = task.status;
+    try {
+      await taskMutations.update.mutateAsync({ id: task.id, payload: { status: task.status === "COMPLETED" ? "PENDING" : "COMPLETED" } });
+      if (!wasCompleted) {
+        toast.success("Tarea completada", {
+          action: {
+            label: "Deshacer",
+            onClick: () => {
+              void taskMutations.update.mutateAsync({ id: task.id, payload: { status: previousStatus } }).catch(() => {
+                toast.error("No pudimos deshacer el cambio.");
+              });
+            },
+          },
+        });
+      } else {
+        toast.success("Tarea devuelta a activas");
+      }
+    } catch {
+      toast.error("No pudimos actualizar la tarea.");
+    }
+  };
+
+  const deleteTask = async () => {
+    if (!editingTask) return;
+    await taskMutations.remove.mutateAsync(editingTask.id);
+    closeTaskModal();
+    toast.success("Tarea eliminada");
+  };
+
+  const openEditProject = () => {
+    setEditName(project.name);
+    setEditDescription(project.description ?? "");
+    setEditTargetDate(project.targetDate?.slice(0, 10) ?? "");
+    setEditColor(project.color);
+    setEditTargetHours(project.weeklyTargetMinutes ? Math.floor(project.weeklyTargetMinutes / 60).toString() : "");
+    setEditTargetMinutes(project.weeklyTargetMinutes ? (project.weeklyTargetMinutes % 60).toString() : "");
+    setEditOpen(true);
+  };
+
+  const saveProject = async () => {
+    try {
+      const totalMinutes = (parseInt(editTargetHours, 10) || 0) * 60 + (parseInt(editTargetMinutes, 10) || 0);
       await projectMutations.update.mutateAsync({
         id: project.id,
-        payload: { 
-          name: editName.trim(), 
+        payload: {
+          name: editName.trim(),
+          description: editDescription.trim() || null,
+          targetDate: editTargetDate || null,
           color: editColor,
-          weeklyTargetMinutes: totalMinutes > 0 ? totalMinutes : null
+          weeklyTargetMinutes: totalMinutes > 0 ? totalMinutes : null,
         },
       });
-      toast.success("Proyecto actualizado");
       setEditOpen(false);
+      toast.success("Proyecto actualizado");
     } catch {
-      toast.error("Ups, no pudimos guardar los cambios.");
+      toast.error("No pudimos guardar los cambios.");
     }
   };
 
@@ -119,383 +232,80 @@ export default function ProjectDetailPage() {
       toast.success("Proyecto eliminado");
       router.replace("/projects");
     } catch {
-      toast.error("Ups, no pudimos eliminar el proyecto.");
+      toast.error("No pudimos eliminar el proyecto.");
       setConfirmDelete(false);
     }
   };
 
+  const permissions = summary?.permissions ?? {
+    role: project.userId === user?.id ? "OWNER" as const : "MEMBER" as const,
+    canEditProject: project.userId === user?.id,
+    canDeleteProject: project.userId === user?.id && !project.isDefault,
+    canManageMembers: project.userId === user?.id && !project.isDefault,
+    canCreateTasks: true,
+    canEditTasks: true,
+  };
+
   return (
-    <section className="flex h-full min-h-0 flex-col p-container-padding sm:p-section-gap">
-      <div className="flex min-h-0 flex-1 flex-col border border-outline-variant bg-surface-container-lowest">
-        {/* Header del proyecto */}
-        <div className="shrink-0 border-b border-outline-variant bg-surface-container-low px-4 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <span aria-hidden="true" className="h-9 w-9 shrink-0 rounded-full border border-black/10" style={{ backgroundColor: project.color }} />
-              <div className="min-w-0">
-                <h1 className="truncate font-headline-sm text-headline-sm">{project.name}</h1>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
-                  {project.isDefault ? (
-                    <>
-                      <Star size={11} className="text-primary" /> Proyecto personal
-                    </>
-                  ) : isOwner ? (
-                    "Eres el dueño"
-                  ) : (
-                    "Eres miembro"
-                  )}
-                  {!project.isDefault && members.length > 0 && (
-                    <>
-                      <span aria-hidden="true">·</span>
-                      <AvatarStack members={members} max={4} size="xs" />
-                      <span>{members.length} {members.length === 1 ? "miembro" : "miembros"}</span>
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {isOwner && (
-                <>
-                  <button
-                    className="flex shrink-0 items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
-                    onClick={() => {
-                      setEditName(project.name);
-                      setEditColor(project.color);
-                      setEditTargetHours(project.weeklyTargetMinutes ? Math.floor(project.weeklyTargetMinutes / 60).toString() : "");
-                      setEditTargetMinutes(project.weeklyTargetMinutes ? (project.weeklyTargetMinutes % 60).toString() : "");
-                      setEditOpen(true);
-                    }}
-                    type="button"
-                  >
-                    <Pencil size={15} /> Editar
-                  </button>
-                  <button
-                    className="flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-error hover:bg-error hover:text-error-foreground"
-                    onClick={() => setConfirmDelete(true)}
-                    type="button"
-                  >
-                    <Trash2 size={14} /> Eliminar
-                  </button>
-                </>
-              )}
-            </div>
+    <ProjectWorkspaceShell>
+       <ProjectHeader canDelete={permissions.canDeleteProject} canEdit={permissions.canEditProject} members={members} onBack={() => router.push("/projects")} onDelete={() => setConfirmDelete(true)} onEdit={openEditProject} project={project} />
+       <ProjectSectionNav activeTab={activeTab} onNavigate={(tab) => navigateToTab(tab)} />
+
+      <main className="min-h-0 flex-1 pb-8 pt-7">
+        {activeTab === "overview" && <ProjectOverview isError={summaryQuery.isError} onOpenTask={openTask} onOpenTasks={() => navigateToTab("tasks")} onRetry={() => void summaryQuery.refetch()} summary={summary ?? null} />}
+        {activeTab === "tasks" && (
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]">
+            <ProjectTaskWorkspace
+              assigneeId={taskAssigneeId}
+              isError={tasksQuery.isError}
+              isFetching={tasksQuery.isFetching}
+              isLoading={tasksQuery.isLoading}
+              members={members}
+              meta={tasksQuery.data?.meta}
+              mode={taskMode}
+              onAssigneeChange={(value) => { setTaskPage(1); setTaskAssigneeId(value); }}
+              onModeChange={(value) => { resetTaskPage(); setTaskMode(value); }}
+              onOpen={openTask}
+              onPageChange={setTaskPage}
+              onPriorityChange={(value) => { resetTaskPage(); setTaskPriority(value); }}
+              onQuickAdd={quickAdd}
+              onResetFilters={() => { resetTaskPage(); setTaskMode("ACTIVE"); setTaskSearch(""); setTaskPriority("ALL"); setTaskAssigneeId(""); }}
+              onRetry={() => void tasksQuery.refetch()}
+              onSearchChange={(value) => { resetTaskPage(); setTaskSearch(value); }}
+              onStartPomodoro={(task) => router.push(`/focus?taskId=${encodeURIComponent(task.id)}&projectId=${encodeURIComponent(project.id)}`)}
+              onToggle={(task) => void toggleTask(task)}
+              priority={taskPriority}
+              search={taskSearch}
+              tasks={tasksQuery.data?.data ?? []}
+            />
+            <ProjectContextPanel isError={summaryQuery.isError} onOpenTask={openTask} onRetry={() => void summaryQuery.refetch()} summary={summary ?? null} />
           </div>
-        </div>
+        )}
+        {activeTab === "notes" && <ProjectNotes project={project} />}
+        {activeTab === "activity" && <ProjectActivityContent projectId={project.id} />}
+        {activeTab === "team" && <section className="max-w-3xl"><div className="mb-5"><p className="project-eyebrow">COLABORACIÓN</p><h2 className="mt-1 text-[19px] font-semibold text-[#131b2e]">Equipo del proyecto</h2><p className="mt-1 text-[13px] text-[#69758a]">Gestiona las personas que pueden trabajar con este proyecto.</p></div><div className="project-panel p-5 sm:p-6"><MembersPanel project={project} /></div></section>}
+         {activeTab === "chat" && <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]"><div className="project-panel flex min-h-[34rem] min-w-0 flex-col p-5 sm:p-6"><div className="mb-5"><p className="project-eyebrow">COLABORACIÓN</p><h2 className="mt-1 text-[19px] font-semibold text-[#131b2e]">Conversación del proyecto</h2><p className="mt-1 text-[13px] text-[#69758a]">Comparte avances sin sacar la conversación del contexto.</p></div><CommentThread kind="project" id={project.id} /></div><ProjectContextPanel isError={summaryQuery.isError} onOpenTask={openTask} onRetry={() => void summaryQuery.refetch()} summary={summary ?? null} /></section>}
+        {activeTab === "resources" && <ProjectResources project={project} />}
+      </main>
 
-        {/* Tabs */}
-        <div className="shrink-0 border-b border-outline-variant bg-surface-container-low px-2 pt-2">
-          <div className="no-scrollbar flex gap-1 overflow-x-auto">
-            {(
-              [
-                { id: "general", label: "Vista general", Icon: FolderKanban },
-                ...(project.isDefault ? [] : [{ id: "members" as const, label: "Miembros", Icon: Users }]),
-                { id: "comments", label: "Conversación", Icon: MessageSquare },
-              ] as const
-            ).map(({ id, label, Icon }) => (
-              <button
-                className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 font-label-caps text-label-caps uppercase ${tab === id ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"}`}
-                key={id}
-                onClick={() => setTab(id)}
-                type="button"
-              >
-                <Icon size={14} />
-                {label}
-                {id === "members" && members.length > 0 && (
-                  <span className="font-data-mono text-data-mono text-xs">{members.length}</span>
-                )}
-                {id === "comments" && commentsCount > 0 && (
-                  <span className="font-data-mono text-data-mono text-xs">{commentsCount}</span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Contenido */}
-        <div className="min-h-0 flex-1 overflow-y-auto p-container-padding">
-          {activeTab === "general" && (
-            <div className="mx-auto max-w-3xl space-y-section-gap">
-              <div className={`grid grid-cols-1 gap-section-gap ${project.isDefault ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
-                <button
-                    className="group flex cursor-pointer flex-col gap-2 border border-outline-variant bg-surface-container-low p-4 text-left transition-colors hover:border-primary/60 hover:bg-surface-container-high"
-                    onClick={() => router.push(`/tasks?projectId=${encodeURIComponent(project.id)}`)}
-                    title="Ver planificación y tareas de este proyecto"
-                    type="button"
-                  >
-                    <span className="flex items-center justify-between gap-2">
-                      <p className="font-label-caps text-label-caps text-on-surface-variant">TAREAS ACTIVAS</p>
-                      <span className="flex shrink-0 items-center gap-1">
-                        <ListTodo size={14} className="text-primary" />
-                        <ArrowUpRight size={14} className="text-primary opacity-0 transition-opacity group-hover:opacity-100" />
-                      </span>
-                    </span>
-                    <p className="font-headline-md text-headline-md font-bold text-primary">{activeTasks.length}</p>
-                    <span className="font-label-caps text-[11px] uppercase tracking-wide text-on-surface-variant opacity-0 transition-opacity group-hover:opacity-100">
-                      Ver planificación →
-                    </span>
-                    {projectTasks.length > 0 && (
-                      <div className="mt-auto flex flex-col gap-1">
-                        <div className="h-1.5 w-full overflow-hidden rounded-[2px] border border-outline-variant bg-surface-container-high">
-                          <div className="h-full bg-primary" style={{ width: `${Math.round((projectTasks.filter((task) => task.status === "COMPLETED").length / projectTasks.length) * 100)}%` }} />
-                        </div>
-                        <span className="font-data-mono text-data-mono text-[11px] text-on-surface-variant">
-                          {projectTasks.filter((task) => task.status === "COMPLETED").length}/{projectTasks.length} completadas
-                        </span>
-                      </div>
-                    )}
-                  </button>
-                {!project.isDefault && (
-                  <button className="flex cursor-pointer flex-col gap-2 border border-outline-variant bg-surface-container-low p-4 text-left transition-colors hover:border-primary/60 hover:bg-surface-container-high" onClick={() => setTab("members")} type="button">
-                    <span className="flex items-center justify-between gap-2">
-                      <p className="font-label-caps text-label-caps text-on-surface-variant">MIEMBROS</p>
-                      <Users size={14} className="text-primary" />
-                    </span>
-                    <p className="font-headline-md text-headline-md font-bold text-primary">{members.length}</p>
-                    {members.length > 0 && <AvatarStack members={members} max={5} size="sm" />}
-                  </button>
-                )}
-                <button className="flex cursor-pointer flex-col gap-2 border border-outline-variant bg-surface-container-low p-4 text-left transition-colors hover:border-primary/60 hover:bg-surface-container-high" onClick={() => setTab("comments")} type="button">
-                  <span className="flex items-center justify-between gap-2">
-                    <p className="font-label-caps text-label-caps text-on-surface-variant">CONVERSACIÓN</p>
-                    <MessageSquare size={14} className="text-primary" />
-                  </span>
-                  {lastComment ? (
-                    <div className="flex flex-col gap-0.5">
-                      <p className="font-headline-sm text-headline-sm font-bold text-primary truncate">
-                        {lastComment.author.name ?? lastComment.author.email}
-                      </p>
-                      <p className="font-body-sm text-body-sm text-on-surface-variant">{timeAgo(lastComment.createdAt)}</p>
-                    </div>
-                  ) : (
-                    <p className="font-headline-md text-headline-md font-bold text-primary">—</p>
-                  )}
-                  {commentsCount > 0 && (
-                    <span className="mt-auto font-body-sm text-body-sm text-on-surface-variant">
-                      {commentsCount} mensaje{commentsCount > 1 ? "s" : ""}
-                    </span>
-                  )}
-                </button>
-              </div>
-
-              <div className="border border-outline-variant bg-surface p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-label-caps text-label-caps text-on-surface-variant">PRÓXIMAS TAREAS</p>
-                  {projectTasks.length > 0 && (
-                    <button className="font-label-caps text-[11px] uppercase tracking-wide text-primary hover:underline" onClick={() => router.push(`/tasks?projectId=${encodeURIComponent(project.id)}`)} type="button">
-                      Ver todas
-                    </button>
-                  )}
-                </div>
-                {projectTasks.length === 0 ? (
-                  <div className="mt-4 flex flex-col items-center gap-3 text-center">
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">
-                      No hay tareas en este proyecto todavía.
-                    </p>
-                    <button
-                      className="inline-flex items-center gap-2 border border-primary bg-transparent px-4 py-2 font-body-sm text-body-sm text-primary hover:bg-primary-fixed/50 hover:border-primary/60"
-                      onClick={() => router.push(`/tasks?modal=create&projectId=${encodeURIComponent(project.id)}`)}
-                      type="button"
-                    >
-                      <Plus size={15} /> Crear primera tarea
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <ul className="mt-2 divide-y divide-outline-variant">
-                    {projectTasks.slice(0, 6).map((task) => {
-                      const overdue = isTaskOverdue(task);
-                      return (
-                        <li key={task.id}>
-                          <button
-                            className="flex w-full flex-col gap-1 py-2.5 text-left font-body-sm text-body-sm hover:bg-surface-container-low"
-                            onClick={() => router.push(`/tasks?taskId=${encodeURIComponent(task.id)}`)}
-                            type="button"
-                          >
-                            <span className="flex min-w-0 items-center gap-2.5">
-                              <span
-                                aria-hidden="true"
-                                className={`h-2 w-2 shrink-0 rounded-full ${task.status === "COMPLETED" ? "bg-primary" : task.status === "IN_PROGRESS" ? "bg-tertiary" : task.status === "CANCELLED" ? "bg-outline" : "bg-on-surface-variant"}`}
-                              />
-                              <span className={`min-w-0 flex-1 truncate ${task.status === "COMPLETED" ? "text-on-surface-variant line-through" : "text-on-surface"}`}>
-                                {task.title}
-                              </span>
-                              {task.assignee && (
-                                <Avatar
-                                  avatarUrl={task.assignee.avatarUrl}
-                                  className="shrink-0 ring-2 ring-surface"
-                                  email={task.assignee.email}
-                                  name={task.assignee.name}
-                                  size="xs"
-                                />
-                              )}
-                            </span>
-                            <span className="flex flex-wrap items-center gap-2 pl-[17px]">
-                              <PriorityChip priority={task.priority} />
-                              {(task.commentCount ?? 0) > 0 && (
-                                <span className="flex shrink-0 items-center gap-1 font-data-mono text-data-mono text-[11px] text-on-surface-variant" title="Comentarios">
-                                  <MessageSquare size={11} /> {task.commentCount}
-                                </span>
-                              )}
-                              {task.dueDate && (
-                                <span className={`flex shrink-0 items-center gap-1 font-data-mono text-data-mono text-[11px] ${overdue ? "text-error" : "text-on-surface-variant"}`}>
-                                  <CalendarDays size={11} />
-                                  {formatRelativeDate(task.dueDate, true)}
-                                </span>
-                              )}
-                              {scheduleByTask.has(task.id) && (
-                                <span className="font-label-caps text-[10px] uppercase text-primary">
-                                  Planificada {scheduleByTask.get(task.id)?.date}
-                                </span>
-                              )}
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                    </ul>
-                    {tasksQuery.data && (
-                      <TaskPagination isFetching={tasksQuery.isFetching} meta={tasksQuery.data.meta} onPageChange={setTaskPage} />
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === "members" && (
-            <div className="mx-auto max-w-2xl">
-              <MembersPanel project={project} />
-            </div>
-          )}
-
-          {activeTab === "comments" && (
-            <div className="mx-auto flex h-full max-w-2xl flex-col">
-              <CommentThread kind="project" id={project.id} />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {editOpen && (
-        <EditProjectModal
-          color={editColor}
-          name={editName}
-          targetHours={editTargetHours}
-          targetMinutes={editTargetMinutes}
-          onClose={() => setEditOpen(false)}
-          onColorChange={setEditColor}
-          onNameChange={setEditName}
-          onTargetHoursChange={setEditTargetHours}
-          onTargetMinutesChange={setEditTargetMinutes}
-          onSave={() => void saveEdit()}
-        />
-      )}
-
-      {confirmDelete && (
-        <ConfirmModal
-          cancelLabel="Cancelar"
-          confirmLabel="Eliminar"
-          danger
-          loading={projectMutations.remove.isPending}
-          message={
-            <>
-              ¿Seguro que quieres eliminar <strong>{project.name}</strong>? Esta acción no se puede deshacer: se eliminarán el proyecto, sus tareas y comentarios, y los miembros perderán el acceso.
-            </>
-          }
-          onClose={() => setConfirmDelete(false)}
-          onConfirm={() => void removeProject()}
-          title="¿Eliminar proyecto?"
-        />
-      )}
-    </section>
+      {taskModalOpen && <TaskModal defaultProjectId={project.id} key={editingTask?.id ?? "new-project-task"} onAddSubtask={async (taskId, title) => { await taskMutations.addSubtask.mutateAsync({ taskId, title }); }} onClose={closeTaskModal} onDelete={editingTask ? deleteTask : undefined} onDeleteSubtask={async (taskId, subtaskId) => { await taskMutations.removeSubtask.mutateAsync({ taskId, subtaskId }); }} onSave={saveTask} onStartPomodoro={editingTask ? () => router.push(`/focus?taskId=${encodeURIComponent(editingTask.id)}&projectId=${encodeURIComponent(project.id)}`) : undefined} onToggleSubtask={async (taskId, subtaskId, completed) => { await taskMutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed }); }} projects={[project]} task={editingTask} />}
+      {editOpen && <EditProjectModal canRename={!project.isDefault} color={editColor} description={editDescription} name={editName} onClose={() => setEditOpen(false)} onColorChange={setEditColor} onDescriptionChange={setEditDescription} onNameChange={setEditName} onSave={() => void saveProject()} onTargetDateChange={setEditTargetDate} onTargetHoursChange={setEditTargetHours} onTargetMinutesChange={setEditTargetMinutes} targetDate={editTargetDate} targetHours={editTargetHours} targetMinutes={editTargetMinutes} />}
+      {confirmDelete && <ConfirmModal cancelLabel="Cancelar" confirmLabel="Eliminar" danger loading={projectMutations.remove.isPending} message={<>¿Eliminar <strong>{project.name}</strong>? Sus tareas se moverán al proyecto personal y esta acción no se puede deshacer.</>} onClose={() => setConfirmDelete(false)} onConfirm={() => void removeProject()} title="¿Eliminar proyecto?" />}
+    </ProjectWorkspaceShell>
   );
 }
 
-function EditProjectModal({
-  name,
-  color,
-  targetHours,
-  targetMinutes,
-  onNameChange,
-  onColorChange,
-  onTargetHoursChange,
-  onTargetMinutesChange,
-  onSave,
-  onClose,
-}: {
-  name: string;
-  color: string;
-  targetHours: string;
-  targetMinutes: string;
-  onNameChange: (value: string) => void;
-  onColorChange: (value: string) => void;
-  onTargetHoursChange: (value: string) => void;
-  onTargetMinutesChange: (value: string) => void;
-  onSave: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="max-w-md rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
-        <DialogHeader className="flex flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
-          <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Editar proyecto</DialogTitle>
-          <DialogDescription className="sr-only">Edita el nombre, color y meta semanal del proyecto.</DialogDescription>
-          <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
-              <X size={19} />
-            </button>
-          </DialogClose>
-        </DialogHeader>
-        <div className="space-y-4 p-5">
-          <label className="block">
-            <span className="font-label-caps text-label-caps text-on-surface-variant">NOMBRE</span>
-            <input autoFocus className="field mt-1" maxLength={100} onChange={(event) => onNameChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSave(); }} value={name} />
-          </label>
-          <div>
-            <span className="font-label-caps text-label-caps text-on-surface-variant">COLOR</span>
-            <div className="mt-1">
-              <ColorPicker onChange={onColorChange} value={color} />
-            </div>
-          </div>
-          <div>
-            <span className="font-label-caps text-label-caps text-on-surface-variant">META SEMANAL (OPCIONAL)</span>
-            <div className="mt-1 flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <input
-                  className="field w-16 text-center"
-                  maxLength={3}
-                  onChange={(event) => onTargetHoursChange(event.target.value.replace(/\D/g, ""))}
-                  placeholder="0"
-                  value={targetHours}
-                />
-                <span className="font-data-mono text-data-mono text-on-surface-variant">h</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <input
-                  className="field w-16 text-center"
-                  maxLength={2}
-                  onChange={(event) => onTargetMinutesChange(event.target.value.replace(/\D/g, ""))}
-                  placeholder="0"
-                  value={targetMinutes}
-                />
-                <span className="font-data-mono text-data-mono text-on-surface-variant">min</span>
-              </div>
-            </div>
-            <p className="mt-1 text-xs text-on-surface-variant">
-              Si se establece, se mostrará el progreso en Inicio en base a las sesiones completadas.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button className="flex-1 bg-primary px-3 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50" disabled={!name.trim()} onClick={onSave} type="button">
-              Guardar
-            </button>
-            <DialogClose asChild>
-              <button className="flex-1 border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high" type="button">Cancelar</button>
-            </DialogClose>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+function ProjectActivityContent({ projectId }: { projectId: string }) {
+  const query = useProjectActivity(projectId);
+  if (query.isLoading) return <div className="project-panel h-72 animate-pulse" />;
+  if (query.isError) return <div className="project-panel flex min-h-56 items-center justify-center text-[13px] text-[#c73b52]">No pudimos cargar la actividad del proyecto.</div>;
+  return <section className="max-w-3xl"><div className="mb-5"><p className="project-eyebrow">HISTORIAL</p><h2 className="mt-1 text-[19px] font-semibold text-[#131b2e]">Actividad reciente</h2><p className="mt-1 text-[13px] text-[#69758a]">Cambios y conversaciones registrados en el proyecto.</p></div><ProjectActivityTimeline activities={query.data?.data ?? []} /></section>;
+}
+
+function EditProjectModal({ canRename, name, description, targetDate, color, targetHours, targetMinutes, onNameChange, onDescriptionChange, onTargetDateChange, onColorChange, onTargetHoursChange, onTargetMinutesChange, onSave, onClose }: { canRename: boolean; name: string; description: string; targetDate: string; color: string; targetHours: string; targetMinutes: string; onNameChange: (value: string) => void; onDescriptionChange: (value: string) => void; onTargetDateChange: (value: string) => void; onColorChange: (value: string) => void; onTargetHoursChange: (value: string) => void; onTargetMinutesChange: (value: string) => void; onSave: () => void; onClose: () => void }) {
+  return <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}><DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl border-[#dde1e2] bg-white p-0" showCloseButton={false}><DialogHeader className="flex flex-row items-center justify-between border-b border-[#e7e9e8] px-5 py-4 text-left"><div><DialogTitle className="text-[17px] font-semibold text-[#1f2933]">Editar proyecto</DialogTitle><DialogDescription className="sr-only">Edita la información visible del proyecto.</DialogDescription></div><DialogClose asChild><button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-lg text-[#5f6872] hover:bg-[#eff1f0]" type="button">×</button></DialogClose></DialogHeader><div className="space-y-4 p-5"><label className="block"><span className="project-eyebrow">NOMBRE</span><input autoFocus className="project-input mt-1 disabled:cursor-not-allowed disabled:bg-[#eff1f0]" disabled={!canRename} maxLength={100} onChange={(event) => onNameChange(event.target.value)} value={name} />{!canRename && <span className="mt-1 block text-[11px] text-[#858d91]">El proyecto personal no se puede renombrar.</span>}</label><label className="block"><span className="project-eyebrow">DESCRIPCIÓN</span><textarea className="project-input mt-1 min-h-24 resize-y py-2" maxLength={2000} onChange={(event) => onDescriptionChange(event.target.value)} placeholder="Qué contexto debe conocer el equipo..." value={description} /></label><div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="project-eyebrow">FECHA OBJETIVO</span><input className="project-input mt-1" onChange={(event) => onTargetDateChange(event.target.value)} type="date" value={targetDate} /></label><div><span className="project-eyebrow">COLOR</span><div className="mt-1"><ColorPicker onChange={onColorChange} value={color} /></div></div></div><div><span className="project-eyebrow">META SEMANAL (OPCIONAL)</span><div className="mt-1 flex items-center gap-2"><input aria-label="Horas de meta semanal" className="project-input w-20 text-center" maxLength={3} onChange={(event) => onTargetHoursChange(event.target.value.replace(/\D/g, ""))} placeholder="0" value={targetHours} /><span className="text-[13px] text-[#5f6872]">h</span><input aria-label="Minutos de meta semanal" className="project-input w-20 text-center" maxLength={2} onChange={(event) => onTargetMinutesChange(event.target.value.replace(/\D/g, ""))} placeholder="0" value={targetMinutes} /><span className="text-[13px] text-[#5f6872]">min</span></div></div><div className="flex justify-end gap-2 border-t border-[#e7e9e8] pt-4"><DialogClose asChild><button className="min-h-10 rounded-lg border border-[#dde1e2] px-3 text-[13px] font-semibold text-[#5f6872]" type="button">Cancelar</button></DialogClose><button className="min-h-10 rounded-lg bg-[#1e3a5f] px-4 text-[13px] font-semibold text-white hover:bg-[#152c48]" disabled={!name.trim()} onClick={onSave} type="button">Guardar cambios</button></div></div></DialogContent></Dialog>;
+}
+
+export default function ProjectDetailPage() {
+  return <Suspense fallback={<div className="flex h-full items-center justify-center bg-[#f7f7f5] text-[13px] text-[#5f6872]">Cargando proyecto...</div>}><ProjectDetailPageContent /></Suspense>;
 }

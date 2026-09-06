@@ -46,7 +46,7 @@ export function WeeklyGrid({
   }, []);
 
   return (
-    <div ref={scrollRef} className="h-[520px] min-h-[520px] min-w-0 flex-none overflow-auto bg-surface-container-low p-3 lg:h-auto lg:min-h-0 lg:flex-1">
+     <div ref={scrollRef} className="h-[520px] min-h-[520px] min-w-0 flex-none overflow-auto rounded-lg bg-surface-container-low p-3 lg:h-auto lg:min-h-0 lg:flex-1">
       <div className="grid min-w-[1798px] grid-cols-[repeat(7,minmax(250px,1fr))] gap-2">
         <div className="contents">
           {days.map((day, index) => {
@@ -66,7 +66,7 @@ export function WeeklyGrid({
               >
                 <div
                   className={cn(
-                    "border-b py-2 text-center font-data-mono text-data-mono text-xs",
+                     "rounded-t-lg border-b py-2 text-center font-data-mono text-data-mono text-xs",
                     isToday ? "border-t-2 border-primary bg-secondary-container/40 text-primary" : "border-outline-variant text-on-surface-variant",
                   )}
                 >
@@ -74,7 +74,7 @@ export function WeeklyGrid({
                 </div>
                 <DroppableColumn
                   className={cn(
-                    "flex flex-1 flex-col gap-3 border border-outline-variant bg-surface-container-lowest p-3",
+                     "flex flex-1 flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-3",
                     isEmpty && isHighlight && "border-2 border-dashed border-primary bg-primary-container/10",
                   )}
                   highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"

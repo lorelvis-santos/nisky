@@ -23,7 +23,7 @@ export function OverduePanel({
   const orderedIds = tasks.map((task) => taskDragId(task.id));
   return (
     <DroppableColumn
-      className="flex h-[520px] min-h-[520px] w-80 shrink-0 flex-none flex-col bg-surface-bright lg:h-auto lg:min-h-0 lg:flex-none"
+       className="flex h-[520px] min-h-[520px] w-80 shrink-0 flex-none flex-col overflow-hidden rounded-lg bg-surface-bright lg:h-auto lg:min-h-0 lg:flex-none"
       highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
       id={OVERDUE_CONTAINER}
     >

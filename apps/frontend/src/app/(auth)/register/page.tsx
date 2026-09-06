@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { Button } from "@/components/ui/button";
 import { useRegister } from "@/features/auth/hooks/useRegister";
 import { usePublicConfigQuery } from "@/features/auth/hooks/useAuthConfig";
 import { registerSchema, type RegisterFormData } from "@/features/auth/schemas/auth.schema";
@@ -17,9 +19,74 @@ export default function RegisterPage() {
   const config = usePublicConfigQuery();
   const { mutate, isPending, error } = useRegister((result) => { setAuth(result); toast.success("¡Tu cuenta está lista! Empecemos."); router.replace("/"); });
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) });
-  if (config.isLoading) return <section className="w-full max-w-md border border-outline-variant bg-surface-container-lowest p-6 py-10 text-center font-body-sm text-body-sm text-on-surface-variant">Cargando...</section>;
-  if (config.data?.publicSignup === false) return <section className="border border-outline-variant bg-surface-container-lowest p-6"><h1 className="font-headline-sm text-headline-sm">Por ahora no aceptamos cuentas nuevas</h1><Link className="mt-4 inline-block text-sm text-primary underline" href="/login">Volver a iniciar sesión</Link></section>;
-  return <section className="w-full max-w-md border border-outline-variant bg-surface-container-lowest p-6"><div className="mb-6 border-b border-outline-variant pb-4"><p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Nisky / Nueva cuenta</p><h1 className="mt-1 font-headline-sm text-headline-sm">Crear cuenta</h1></div><form className="space-y-4" onSubmit={handleSubmit((values) => mutate(values))}><Field label="Nombre" error={errors.name?.message}><input autoComplete="name" className="field" type="text" {...register("name")} /></Field><Field label="Correo" error={errors.email?.message}><input autoComplete="email" className="field" type="email" {...register("email")} /></Field><Field label="Contraseña" error={errors.password?.message}><PasswordInput autoComplete="new-password" {...register("password")} /></Field><Field label="Confirmar contraseña" error={errors.confirmPassword?.message}><PasswordInput autoComplete="new-password" {...register("confirmPassword")} /></Field><button className="h-10 w-full border border-primary bg-primary-container px-4 font-headline-xs text-headline-xs text-primary-foreground hover:bg-primary disabled:opacity-50" disabled={isPending} type="submit">{isPending ? "Creando..." : "Crear cuenta"}</button>{error && <p className="border border-error bg-error-container p-2 text-sm text-on-error-container">{error.message}</p>}</form><p className="mt-6 text-center text-sm text-on-surface-variant">¿Ya tienes cuenta? <Link className="text-primary underline" href="/login">Iniciar sesión</Link></p></section>;
+  return (
+    <section className="w-full">
+      <div className="mb-8 flex items-center gap-3 lg:hidden">
+        <span className="flex size-10 items-center justify-center rounded-md bg-primary font-headline-md text-headline-md font-bold text-on-primary">N</span>
+        <span className="font-headline-lg text-headline-lg font-bold tracking-tight text-primary">Nisky</span>
+      </div>
+
+      <div className="rounded-lg border border-outline-variant bg-surface p-6 shadow-cadence-2 sm:p-8">
+        {config.isLoading ? (
+          <p className="py-8 text-center font-body-sm text-body-sm text-on-surface-variant">Cargando...</p>
+        ) : config.data?.publicSignup === false ? (
+          <>
+            <p className="font-label-caps text-label-caps text-secondary">NISKY / REGISTRO</p>
+            <h1 className="mt-2 font-headline-lg text-headline-lg text-on-surface">Cuentas nuevas pausadas</h1>
+            <p className="mt-2 font-body-md text-body-md text-on-surface-variant">Por ahora no aceptamos cuentas nuevas.</p>
+            <Link className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-md border border-outline-variant px-4 font-body-md text-body-md font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" href="/login">
+              Volver a iniciar sesión
+            </Link>
+          </>
+        ) : (
+          <>
+            <div className="mb-8">
+              <p className="font-label-caps text-label-caps text-secondary">NISKY / NUEVA CUENTA</p>
+              <h1 className="mt-2 font-headline-lg text-headline-lg text-on-surface">Crea tu espacio</h1>
+              <p className="mt-2 font-body-md text-body-md text-on-surface-variant">Empieza con una vista más clara de tu día.</p>
+            </div>
+
+            <form className="space-y-5" onSubmit={handleSubmit((values) => mutate(values))}>
+              <Field label="Nombre" error={errors.name?.message}>
+                <input autoComplete="name" className="field" type="text" {...register("name")} />
+              </Field>
+              <Field label="Correo electrónico" error={errors.email?.message}>
+                <input autoComplete="email" className="field" type="email" {...register("email")} />
+              </Field>
+              <Field label="Contraseña" error={errors.password?.message}>
+                <PasswordInput autoComplete="new-password" {...register("password")} />
+              </Field>
+              <Field label="Confirmar contraseña" error={errors.confirmPassword?.message}>
+                <PasswordInput autoComplete="new-password" {...register("confirmPassword")} />
+              </Field>
+               <Button className="w-full font-body-md text-body-md !text-white" disabled={isPending} type="submit">
+                {isPending ? "Creando..." : "Crear cuenta"}
+                {!isPending && <ArrowRight aria-hidden="true" size={16} />}
+              </Button>
+              {error && <p className="rounded-md border border-error/30 bg-error-container px-3 py-2.5 font-body-sm text-body-sm text-on-error-container" role="alert">{error.message}</p>}
+            </form>
+
+            <div className="mt-7 border-t border-outline-variant pt-5">
+              <p className="font-body-sm text-body-sm text-on-surface-variant">
+                ¿Ya tienes cuenta?{" "}
+                <Link className="font-medium text-secondary underline underline-offset-4 hover:text-primary" href="/login">Iniciar sesión</Link>
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+
+      <p className="mt-5 text-center font-label-md text-label-md text-on-surface-variant">Un lugar tranquilo para organizar lo importante.</p>
+    </section>
+  );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) { return <label className="block"><span className="mb-1 block font-label-caps text-label-caps uppercase text-on-surface-variant">{label}</span>{children}{error && <span className="mt-1 block text-xs text-error">{error}</span>}</label>; }
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block font-label-md text-label-md font-medium text-on-surface">{label}</span>
+      {children}
+      {error && <span className="mt-1.5 block font-body-sm text-body-sm text-error">{error}</span>}
+    </label>
+  );
+}

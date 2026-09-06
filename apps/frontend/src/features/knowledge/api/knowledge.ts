@@ -9,6 +9,7 @@ export interface NoteQueryParams {
   tag?: string;
   pinned?: boolean;
   q?: string;
+  projectId?: string;
 }
 
 export interface NotePayload {
@@ -17,7 +18,7 @@ export interface NotePayload {
   category?: string;
   tags?: string[];
   pinned?: boolean;
-  projectId?: string;
+  projectId?: string | null;
 }
 
 export interface NoteDraftPayload {
@@ -34,8 +35,8 @@ export async function fetchNotes(params: NoteQueryParams) {
   return data.data as Paginated<Note>;
 }
 
-export async function fetchKnowledgeFacets() {
-  const { data } = await api.get<ApiResponse<KnowledgeFacets>>("/knowledge/facets");
+export async function fetchKnowledgeFacets(projectId?: string | null) {
+  const { data } = await api.get<ApiResponse<KnowledgeFacets>>("/knowledge/facets", { params: projectId ? { projectId } : undefined });
   return data.data as KnowledgeFacets;
 }
 

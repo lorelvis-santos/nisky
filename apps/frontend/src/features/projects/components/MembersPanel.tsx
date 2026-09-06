@@ -40,6 +40,7 @@ export function MembersPanel({ project }: { project: Project }) {
   const [confirmCancelInvitationId, setConfirmCancelInvitationId] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const isOwner = user?.id === project.userId;
+  const canManageMembers = isOwner && !project.isDefault;
   const members = membersQuery.data ?? [];
   const pendingInvitations = invitationsQuery.data ?? [];
   const transferTarget = members.find((member) => member.id === confirmTransferId) ?? null;
@@ -132,7 +133,7 @@ export function MembersPanel({ project }: { project: Project }) {
 
                 <span
                   className={cn(
-                    "inline-flex shrink-0 items-center rounded-[2px] border px-1.5 py-0.5 font-label-caps text-[11px] uppercase tracking-wide",
+                     "inline-flex shrink-0 items-center rounded-full border px-1.5 py-0.5 font-label-caps text-[11px] uppercase tracking-wide",
                     member.role === "OWNER"
                       ? "border-primary/25 bg-primary-fixed/50 text-primary"
                       : "border-outline-variant bg-surface-container-high text-on-surface-variant",
@@ -143,10 +144,10 @@ export function MembersPanel({ project }: { project: Project }) {
 
                 {canManage && (
                   <span className="flex shrink-0 items-center gap-1.5">
-                    {member.role === "MEMBER" && (
+                    {canManageMembers && member.role === "MEMBER" && (
                       <button
                         aria-label={`Hacer dueño a ${member.user.name ?? member.user.email}`}
-                        className="flex h-9 items-center gap-1.5 border border-outline-variant px-2.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+                         className="flex h-9 items-center gap-1.5 rounded-md border border-outline-variant px-2.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
                         onClick={() => setConfirmTransferId(member.id)}
                         title="Transferir propiedad"
                         type="button"
@@ -155,16 +156,16 @@ export function MembersPanel({ project }: { project: Project }) {
                         <span className="hidden sm:inline">Transferir</span>
                       </button>
                     )}
-                    <button
+                    {canManageMembers && <button
                       aria-label={`Eliminar a ${member.user.name ?? member.user.email}`}
-                      className="flex h-9 items-center gap-1.5 border border-outline-variant px-2.5 font-body-sm text-body-sm text-on-surface-variant hover:border-error/50 hover:bg-surface-container-high hover:text-error"
+                       className="flex h-9 items-center gap-1.5 rounded-md border border-outline-variant px-2.5 font-body-sm text-body-sm text-on-surface-variant hover:border-error/50 hover:bg-surface-container-high hover:text-error"
                       onClick={() => setConfirmRemoveId(member.id)}
                       title="Eliminar miembro"
                       type="button"
                     >
                       <UserMinus size={15} />
                       <span className="hidden sm:inline">Eliminar</span>
-                    </button>
+                    </button>}
                   </span>
                 )}
               </div>
@@ -173,7 +174,7 @@ export function MembersPanel({ project }: { project: Project }) {
         </div>
       )}
 
-      {isOwner && pendingInvitations.length > 0 && (
+      {canManageMembers && pendingInvitations.length > 0 && (
         <div className="pt-1">
           <p className="flex items-center gap-1.5 py-1 font-label-caps text-label-caps text-on-surface-variant">
             <UserRoundPlus size={13} />
@@ -181,7 +182,7 @@ export function MembersPanel({ project }: { project: Project }) {
           </p>
           <div className="divide-y divide-outline-variant">
             {pendingInvitations.map((invitation) => (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-2 py-2.5 -mx-2 hover:bg-surface-container-low" key={invitation.id}>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md px-2 py-2.5 -mx-2 hover:bg-surface-container-low" key={invitation.id}>
                 <Avatar
                   avatarUrl={invitation.invitee?.avatarUrl ?? null}
                   email={invitation.email}
@@ -197,12 +198,12 @@ export function MembersPanel({ project }: { project: Project }) {
                   </span>
                   <span className="block truncate font-data-mono text-data-mono text-[11px] text-on-surface-variant">{invitation.email}</span>
                 </span>
-                <span className="inline-flex shrink-0 items-center rounded-[2px] border border-outline-variant bg-surface-container-high px-1.5 py-0.5 font-label-caps text-[11px] uppercase tracking-wide text-on-surface-variant">
+                 <span className="inline-flex shrink-0 items-center rounded-full border border-outline-variant bg-surface-container-high px-1.5 py-0.5 font-label-caps text-[11px] uppercase tracking-wide text-on-surface-variant">
                   Pendiente
                 </span>
                 <button
                   aria-label={`Cancelar invitación a ${invitation.invitee?.name ?? invitation.email}`}
-                  className="flex h-9 items-center gap-1.5 border border-outline-variant px-2.5 font-body-sm text-body-sm text-on-surface-variant hover:border-error/50 hover:bg-surface-container-high hover:text-error"
+                   className="flex h-9 items-center gap-1.5 rounded-md border border-outline-variant px-2.5 font-body-sm text-body-sm text-on-surface-variant hover:border-error/50 hover:bg-surface-container-high hover:text-error"
                   onClick={() => setConfirmCancelInvitationId(invitation.id)}
                   title="Cancelar invitación"
                   type="button"
@@ -216,7 +217,7 @@ export function MembersPanel({ project }: { project: Project }) {
         </div>
       )}
 
-      {isOwner && (
+      {canManageMembers ? (
         <div className="flex gap-2 pt-1">
           <div className="relative min-w-0 flex-1">
             <AtSign size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
@@ -233,7 +234,7 @@ export function MembersPanel({ project }: { project: Project }) {
             />
           </div>
           <button
-            className="flex h-9 shrink-0 items-center gap-1.5 border border-outline-variant px-2.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:opacity-50"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-outline-variant px-2.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:opacity-50"
             disabled={!email.trim()}
             onClick={() => void invite()}
             type="button"
@@ -241,12 +242,12 @@ export function MembersPanel({ project }: { project: Project }) {
             <Mail size={15} /> Invitar
           </button>
         </div>
-      )}
+      ) : project.isDefault ? <p className="border-t border-outline-variant pt-3 font-body-sm text-body-sm text-on-surface-variant">Este es tu espacio personal; no tiene miembros compartidos.</p> : null}
 
       {!isOwner && (
         <div className="border-t border-outline-variant pt-3">
           <button
-            className="flex h-9 w-full items-center justify-center gap-1.5 border border-outline-variant px-3 font-body-sm text-body-sm text-on-surface-variant hover:border-error/50 hover:bg-surface-container-high hover:text-error"
+            className="flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-outline-variant px-3 font-body-sm text-body-sm text-on-surface-variant hover:border-error/50 hover:bg-surface-container-high hover:text-error"
             onClick={() => setConfirmLeave(true)}
             type="button"
           >

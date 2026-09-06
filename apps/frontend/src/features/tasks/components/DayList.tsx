@@ -97,13 +97,13 @@ export function DayList({
         const isHighlight = overContainerId === dayContainerId(key);
         return (
           <section className="pb-4" data-day-key={key} key={key}>
-            <header className={cn("sticky top-0 z-10 flex items-center justify-between border-b px-3 py-2", isToday ? "border-t-2 border-t-primary bg-secondary-container/40 text-primary" : "border-outline-variant bg-surface")}>
+             <header className={cn("sticky top-0 z-10 flex items-center justify-between rounded-t-lg border-b px-3 py-2", isToday ? "border-t-2 border-t-primary bg-secondary-container/40 text-primary" : "border-outline-variant bg-surface")}>
               <span className={cn("font-data-mono text-data-mono text-xs uppercase", isToday ? "font-bold" : "text-on-surface-variant")}>
                 {isToday ? `HOY · ${dayLabel(day)}` : dayLabel(day)}
               </span>
               <button
                 aria-label={`Crear tarea para ${dayLabel(day)}`}
-                className="p-1 text-on-surface-variant hover:text-primary"
+                 className="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary"
                 onClick={() => onCreateOnDay(key)}
                 type="button"
               >
@@ -112,7 +112,7 @@ export function DayList({
             </header>
             <DroppableColumn
               className={cn(
-                "flex flex-col gap-3 border bg-surface-container-lowest p-3",
+                 "flex flex-col gap-3 rounded-lg border bg-surface-container-lowest p-3",
                 isEmpty && (isHighlight ? "border-2 border-dashed border-primary bg-primary-container/10" : "border-outline-variant"),
               )}
               highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"

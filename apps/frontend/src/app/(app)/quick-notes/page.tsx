@@ -37,7 +37,7 @@ export default function QuickNotesPage() {
           <p className="mt-2 max-w-xl font-body-sm text-body-sm text-on-surface-variant">{view === "INBOX" ? "Captura ideas y decide qué hacer con ellas después." : "Revisa las capturas que archivaste."}</p>
         </div>
         <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
-          <button className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3.5 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90" onClick={openCapture} type="button">
+          <button className="inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-3.5 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90" onClick={openCapture} type="button">
             <Plus size={16} /> Nueva captura
           </button>
         </div>
@@ -45,7 +45,7 @@ export default function QuickNotesPage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-container-padding pb-24 sm:px-6 sm:py-8 lg:px-10">
-          <div className="grid grid-cols-2 gap-1 rounded-xl border border-outline-variant bg-surface-container-low p-1" role="tablist" aria-label="Estado de las capturas">
+          <div className="grid grid-cols-2 gap-1 rounded-lg border border-outline-variant bg-surface-container-low p-1" role="tablist" aria-label="Estado de las capturas">
             {([
               ["INBOX", "Pendientes", inboxQuery.data?.length ?? 0],
               ["ARCHIVED", "Archivadas", archivedQuery.data?.length ?? 0],
@@ -65,21 +65,21 @@ export default function QuickNotesPage() {
           </div>
 
           {currentQuery.isLoading ? (
-            <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-8 text-center font-body-sm text-body-sm text-on-surface-variant">Cargando capturas...</div>
+            <div className="rounded-lg border border-outline-variant bg-surface-container-lowest p-8 text-center font-body-sm text-body-sm text-on-surface-variant">Cargando capturas...</div>
           ) : currentQuery.isError ? (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-error bg-error-container p-8 text-center font-body-sm text-body-sm text-on-error-container">
+            <div className="flex flex-col items-center gap-3 rounded-lg border border-error bg-error-container p-8 text-center font-body-sm text-body-sm text-on-error-container">
               <p>No pudimos cargar tus capturas.</p>
-              <button className="font-label-md text-label-md underline underline-offset-2" onClick={() => void currentQuery.refetch()} type="button">Reintentar</button>
+               <button className="rounded-md px-2 py-1 font-label-md text-label-md underline underline-offset-2 hover:bg-error-container/40" onClick={() => void currentQuery.refetch()} type="button">Reintentar</button>
             </div>
           ) : notes.length === 0 ? (
-            <div className="flex min-h-[16rem] flex-col items-center justify-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-8 text-center shadow-sm">
+            <div className="flex min-h-[16rem] flex-col items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest p-8 text-center shadow-sm">
               <Inbox className="text-primary" size={28} />
               <p className="font-label-caps text-label-caps text-on-surface-variant">{view === "INBOX" ? "BANDEJA DESPEJADA" : "SIN ARCHIVO"}</p>
               <p className="max-w-md font-body-sm text-body-sm text-on-surface-variant">{view === "INBOX" ? "Captura una idea cuando aparezca y procésala después." : "Las capturas que archives aparecerán aquí."}</p>
-              {view === "INBOX" && <button className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90" onClick={openCapture} type="button"><Plus size={16} /> Nueva captura</button>}
+              {view === "INBOX" && <button className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-4 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90" onClick={openCapture} type="button"><Plus size={16} /> Nueva captura</button>}
             </div>
           ) : (
-            <div className="grid grid-cols-1 divide-y divide-outline-variant rounded-xl border border-outline-variant bg-surface-container-lowest px-4 shadow-sm sm:px-5 lg:grid-cols-2 lg:gap-4 lg:divide-y-0 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:shadow-none">
+            <div className="grid grid-cols-1 divide-y divide-outline-variant rounded-lg border border-outline-variant bg-surface-container-lowest px-4 shadow-sm sm:px-5 lg:grid-cols-2 lg:gap-4 lg:divide-y-0 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:shadow-none">
               {notes.map((note) => (
                 <QuickNoteItem
                   archived={view === "ARCHIVED"}

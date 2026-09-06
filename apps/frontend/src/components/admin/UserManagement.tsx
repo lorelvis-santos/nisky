@@ -43,13 +43,13 @@ export function UserManagement() {
       ) : query.isError ? (
         <p className="font-body-sm text-body-sm text-error">Ups, no pudimos cargar los usuarios. Inténtalo de nuevo.</p>
       ) : users.length === 0 ? (
-        <p className="border border-outline-variant bg-surface-container-lowest p-container-padding font-body-sm text-body-sm text-on-surface-variant">No se encontraron usuarios.</p>
+        <p className="rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding font-body-sm text-body-sm text-on-surface-variant">No se encontraron usuarios.</p>
       ) : (
         <>
           <UserTable onEdit={(user) => setEditing(user)} users={users} />
           <div className="flex items-center justify-between gap-4">
             <button
-              className="border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-11 rounded-md border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
               disabled={page <= 1 || query.isFetching}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
               type="button"
@@ -60,7 +60,7 @@ export function UserManagement() {
               Página {query.data?.meta.currentPage ?? page} de {query.data?.meta.totalPages ?? 1} · {query.data?.meta.totalItems ?? 0} usuarios
             </span>
             <button
-              className="border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-11 rounded-md border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
               disabled={!query.data || query.data.meta.totalPages <= page || query.isFetching}
               onClick={() => setPage((current) => current + 1)}
               type="button"

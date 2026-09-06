@@ -27,7 +27,7 @@ export function QuickNoteItem({ note, onConvertToTask, archived = false }: { not
   };
 
   return (
-    <div className="border-b border-outline-variant py-3 last:border-b-0 lg:flex lg:h-full lg:min-h-40 lg:flex-col lg:rounded-xl lg:border lg:bg-surface-container-lowest lg:p-4 lg:shadow-sm lg:last:border-b">
+    <div className="border-b border-outline-variant py-3 last:border-b-0 lg:flex lg:h-full lg:min-h-40 lg:flex-col lg:rounded-lg lg:border lg:bg-surface-container-lowest lg:p-4 lg:shadow-sm lg:last:border-b">
       <p className="line-clamp-3 break-words font-body-sm text-body-sm leading-relaxed text-on-surface">{note.content}</p>
       <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">Capturada {formatCreatedAt(note.createdAt)}</p>
       {detected && <span className="mt-1 inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha: {detected.label}</span>}

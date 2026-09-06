@@ -3,7 +3,7 @@ import { io, type Socket } from "socket.io-client";
 export type Domain = "tasks" | "comments" | "projects";
 export interface DataChangedPayload {
   domain: Domain;
-  kind?: "project" | "task" | "invitation" | "invitation_accepted" | "member_removed" | "member_role_changed";
+  kind?: "project" | "task" | "invitation" | "invitation_accepted" | "invitation_cancelled" | "member_removed" | "member_role_changed" | "activity" | "resource";
   projectId?: string;
   taskId?: string;
   userId?: string;

@@ -82,7 +82,7 @@ export function TaskAssignmentPanel({ block, date }: { block: TimeBlock; date: s
             const assignedToBlock = assignedIds.has(task.id);
             const busy = mutations.save.isPending || mutations.remove.isPending;
             return (
-              <button className="flex items-center gap-2 border border-outline-variant px-2 py-2 text-left hover:border-primary disabled:opacity-50" disabled={busy} key={task.id} onClick={() => void toggleTask(task)} type="button">
+              <button className="flex items-center gap-2 rounded-md border border-outline-variant px-2 py-2 text-left hover:border-primary disabled:opacity-50" disabled={busy} key={task.id} onClick={() => void toggleTask(task)} type="button">
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center border ${assignedToBlock ? "border-primary bg-primary text-on-primary" : "border-outline-variant text-transparent"}`}>
                   <Check size={13} />
                 </span>

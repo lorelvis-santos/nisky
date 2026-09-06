@@ -69,18 +69,18 @@ export function MarkdownEditor({ value, onChange, minHeight = "18rem", placehold
   };
 
   return (
-    <div className="border border-outline-variant bg-surface-container-lowest">
+    <div className="rounded-lg border border-outline-variant bg-surface-container-lowest">
       <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant bg-surface-container-low px-2 py-1">
-        <div className="flex border border-outline-variant bg-surface-container-lowest">
+        <div className="flex rounded-md border border-outline-variant bg-surface-container-lowest">
           <button
-            className={`min-h-10 px-3 font-label-caps text-label-caps sm:min-h-0 sm:py-1 ${preview ? "text-on-surface-variant hover:text-on-surface" : "bg-primary-container text-on-primary"}`}
+            className={`min-h-10 rounded-md px-3 font-label-caps text-label-caps sm:min-h-0 sm:py-1 ${preview ? "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" : "bg-primary-container text-on-primary"}`}
             onClick={() => setPreview(false)}
             type="button"
           >
             Editar
           </button>
           <button
-            className={`min-h-10 px-3 font-label-caps text-label-caps sm:min-h-0 sm:py-1 ${preview ? "bg-primary-container text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+            className={`min-h-10 rounded-md px-3 font-label-caps text-label-caps sm:min-h-0 sm:py-1 ${preview ? "bg-primary-container text-on-primary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}
             onClick={() => setPreview(true)}
             type="button"
           >
@@ -92,7 +92,7 @@ export function MarkdownEditor({ value, onChange, minHeight = "18rem", placehold
             {toolbar.map((item) => (
               <button
                 aria-label={item.title}
-                className="flex h-10 w-10 shrink-0 items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface sm:h-7 sm:w-7"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface sm:h-7 sm:w-7"
                 key={item.label}
                 onClick={() => insert(item.snippet)}
                 title={item.title}

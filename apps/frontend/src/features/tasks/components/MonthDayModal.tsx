@@ -46,7 +46,7 @@ export function MonthDayModal({
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+              <DialogContent className="flex max-h-[90vh] max-w-lg flex-col gap-0 overflow-hidden rounded-lg border-outline-variant bg-surface p-0" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <DialogTitle
             className={cn(
@@ -63,14 +63,14 @@ export function MonthDayModal({
           <div className="flex items-center gap-2">
             <button
               aria-label={`Crear tarea para ${dayLabel(day)}`}
-              className="flex items-center gap-1 border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+               className="flex items-center gap-1 rounded-md border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
               onClick={onCreate}
               type="button"
             >
               <Plus size={14} /> Crear
             </button>
             <DialogClose asChild>
-              <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+               <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
                 <X size={19} />
               </button>
             </DialogClose>
@@ -83,7 +83,7 @@ export function MonthDayModal({
                 Sin tareas este día.
               </p>
               <button
-                className="flex items-center gap-1 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+                 className="flex items-center gap-1 rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
                 onClick={onCreate}
                 type="button"
               >

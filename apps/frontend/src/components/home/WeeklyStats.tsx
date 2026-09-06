@@ -31,7 +31,7 @@ export function WeeklyStats({ weekly }: { weekly: HomeWeeklyStats | undefined })
       </header>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
+        <div className="rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
           <p className="flex items-center gap-2 font-label-caps text-label-caps text-on-surface-variant">
             <Timer size={14} /> ENFOQUE SEMANAL
           </p>
@@ -43,7 +43,7 @@ export function WeeklyStats({ weekly }: { weekly: HomeWeeklyStats | undefined })
           </p>
         </div>
 
-        <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
+        <div className="rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
           <p className="flex items-center gap-2 font-label-caps text-label-caps text-on-surface-variant">
             <CheckCircle2 size={14} /> TAREAS DE LA SEMANA
           </p>
@@ -62,7 +62,7 @@ export function WeeklyStats({ weekly }: { weekly: HomeWeeklyStats | undefined })
         </div>
 
         {weekly?.projectProgress && weekly.projectProgress.length > 0 && (
-          <div className="col-span-1 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm sm:col-span-2">
+          <div className="col-span-1 rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm sm:col-span-2">
             <p className="mb-3 font-label-caps text-label-caps text-on-surface-variant">OBJETIVOS DE PROYECTO</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {weekly.projectProgress.map((p) => {

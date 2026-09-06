@@ -8,7 +8,7 @@ const router = Router();
 const controller = new KnowledgeController();
 
 router.use(requireAuth);
-router.get("/facets", controller.facets);
+router.get("/facets", validateQuery(noteQuerySchema.pick({ projectId: true })), controller.facets);
 router.get("/", validateQuery(noteQuerySchema), controller.list);
 router.get("/draft", controller.getDraft);
 router.put("/draft", validateBody(saveNoteDraftSchema), controller.saveDraft);

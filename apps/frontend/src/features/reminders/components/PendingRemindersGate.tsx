@@ -94,7 +94,7 @@ function PendingReminderModal({ reminder, total, busy, customDate, onCustomDateC
 }) {
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onDismiss(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-md flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+      <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 overflow-hidden rounded-lg border-outline-variant bg-surface p-0" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">RECORDATORIOS PENDIENTES · {total} {total === 1 ? "AVISO" : "AVISOS"}</p>
@@ -102,7 +102,7 @@ function PendingReminderModal({ reminder, total, busy, customDate, onCustomDateC
             <DialogDescription className="sr-only">Revisa y pospone o completa el recordatorio vencido.</DialogDescription>
           </div>
           <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button"><X size={19} /></button>
+            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button"><X size={19} /></button>
           </DialogClose>
         </DialogHeader>
         <div className="min-h-0 flex-1 overflow-y-auto p-5" data-modal-scroll>
@@ -119,7 +119,7 @@ function PendingReminderModal({ reminder, total, busy, customDate, onCustomDateC
             <div className="mt-2.5 flex flex-wrap gap-2">
               {SNOOZE_PRESETS.map((preset) => (
                 <button
-                  className="border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm hover:bg-surface-container-low hover:text-primary disabled:opacity-50"
+                  className="rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm hover:bg-surface-container-low hover:text-primary disabled:opacity-50"
                   disabled={busy}
                   key={preset.label}
                   onClick={() => void onSettle(reminder.id, (item) => ({ id: item.id, payload: { action: "snooze", triggerAt: new Date(Date.now() + preset.minutes * 60_000).toISOString() } }))}
@@ -129,7 +129,7 @@ function PendingReminderModal({ reminder, total, busy, customDate, onCustomDateC
                 </button>
               ))}
               <button
-                className="border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm hover:bg-surface-container-low hover:text-primary disabled:opacity-50"
+                className="rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm hover:bg-surface-container-low hover:text-primary disabled:opacity-50"
                 disabled={busy}
                 onClick={() => void onSettle(reminder.id, (item) => ({ id: item.id, payload: { action: "snooze", triggerAt: tomorrowAtNine().toISOString() } }))}
                 type="button"
@@ -138,9 +138,9 @@ function PendingReminderModal({ reminder, total, busy, customDate, onCustomDateC
               </button>
             </div>
             <div className="mt-3 flex items-center gap-2">
-              <input aria-label="Fecha personalizada" className="min-w-0 flex-1 border border-outline-variant bg-surface-container-lowest px-2 py-1.5 font-body-sm text-body-sm text-on-surface" onChange={(event) => onCustomDateChange(event.target.value)} type="datetime-local" value={customDate} />
+               <input aria-label="Fecha personalizada" className="field min-w-0 flex-1" onChange={(event) => onCustomDateChange(event.target.value)} type="datetime-local" value={customDate} />
               <button
-                className="border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm hover:bg-surface-container-low hover:text-primary disabled:opacity-50"
+                 className="rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm hover:bg-surface-container-low hover:text-primary disabled:opacity-50"
                 disabled={busy || !customDate}
                 onClick={() => {
                   const triggerAt = new Date(customDate).toISOString();
@@ -155,10 +155,10 @@ function PendingReminderModal({ reminder, total, busy, customDate, onCustomDateC
         </div>
         <div className="flex shrink-0 items-center justify-end gap-3 border-t border-outline-variant bg-surface-container-low px-5 py-4">
           <DialogClose asChild>
-            <button className="px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface disabled:opacity-50" disabled={busy} type="button">Ahora no</button>
+            <button className="rounded-md px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface disabled:opacity-50" disabled={busy} type="button">Ahora no</button>
           </DialogClose>
           <button
-            className="flex items-center gap-1.5 bg-primary px-4 py-2 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50"
+             className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50"
             disabled={busy}
             onClick={() => void onSettle(reminder.id, (item) => ({ id: item.id, payload: { action: "accept" } }))}
             type="button"

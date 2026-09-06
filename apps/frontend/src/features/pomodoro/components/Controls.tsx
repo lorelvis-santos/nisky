@@ -2,12 +2,12 @@ import { CheckCircle2, Pause, Play, SkipForward, Square } from "lucide-react";
 import type { PomodoroPhase } from "@/types/entities";
 
 const PRIMARY: Record<PomodoroPhase, string> = {
-  WORK: "bg-primary-container text-on-primary hover:bg-primary",
-  SHORT_BREAK: "bg-secondary-container text-on-secondary-container hover:opacity-90",
-  LONG_BREAK: "bg-tertiary-fixed text-on-tertiary-fixed hover:opacity-90",
+  WORK: "rounded-lg bg-primary-container text-on-primary hover:bg-primary",
+  SHORT_BREAK: "rounded-lg bg-secondary-container text-on-secondary-container hover:opacity-90",
+  LONG_BREAK: "rounded-lg bg-tertiary-fixed text-on-tertiary-fixed hover:opacity-90",
 };
 
-const SECONDARY = "border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high";
+const SECONDARY = "rounded-lg border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high";
 
 export function Controls({ running, paused, phase, onStart, onPause, onResume, onStop, onCompletePomodoro }: { running: boolean; paused: boolean; phase: PomodoroPhase; onStart: () => void; onPause: () => void; onResume: () => void; onStop: () => void; onCompletePomodoro: () => void }) {
   const breakPhase = phase !== "WORK";

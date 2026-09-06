@@ -12,13 +12,15 @@ import { useRemindersQuery, usePendingRemindersQuery } from "@/features/reminder
 import { InvitationsPanel } from "@/features/projects/components/InvitationsPanel";
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import { useQuickNotesQuery } from "@/features/quicknotes/hooks/useQuickNotes";
+import { useProjectQuery } from "@/features/projects/hooks/useProjects";
 import type { QuickNote, Reminder, Task } from "@/types/entities";
 
 const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
 
 const titles: Record<string, string> = {
   "/": "Inicio",
-  "/tasks": "Planificación y tareas",
+  "/tasks": "Tareas",
+  "/projects": "Proyectos",
   "/events": "Eventos",
   "/timeblocks": "Agenda",
   "/focus": "Modo enfoque",
@@ -41,7 +43,9 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   const pendingQuery = usePendingRemindersQuery();
   const tasksQuery = useTasksQuery({ limit: 20, sort: "dueDate", order: "asc" });
   const quickNotesQuery = useQuickNotesQuery("INBOX", 50);
-  const title = titles[pathname] ?? "Nisky";
+  const projectId = pathname.startsWith("/projects/") ? pathname.split("/")[2] ?? null : null;
+  const projectQuery = useProjectQuery(projectId);
+  const title = projectId ? projectQuery.data?.name ?? "Proyecto" : titles[pathname] ?? "Nisky";
   const pending = pendingQuery.data ?? [];
   const notices = buildNotices(tasksQuery.data?.data ?? [], remindersQuery.data ?? [], pending, quickNotesQuery.data ?? []);
 
@@ -57,17 +61,17 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-container-padding lg:px-8">
       <div className="flex items-center gap-element-gap-sm">
         <div className="flex items-center gap-element-gap-md">
-          <button aria-label="Abrir menú" className="hidden rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary sm:flex lg:hidden" onClick={onMenu} type="button"><Menu size={20} /></button>
+          <button aria-label="Abrir menú" className="hidden rounded-md p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary sm:flex lg:hidden" onClick={onMenu} type="button"><Menu size={20} /></button>
           <Link aria-label="Ir a Inicio" className="font-headline-lg text-headline-lg font-bold tracking-tight text-primary hover:underline lg:hidden" href="/">Nisky</Link>
         </div>
-        {pomodoro.activeSession && pomodoro.remainingSec !== null && <div className="flex items-center gap-1 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1"><button aria-label={pomodoro.activeSession.status === "PAUSED" ? "Reanudar Pomodoro" : "Pausar Pomodoro"} className="rounded-md p-1 text-primary hover:bg-surface-container-low hover:text-primary-container" onClick={() => void togglePause()} type="button">{pomodoro.activeSession.status === "PAUSED" ? <Play size={14} /> : <Pause size={14} />}</button><button aria-label="Abrir Pomodoro" className="font-data-mono text-data-mono text-xs text-primary hover:underline" onClick={() => router.push(`/focus${pomodoro.activeSession?.taskId ? `?taskId=${encodeURIComponent(pomodoro.activeSession.taskId)}` : ""}`)} type="button">{formatPomodoroTime(pomodoro.remainingSec)}</button><button aria-label="Cancelar Pomodoro" className="rounded-md p-1 text-on-surface-variant hover:bg-error-container hover:text-error" onClick={() => void cancel()} type="button"><Square size={13} /></button></div>}
+        {pomodoro.activeSession && pomodoro.remainingSec !== null && <div className="flex items-center gap-1 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1"><button aria-label={pomodoro.activeSession.status === "PAUSED" ? "Reanudar Pomodoro" : "Pausar Pomodoro"} className="rounded-md p-1 text-primary hover:bg-surface-container-low hover:text-primary-container" onClick={() => void togglePause()} type="button">{pomodoro.activeSession.status === "PAUSED" ? <Play size={14} /> : <Pause size={14} />}</button><button aria-label="Abrir Pomodoro" className="rounded-md px-1 py-0.5 font-data-mono text-data-mono text-xs text-primary hover:bg-surface-container-low hover:underline" onClick={() => router.push(`/focus${pomodoro.activeSession?.taskId ? `?taskId=${encodeURIComponent(pomodoro.activeSession.taskId)}` : ""}`)} type="button">{formatPomodoroTime(pomodoro.remainingSec)}</button><button aria-label="Cancelar Pomodoro" className="rounded-md p-1 text-on-surface-variant hover:bg-error-container hover:text-error" onClick={() => void cancel()} type="button"><Square size={13} /></button></div>}
       </div>
       <div className="hidden flex-1 md:block" />
       <h2 className="absolute left-1/2 hidden -translate-x-1/2 font-headline-sm text-headline-sm font-bold text-on-surface lg:block">{title}</h2>
       <div className="ml-auto flex items-center gap-element-gap-sm">
         <button
           aria-label="Nueva nota rápida"
-          className="hidden items-center gap-1.5 rounded-lg border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary lg:flex"
+           className="hidden items-center gap-1.5 rounded-md border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary lg:flex"
           onClick={onOpenCapture}
           title="Nueva nota rápida (Alt+N)"
           type="button"
@@ -78,7 +82,7 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
         </button>
 <InvitationsPanel />
           <div className="relative">
-            <button aria-expanded={notificationsOpen} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setNotificationsOpen((open) => !open)} type="button">
+             <button aria-expanded={notificationsOpen} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative rounded-md p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setNotificationsOpen((open) => !open)} type="button">
             <Bell size={19} />
             {pending.length > 0 && <span aria-hidden="true" className="absolute bottom-0.5 right-0.5 h-2 w-2 rounded-full bg-error" />}
             {notices.length > 0 && <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-data-mono text-[10px] text-on-primary">{notices.length > 9 ? "9+" : notices.length}</span>}
@@ -90,7 +94,7 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
           {profileOpen && (
             <>
               <button aria-label="Cerrar menú de perfil" className="fixed inset-0 z-40 cursor-default" onClick={() => setProfileOpen(false)} type="button" />
-              <div className="fixed inset-x-4 top-16 z-50 rounded-xl border border-outline-variant bg-surface-container-lowest p-3 text-left shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-56">
+              <div className="fixed inset-x-4 top-16 z-50 rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-left shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-56">
                 <div className="flex items-center gap-3 border-b border-outline-variant pb-3">
                   <Avatar avatarUrl={user?.avatarUrl} email={user?.email} name={user?.name} size="md" />
                   <div className="min-w-0">
@@ -98,8 +102,8 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
                     <p className="truncate font-data-mono text-data-mono text-xs text-on-surface-variant">{user?.email}</p>
                   </div>
                 </div>
-                <button className="mt-2 flex w-full items-center gap-2 py-2 font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low hover:text-primary" onClick={() => { setProfileOpen(false); router.push("/settings"); }} type="button"><Settings size={16} /> Ajustes</button>
-                <button className="flex w-full items-center gap-2 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-error" onClick={() => { setProfileOpen(false); void logout(); }} type="button"><LogOut size={16} /> Cerrar sesión</button>
+                <button className="mt-2 flex w-full items-center gap-2 rounded-md px-2 py-2 font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low hover:text-primary" onClick={() => { setProfileOpen(false); router.push("/settings"); }} type="button"><Settings size={16} /> Ajustes</button>
+                <button className="flex w-full items-center gap-2 rounded-md px-2 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-error" onClick={() => { setProfileOpen(false); void logout(); }} type="button"><LogOut size={16} /> Cerrar sesión</button>
               </div>
             </>
           )}
@@ -168,20 +172,20 @@ function buildNotices(tasks: Task[], reminders: Reminder[], pending: Reminder[],
 
 function NotificationPanel({ notices, onClose, onOpen }: { notices: Notice[]; onClose: () => void; onOpen: (url: string, kind: Notice["kind"]) => void }) {
   return (
-    <div className="fixed inset-x-4 top-16 z-50 rounded-xl border border-outline-variant bg-surface-container-lowest p-3 text-left shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[22rem]">
+    <div className="fixed inset-x-4 top-16 z-50 rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-left shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[22rem]">
       <div className="flex items-center justify-between border-b border-outline-variant pb-3">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">AVISOS</p>
           <h3 className="mt-1 font-headline-xs text-headline-xs">Para tenerlo presente</h3>
         </div>
-        <button aria-label="Cerrar avisos" className="text-on-surface-variant hover:text-on-surface" onClick={onClose} type="button"><X size={16} /></button>
+        <button aria-label="Cerrar avisos" className="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" onClick={onClose} type="button"><X size={16} /></button>
       </div>
       {notices.length === 0 ? (
         <p className="px-1 py-5 font-body-sm text-body-sm text-on-surface-variant">No tienes avisos pendientes.</p>
       ) : (
         <div className="max-h-80 overflow-y-auto divide-y divide-outline-variant pr-1 [scrollbar-gutter:stable]">
           {notices.map((notice) => (
-            <button className="flex w-full items-start gap-3 py-3 text-left hover:bg-surface-container-low" key={notice.id} onClick={() => onOpen(notice.url, notice.kind)} type="button">
+            <button className="flex w-full items-start gap-3 rounded-md px-2 py-3 text-left hover:bg-surface-container-low" key={notice.id} onClick={() => onOpen(notice.url, notice.kind)} type="button">
               <span className={`mt-0.5 shrink-0 ${notice.kind === "pending" ? "text-error" : notice.kind === "quick" ? "text-tertiary" : "text-primary"}`}>{notice.kind === "task" ? <ListTodo size={16} /> : notice.kind === "quick" ? <StickyNote size={16} /> : <AlarmClock size={16} />}</span>
               <span className="min-w-0 flex-1"><span className="block truncate font-body-sm text-body-sm text-on-surface">{notice.title}</span><span className="mt-0.5 flex items-center gap-1 font-data-mono text-data-mono text-xs text-on-surface-variant">{notice.kind === "task" ? <CalendarClock size={11} /> : null}{notice.detail}</span></span>
               <ChevronRight className="mt-0.5 shrink-0 text-on-surface-variant" size={15} />
@@ -189,7 +193,7 @@ function NotificationPanel({ notices, onClose, onOpen }: { notices: Notice[]; on
           ))}
         </div>
       )}
-      <button className="mt-3 flex w-full items-center justify-center border-t border-outline-variant pt-3 font-body-sm text-body-sm text-primary hover:underline" onClick={() => onOpen("/reminders", "reminder")} type="button">Ver recordatorios</button>
+      <button className="mt-3 flex w-full items-center justify-center rounded-md border-t border-outline-variant px-2 pt-3 font-body-sm text-body-sm text-primary hover:bg-surface-container-low hover:underline" onClick={() => onOpen("/reminders", "reminder")} type="button">Ver recordatorios</button>
     </div>
   );
 }

@@ -33,7 +33,7 @@ export function SessionList({ sessions }: { sessions: PomodoroSession[] }) {
     <section className="w-full max-w-2xl border-t border-outline-variant pt-4">
       <button
         aria-expanded={expanded}
-        className="flex w-full items-center justify-between gap-3 text-left"
+         className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-1 text-left hover:bg-surface-container-low"
         onClick={() => setExpanded((current) => !current)}
         type="button"
       >

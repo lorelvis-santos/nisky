@@ -6,24 +6,27 @@ import type { HabitsMatrix } from "@/types/entities";
 
 export function HomeHabitsSummary({
   matrix,
+  isLoading,
   onToggle,
   onOpenManager,
 }: {
   matrix: HabitsMatrix | undefined;
+  isLoading: boolean;
   onToggle: (habitId: string, date: string) => void;
   onOpenManager: () => void;
 }) {
-  const todayKey = localDateKey(new Date());
-  const habits = matrix?.habits ?? [];
+  const now = new Date();
+  const todayKey = localDateKey(now);
+  const habits = (matrix?.habits ?? []).filter((habit) => habit.isDueToday);
   const completedToday = habits.filter((habit) => habit.todayCompleted).length;
 
   return (
     <section className="space-y-3">
       <header className="flex items-start justify-between gap-3 px-1">
         <div>
-          <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Hábitos</h2>
+          <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Hábitos de hoy</h2>
           <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">
-            {habits.length > 0 ? `${completedToday} de ${habits.length} listos` : "Tu ritmo diario"}
+            {habits.length > 0 ? `${completedToday} de ${habits.length} completados` : "Tu ritmo diario"}
           </p>
         </div>
         <button
@@ -37,54 +40,53 @@ export function HomeHabitsSummary({
         </button>
       </header>
 
-      {habits.length === 0 ? (
+      {isLoading ? (
+        <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando hábitos...</p>
+      ) : matrix?.habits.length === 0 ? (
         <p className="font-body-sm text-body-sm text-on-surface-variant">
           Aún no tienes hábitos.{" "}
-          <button className="text-primary hover:underline" onClick={onOpenManager} type="button">
+          <button className="rounded-md px-1 py-0.5 text-primary hover:bg-surface-container-low hover:underline" onClick={onOpenManager} type="button">
             Crea el primero.
           </button>
         </p>
+      ) : habits.length === 0 ? (
+        <p className="font-body-sm text-body-sm text-on-surface-variant">
+          No hay hábitos programados para hoy.
+        </p>
       ) : (
-        <>
-          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar sm:grid sm:grid-cols-2">
-            {habits.slice(0, 4).map((habit) => (
-              <button
-                aria-pressed={habit.todayCompleted}
-                className="flex min-h-[68px] min-w-[150px] items-center gap-2 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest px-3 py-3 text-left shadow-sm transition-colors hover:border-secondary hover:bg-surface-container-low sm:min-w-0 sm:px-4"
-                key={habit.id}
-                onClick={() => onToggle(habit.id, todayKey)}
-                type="button"
+        <div className="grid gap-2 sm:grid-cols-2">
+          {habits.map((habit) => (
+            <button
+              aria-pressed={habit.todayCompleted}
+              className="flex min-h-12 items-center gap-3 rounded-lg border border-outline-variant/70 bg-surface-container-lowest px-3 py-2.5 text-left shadow-sm transition-colors hover:border-secondary hover:bg-surface-container-low"
+              key={habit.id}
+              onClick={() => onToggle(habit.id, todayKey)}
+              type="button"
+            >
+              <span
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${habit.todayCompleted ? "border-tertiary bg-tertiary text-on-primary" : "border-outline-variant text-transparent"}`}
               >
-                <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${habit.todayCompleted ? "border-tertiary bg-tertiary/10 text-tertiary" : "border-outline-variant text-transparent"}`}
-                >
-                  <Check size={13} strokeWidth={3} />
+                <Check size={13} strokeWidth={3} />
+              </span>
+              <span className="min-w-0">
+                <span className={`flex items-center gap-1.5 font-body-sm text-body-sm font-medium ${habit.todayCompleted ? "text-on-surface-variant line-through" : "text-on-surface"}`}>
+                  {habit.color && (
+                    <span
+                      aria-hidden="true"
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: habit.color }}
+                    />
+                  )}
+                  <span className="truncate">{habit.name}</span>
                 </span>
-                <span className="min-w-0">
-                  <span className="flex items-center gap-1.5 font-body-sm text-body-sm font-medium text-on-surface">
-                    {habit.color && (
-                      <span
-                        aria-hidden="true"
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: habit.color }}
-                      />
-                    )}
-                    <span className="truncate">{habit.name}</span>
-                  </span>
-                  <span className="mt-0.5 flex items-center gap-1 font-data-mono text-data-mono text-[11px] text-on-surface-variant">
-                    <Flame size={11} className={habit.streak > 0 ? "text-tertiary" : ""} />
-                    {habit.streak} días
-                  </span>
+                <span className="mt-0.5 flex items-center gap-1 font-data-mono text-data-mono text-[11px] text-on-surface-variant">
+                  <Flame size={11} className={habit.streak > 0 ? "text-tertiary" : ""} />
+                  {habit.streak} días
                 </span>
-              </button>
-            ))}
-          </div>
-          {habits.length > 4 && (
-            <p className="mt-2 font-label-caps text-label-caps text-on-surface-variant">
-              +{habits.length - 4} hábitos en el registro semanal
-            </p>
-          )}
-        </>
+              </span>
+            </button>
+          ))}
+        </div>
       )}
     </section>
   );

@@ -1,13 +1,15 @@
 "use client";
 
-import { CheckCircle2, ChevronDown, ChevronRight, MoreHorizontal, Plus, X } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, MoreHorizontal, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { cn, toDatetimeLocal } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { formatDueTime } from "@/features/tasks/lib/task-utils";
 import type { Task } from "@/types/entities";
 import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
-import { groupOverdueByDay, groupTasksByDueDate, useTaskMutations, useTodayTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { useTaskMutations, useTasksQuery } from "@/features/tasks/hooks/useTasks";
+import { useTaskScheduleMutations } from "@/features/task-schedules/hooks/useTaskSchedules";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { useTasksSidebar } from "@/context/TasksSidebarContext";
 import {
@@ -18,45 +20,6 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-
-interface SectionProps {
-  title: string;
-  count: number;
-  color: "error" | "primary" | "muted";
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}
-
-function Section({ title, count, color, children, defaultOpen = true }: SectionProps) {
-  const [open, setOpen] = useState(defaultOpen);
-  const colorMap = {
-    error: "text-error border-error",
-    primary: "text-primary border-primary",
-    muted: "text-on-surface-variant border-on-surface-variant/30",
-  };
-
-  return (
-    <div className="border-b border-outline-variant">
-      <button
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
-        onClick={() => setOpen(!open)}
-        type="button"
-      >
-        <span className="flex items-center gap-1.5 font-label-caps text-label-caps">
-          <span className={cn("h-1.5 w-1.5 rounded-full", colorMap[color])} />
-          {title}
-          <span className={cn("font-data-mono text-data-mono text-xs", colorMap[color])}>
-            {count}
-          </span>
-        </span>
-        <span className="ml-auto shrink-0 text-on-surface-variant">
-          {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </span>
-      </button>
-      {open && <div className="px-2.5 pb-2.5">{children}</div>}
-    </div>
-  );
-}
 
 function TaskItem({
   task,
@@ -69,7 +32,7 @@ function TaskItem({
 }) {
   const priorityColors: Record<Task["priority"], string> = {
     URGENT: "bg-error text-error-foreground",
-    HIGH: "bg-tertiary-container text-on-tertiary",
+    HIGH: "bg-warning-container text-on-warning-container",
     NORMAL: "bg-surface-container-high text-on-surface-variant",
     LOW: "bg-outline-variant text-on-surface-variant",
   };
@@ -83,13 +46,13 @@ function TaskItem({
 
   return (
     <button
-      className="group flex w-full items-center gap-2.5 rounded px-2.5 py-2.5 text-left transition-colors hover:bg-surface-container-low"
+      className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-colors hover:bg-surface-container-low"
       onClick={onClick}
       type="button"
     >
       <span
         aria-label={task.status === "COMPLETED" ? "Desmarcar tarea" : "Completar tarea"}
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-outline-variant transition-colors hover:bg-surface-container-high"
+         className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-outline-variant transition-colors hover:bg-surface-container-high"
         onClick={(e) => {
           e.stopPropagation();
           onComplete();
@@ -102,7 +65,7 @@ function TaskItem({
       <span className="min-w-0 flex-1">
         <span className="block truncate font-body-sm text-body-sm text-on-surface">{task.title}</span>
         <span className="mt-1 flex items-center gap-1.5">
-          <span className={cn("rounded px-1.5 py-0.5 font-label-caps text-[11px]", priorityColors[task.priority])}>
+           <span className={cn("rounded-md px-1.5 py-0.5 font-label-caps text-[11px]", priorityColors[task.priority])}>
             {priorityLabels[task.priority]}
           </span>
           {task.project && (
@@ -122,7 +85,7 @@ function TaskItem({
       </span>
       <span
         aria-label="Más opciones"
-        className="shrink-0 p-1 text-on-surface-variant opacity-0 transition-opacity hover:text-on-surface group-hover:opacity-100"
+         className="shrink-0 rounded-md p-1 text-on-surface-variant opacity-0 transition-opacity hover:bg-surface-container-low hover:text-on-surface group-hover:opacity-100"
         onClick={(e) => e.stopPropagation()}
         role="button"
         tabIndex={-1}
@@ -142,19 +105,23 @@ function TasksSidebarContent({
   onComplete: (task: Task) => void;
   onOpenCreate: () => void;
 }) {
-  const { data: tasksData } = useTodayTasksQuery();
+  const { data: tasksData } = useTasksQuery({
+    due: "UNSET",
+    limit: 5,
+    order: "desc",
+    scheduled: "UNPLANNED",
+    sort: "createdAt",
+    status: ["PENDING", "IN_PROGRESS"],
+  });
   const tasks = tasksData?.data ?? [];
-  const { overdue, todayTasks, tomorrowTasks } = groupTasksByDueDate(tasks);
-
-  const empty =
-    overdue.length === 0 && todayTasks.length === 0 && tomorrowTasks.length === 0;
+  const total = tasksData?.meta.totalItems ?? tasks.length;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-outline-variant p-3.5">
-        <h2 className="font-headline-xs text-headline-xs">Tareas de hoy</h2>
+        <h2 className="font-headline-xs text-headline-xs">Por organizar</h2>
         <button
-          className="flex items-center gap-1.5 bg-primary-container px-3.5 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
+           className="flex items-center gap-1.5 rounded-md bg-primary-container px-3.5 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
           onClick={onOpenCreate}
           type="button"
         >
@@ -163,56 +130,36 @@ function TasksSidebarContent({
         </button>
       </div>
 
-      {empty ? (
+      {tasks.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-6 py-16 text-center sm:py-24">
           <p className="font-body-sm text-body-sm text-on-surface-variant">
-            No hay tareas pendientes para hoy ni mañana.
+            No hay tareas por organizar.
           </p>
         </div>
       ) : (
-        <div className="flex-1 divide-y divide-outline-variant/50 overflow-y-auto">
-          {overdue.length > 0 && (
-            <Section color="error" count={overdue.length} defaultOpen title="Atrasadas">
-              {groupOverdueByDay(overdue).map((group) => (
-                <div key={group.dateKey}>
-                  <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 font-data-mono text-data-mono text-xs font-bold text-error">
-                    {group.label} ({group.tasks.length})
-                  </p>
-                  {group.tasks.map((task) => (
-                    <TaskItem
-                      key={task.id}
-                      onComplete={() => onComplete(task)}
-                      onClick={() => onOpenTask(task)}
-                      task={task}
-                    />
-                  ))}
-                </div>
-              ))}
-            </Section>
-          )}
-          {todayTasks.length > 0 && (
-            <Section color="primary" count={todayTasks.length} defaultOpen title="Hoy">
-              {todayTasks.map((task) => (
-                <TaskItem
-                  key={task.id}
-                  onComplete={() => onComplete(task)}
-                  onClick={() => onOpenTask(task)}
-                  task={task}
-                />
-              ))}
-            </Section>
-          )}
-          {tomorrowTasks.length > 0 && (
-            <Section color="muted" count={tomorrowTasks.length} defaultOpen={false} title="Mañana">
-              {tomorrowTasks.map((task) => (
-                <TaskItem
-                  key={task.id}
-                  onComplete={() => onComplete(task)}
-                  onClick={() => onOpenTask(task)}
-                  task={task}
-                />
-              ))}
-            </Section>
+        <div className="flex-1 overflow-y-auto">
+          <div className="border-b border-outline-variant px-3 py-2.5">
+            <p className="font-label-caps text-label-caps text-on-surface-variant">
+              {total} {total === 1 ? "tarea por organizar" : "tareas por organizar"}
+            </p>
+          </div>
+          <div className="divide-y divide-outline-variant/50">
+            {tasks.map((task) => (
+              <TaskItem
+                key={task.id}
+                onComplete={() => onComplete(task)}
+                onClick={() => onOpenTask(task)}
+                task={task}
+              />
+            ))}
+          </div>
+          {total > tasks.length && (
+            <Link
+              className="block px-3 py-3 font-label-caps text-label-caps text-secondary hover:underline"
+              href="/tasks?view=backlog"
+            >
+              Ver todas las tareas →
+            </Link>
           )}
         </div>
       )}
@@ -229,14 +176,14 @@ function MobileSheet({
 }) {
   return (
     <Drawer open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DrawerContent className="max-h-[85vh] border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:hidden">
+         <DrawerContent className="max-h-[85vh] overflow-hidden border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:hidden">
         <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
-            <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Tareas de hoy</DrawerTitle>
-            <DrawerDescription className="sr-only">Lista de tareas pendientes para hoy, mañana y atrasadas.</DrawerDescription>
+             <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Por organizar</DrawerTitle>
+             <DrawerDescription className="sr-only">Resumen de tareas pendientes por organizar.</DrawerDescription>
           </div>
           <DrawerClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+             <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
               <X size={19} />
             </button>
           </DrawerClose>
@@ -260,6 +207,7 @@ export function TasksSidebar({
 }) {
   const { isOpen } = useTasksSidebar();
   const mutations = useTaskMutations();
+  const scheduleMutations = useTaskScheduleMutations();
   const projectsQuery = useProjectsQuery();
   const projects = projectsQuery.data ?? [];
   const [modal, setModal] = useState<{ task: Task | null; creating: boolean } | null>(null);
@@ -277,8 +225,9 @@ export function TasksSidebar({
   };
 
   const onSave = async (form: TaskForm) => {
+    const { plannedDate, scheduleChanged, ...taskForm } = form;
     const payload = {
-      ...form,
+      ...taskForm,
       description: form.description || undefined,
       dueDate: form.dueDate || undefined,
       recurrence: {
@@ -291,9 +240,29 @@ export function TasksSidebar({
     };
     try {
       if (modal?.creating) {
-        await mutations.create.mutateAsync(payload);
+        const createdTask = await mutations.create.mutateAsync(payload);
+        if (plannedDate) {
+          try {
+            await scheduleMutations.save.mutateAsync({
+              taskId: createdTask.id,
+              payload: { date: plannedDate, timeBlockId: null },
+            });
+          } catch {
+            toast.warning("La tarea se creó, pero no pudimos planificarla.");
+          }
+        }
       } else if (modal?.task) {
         await mutations.update.mutateAsync({ id: modal.task.id, payload });
+        if (scheduleChanged) {
+          if (plannedDate) {
+            await scheduleMutations.save.mutateAsync({
+              taskId: modal.task.id,
+              payload: { date: plannedDate, timeBlockId: null },
+            });
+          } else {
+            await scheduleMutations.remove.mutateAsync(modal.task.id);
+          }
+        }
       }
       setModal(null);
       toast.success(modal?.creating ? "¡Listo, tarea creada!" : "¡Listo, tarea actualizada!");
@@ -317,7 +286,7 @@ export function TasksSidebar({
       ) : (
         <aside
           className={cn(
-            "hidden w-72 shrink-0 flex-col border border-outline-variant bg-surface-container-lowest lg:h-full",
+             "hidden w-72 shrink-0 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest lg:h-full",
             isOpen ? "lg:flex" : "lg:hidden",
             className,
           )}
@@ -327,7 +296,7 @@ export function TasksSidebar({
       )}
       {modal && (
         <TaskModal
-          initialForm={modal.creating ? { dueDate: toDatetimeLocal(new Date()) } : undefined}
+          initialForm={undefined}
           key={modal.task?.id ?? "new"}
           onAddSubtask={async (taskId, title) => {
             await mutations.addSubtask.mutateAsync({ taskId, title });

@@ -34,13 +34,13 @@ export function SettingsForm() {
          <button
            aria-checked={data.publicSignup}
            aria-label="Activar o desactivar cuentas nuevas"
-           className={`relative flex h-11 w-16 shrink-0 items-center rounded-full border transition-colors ${data.publicSignup ? "border-primary bg-primary" : "border-outline-variant bg-surface-container-high"}`}
+           className={`relative flex h-8 w-12 shrink-0 items-center rounded-full border transition-colors ${data.publicSignup ? "border-primary bg-primary" : "border-outline-variant bg-surface-container-high"}`}
           disabled={mutation.isPending}
           onClick={() => void toggle(!data.publicSignup)}
           role="switch"
           type="button"
         >
-           <span className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-surface transition-all ${data.publicSignup ? "right-1" : "left-1"}`} />
+           <span className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-surface transition-all ${data.publicSignup ? "right-1" : "left-1"}`} />
         </button>
       </div>
       <p className="p-container-padding font-data-mono text-data-mono text-xs text-on-surface-variant">

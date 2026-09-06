@@ -26,10 +26,10 @@ export function AgendaEntryChooser({
       }}
     >
       <DialogContent
-        className="max-w-md rounded-2xl border-outline-variant bg-surface p-0 shadow-cadence-3"
+        className="w-[calc(100%-2rem)] max-w-md rounded-lg border-outline-variant bg-surface p-0 shadow-cadence-3"
         showCloseButton={false}
       >
-        <DialogHeader className="rounded-t-2xl bg-surface-bright px-6 pt-5 text-left">
+        <DialogHeader className="rounded-t-lg bg-surface-bright px-5 pt-4 text-left sm:px-6 sm:pt-5">
           <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
             Añadir a Agenda
           </DialogTitle>
@@ -37,13 +37,13 @@ export function AgendaEntryChooser({
             ¿Qué quieres reservar?
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-3 px-6 pb-6 sm:grid-cols-2">
+        <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2 sm:px-6 sm:pb-6">
           <button
-            className="group flex min-h-32 flex-col gap-4 rounded-2xl border border-outline-variant/70 bg-surface p-5 text-left shadow-sm transition-colors hover:border-primary/60 hover:bg-surface-container-low focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="group flex min-h-28 flex-col gap-3 rounded-lg border border-outline-variant/70 bg-surface p-4 text-left shadow-sm transition-colors hover:border-primary/60 hover:bg-surface-container-low focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-32 sm:gap-4 sm:p-5"
             onClick={() => onSelect("block")}
             type="button"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-fixed text-primary transition-colors group-hover:bg-primary group-hover:text-on-primary">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-fixed text-primary transition-colors group-hover:bg-primary group-hover:text-on-primary sm:h-10 sm:w-10">
               <CalendarClock size={20} />
             </span>
             <span>
@@ -56,11 +56,11 @@ export function AgendaEntryChooser({
             </span>
           </button>
           <button
-            className="group flex min-h-32 flex-col gap-4 rounded-2xl border border-outline-variant/70 bg-surface p-5 text-left shadow-sm transition-colors hover:border-secondary/60 hover:bg-surface-container-low focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+            className="group flex min-h-28 flex-col gap-3 rounded-lg border border-outline-variant/70 bg-surface p-4 text-left shadow-sm transition-colors hover:border-secondary/60 hover:bg-surface-container-low focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:min-h-32 sm:gap-4 sm:p-5"
             onClick={() => onSelect("event")}
             type="button"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary-container text-secondary transition-colors group-hover:bg-secondary group-hover:text-on-secondary">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary-container text-secondary transition-colors group-hover:bg-secondary group-hover:text-on-secondary sm:h-10 sm:w-10">
               <CalendarDays size={20} />
             </span>
             <span>

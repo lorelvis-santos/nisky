@@ -70,11 +70,11 @@ export default function DashboardPage() {
             </div>
             <button
               aria-label="Abrir captura rápida"
-              className="group flex min-h-14 w-full items-center gap-3 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest px-3 text-left shadow-sm transition-colors hover:border-secondary hover:bg-surface-container-low focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:px-4"
+              className="group flex min-h-14 w-full items-center gap-3 rounded-lg border border-outline-variant/70 bg-surface-container-lowest px-3 text-left shadow-sm transition-colors hover:border-secondary hover:bg-surface-container-low focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:px-4"
               onClick={() => capture.open("TASK")}
               type="button"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary-fixed bg-primary-fixed text-secondary transition-colors group-hover:bg-secondary group-hover:text-on-secondary">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-primary-fixed bg-primary-fixed text-secondary transition-colors group-hover:bg-secondary group-hover:text-on-secondary">
                 <Plus size={17} strokeWidth={2.5} />
               </span>
               <span className="min-w-0 flex-1 font-body-md text-body-md text-on-surface-variant">
@@ -90,10 +90,10 @@ export default function DashboardPage() {
           </header>
 
           {overviewQuery.isError && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-error bg-error-container px-4 py-3 text-on-error-container" role="alert">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-error bg-error-container px-4 py-3 text-on-error-container" role="alert">
               <p className="font-body-sm text-body-sm">No pudimos cargar el resumen de hoy.</p>
               <button
-                className="font-label-caps text-label-caps underline underline-offset-2"
+                 className="rounded-md px-2 py-1 font-label-caps text-label-caps underline underline-offset-2 hover:bg-error-container/40"
                 onClick={() => void overviewQuery.refetch()}
                 type="button"
               >
@@ -103,7 +103,7 @@ export default function DashboardPage() {
           )}
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
-            <div className="min-w-0 lg:col-span-7">
+            <div className="min-w-0 space-y-6 lg:col-span-7">
               <ActiveBlockBanner
                 activeEvent={overview?.activeEvent ?? null}
                 block={activeBlock}
@@ -113,19 +113,6 @@ export default function DashboardPage() {
                 onToggleTask={(task) => void toggleTask(task)}
                 tasks={overview?.blockTasks ?? []}
               />
-            </div>
-
-            <div className="min-w-0 lg:col-span-5">
-              <HomeHabitsSummary
-                matrix={matrixQuery.data}
-                onOpenManager={() => setHabitManagerOpen(true)}
-                onToggle={(habitId, date) => {
-                  void habitMutations.toggleEntry.mutateAsync({ id: habitId, date });
-                }}
-              />
-            </div>
-
-            <div className="min-w-0 lg:col-span-7">
               <TodayTasksPanel
                 emptyMessage="Nada planificado. ¡Todo al día!"
                 onToggle={(task) => void toggleTask(task)}
@@ -135,6 +122,14 @@ export default function DashboardPage() {
             </div>
 
             <div className="min-w-0 space-y-6 lg:col-span-5">
+              <HomeHabitsSummary
+                isLoading={matrixQuery.isLoading}
+                matrix={matrixQuery.data}
+                onOpenManager={() => setHabitManagerOpen(true)}
+                onToggle={(habitId, date) => {
+                  void habitMutations.toggleEntry.mutateAsync({ id: habitId, date });
+                }}
+              />
               <QuickNotesPanel />
               <FutureView blocks={overview?.futureBlocks ?? []} tasks={overview?.futureTasks ?? []} />
               <ActivityHeatmap activity={activityQuery.data} />

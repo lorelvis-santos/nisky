@@ -10,13 +10,15 @@ export interface TaskQuery {
   priority?: TaskPriority;
   q?: string;
   projectId?: string;
+  assigneeId?: string;
   scheduled?: "ALL" | "PLANNED" | "UNPLANNED";
+  due?: "ALL" | "SET" | "UNSET";
   sort?: "priority" | "dueDate" | "createdAt" | "title";
   order?: "asc" | "desc";
 }
 
 export type TaskPayload = TaskFormData & { status?: TaskStatus };
-export type TaskUpdatePayload = Omit<Partial<TaskPayload>, "dueDate"> & { dueDate?: string | null };
+export type TaskUpdatePayload = Omit<Partial<TaskPayload>, "dueDate" | "description"> & { dueDate?: string | null; description?: string | null };
 
 export async function fetchTasks(params: TaskQuery = {}) {
   const query = { limit: 20, sort: "priority" as const, order: "desc" as const, ...params };

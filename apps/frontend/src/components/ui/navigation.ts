@@ -23,7 +23,7 @@ export type NavigationItem = {
 export const navigation = {
   home: { href: "/", label: "Inicio", icon: LayoutDashboard },
   projects: { href: "/projects", label: "Proyectos", icon: FolderKanban },
-  tasks: { href: "/tasks", label: "Planificación y tareas", icon: ListTodo },
+  tasks: { href: "/tasks", label: "Tareas", icon: ListTodo },
   events: { href: "/events", label: "Eventos", icon: CalendarDays },
   timeblocks: { href: "/timeblocks", label: "Agenda", icon: CalendarClock },
   focus: { href: "/focus", label: "Modo enfoque", icon: Timer },
@@ -50,7 +50,7 @@ export const desktopSecondaryItems = [navigation.settings, navigation.support] s
 
 export const mobilePrimaryItems = [
   { ...navigation.home, label: "Hoy" },
-  { ...navigation.tasks, label: "Plan" },
+  { ...navigation.tasks, label: "Tareas" },
   { ...navigation.focus, label: "Enfoque" },
   { ...navigation.knowledge, label: "Notas" },
 ] satisfies NavigationItem[];

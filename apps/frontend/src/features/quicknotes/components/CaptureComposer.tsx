@@ -160,7 +160,7 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="shrink-0 border-b border-outline-variant bg-surface-container-low px-4 py-3 sm:px-5">
-        <div className="grid grid-cols-3 gap-1 rounded-xl border border-outline-variant bg-surface-bright p-1" role="tablist" aria-label="Tipo de captura">
+        <div className="grid grid-cols-3 gap-1 rounded-lg border border-outline-variant bg-surface-bright p-1" role="tablist" aria-label="Tipo de captura">
           {modes.map((item) => {
             const active = mode === item.value;
             const Icon = item.icon;
@@ -218,7 +218,7 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
             {taskAdvancedOpen ? "Ocultar detalles" : "Añadir detalles"}
           </button>
           {taskAdvancedOpen && (
-            <div className="grid gap-4 rounded-xl border border-outline-variant bg-surface-container-low p-3 sm:grid-cols-[1fr_9rem]">
+            <div className="grid gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-3 sm:grid-cols-[1fr_9rem]">
               <label className="block sm:col-span-2">
                 <FieldLabel>DESCRIPCIÓN</FieldLabel>
                 <textarea className="field mt-1.5 h-auto min-h-24 resize-y py-3" onChange={(event) => setTaskDescription(event.target.value)} placeholder="Añade contexto, enlaces o el resultado esperado" value={taskDescription} />
@@ -237,7 +237,7 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
 
       {mode === "QUICK_NOTE" && (
         <div className="flex min-h-0 flex-col gap-4 p-4 sm:p-5">
-          <textarea aria-label="Captura rápida" className="field h-auto min-h-36 resize-none rounded-2xl bg-surface-container-low p-4 text-base leading-7" onChange={(event) => setNoteDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void saveNote(); } }} placeholder="Escribe una idea para procesarla después..." value={noteDraft} />
+          <textarea aria-label="Captura rápida" className="field h-auto min-h-36 resize-none bg-surface-container-low p-4 text-base leading-7" onChange={(event) => setNoteDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void saveNote(); } }} placeholder="Escribe una idea para procesarla después..." value={noteDraft} />
           <div className="flex min-h-5 items-center justify-between gap-3">
             {detected ? <span className="inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha detectada: {detected.label}</span> : <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{noteDraft.length} caracteres</span>}
             <span className="font-body-sm text-body-sm text-on-surface-variant">Ctrl/Cmd + Enter</span>
@@ -250,9 +250,9 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
                   <p className="font-label-caps text-label-caps text-on-surface-variant">CAPTURAS PENDIENTES</p>
                   <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">{notes.length} {notes.length === 1 ? "captura pendiente" : "capturas pendientes"}</p>
                 </div>
-                {notes.length > 8 && <button className="font-label-caps text-label-caps text-secondary hover:underline" onClick={() => setAllNotesOpen(true)} type="button">VER TODAS</button>}
+                 {notes.length > 8 && <button className="rounded-md px-2 py-1 font-label-caps text-label-caps text-secondary hover:bg-surface-container-low hover:underline" onClick={() => setAllNotesOpen(true)} type="button">VER TODAS</button>}
               </div>
-              <div className="divide-y divide-outline-variant rounded-xl border border-outline-variant px-3">
+              <div className="divide-y divide-outline-variant rounded-lg border border-outline-variant px-3">
                 {notes.slice(0, 8).map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={convertToTask} />)}
               </div>
             </section>
@@ -300,7 +300,7 @@ export function CaptureComposer({ initialMode = "TASK", onClose }: CaptureCompos
 
       {mode === "QUICK_NOTE" && (
         <div className="flex shrink-0 items-center justify-between gap-3 border-t border-outline-variant bg-surface-bright/95 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur-sm sm:px-5">
-          <button className="font-label-md text-label-md text-secondary hover:underline" onClick={() => setNoteManagerOpen(true)} type="button">Ver archivadas</button>
+           <button className="rounded-md px-2 py-1 font-label-md text-label-md text-secondary hover:bg-surface-container-low hover:underline" onClick={() => setNoteManagerOpen(true)} type="button">Ver archivadas</button>
           <Button disabled={busy || !noteDraft.trim()} onClick={() => void saveNote()} type="button"><StickyNote size={16} /> Guardar captura</Button>
         </div>
       )}

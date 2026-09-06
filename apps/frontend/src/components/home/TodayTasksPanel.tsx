@@ -76,7 +76,7 @@ function TodayTaskRow({
   onToggle: (task: Task) => void;
 }) {
   return (
-    <div className="group flex items-start gap-3 rounded-xl border border-outline-variant/60 bg-surface-container-lowest p-3 shadow-sm transition-colors hover:border-outline hover:bg-surface-container-low">
+    <div className="group flex items-start gap-3 rounded-lg border border-outline-variant/60 bg-surface-container-lowest p-3 shadow-sm transition-colors hover:border-outline hover:bg-surface-container-low">
       <button
         aria-label={`Completar ${task.title}`}
         aria-pressed={task.status === "COMPLETED"}
@@ -149,7 +149,7 @@ export function TodayTasksPanel({
         </Link>
       </header>
       {totalTasks === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-10 text-center font-body-sm text-body-sm text-on-surface-variant shadow-sm">
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-10 text-center font-body-sm text-body-sm text-on-surface-variant shadow-sm">
           <Inbox size={20} className="text-outline" />
           {emptyMessage}
         </div>

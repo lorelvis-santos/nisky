@@ -36,19 +36,19 @@ export function MobileBacklog({
 
   return (
     <DroppableColumn
-      className="shrink-0 border-t border-outline-variant bg-surface-bright"
+       className="shrink-0 overflow-hidden rounded-lg border-t border-outline-variant bg-surface-bright"
       highlightClassName="border-2 border-dashed border-primary bg-primary-container/10"
       id={BACKLOG_CONTAINER}
     >
       <div className="flex items-center justify-between px-container-padding">
-        <button aria-expanded={open} className="flex flex-1 items-center justify-between py-4 text-left" onClick={() => setOpen((current) => !current)} type="button">
+        <button aria-expanded={open} className="flex flex-1 items-center justify-between rounded-md px-2 py-4 text-left" onClick={() => setOpen((current) => !current)} type="button">
           <div>
             <h2 className="font-headline-sm text-headline-sm text-primary">Pendientes ({tasks.length})</h2>
             <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Tareas sin fecha</p>
           </div>
           <ChevronDown className={`shrink-0 text-on-surface-variant transition-transform ${open ? "rotate-180" : ""}`} size={18} />
         </button>
-        <button aria-label="Nueva tarea" className="ml-2 flex shrink-0 items-center justify-center bg-primary-container p-1.5 text-on-primary hover:bg-primary" onClick={onCreate} type="button">
+        <button aria-label="Nueva tarea" className="ml-2 flex shrink-0 items-center justify-center rounded-md bg-primary-container p-1.5 text-on-primary hover:bg-primary" onClick={onCreate} type="button">
           <Plus size={17} />
         </button>
       </div>

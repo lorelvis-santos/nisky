@@ -34,7 +34,7 @@ function NavItem({
 
   return (
     <Link
-      className={`flex min-h-11 items-center gap-element-gap-md rounded-xl px-3.5 py-2.5 font-body-md text-body-md transition-colors ${active ? "bg-secondary-fixed font-semibold text-secondary shadow-sm" : "font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"} ${collapsed ? "lg:mx-0 lg:w-12 lg:justify-center lg:gap-0 lg:px-0" : ""}`}
+      className={`flex min-h-11 items-center gap-element-gap-md rounded-md px-3.5 py-2.5 font-body-md text-body-md transition-colors ${active ? "bg-secondary-fixed font-semibold text-secondary shadow-sm" : "font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"} ${collapsed ? "lg:mx-0 lg:w-12 lg:justify-center lg:gap-0 lg:px-0" : ""}`}
       href={href}
       onClick={onNavigate}
       title={collapsed ? label : undefined}
@@ -72,7 +72,7 @@ export function Sidebar({
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 hidden w-64 shrink-0 flex-col border-r border-outline-variant bg-surface-container-lowest transition-all duration-200 sm:flex lg:relative lg:z-auto lg:translate-x-0 ${collapsed ? "lg:w-16" : "lg:w-64"} ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 hidden w-72 shrink-0 flex-col border-r border-outline-variant bg-surface-container-lowest transition-all duration-200 sm:flex lg:relative lg:z-auto lg:translate-x-0 ${collapsed ? "lg:w-16" : "lg:w-72"} ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className={`flex items-center justify-between px-6 pb-5 pt-7 ${collapsed ? "lg:justify-center lg:px-0 lg:pb-4 lg:pt-6" : ""}`}>
           <Link
@@ -99,7 +99,7 @@ export function Sidebar({
           </button>
         </div>
         <div
-          className={`mx-4 mb-4 flex items-center gap-element-gap-md rounded-xl border border-outline-variant/50 bg-surface-container-low p-2.5 ${collapsed ? "lg:mx-2 lg:justify-center lg:border-transparent lg:bg-transparent lg:p-0" : ""}`}
+          className={`mx-4 mb-4 flex items-center gap-element-gap-md rounded-lg border border-outline-variant/50 bg-surface-container-low p-2.5 ${collapsed ? "lg:mx-2 lg:justify-center lg:border-transparent lg:bg-transparent lg:p-0" : ""}`}
         >
           <Avatar avatarUrl={user?.avatarUrl} className="h-9 w-9" email={user?.email} name={user?.name} size="md" />
           <div className={`min-w-0 ${collapsed ? "lg:hidden" : ""}`}>
@@ -123,7 +123,7 @@ export function Sidebar({
               <NavItem {...item} collapsed={collapsed} key={item.href} onNavigate={onClose} />
             ))}
             <button
-              className={`flex min-h-11 w-full items-center gap-element-gap-md rounded-xl px-3.5 py-2.5 text-left font-body-md text-body-md font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface ${collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""}`}
+              className={`flex min-h-11 w-full items-center gap-element-gap-md rounded-md px-3.5 py-2.5 text-left font-body-md text-body-md font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface ${collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""}`}
               onClick={() => {
                 onClose();
                 setFeedbackOpen(true);
@@ -137,7 +137,7 @@ export function Sidebar({
           </div>
           <div className="mt-3 border-t border-outline-variant/60 pt-3">
             <button
-              className={`flex min-h-11 w-full items-center gap-element-gap-md rounded-xl px-3.5 py-2.5 text-left font-body-md text-body-md font-medium text-on-surface-variant transition-colors hover:bg-error-container hover:text-error ${collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""}`}
+              className={`flex min-h-11 w-full items-center gap-element-gap-md rounded-md px-3.5 py-2.5 text-left font-body-md text-body-md font-medium text-on-surface-variant transition-colors hover:bg-error-container hover:text-error ${collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""}`}
               onClick={() => void logout()}
               title={collapsed ? "Cerrar sesión" : undefined}
               type="button"

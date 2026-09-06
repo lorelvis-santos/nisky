@@ -38,7 +38,7 @@ export function JournalSidebar({
               return (
                 <li key={entry.id}>
                   <button
-                    className={`flex min-h-16 w-full flex-col gap-1 border-b border-l-2 border-outline-variant px-container-padding py-3 text-left transition-colors hover:bg-surface-container-low ${active ? "border-l-secondary bg-secondary-container/40" : "border-l-transparent"}`}
+                    className={`flex min-h-16 w-full flex-col gap-1 rounded-md border-b border-l-2 border-outline-variant px-container-padding py-3 text-left transition-colors hover:bg-surface-container-low ${active ? "border-l-secondary bg-secondary-container/40" : "border-l-transparent"}`}
                     onClick={() => onSelect(entry.id)}
                     type="button"
                   >

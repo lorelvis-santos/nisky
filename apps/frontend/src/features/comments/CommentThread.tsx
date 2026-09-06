@@ -150,12 +150,12 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
   const deleteTarget = comments.find((comment) => comment.id === confirmingDeleteId) ?? null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-6 pr-1" data-modal-scroll ref={listRef}>
         {query.isLoading ? (
           <CommentSkeleton />
         ) : comments.length === 0 ? (
-          <div className="flex min-h-[12rem] flex-col items-center justify-center gap-2 border border-dashed border-outline-variant p-6 text-center">
+          <div className="flex min-h-[12rem] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-outline-variant p-6 text-center">
             <MessageSquare className="text-primary" size={22} />
             <p className="font-label-caps text-label-caps text-on-surface-variant">SIN COMENTARIOS</p>
             <p className="max-w-xs font-body-sm text-body-sm text-on-surface-variant">
@@ -166,7 +166,7 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
           <>
             {hasMore && (
               <button
-                className="flex w-full items-center justify-center gap-1.5 border border-outline-variant py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:opacity-50"
+                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md border border-outline-variant py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:opacity-50"
                 disabled={loadingOlder}
                 onClick={() => void loadOlder()}
                 type="button"
@@ -205,7 +205,7 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
                         <span className="ml-auto flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity max-sm:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                           <button
                             aria-label="Editar comentario"
-                            className="p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+                            className="rounded-md p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
                             onClick={() => {
                               setEditingId(comment.id);
                               setEditBody(comment.body);
@@ -217,7 +217,7 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
                           </button>
                           <button
                             aria-label="Eliminar comentario"
-                            className="p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-error"
+                            className="rounded-md p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-error"
                             onClick={(event) => {
                               if (event.shiftKey) {
                                 event.stopPropagation();
@@ -239,7 +239,7 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
                         <textarea aria-label="Editar comentario" autoFocus className="field min-h-[4.5rem] py-2" onChange={(event) => setEditBody(event.target.value)} value={editBody} />
                         <div className="flex items-center gap-2">
                           <button
-                            className="flex items-center gap-1.5 bg-primary px-3 py-1.5 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50"
+                            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50"
                             disabled={!editBody.trim() || update.isPending}
                             onClick={() => void handleUpdate(comment.id)}
                             type="button"
@@ -247,7 +247,7 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
                             <Send size={13} /> Guardar
                           </button>
                           <button
-                            className="border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high"
+                            className="rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high"
                             onClick={() => {
                               setEditingId(null);
                               setEditBody("");
@@ -290,7 +290,7 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
             />
             <div className="mt-2 flex justify-end">
               <button
-                className="flex items-center gap-1.5 bg-primary px-3.5 py-1.5 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-1.5 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50"
                 disabled={!newBody.trim() || create.isPending}
                 onClick={() => void handleCreate()}
                 type="button"

@@ -16,7 +16,7 @@ export class KnowledgeController {
   };
 
   facets = async (req: Request, res: Response, next: NextFunction) => {
-    try { res.success(await knowledgeService.facets(userId(req))); } catch (error) { next(error); }
+    try { res.success(await knowledgeService.facets(userId(req), typeof req.query.projectId === "string" ? req.query.projectId : undefined)); } catch (error) { next(error); }
   };
 
   getById = async (req: Request<IdParams>, res: Response, next: NextFunction) => {

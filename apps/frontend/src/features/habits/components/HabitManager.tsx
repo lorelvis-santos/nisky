@@ -45,7 +45,7 @@ function DaysPicker({ value, onChange, disabled }: { value: number[]; onChange: 
           aria-label={DAY_NAMES[day]}
           aria-pressed={value.includes(day)}
           className={cn(
-            "flex h-8 w-9 items-center justify-center border font-label-caps text-label-caps",
+             "flex h-8 w-9 items-center justify-center rounded-md border font-label-caps text-label-caps",
             value.includes(day) ? "border-primary bg-primary text-on-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-container-high",
           )}
           disabled={disabled}
@@ -183,21 +183,21 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col gap-0 overflow-hidden rounded-lg border-outline-variant bg-surface p-0" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
             <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Gestionar hábitos</DialogTitle>
             <DialogDescription className="sr-only">Crea, edita, archiva o elimina tus hábitos.</DialogDescription>
           </div>
           <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button"><X size={19} /></button>
+             <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button"><X size={19} /></button>
           </DialogClose>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5" data-modal-scroll>
           <div className="space-y-3">
             <div className="flex gap-2">
               <input className="field" onChange={(event) => setNewName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void create(); }} placeholder="Nuevo hábito..." value={newName} />
-              <button className="border border-outline-variant px-3 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={() => void create()} type="button">Añadir</button>
+               <button className="rounded-md border border-outline-variant px-3 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={() => void create()} type="button">Añadir</button>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <select
@@ -220,9 +220,9 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
                   <div className="flex items-center gap-2 py-2">
                     <input className="field h-8" onBlur={() => void rename(habit.id)} onChange={(event) => setNames((current) => ({ ...current, [habit.id]: event.target.value }))} value={names[habit.id] ?? habit.name} />
                     <span className="hidden shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant sm:inline">{habitPattern(habit)}</span>
-                    <button aria-label={`Configurar ${habit.name}`} className="shrink-0 text-on-surface-variant hover:text-primary" onClick={() => toggleExpand(habit)} type="button">{openId === habit.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
-                    <button aria-label={`Archivar ${habit.name}`} className="shrink-0 text-on-surface-variant hover:text-primary" onClick={() => void archive(habit.id)} type="button"><Archive size={16} /></button>
-                    <button aria-label={`Eliminar ${habit.name}`} className={`shrink-0 text-on-surface-variant hover:text-error ${deleteId === habit.id ? "bg-error px-1 py-1 text-error-foreground" : ""}`} onClick={() => void remove(habit.id)} type="button"><Trash2 className={deleteId === habit.id ? "text-on-primary" : undefined} size={16} /></button>
+                     <button aria-label={`Configurar ${habit.name}`} className="shrink-0 rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => toggleExpand(habit)} type="button">{openId === habit.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
+                     <button aria-label={`Archivar ${habit.name}`} className="shrink-0 rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => void archive(habit.id)} type="button"><Archive size={16} /></button>
+                     <button aria-label={`Eliminar ${habit.name}`} className={`shrink-0 rounded-md p-1 text-on-surface-variant hover:bg-error-container hover:text-error ${deleteId === habit.id ? "bg-error text-error-foreground" : ""}`} onClick={() => void remove(habit.id)} type="button"><Trash2 className={deleteId === habit.id ? "text-on-primary" : undefined} size={16} /></button>
                   </div>
                   {openId === habit.id && (
                     <div className="flex flex-wrap items-center gap-3 border-t border-outline-variant py-3 pl-1">
@@ -241,7 +241,7 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
                           value={editDays[habit.id] ?? habit.daysOfWeek}
                         />
                       )}
-                      <button className="border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high" onClick={() => void savePattern(habit)} type="button">Guardar</button>
+                       <button className="rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high" onClick={() => void savePattern(habit)} type="button">Guardar</button>
                     </div>
                   )}
                 </div>
@@ -254,8 +254,8 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
                   {(query.data ?? []).filter((habit) => habit.archived).map((habit) => (
                     <div className="flex items-center gap-2 py-2" key={habit.id}>
                       <span className="flex-1 font-body-sm text-body-sm text-on-surface-variant">{habit.name} <span className="font-data-mono text-data-mono text-xs">· {habitPattern(habit)}</span></span>
-                      <button aria-label={`Desarchivar ${habit.name}`} className="flex items-center gap-1 font-body-sm text-body-sm text-primary hover:underline" onClick={() => void restore(habit.id)} type="button"><ArchiveRestore size={16} /> Desarchivar</button>
-                      <button aria-label={`Eliminar ${habit.name}`} className={`shrink-0 text-on-surface-variant hover:text-error ${deleteId === habit.id ? "bg-error px-1 py-1 text-error-foreground" : ""}`} onClick={() => void remove(habit.id)} type="button"><Trash2 className={deleteId === habit.id ? "text-on-primary" : undefined} size={16} /></button>
+                       <button aria-label={`Desarchivar ${habit.name}`} className="flex items-center gap-1 rounded-md px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-surface-container-low hover:underline" onClick={() => void restore(habit.id)} type="button"><ArchiveRestore size={16} /> Desarchivar</button>
+                       <button aria-label={`Eliminar ${habit.name}`} className={`shrink-0 rounded-md p-1 text-on-surface-variant hover:bg-error-container hover:text-error ${deleteId === habit.id ? "bg-error text-error-foreground" : ""}`} onClick={() => void remove(habit.id)} type="button"><Trash2 className={deleteId === habit.id ? "text-on-primary" : undefined} size={16} /></button>
                     </div>
                   ))}
                 </div>
@@ -265,7 +265,7 @@ export function HabitManager({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex shrink-0 justify-end border-t border-outline-variant bg-surface-container-low px-5 py-4">
           <DialogClose asChild>
-            <button className="border border-outline-variant px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">Cerrar</button>
+            <button className="min-h-11 rounded-md border border-outline-variant px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">Cerrar</button>
           </DialogClose>
         </div>
       </DialogContent>

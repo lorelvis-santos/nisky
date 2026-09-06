@@ -108,3 +108,62 @@
 - **Gestión de clientes (freelance)**: información de clientes, proyectos en proceso, control de pagos, seguimiento a mantenimientos y generación de facturas.
 - **Finanzas**: registro local de cuentas, ingresos y gastos, con integración opcional a SURE (dominio + API key por usuario, patrón Moodle) para traer el estado financiero.
 - Soporte.
+
+## Fase 2: Workspace de proyectos y planificación
+
+### Fase A: workspace frontend inicial
+
+- [x] Plan de producto y ejecución documentado en `PROJECT_PLAN.md`.
+- [x] `/projects/:id` reorganizado como workspace con encabezado, acciones y navegación interna.
+- [x] `Resumen` establecido como sección inicial.
+- [x] Navegación agrupada entre Trabajo y Colaboración.
+- [x] Estado de sección persistido mediante `?tab=` en la URL.
+- [x] Lista contextual de tareas con filtros server-side por estado, prioridad, búsqueda y asignado.
+- [x] Crear, editar, completar y eliminar tareas desde el proyecto usando `TaskModal` existente.
+- [x] Enlace explícito a la planificación global filtrada por proyecto.
+- [x] Secciones funcionales de Equipo y Chat integradas.
+- [x] Notas compartidas, Recursos persistentes y Actividad conectados a backend sin datos simulados.
+- [x] Layout responsive para desktop y móvil sin drag-and-drop en el workspace.
+- [x] Frontend `tsc --noEmit`, `bun run lint` y `git diff --check` en verde.
+- [ ] Verificación visual manual en desktop y móvil.
+
+### Fase B: contrato backend y permisos
+
+- [x] Campos opcionales `Project.description` y `Project.targetDate`.
+- [x] Migración `20260905120000_project_workspace` aplicada en la base local.
+- [x] Endpoint `GET /projects/:id/summary` con conteos globales y progreso agregado.
+- [x] Filtros server-side de tareas por búsqueda, prioridad, estado y asignado.
+- [x] Permisos consistentes para tareas compartidas, subtareas y operaciones masivas.
+- [x] Proyecto default protegido contra borrado, renombrado y gestión de miembros.
+- [ ] Estado `IN_REVIEW`, pendiente de confirmación del contrato de producto.
+
+### Fase C: notas compartidas
+
+- [x] Lectura de notas por proyecto para todos los miembros autorizados.
+- [x] Creación, listado y edición mediante `NoteEditorModal` y Markdown existente.
+- [x] Notas personales sin proyecto permanecen aisladas.
+- [ ] Búsqueda y filtros de listado dentro de la pestaña del proyecto.
+
+### Fase D: recursos compartidos
+
+- [x] Enlaces externos persistentes con título, URL y descripción.
+- [x] Permisos por proyecto y actividad registrada para recursos.
+- [ ] Documentos Markdown y archivos adjuntos.
+
+### Fase F: actividad y calidad
+
+- [x] Feed persistente de actividad para tareas, subtareas, notas, miembros, comentarios y recursos.
+- [x] Invalidaciones React Query y eventos Socket.IO scoped por proyecto.
+- [x] `bun run db:generate`, `bun run typecheck` y `bun test` backend en verde.
+- [x] Smoke check local: `/health`, login, `/projects`, summary, activity, resources, knowledge y `401` sin token.
+- [ ] QA visual, accesibilidad y navegación URL en desktop/móvil.
+- [ ] Tests específicos de permisos, notas compartidas y navegación.
+
+### Próximas fases
+
+- Completar filtros de notas, documentos/archivos y QA del workspace.
+- **Planificación global**: separar definitivamente fecha límite (`Task.dueDate`) y día planificado (`TaskSchedule.date`), manteniendo `/tasks` como planner global.
+- **Módulos activables por usuario**: cada cuenta activa o desactiva módulos desde Configuración; los desactivados no aparecen en la navegación.
+- **Gestión de clientes (freelance)** y seguimiento comercial.
+- **Finanzas** locales con integración opcional a SURE.
+- Soporte.

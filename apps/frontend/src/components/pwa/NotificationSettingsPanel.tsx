@@ -26,7 +26,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       aria-checked={checked}
       aria-label={checked ? "Activo, pulsar para desactivar" : "Inactivo, pulsar para activar"}
       className={cn(
-         "relative flex h-11 w-16 shrink-0 items-center rounded-full border transition-colors",
+         "relative flex h-8 w-12 shrink-0 items-center rounded-full border transition-colors",
         checked ? "border-primary bg-primary" : "border-outline-variant bg-surface-container-high",
         disabled && "opacity-40",
       )}
@@ -37,7 +37,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
     >
       <span
         className={cn(
-           "absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full transition-all",
+           "absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full transition-all",
            checked ? "right-1 bg-on-primary" : "left-1 bg-on-surface-variant",
         )}
       />

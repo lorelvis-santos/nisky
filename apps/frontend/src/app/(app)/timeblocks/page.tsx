@@ -72,7 +72,7 @@ function EventMoveModal({
 }) {
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onCancel(); }}>
-      <DialogContent className="max-w-md rounded-2xl border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
+      <DialogContent className="max-w-md rounded-lg border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
         <DialogHeader className="text-left">
           <DialogTitle className="font-headline-xs text-headline-xs normal-case tracking-normal">Mover «{title}» solo hoy</DialogTitle>
           <DialogDescription className="font-body-md text-body-md text-on-surface-variant">
@@ -132,7 +132,7 @@ function ResizeResolveModal({
 }) {
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onCancel(); }}>
-      <DialogContent className="max-w-md rounded-2xl border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
+      <DialogContent className="max-w-md rounded-lg border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
         <DialogHeader className="text-left">
           <DialogTitle className="font-headline-xs text-headline-xs normal-case tracking-normal">¿Aplicar cambio a un solo día?</DialogTitle>
           <DialogDescription className="font-body-md text-body-md text-on-surface-variant">
@@ -176,7 +176,7 @@ function MobileEditorModal({
 }) {
   return (
     <Drawer open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DrawerContent className="max-h-[85vh] rounded-t-2xl border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-cadence-3 lg:hidden">
+       <DrawerContent className="max-h-[85vh] rounded-t-lg border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-cadence-3 lg:hidden">
         <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface px-5 py-4 text-left">
           <div>
             <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{title}</DrawerTitle>
@@ -207,7 +207,7 @@ function DesktopEditorModal({
 }) {
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-md flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0 shadow-cadence-3" showCloseButton={false}>
+      <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 overflow-hidden rounded-lg border-outline-variant bg-surface p-0 shadow-cadence-3" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
             <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{title}</DialogTitle>
@@ -616,14 +616,13 @@ function TimeBlocksContent() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-outline-variant pb-5">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-            TU HORARIO SEMANAL
+             PLANIFICA TU TIEMPO
           </p>
           <h1 className="mt-1 font-headline-md text-headline-md text-on-surface">
             Agenda
           </h1>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-            Reserva horas para tus proyectos. El enfoque activo las usa para
-            decirte qué toca ahora.
+             Organiza bloques de trabajo y eventos para saber qué toca y cuándo.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -672,7 +671,7 @@ function TimeBlocksContent() {
             <span>Horario</span>
           </button>
           <button
-            className="hidden min-h-11 items-center gap-2 rounded-xl bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90 sm:flex sm:min-h-10"
+            className="hidden min-h-11 items-center gap-2 rounded-md bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90 sm:flex sm:min-h-10"
             onClick={() => openEntryChooser()}
             type="button"
           >
@@ -748,7 +747,7 @@ function TimeBlocksContent() {
 
       <button
         aria-label="Añadir a Agenda"
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-outline-variant bg-primary text-on-primary shadow-cadence-2 transition-colors hover:bg-primary/90 lg:hidden"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-outline-variant bg-primary text-on-primary shadow-cadence-2 transition-colors hover:bg-primary/90 sm:bottom-6 lg:hidden"
         onClick={() => openEntryChooser()}
         type="button"
       >

@@ -1,7 +1,7 @@
 import type { Prisma } from "../../infra/prisma/generated/prisma/client";
 import { DateTime } from "luxon";
 import { prisma } from "../../infra/prisma/client";
-import { computeStreak, dateKey, localDateKey } from "../habits/habit-stats";
+import { computeStreak, dateKey } from "../habits/habit-stats";
 import { timeBlockService } from "../timeblocks/timeblocks.service";
 import { blockOccurrenceOn } from "../timeblocks/timeblocks.util";
 import type { TimeBlockExceptionRow } from "../timeblocks/timeblocks.util";
@@ -310,13 +310,18 @@ export class HomeService {
       byHabit.set(entry.habitId, list);
     }
 
-    const today = localDateKey();
+    const today = now.toISODate()!;
+    const todayDow = toDowIndex(now);
     const habitsWithState = habits.map((habit) => {
+      const scheduledDays = habit.daysOfWeek.length === 0 && habit.frequency === "DAILY"
+        ? [0, 1, 2, 3, 4, 5, 6]
+        : habit.daysOfWeek;
       const todayEntry = entries.find((entry) => entry.habitId === habit.id && dateKey(entry.date) === today);
       return {
         ...habit,
         todayCompleted: Boolean(todayEntry?.completed),
-        streak: computeStreak(byHabit.get(habit.id) ?? []),
+        streak: computeStreak(byHabit.get(habit.id) ?? [], today, scheduledDays),
+        isDueToday: scheduledDays.includes(todayDow),
       };
     });
 

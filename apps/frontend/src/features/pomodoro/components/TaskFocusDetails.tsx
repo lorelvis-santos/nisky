@@ -38,14 +38,14 @@ export function TaskFocusDetails({
   };
 
   return (
-    <section className="w-full max-w-2xl border border-outline-variant bg-surface-container-lowest p-4 text-left">
+     <section className="w-full max-w-2xl rounded-lg border border-outline-variant bg-surface-container-lowest p-4 text-left">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">TAREA ENFOCADA</p>
           <h2 className="mt-1 break-words font-headline-xs text-headline-xs text-primary">{task.title}</h2>
         </div>
         <button
-          className="flex shrink-0 items-center gap-1 border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-primary-fixed disabled:cursor-not-allowed disabled:opacity-50"
+           className="flex shrink-0 items-center gap-1 rounded-md border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-primary-fixed disabled:cursor-not-allowed disabled:opacity-50"
           disabled={disabled || mutations.update.isPending}
           onClick={() => void onComplete()}
           type="button"
@@ -83,7 +83,7 @@ export function TaskFocusDetails({
               />
             </label>
             <button
-              className="border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+               className="rounded-md border border-outline-variant px-3 py-2 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
               disabled={disabled || estimate === task.pomodoroEstimate || mutations.update.isPending}
               onClick={() => void saveEstimate()}
               type="button"

@@ -789,9 +789,9 @@ export function TimeBlockWeekGrid({
               <MoreVertical size={12} />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-11 z-40 flex w-40 flex-col rounded-md border border-outline-variant bg-surface shadow-cadence-2 lg:top-6">
+               <div className="absolute right-0 top-11 z-40 flex w-40 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface shadow-cadence-2 lg:top-6">
                 <button
-                  className="min-h-11 rounded-t-md px-3 py-2 text-left font-body-sm text-body-sm text-on-surface transition-colors hover:bg-surface-container-low lg:min-h-0"
+                   className="min-h-11 rounded-t-lg px-3 py-2 text-left font-body-sm text-body-sm text-on-surface transition-colors hover:bg-surface-container-low lg:min-h-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     setEventMenu(null);
@@ -802,7 +802,7 @@ export function TimeBlockWeekGrid({
                   Saltar solo hoy
                 </button>
                 <button
-                  className="min-h-11 rounded-b-md border-t border-outline-variant px-3 py-2 text-left font-body-sm text-body-sm text-on-surface transition-colors hover:bg-surface-container-low lg:min-h-0"
+                   className="min-h-11 rounded-b-lg border-t border-outline-variant px-3 py-2 text-left font-body-sm text-body-sm text-on-surface transition-colors hover:bg-surface-container-low lg:min-h-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     setEventMenu(null);

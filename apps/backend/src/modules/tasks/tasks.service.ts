@@ -5,6 +5,7 @@ import { AppError } from "../../utils/errors/handler";
 import { buildPaginatedResponse, getPaginationArgs } from "../../utils/pagination/handler";
 import { nextOccurrence } from "../../utils/recurrence";
 import { assertTaskAccess, getAccessibleProjectIds, getProjectAudience, getUserRoleInProject } from "../projects/access";
+import { projectActivityService } from "../projects/project-activity.service";
 import { projectService } from "../projects/projects.service";
 import { emitToUsers } from "../../config/socket.emit";
 import type { CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
@@ -110,15 +111,17 @@ export class TaskService {
         : {}),
       ...(query.priority ? { priority: query.priority } : {}),
       ...(query.projectId ? { projectId: query.projectId } : {}),
+      ...(query.assigneeId ? { assigneeId: query.assigneeId === "__unassigned__" ? null : query.assigneeId } : {}),
       ...(query.q ? { AND: [{ OR: [{ title: { contains: query.q } }, { description: { contains: query.q } }] }] } : {}),
       ...(query.scheduled === "PLANNED" ? { schedules: { some: { userId } } } : {}),
       ...(query.scheduled === "UNPLANNED" ? { schedules: { none: { userId } } } : {}),
+      ...(query.due === "SET" ? { dueDate: { not: null } } : query.due === "UNSET" ? { dueDate: null } : {}),
     };
 
     const orderBy = query.sort === "priority"
       ? [{ priority: query.order }, { order: "asc" as const }, { createdAt: "desc" as const }]
       : query.sort === "dueDate"
-        ? [{ dueDate: query.order }, { order: "asc" as const }, { createdAt: "desc" as const }]
+        ? [{ dueDate: { sort: query.order, nulls: "last" as const } }, { order: "asc" as const }, { createdAt: "desc" as const }]
         : { [query.sort]: query.order };
 
     const [data, totalItems] = await Promise.all([
@@ -170,13 +173,26 @@ export class TaskService {
       },
       include: { subtasks: true },
     });
-    emitToUsers(await this.audience(projectId ?? null, userId), "tasks");
+    await projectActivityService.record({
+      projectId,
+      actorId: userId,
+      type: "TASK_CREATED",
+      entityId: created.id,
+      entityTitle: created.title,
+    });
+    emitToUsers(await this.audience(projectId ?? null, userId), "tasks", {
+      projectId: projectId ?? undefined,
+      taskId: created.id,
+    });
     return taskProgress(created);
   }
 
   async update(userId: string, id: string, data: UpdateTaskDto) {
     await assertTaskAccess(userId, id);
-    const existing = await prisma.task.findUnique({ where: { id }, select: { projectId: true, assigneeId: true } });
+    const existing = await prisma.task.findUnique({
+      where: { id },
+      select: { projectId: true, assigneeId: true, title: true, status: true, priority: true },
+    });
     if (!existing) throw new AppError("NOT_FOUND", "Tarea no encontrada");
 
     // Validar assigneeId
@@ -197,9 +213,14 @@ export class TaskService {
       const member = await prisma.projectMember.findUnique({
         where: { projectId_userId: { projectId: data.projectId, userId: existing.assigneeId } },
       });
-      if (!member) {
+      const owner = await prisma.project.findFirst({ where: { id: data.projectId, userId: existing.assigneeId } });
+      if (!member && !owner) {
         data.assigneeId = null; // Auto-null si el assignee no es miembro del nuevo proyecto
       }
+    }
+
+    if (data.projectId === null && data.assigneeId === undefined) {
+      data.assigneeId = null;
     }
 
     if (data.projectId !== undefined && data.projectId !== null) {
@@ -235,7 +256,15 @@ export class TaskService {
     if (data.projectId !== undefined && data.projectId !== existing.projectId && existing.projectId) {
       audiences.push(...(await this.audience(existing.projectId, userId)));
     }
-    emitToUsers(audiences, "tasks");
+    await projectActivityService.record({
+      projectId: newProjectId,
+      actorId: userId,
+      type: data.status === "COMPLETED" && existing.status !== "COMPLETED" ? "TASK_COMPLETED" : "TASK_UPDATED",
+      entityId: id,
+      entityTitle: updated.title,
+      metadata: { fields: Object.keys(data) },
+    });
+    emitToUsers(audiences, "tasks", { projectId: newProjectId ?? undefined, taskId: id });
 
     if ((data.status === "COMPLETED" || data.status === "CANCELLED") && updated.recurrenceType) {
       const next = nextTaskOccurrence(updated);
@@ -262,7 +291,10 @@ export class TaskService {
               recurrenceParentId: templateId,
             },
           });
-          emitToUsers(await this.audience(created.projectId, userId), "tasks");
+          emitToUsers(await this.audience(created.projectId, userId), "tasks", {
+            projectId: created.projectId ?? undefined,
+            taskId: created.id,
+          });
         }
       }
     }
@@ -271,27 +303,30 @@ export class TaskService {
 
   async delete(userId: string, id: string) {
     await assertTaskAccess(userId, id);
-    const task = await prisma.task.findUnique({ where: { id }, select: { source: true, projectId: true } });
+    const task = await prisma.task.findUnique({ where: { id }, select: { source: true, projectId: true, title: true } });
     if (!task) throw new AppError("NOT_FOUND", "Tarea no encontrada");
     if (task.source === "MANUAL") {
+      await projectActivityService.record({ projectId: task.projectId, actorId: userId, type: "TASK_DELETED", entityId: id, entityTitle: task.title });
       await prisma.task.deleteMany({ where: { recurrenceParentId: id, status: { in: ["PENDING", "IN_PROGRESS"] } } });
       await prisma.task.delete({ where: { id } });
-      emitToUsers(await this.audience(task.projectId, userId), "tasks");
+      emitToUsers(await this.audience(task.projectId, userId), "tasks", { projectId: task.projectId ?? undefined, taskId: id });
       return "deleted";
     }
     await prisma.task.update({ where: { id }, data: { archivedAt: new Date() } });
-    emitToUsers(await this.audience(task.projectId, userId), "tasks");
+    await projectActivityService.record({ projectId: task.projectId, actorId: userId, type: "TASK_DELETED", entityId: id, entityTitle: task.title });
+    emitToUsers(await this.audience(task.projectId, userId), "tasks", { projectId: task.projectId ?? undefined, taskId: id });
     return "archived";
   }
 
   async bulkDelete(userId: string, ids: string[]) {
     const tasks = await prisma.task.findMany({
-      where: { id: { in: ids }, userId },
+      where: { id: { in: ids } },
       select: { id: true, source: true, projectId: true },
     });
     if (tasks.length !== new Set(ids).size) {
       throw new AppError("NOT_FOUND", "Tarea no encontrada");
     }
+    for (const id of ids) await assertTaskAccess(userId, id);
     const manualIds = tasks.filter((task) => task.source === "MANUAL").map((task) => task.id);
     const integrationIds = tasks.filter((task) => task.source !== "MANUAL").map((task) => task.id);
     if (integrationIds.length > 0) {
@@ -332,10 +367,10 @@ export class TaskService {
       where: { id: { in: ids } },
       select: { projectId: true },
     });
-    await prisma.task.updateMany({ where: { id: { in: ids }, userId }, data: { projectId } });
+    await prisma.task.updateMany({ where: { id: { in: ids } }, data: { projectId } });
     const oldAudiences = await Promise.all(movedTasks.map((task) => this.audience(task.projectId, userId)));
     const targetAudience = await this.audience(projectId, userId);
-    emitToUsers([...oldAudiences.flat(), ...targetAudience], "tasks");
+    emitToUsers([...oldAudiences.flat(), ...targetAudience], "tasks", { projectId: projectId ?? undefined });
     return { moved: ids.length };
   }
 
@@ -347,7 +382,10 @@ export class TaskService {
       data: { archivedAt: archived ? new Date() : null },
       include: { subtasks: { orderBy: { order: "asc" } } },
     });
-    emitToUsers(await this.audience(existing?.projectId ?? null, userId), "tasks");
+    emitToUsers(await this.audience(existing?.projectId ?? null, userId), "tasks", {
+      projectId: existing?.projectId ?? undefined,
+      taskId: id,
+    });
     return taskProgress(updated);
   }
 
@@ -372,21 +410,22 @@ export class TaskService {
 
   async listSubtasks(userId: string, taskId: string) {
     await assertTaskAccess(userId, taskId);
-    return prisma.subtask.findMany({ where: { userId, taskId }, orderBy: { order: "asc" } });
+    return prisma.subtask.findMany({ where: { taskId }, orderBy: { order: "asc" } });
   }
 
   async createSubtask(userId: string, taskId: string, data: CreateSubtaskDto) {
     await assertTaskAccess(userId, taskId);
-    const last = await prisma.subtask.findFirst({ where: { userId, taskId }, orderBy: { order: "desc" }, select: { order: true } });
+    const last = await prisma.subtask.findFirst({ where: { taskId }, orderBy: { order: "desc" }, select: { order: true } });
     const parent = await prisma.task.findUnique({ where: { id: taskId }, select: { projectId: true } });
     const subtask = await prisma.subtask.create({ data: { userId, taskId, title: data.title, order: (last?.order ?? -1) + 1 } });
-    emitToUsers(await this.audience(parent?.projectId ?? null, userId), "tasks");
+    await projectActivityService.record({ projectId: parent?.projectId, actorId: userId, type: "SUBTASK_CREATED", entityId: taskId, entityTitle: data.title });
+    emitToUsers(await this.audience(parent?.projectId ?? null, userId), "tasks", { projectId: parent?.projectId ?? undefined, taskId });
     return subtask;
   }
 
   async updateSubtask(userId: string, taskId: string, subtaskId: string, data: UpdateSubtaskDto) {
     await assertTaskAccess(userId, taskId);
-    const subtask = await prisma.subtask.findFirst({ where: { id: subtaskId, taskId, userId } });
+    const subtask = await prisma.subtask.findFirst({ where: { id: subtaskId, taskId } });
     if (!subtask) throw new AppError("NOT_FOUND", "Subtarea no encontrada");
     const parent = await prisma.task.findUnique({ where: { id: taskId }, select: { projectId: true } });
     const updated = await prisma.subtask.update({
@@ -396,16 +435,18 @@ export class TaskService {
         ...(data.completed !== undefined ? { completed: data.completed, completedAt: data.completed ? new Date() : null } : {}),
       },
     });
-    emitToUsers(await this.audience(parent?.projectId ?? null, userId), "tasks");
+    await projectActivityService.record({ projectId: parent?.projectId, actorId: userId, type: "SUBTASK_UPDATED", entityId: subtaskId, entityTitle: updated.title });
+    emitToUsers(await this.audience(parent?.projectId ?? null, userId), "tasks", { projectId: parent?.projectId ?? undefined, taskId });
     return updated;
   }
 
   async deleteSubtask(userId: string, taskId: string, subtaskId: string) {
     await assertTaskAccess(userId, taskId);
     const parent = await prisma.task.findUnique({ where: { id: taskId }, select: { projectId: true } });
-    const result = await prisma.subtask.deleteMany({ where: { id: subtaskId, taskId, userId } });
+    const result = await prisma.subtask.deleteMany({ where: { id: subtaskId, taskId } });
     if (result.count !== 1) throw new AppError("NOT_FOUND", "Subtarea no encontrada");
-    emitToUsers(await this.audience(parent?.projectId ?? null, userId), "tasks");
+    await projectActivityService.record({ projectId: parent?.projectId, actorId: userId, type: "SUBTASK_DELETED", entityId: subtaskId });
+    emitToUsers(await this.audience(parent?.projectId ?? null, userId), "tasks", { projectId: parent?.projectId ?? undefined, taskId });
   }
 }
 

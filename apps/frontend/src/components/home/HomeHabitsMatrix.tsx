@@ -35,7 +35,7 @@ export function HomeHabitsMatrix({
   const entries = matrix?.entries ?? [];
 
   return (
-    <section className="space-y-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
+    <section className="space-y-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
       <header className="flex items-start justify-between gap-3">
         <div>
           <p className="font-label-caps text-label-caps text-primary">SEGUIMIENTO</p>
@@ -58,7 +58,7 @@ export function HomeHabitsMatrix({
       {habits.length === 0 ? (
         <p className="font-body-sm text-body-sm text-on-surface-variant">
           Aún no tienes hábitos.{" "}
-          <button className="text-primary hover:underline" onClick={onOpenManager} type="button">
+           <button className="rounded-md px-1 py-0.5 text-primary hover:bg-surface-container-low hover:underline" onClick={onOpenManager} type="button">
             Crea el primero.
           </button>
         </p>

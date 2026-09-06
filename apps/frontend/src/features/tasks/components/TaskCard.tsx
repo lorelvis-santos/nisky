@@ -1,11 +1,11 @@
 "use client";
 
-import { AlertCircle, CalendarDays, CheckCircle2, CheckSquare2, Circle, GripVertical, MessageSquare, MoreHorizontal, Play, Square, Timer } from "lucide-react";
+import { CalendarDays, CheckCircle2, CheckSquare2, Circle, GripVertical, MessageSquare, MoreHorizontal, Play, Square, Timer } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import type { Task } from "@/types/entities";
-import { cn, formatDateTime, isTaskOverdue } from "@/lib/utils";
+import { cn, isLegacyNoonDate, isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "./PriorityChip";
 import { taskDragId } from "../dnd/TasksDnDProvider";
 import { useTaskSelection } from "../selection/TaskSelectionContext";
@@ -16,10 +16,32 @@ type HandleProps = {
   listeners: DraggableSyntheticListeners;
 };
 
+function formatDueDate(value: string) {
+  const date = new Date(value);
+  const dateLabel = new Intl.DateTimeFormat("es-CO", {
+    day: "numeric",
+    month: "short",
+    weekday: "short",
+  })
+    .format(date)
+    .replace(/[.,]/g, "");
+  const compactDateLabel = `${dateLabel.charAt(0).toUpperCase()}${dateLabel.slice(1)}`;
+  const isEndOfDay = (date.getHours() === 23 && date.getMinutes() === 59) || isLegacyNoonDate(value);
+  if (isEndOfDay) return compactDateLabel;
+  const timeLabel = date.toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `${compactDateLabel} · ${timeLabel}`;
+}
+
 export function TaskCardShell({
   task,
   onOpen,
   onToggle,
+  onPostponeToday,
+  onPlanToday,
   onStartPomodoro,
   dragging = false,
   dropTarget = false,
@@ -28,6 +50,8 @@ export function TaskCardShell({
   task: Task;
   onOpen: () => void;
   onToggle: () => void;
+  onPostponeToday?: () => void;
+  onPlanToday?: () => void;
   onStartPomodoro?: () => void;
   dragging?: boolean;
   dropTarget?: boolean;
@@ -46,11 +70,13 @@ export function TaskCardShell({
       aria-selected={isSelecting ? selected : undefined}
       role="option"
       className={cn(
-        "group relative flex min-h-[112px] flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline",
+        "group relative flex min-h-[104px] flex-col gap-3 rounded-xl border bg-surface-container-lowest p-4 shadow-sm transition-all",
+        !overdue && "hover:border-outline",
+        !overdue && "hover:-translate-y-px hover:shadow-md",
         isSelecting && "cursor-pointer",
         selected ? "border-2 border-primary bg-primary-fixed/20" : completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant",
         isSelecting && !selected && "hover:border-primary/60",
-        overdue && "border-l-2 border-l-error",
+        overdue && "border-l-4 border-l-error hover:border-l-error hover:shadow-md",
         dropTarget && "border-2 border-primary bg-primary-container/20",
         dragging && "opacity-40",
       )}
@@ -71,7 +97,7 @@ export function TaskCardShell({
         <div className="flex min-w-0 flex-1 items-start gap-2">
           <button
             aria-label={isSelecting ? (selected ? "Quitar selección" : "Seleccionar tarea") : completed ? "Marcar pendiente" : "Marcar completada"}
-            className="mt-0.5 shrink-0 text-outline hover:text-primary"
+            className="mt-0.5 shrink-0 rounded-full p-1 text-outline hover:bg-surface-container-low hover:text-primary"
             onClick={(event) => {
               event.stopPropagation();
               if (isSelecting) selection.toggleSelect(task.id);
@@ -82,7 +108,7 @@ export function TaskCardShell({
             {isSelecting ? (selected ? <CheckSquare2 size={17} className="text-primary" /> : <Square size={17} />) : completed ? <CheckCircle2 size={17} /> : <Circle size={17} />}
           </button>
           <button
-            className="min-w-0 flex-1 text-left"
+             className="min-w-0 flex-1 rounded-md text-left"
             onClick={(event) => {
               event.stopPropagation();
               if (isSelecting) selection.toggleSelect(task.id);
@@ -91,7 +117,7 @@ export function TaskCardShell({
             type="button"
           >
             <p
-              className={`line-clamp-2 break-words font-body-sm text-body-sm leading-5 ${completed ? "line-through" : ""}`}
+              className={`line-clamp-2 break-words font-body-md text-body-md font-medium leading-5 ${completed ? "line-through" : ""}`}
             >
               {task.title}
             </p>
@@ -102,7 +128,7 @@ export function TaskCardShell({
           {handleProps && !isSelecting && (
             <button
               aria-label={`Arrastrar ${task.title}`}
-              className="flex cursor-grab touch-none items-center p-1 text-on-surface-variant hover:text-primary active:cursor-grabbing"
+              className="flex cursor-grab touch-none items-center rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary active:cursor-grabbing"
               ref={handleProps.ref}
               type="button"
               {...handleProps.attributes}
@@ -115,7 +141,7 @@ export function TaskCardShell({
           {!isSelecting && (
             <button
               aria-label={`Más detalles de ${task.title}`}
-              className="mt-0.5 shrink-0 text-on-surface-variant opacity-50 transition-opacity hover:text-primary group-hover:opacity-100"
+              className="mt-0.5 shrink-0 rounded-md p-1 text-on-surface-variant opacity-50 transition-opacity hover:bg-surface-container-low hover:text-primary group-hover:opacity-100"
               onClick={onOpen}
               type="button"
             >
@@ -126,32 +152,58 @@ export function TaskCardShell({
       </div>
       <div className="ml-7 mt-auto flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          {task.project && (
-            <span className="inline-flex min-w-0 max-w-[10rem] items-center gap-1.5 border border-outline-variant bg-surface-container-low px-1.5 py-0.5 font-label-caps text-[10px] tracking-wide text-on-surface-variant" title={task.project.name}>
-              <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: task.project.color }} />
-              <span className="truncate">{task.project.name}</span>
-            </span>
-          )}
-          <PriorityChip priority={task.priority} />
-          {task.dueDate && (
-            <span
-              className={cn(
-                "flex items-center gap-1 font-data-mono text-data-mono text-[11px]",
-                overdue ? "text-error" : "text-on-surface-variant",
+           {task.project && (
+             <span className="inline-flex min-w-0 max-w-[10rem] items-center gap-1.5 font-label-md text-[11px] leading-4 text-on-surface-variant" title={task.project.name}>
+               <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: task.project.color }} />
+               <span className="truncate">{task.project.name}</span>
+             </span>
+           )}
+           {(task.priority === "URGENT" || task.priority === "HIGH") && (
+             <PriorityChip priority={task.priority} />
+           )}
+           {task.dueDate && (
+             <time
+               className={cn(
+                "inline-flex items-center gap-1 font-label-md text-[11px] leading-4",
+                overdue ? "font-semibold text-error" : "text-on-surface-variant",
               )}
+              dateTime={task.dueDate}
               title={task.dueDate}
             >
-              <CalendarDays size={12} />
-              {formatDateTime(task.dueDate)}
-            </span>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {(task.commentCount ?? 0) > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-on-surface-variant" title="Comentarios"><MessageSquare size={13} /> {task.commentCount}</span>}
-          <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
-          {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
-          {overdue && <AlertCircle aria-label="Vencida" className="shrink-0 text-error" size={13} />}
-          {onStartPomodoro && !isSelecting && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="flex shrink-0 items-center justify-center border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
+               <CalendarDays className="shrink-0" size={12} />
+               {formatDueDate(task.dueDate)}
+             </time>
+           )}
+         </div>
+         <div className="flex flex-wrap items-center justify-end gap-2 text-[11px] leading-4">
+           {(task.commentCount ?? 0) > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-on-surface-variant" title="Comentarios"><MessageSquare size={12} /> {task.commentCount}</span>}
+           {((task.pomodoroCount ?? 0) > 0 || (task.pomodoroEstimate ?? 0) > 0) && <span className="flex items-center gap-1 font-data-mono text-data-mono text-tertiary" title="Pomodoros"><Timer size={12} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>}
+           {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-secondary" title="Subtareas"><CheckSquare2 size={12} /> {completedSubtasks}/{subtaskTotal}</span>}
+           {onPlanToday && !isSelecting && (
+             <button
+               className="inline-flex h-8 items-center rounded-lg border border-outline-variant bg-surface-container-low px-2.5 font-label-md text-label-md font-semibold text-secondary hover:bg-secondary-fixed"
+               onClick={(event) => {
+                 event.stopPropagation();
+                 onPlanToday();
+               }}
+               type="button"
+             >
+               Planificar hoy
+             </button>
+           )}
+           {overdue && onPostponeToday && !isSelecting && (
+             <button
+                className="inline-flex h-8 items-center rounded-lg border border-outline-variant bg-surface-container-low px-2.5 font-label-md text-label-md font-semibold text-on-surface hover:border-error/30 hover:bg-error-container hover:text-on-error-container"
+               onClick={(event) => {
+                 event.stopPropagation();
+                 onPostponeToday();
+              }}
+              type="button"
+            >
+               Posponer a hoy
+             </button>
+           )}
+           {onStartPomodoro && !isSelecting && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="flex shrink-0 items-center justify-center rounded-md border border-outline-variant bg-surface p-1 text-primary transition-opacity hover:border-primary hover:bg-primary-fixed sm:invisible sm:opacity-0 sm:group-focus-within:visible sm:group-focus-within:opacity-100 sm:group-hover:visible sm:group-hover:opacity-100" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
         </div>
       </div>
     </article>

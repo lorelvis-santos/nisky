@@ -10,9 +10,10 @@ export function useTasksQuery(params: TaskQuery = {}) {
 }
 
 type PaginatedTaskParams = Omit<TaskQuery, "limit">;
+type PaginatedTaskOptions = { enabled?: boolean; pageSize?: number };
 
-export function usePaginatedTasksQuery(params: PaginatedTaskParams = {}, options?: { enabled?: boolean }) {
-  const queryParams = { ...params, page: params.page ?? 1, limit: TASKS_PAGE_SIZE };
+export function usePaginatedTasksQuery(params: PaginatedTaskParams = {}, options?: PaginatedTaskOptions) {
+  const queryParams = { ...params, page: params.page ?? 1, limit: options?.pageSize ?? TASKS_PAGE_SIZE };
   return useQuery({
     enabled: options?.enabled,
     placeholderData: keepPreviousData,
@@ -29,11 +30,14 @@ export function useTaskQuery(id: string | null) {
   return useQuery({ queryKey: ["task", id], queryFn: () => fetchTask(id as string), enabled: Boolean(id) });
 }
 
-export function useUnplannedTasksQuery(params: Omit<TaskQuery, "limit" | "scheduled" | "status"> = {}) {
+export function useUnplannedTasksQuery(
+  params: Omit<TaskQuery, "limit" | "scheduled" | "status"> = {},
+  options?: { includeCompleted?: boolean },
+) {
   return usePaginatedTasksQuery({
     ...params,
     scheduled: "UNPLANNED",
-    status: ["PENDING", "IN_PROGRESS"],
+    status: options?.includeCompleted ? undefined : ["PENDING", "IN_PROGRESS"],
     sort: "priority",
     order: "desc",
   });
@@ -100,6 +104,7 @@ export function useTaskMutations() {
   const invalidate = async () => {
     await client.invalidateQueries({ queryKey: ["tasks"] });
     await client.invalidateQueries({ queryKey: ["task"] });
+    await client.invalidateQueries({ queryKey: ["projects"] });
     await client.invalidateQueries({ queryKey: ["home"] });
   };
   const create = useMutation({ mutationFn: createTask, onSuccess: invalidate });

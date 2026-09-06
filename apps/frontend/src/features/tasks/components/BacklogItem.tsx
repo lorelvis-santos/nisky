@@ -20,6 +20,7 @@ export function BacklogItemShell({
   task,
   onOpen,
   onToggle,
+  onPlanToday,
   onStartPomodoro,
   dragging = false,
   dropTarget = false,
@@ -28,6 +29,7 @@ export function BacklogItemShell({
   task: Task;
   onOpen: () => void;
   onToggle: () => void;
+  onPlanToday?: () => void;
   onStartPomodoro?: () => void;
   dragging?: boolean;
   dropTarget?: boolean;
@@ -45,7 +47,7 @@ export function BacklogItemShell({
       aria-selected={isSelecting ? selected : undefined}
       role="option"
       className={cn(
-        "group relative flex min-h-[104px] flex-col gap-2 border bg-surface p-3 transition-colors hover:border-outline",
+         "group relative flex min-h-[104px] flex-col gap-2 rounded-lg border bg-surface p-3 transition-colors hover:border-outline",
         isSelecting && "cursor-pointer",
         selected ? "border-2 border-primary bg-primary-fixed/20" : dropTarget ? "border-2 border-primary bg-primary-container/20" : "border-outline-variant",
         isSelecting && !selected && "hover:border-primary/60",
@@ -66,7 +68,7 @@ export function BacklogItemShell({
         <div className="flex min-w-0 flex-1 items-start gap-2">
           <button
             aria-label={isSelecting ? (selected ? "Quitar selección" : "Seleccionar tarea") : `Abrir ${task.title}`}
-            className="mt-0.5 shrink-0 text-outline hover:text-primary"
+             className="mt-0.5 shrink-0 rounded-md p-1 text-outline hover:bg-surface-container-low hover:text-primary"
             onClick={(event) => {
               event.stopPropagation();
               if (isSelecting) selection.toggleSelect(task.id);
@@ -77,7 +79,7 @@ export function BacklogItemShell({
             {isSelecting ? (selected ? <CheckSquare2 size={17} className="text-primary" /> : <Square size={17} />) : null}
           </button>
           <button
-            className="min-w-0 flex-1 text-left"
+             className="min-w-0 flex-1 rounded-md text-left"
             onClick={(event) => {
               event.stopPropagation();
               if (isSelecting) selection.toggleSelect(task.id);
@@ -97,7 +99,7 @@ export function BacklogItemShell({
           {handleProps && !isSelecting && (
             <button
               aria-label={`Arrastrar ${task.title}`}
-              className="flex cursor-grab touch-none items-center p-1 text-on-surface-variant hover:text-primary active:cursor-grabbing"
+               className="flex cursor-grab touch-none items-center rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary active:cursor-grabbing"
               ref={handleProps.ref}
               type="button"
               {...handleProps.attributes}
@@ -110,7 +112,7 @@ export function BacklogItemShell({
           {!isSelecting && (
             <button
               aria-label={`Más detalles de ${task.title}`}
-              className="mt-0.5 shrink-0 text-on-surface-variant opacity-50 transition-opacity hover:text-primary group-hover:opacity-100"
+               className="mt-0.5 shrink-0 rounded-md p-1 text-on-surface-variant opacity-50 transition-opacity hover:bg-surface-container-low hover:text-primary group-hover:opacity-100"
               onClick={onOpen}
               type="button"
             >
@@ -122,7 +124,7 @@ export function BacklogItemShell({
       <div className="flex items-center justify-between gap-2 text-on-surface-variant">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           {task.project && (
-            <span className="inline-flex min-w-0 max-w-[10rem] items-center gap-1.5 border border-outline-variant bg-surface-container-low px-1.5 py-0.5 font-label-caps text-[10px] tracking-wide text-on-surface-variant" title={task.project.name}>
+             <span className="inline-flex min-w-0 max-w-[10rem] items-center gap-1.5 rounded-md border border-outline-variant bg-surface-container-low px-1.5 py-0.5 font-label-caps text-[10px] tracking-wide text-on-surface-variant" title={task.project.name}>
               <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: task.project.color }} />
               <span className="truncate">{task.project.name}</span>
             </span>
@@ -144,18 +146,32 @@ export function BacklogItemShell({
           {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-secondary" title="Subtareas"><CheckSquare2 size={13} /> {completedSubtasks}/{subtaskTotal}</span>}
           {(task.commentCount ?? 0) > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs" title="Comentarios"><MessageSquare size={13} /> {task.commentCount}</span>}
         </div>
-        {!isSelecting && (
+        <div className="flex items-center gap-1">
+          {onPlanToday && !isSelecting && (
+            <button
+              className="rounded-md bg-surface-container-high px-2 py-1 font-body-sm text-body-sm font-semibold text-secondary hover:bg-secondary-fixed"
+              onClick={(event) => {
+                event.stopPropagation();
+                onPlanToday();
+              }}
+              type="button"
+            >
+              Planificar hoy
+            </button>
+          )}
+          {!isSelecting && (
           <button
             aria-label={task.status === "COMPLETED" ? "Marcar pendiente" : "Marcar completada"}
-            className="font-body-sm text-body-sm hover:text-primary"
+             className="rounded-md px-2 py-1 font-body-sm text-body-sm hover:bg-surface-container-low hover:text-primary"
             onClick={onToggle}
             type="button"
           >
             {task.status === "COMPLETED" ? "Completada" : "Pendiente"}
           </button>
-        )}
+          )}
+        </div>
       </div>
-      {onStartPomodoro && !isSelecting && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="absolute bottom-3 right-3 flex items-center justify-center border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
+       {onStartPomodoro && !isSelecting && <button aria-label={`Iniciar Pomodoro para ${task.title}`} className="absolute bottom-3 right-3 flex items-center justify-center rounded-md border border-outline-variant bg-surface p-1 text-primary hover:border-primary hover:bg-primary-fixed" onClick={(event) => { event.stopPropagation(); onStartPomodoro(); }} onPointerDown={(event) => event.stopPropagation()} title="Ir a Pomodoro" type="button"><Play size={13} /></button>}
     </article>
   );
 }

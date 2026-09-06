@@ -4,6 +4,7 @@ import { buildPaginatedResponse, getPaginationArgs } from "../../utils/paginatio
 import { assertProjectAccess, assertTaskAccess, getProjectAudience } from "../projects/access";
 import { pushService } from "../push/push.service";
 import { emitToUsers } from "../../config/socket.emit";
+import { projectActivityService } from "../projects/project-activity.service";
 
 const COMMENT_AUTHOR_SELECT = { id: true, email: true, name: true, avatarUrl: true };
 
@@ -49,6 +50,7 @@ export class CommentService {
       include: { author: { select: COMMENT_AUTHOR_SELECT } },
     });
     await this.notifyProjectMembers(projectId, userId, comment);
+    await projectActivityService.record({ projectId, actorId: userId, type: "COMMENT_CREATED", entityId: comment.id, entityTitle: comment.body.slice(0, 120) });
     emitToUsers(await getProjectAudience(projectId), "comments", { kind: "project", projectId });
     return comment;
   }
@@ -83,6 +85,7 @@ export class CommentService {
     const task = await prisma.task.findUnique({ where: { id: taskId }, select: { projectId: true } });
     if (task?.projectId) {
       await this.notifyProjectMembers(task.projectId, userId, comment, taskId);
+      await projectActivityService.record({ projectId: task.projectId, actorId: userId, type: "COMMENT_CREATED", entityId: comment.id, entityTitle: comment.body.slice(0, 120), metadata: { taskId } });
       emitToUsers(await getProjectAudience(task.projectId), "comments", { kind: "task", projectId: task.projectId, taskId });
     }
     return comment;
@@ -128,7 +131,7 @@ export class CommentService {
 
     const authorName = comment.author.name ?? comment.author.email;
     const preview = comment.body.length > 80 ? `${comment.body.slice(0, 80)}…` : comment.body;
-    const url = taskId ? `/tasks?taskId=${encodeURIComponent(taskId)}` : `/projects/${projectId}#comments`;
+    const url = taskId ? `/tasks?taskId=${encodeURIComponent(taskId)}` : `/projects/${projectId}?tab=chat`;
 
     await Promise.all(
       pushTargets.map((userId) =>

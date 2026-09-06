@@ -95,12 +95,12 @@ function ModalBody({
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="top-auto bottom-0 flex max-h-[85vh] w-full max-w-md translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl rounded-b-none border-outline-variant bg-surface p-0 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:rounded-2xl" showCloseButton={false}>
+      <DialogContent className="top-auto bottom-0 flex max-h-[85vh] w-full max-w-md translate-y-0 flex-col gap-0 overflow-hidden rounded-t-lg rounded-b-none border-outline-variant bg-surface p-0 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:rounded-lg" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{target ? "Editar bloque" : "Programar bloque"}</DialogTitle>
           <DialogDescription className="sr-only">Configura el horario de un bloque de tiempo.</DialogDescription>
           <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+             <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
               <X size={19} />
             </button>
           </DialogClose>

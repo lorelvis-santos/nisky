@@ -149,7 +149,7 @@ export function ProfileSection() {
             type="file"
           />
           <button
-            className="flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+            className="flex items-center gap-1.5 rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
             onClick={() => fileInputRef.current?.click()}
             type="button"
           >
@@ -157,7 +157,7 @@ export function ProfileSection() {
           </button>
           {user?.avatarUrl && (
             <button
-              className="flex items-center gap-1.5 border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50"
               disabled={saving}
               onClick={() => void removePhoto()}
               type="button"
@@ -182,17 +182,17 @@ export function ProfileSection() {
               }}
               value={name}
             />
-            <button aria-label="Guardar nombre" className="flex items-center gap-1 border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:opacity-50" disabled={saving || !name.trim()} onClick={() => void saveName()} type="button">
+            <button aria-label="Guardar nombre" className="flex items-center gap-1 rounded-md border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:opacity-50" disabled={saving || !name.trim()} onClick={() => void saveName()} type="button">
               <Check size={14} /> Guardar
             </button>
-            <button className="border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high" onClick={() => { setEditing(false); setName(user?.name ?? ""); }} type="button">
+            <button className="rounded-md border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high" onClick={() => { setEditing(false); setName(user?.name ?? ""); }} type="button">
               Cancelar
             </button>
           </div>
         ) : (
           <div className="mt-1 flex items-center gap-2">
             <p className="font-body-md text-body-md">{user?.name ?? "-"}</p>
-            <button className="border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-surface-container-high" onClick={() => setEditing(true)} type="button">
+            <button className="rounded-md border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-surface-container-high" onClick={() => setEditing(true)} type="button">
               Editar
             </button>
           </div>
@@ -224,7 +224,7 @@ export function ProfileSection() {
               </div>
               <button
                 aria-label="Guardar nombre de usuario"
-                className="flex items-center gap-1 border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:opacity-50"
+                className="flex items-center gap-1 rounded-md border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high disabled:opacity-50"
                 disabled={saving || Boolean(usernameHint(username.trim().replace(/^@/, "")))}
                 onClick={() => void saveUsername()}
                 type="button"
@@ -232,7 +232,7 @@ export function ProfileSection() {
                 <Check size={14} /> Guardar
               </button>
               <button
-                className="border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high"
+                className="rounded-md border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high"
                 onClick={() => {
                   setEditingUsername(false);
                   setUsername(user?.username ?? "");
@@ -251,12 +251,12 @@ export function ProfileSection() {
         ) : (
           <div className="mt-1 flex items-center gap-2">
             <p className="font-data-mono text-data-mono">{user?.username ? `@${user.username}` : "-"}</p>
-            <button className="border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-surface-container-high" onClick={() => { setEditingUsername(true); setUsername(user?.username ?? ""); }} type="button">
+            <button className="rounded-md border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-surface-container-high" onClick={() => { setEditingUsername(true); setUsername(user?.username ?? ""); }} type="button">
               {user?.username ? "Editar" : "Crear"}
             </button>
             {user?.username && (
               <button
-                className="border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50"
+                className="rounded-md border border-outline-variant px-2 py-1 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50"
                 disabled={saving}
                 onClick={() => void removeUsername()}
                 type="button"

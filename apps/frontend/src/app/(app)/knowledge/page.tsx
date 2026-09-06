@@ -4,31 +4,43 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BookOpen } from "lucide-react";
 import { KnowledgeSidebar } from "@/features/knowledge/components/KnowledgeSidebar";
+import type { KnowledgeFilter } from "@/features/knowledge/components/KnowledgeSidebar";
 import { NoteCard } from "@/features/knowledge/components/NoteCard";
 import { NoteEditorModal } from "@/features/knowledge/components/NoteEditorModal";
+import { NotePagination } from "@/features/knowledge/components/NotePagination";
 import { useFacetsQuery, useNoteMutations, useNotesQuery } from "@/features/knowledge/hooks/useKnowledge";
 import type { NoteForm } from "@/features/knowledge/schemas/knowledge.schema";
 import type { Note } from "@/types/entities";
 
-type Filter = { type: "category" | "tag"; name: string } | null;
-
 export default function KnowledgePage() {
-  const [filter, setFilter] = useState<Filter>(null);
+  const [filter, setFilter] = useState<KnowledgeFilter>(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<Note | null>(null);
   const [creating, setCreating] = useState(false);
 
   const query = useNotesQuery({
+    page,
     q: search || undefined,
     category: filter?.type === "category" ? filter.name : undefined,
     tag: filter?.type === "tag" ? filter.name : undefined,
-    limit: 50,
+    limit: 20,
   });
   const facetsQuery = useFacetsQuery();
   const mutations = useNoteMutations();
 
   const notes = query.data?.data ?? [];
   const modalOpen = creating || Boolean(editing);
+
+  const updateFilter = (nextFilter: KnowledgeFilter) => {
+    setPage(1);
+    setFilter(nextFilter);
+  };
+
+  const updateSearch = (value: string) => {
+    setPage(1);
+    setSearch(value);
+  };
 
   const save = async (form: NoteForm) => {
     if (creating) {
@@ -83,7 +95,7 @@ export default function KnowledgePage() {
         <div className="flex w-full items-center gap-3 sm:w-auto">
           <input
             className="field h-10 w-full rounded-full border-0 bg-surface-container-lowest px-4 shadow-sm sm:w-56"
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => updateSearch(event.target.value)}
             placeholder="Buscar notas..."
             value={search}
           />
@@ -99,28 +111,33 @@ export default function KnowledgePage() {
           <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus notas. Inténtalo de nuevo.</div>
         ) : (
           <div className="grid grid-cols-1 gap-4 p-container-padding sm:gap-6 sm:px-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:px-10">
-            <KnowledgeSidebar active={filter} facets={facetsQuery.data} onFilter={setFilter} />
-            {notes.length === 0 ? (
-              <div className="flex min-h-[16rem] flex-col items-center justify-center gap-2 rounded-xl border border-outline-variant/70 bg-surface-container-lowest p-section-gap text-center shadow-sm">
+             <KnowledgeSidebar active={filter} facets={facetsQuery.data} onFilter={updateFilter} />
+             <div className="min-w-0">
+             {notes.length === 0 ? (
+               <div className="flex min-h-[16rem] flex-col items-center justify-center gap-2 rounded-lg border border-outline-variant/70 bg-surface-container-lowest p-section-gap text-center shadow-sm">
                 <BookOpen className="text-primary" size={28} />
                 <p className="font-label-caps text-label-caps text-on-surface-variant">MIS NOTAS</p>
                 <p className="max-w-xl font-body-sm text-body-sm text-on-surface-variant">
                   {filter || search ? "No encontramos notas con esa búsqueda." : "Guarda aquí tus notas, referencias e ideas."}
                 </p>
                 {!filter && !search && (
-                  <button className="mt-2 bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={openNew} type="button">
+                   <button className="mt-2 rounded-md bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={openNew} type="button">
                     Nueva nota
                   </button>
                 )}
               </div>
-            ) : (
-              <div className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {notes.map((note) => (
-                  <NoteCard key={note.id} note={note} onEdit={openEdit} onTogglePin={togglePin} />
-                ))}
-              </div>
-            )}
-          </div>
+             ) : (
+               <>
+                 <div className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                   {notes.map((note) => (
+                     <NoteCard key={note.id} note={note} onEdit={openEdit} onTogglePin={togglePin} />
+                   ))}
+                 </div>
+                 <NotePagination isFetching={query.isFetching} meta={query.data?.meta} onPageChange={setPage} />
+               </>
+             )}
+             </div>
+           </div>
         )}
       </div>
       {modalOpen && (

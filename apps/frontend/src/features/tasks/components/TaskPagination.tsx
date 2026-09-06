@@ -18,7 +18,7 @@ export function TaskPagination({
     <nav aria-label="Paginacion de tareas" className="flex items-center justify-center gap-2 border-t border-outline-variant px-3 py-3">
       <button
         aria-label="Pagina anterior"
-        className="flex items-center gap-1 border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex items-center gap-1 rounded-lg border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
         disabled={isFetching || meta.currentPage <= 1}
         onClick={() => onPageChange(meta.currentPage - 1)}
         type="button"
@@ -32,7 +32,7 @@ export function TaskPagination({
       </span>
       <button
         aria-label="Pagina siguiente"
-        className="flex items-center gap-1 border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex items-center gap-1 rounded-lg border border-outline-variant px-2 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
         disabled={isFetching || meta.currentPage >= meta.totalPages}
         onClick={() => onPageChange(meta.currentPage + 1)}
         type="button"

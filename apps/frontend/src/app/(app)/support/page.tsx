@@ -9,7 +9,7 @@ const FAQS: Array<{ question: string; answer: string }> = [
   {
     question: "¿Cómo planifico mis tareas?",
     answer:
-      "Entra a Planificación y tareas. Verás tu semana: arrastra las tareas entre días o crea nuevas en el proyecto que quieras. Lo que no tenga fecha aún, espera en Pendientes hasta que le encuentres día.",
+      "Entra a Tareas. Usa la Lista para revisar tus vencimientos y la sección Por organizar para ordenar lo que todavía no tiene fecha ni está planificado. Para reservar una hora concreta, usa Agenda.",
   },
   {
     question: "¿Qué es la Agenda?",

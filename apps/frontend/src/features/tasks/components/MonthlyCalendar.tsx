@@ -8,7 +8,7 @@ import { cn, formatDateTime, isTaskOverdue } from "@/lib/utils";
 const dayNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
 const priorityDot: Record<string, string> = {
   URGENT: "bg-error",
-  HIGH: "bg-tertiary",
+  HIGH: "bg-warning",
   NORMAL: "bg-secondary",
   LOW: "bg-outline-variant",
 };
@@ -71,7 +71,7 @@ export function MonthlyCalendar({
           return (
             <div
               className={cn(
-                "flex min-h-0 min-w-0 cursor-pointer flex-col border border-outline-variant bg-surface-container-lowest p-1.5 transition-colors hover:border-primary hover:bg-secondary-container/10",
+                 "flex min-h-0 min-w-0 cursor-pointer flex-col rounded-lg border border-outline-variant bg-surface-container-lowest p-1.5 transition-colors hover:border-primary hover:bg-secondary-container/10",
                 !inMonth && "opacity-50",
                 isToday && "border-t-2 border-primary bg-secondary-container/20",
                 isSelected && "border-2 border-primary",
@@ -83,7 +83,7 @@ export function MonthlyCalendar({
                 aria-label={`Ver las tareas del ${date.toLocaleDateString("es-CO", { day: "numeric", month: "short" })}`}
                 aria-pressed={isSelected}
                 className={cn(
-                  "flex w-full shrink-0 items-center justify-between py-0.5 font-data-mono text-data-mono text-xs",
+                   "flex w-full shrink-0 items-center justify-between rounded-md py-0.5 font-data-mono text-data-mono text-xs",
                   inMonth ? "text-on-surface-variant hover:text-primary" : "text-outline",
                   (isToday || isSelected) && "font-bold text-primary",
                 )}
@@ -105,7 +105,7 @@ export function MonthlyCalendar({
                     <button
                       aria-label={`${completed ? "Completada: " : ""}${task.title}`}
                       className={cn(
-                        "flex min-w-0 items-center gap-1 border border-outline-variant bg-surface px-1 py-0.5 text-left hover:border-primary hover:bg-primary-container/20",
+                         "flex min-w-0 items-center gap-1 rounded-md border border-outline-variant bg-surface px-1 py-0.5 text-left hover:border-primary hover:bg-primary-container/20",
                         completed && "opacity-60",
                       )}
                       key={task.id}
@@ -127,7 +127,7 @@ export function MonthlyCalendar({
                 })}
                 {extra > 0 && (
                   <button
-                    className="flex min-w-0 items-center gap-1 border border-dashed border-outline-variant px-1 py-0.5 text-left font-body-sm text-body-sm leading-4 text-on-surface-variant hover:border-primary hover:text-primary"
+                     className="flex min-w-0 items-center gap-1 rounded-md border border-dashed border-outline-variant px-1 py-0.5 text-left font-body-sm text-body-sm leading-4 text-on-surface-variant hover:border-primary hover:text-primary"
                     onClick={() => onSelectDay(key)}
                     type="button"
                   >

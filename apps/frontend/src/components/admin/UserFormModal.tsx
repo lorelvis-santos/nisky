@@ -81,14 +81,14 @@ export function UserFormModal({ user, onClose }: Props) {
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col gap-0 overflow-hidden rounded-lg border-outline-variant bg-surface p-0" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
             <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{user ? "Editar usuario" : "Nuevo usuario"}</DialogTitle>
             <DialogDescription className="sr-only">Administra los datos y permisos del usuario.</DialogDescription>
           </div>
           <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button"><X size={19} /></button>
+            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button"><X size={19} /></button>
           </DialogClose>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5" data-modal-scroll>
@@ -126,12 +126,12 @@ export function UserFormModal({ user, onClose }: Props) {
               <PasswordInput autoComplete="new-password" onChange={(event) => set("confirmPassword", event.target.value)} value={form.confirmPassword} />
             </label>
           </div>
-          {error && <p className="border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
+          {error && <p className="rounded-md border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
           {user && !isSelf ? (
             <button
-              className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap`}
+              className={`${confirmDelete ? "rounded-md bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "rounded-md px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap`}
               onClick={() => {
                 if (!confirmDelete) {
                   setConfirmDelete(true);
@@ -145,8 +145,8 @@ export function UserFormModal({ user, onClose }: Props) {
             </button>
           ) : <span />}
           <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-            <button className="whitespace-nowrap border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={onClose} type="button">Cancelar</button>
-            <button className="whitespace-nowrap bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={() => void save()} type="button">
+            <button className="min-h-11 whitespace-nowrap rounded-md border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" onClick={onClose} type="button">Cancelar</button>
+            <button className="min-h-11 whitespace-nowrap rounded-md bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={() => void save()} type="button">
               {mutations.create.isPending || mutations.update.isPending ? "Guardando..." : user ? "Guardar cambios" : "Crear usuario"}
             </button>
           </div>

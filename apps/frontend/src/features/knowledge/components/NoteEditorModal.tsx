@@ -27,11 +27,13 @@ function parseTags(value: string) {
 
 export function NoteEditorModal({
   note,
+  defaultProjectId,
   onClose,
   onSave,
   onDelete,
 }: {
   note: Note | null;
+  defaultProjectId?: string | null;
   onClose: () => void;
   onSave: (form: NoteForm) => Promise<void>;
   onDelete?: () => Promise<void>;
@@ -42,7 +44,7 @@ export function NoteEditorModal({
     category: note?.category ?? undefined,
     tags: note?.tags ?? [],
     pinned: note?.pinned ?? false,
-    projectId: note?.projectId ?? undefined,
+    projectId: note?.projectId ?? defaultProjectId ?? undefined,
   });
   const [tagsText, setTagsText] = useState((note?.tags ?? []).join(", "));
   const [error, setError] = useState("");
@@ -71,11 +73,11 @@ export function NoteEditorModal({
       category: draft.restored.category ?? undefined,
       tags: draft.restored.tags ?? [],
       pinned: draft.restored.pinned ?? false,
-      projectId: draft.restored.projectId ?? undefined,
+      projectId: draft.restored.projectId ?? (defaultProjectId ?? undefined),
     });
     setTagsText((draft.restored.tags ?? []).join(", "));
     setRestoredAt(new Date(draft.restored.updatedAt));
-  }, [draft.restored]);
+  }, [defaultProjectId, draft.restored]);
 
   useEffect(() => {
     if (!isNew) return;
@@ -120,22 +122,22 @@ export function NoteEditorModal({
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl border-outline-variant bg-surface p-0" showCloseButton={false}>
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col gap-0 overflow-hidden rounded-lg border-outline-variant bg-surface p-0" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
             <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{note ? "Editar nota" : "Nueva nota"}</DialogTitle>
             <DialogDescription className="sr-only">Edita el título, contenido y organización de tu nota.</DialogDescription>
           </div>
           <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center text-on-surface-variant hover:text-on-surface" type="button"><X size={19} /></button>
+             <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button"><X size={19} /></button>
           </DialogClose>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5" data-modal-scroll>
           {restoredAt && (
-            <p className="flex items-center justify-between gap-2 border border-outline-variant bg-surface-container-low px-3 py-2 font-body-sm text-body-sm text-on-surface-variant">
+             <p className="flex items-center justify-between gap-2 rounded-md border border-outline-variant bg-surface-container-low px-3 py-2 font-body-sm text-body-sm text-on-surface-variant">
               <span>Se restauró tu borrador de {restoredAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.</span>
               <button
-                className="font-body-sm text-body-sm text-error hover:underline"
+                 className="rounded-md px-2 py-1 font-body-sm text-body-sm text-error hover:bg-error-container/30 hover:underline"
                 onClick={() => {
                   setForm({ title: "", content: "", category: undefined, tags: [], pinned: false, projectId: undefined });
                   setTagsText("");
@@ -158,7 +160,7 @@ export function NoteEditorModal({
               <select
                 className="field mt-1"
                 onChange={(event) => {
-                  set("projectId", event.target.value || undefined);
+                  set("projectId", event.target.value || null);
                 }}
                 value={form.projectId ?? ""}
               >
@@ -169,7 +171,7 @@ export function NoteEditorModal({
               </select>
               {form.projectId && (
                 <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
-                  Nota personal vinculada a {projects.find((project) => project.id === form.projectId)?.name ?? "un proyecto"}
+                   Nota compartida en {projects.find((project) => project.id === form.projectId)?.name ?? "un proyecto"}
                 </p>
               )}
             </label>
@@ -194,12 +196,12 @@ export function NoteEditorModal({
             <input checked={form.pinned} className="h-4 w-4 accent-primary" onChange={(event) => set("pinned", event.target.checked)} type="checkbox" />
             <span className="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant"><Pin size={13} /> Nota fijada</span>
           </label>
-          {error && <p className="border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
+           {error && <p className="rounded-md border border-error bg-error-container p-2 font-body-sm text-body-sm text-on-error-container">{error}</p>}
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 sm:gap-3">
           {note && onDelete ? (
             <button
-              className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap`}
+               className={`${confirmDelete ? "rounded-md bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "rounded-md px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap`}
               onClick={() => {
                 if (!confirmDelete) {
                   setConfirmDelete(true);
@@ -217,9 +219,9 @@ export function NoteEditorModal({
               {isNew && (draft.state === "saving" ? "Guardando borrador..." : draft.state === "error" ? "Error al guardar el borrador" : draft.state === "saved" ? "Borrador guardado" : "")}
             </span>
             <DialogClose asChild>
-              <button className="whitespace-nowrap border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">Cancelar</button>
+              <button className="min-h-11 whitespace-nowrap rounded-md border border-outline-variant bg-surface-container-lowest px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">Cancelar</button>
             </DialogClose>
-            <button className="whitespace-nowrap bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={() => void submit()} type="button">
+             <button className="min-h-11 whitespace-nowrap rounded-md bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={() => void submit()} type="button">
               {note ? "Guardar cambios" : "Crear nota"}
             </button>
           </div>

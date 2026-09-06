@@ -8,10 +8,10 @@ export function useNotesQuery(params: NoteQueryParams = {}) {
   });
 }
 
-export function useFacetsQuery() {
+export function useFacetsQuery(projectId?: string | null) {
   return useQuery({
-    queryKey: ["knowledge-facets"],
-    queryFn: fetchKnowledgeFacets,
+    queryKey: ["knowledge-facets", projectId ?? null],
+    queryFn: () => fetchKnowledgeFacets(projectId),
   });
 }
 
@@ -20,6 +20,7 @@ export function useNoteMutations() {
   const invalidate = async () => {
     await client.invalidateQueries({ queryKey: ["knowledge"] });
     await client.invalidateQueries({ queryKey: ["knowledge-facets"] });
+    await client.invalidateQueries({ queryKey: ["projects"] });
   };
 
   const create = useMutation({

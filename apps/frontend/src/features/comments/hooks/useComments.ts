@@ -26,6 +26,8 @@ export function useCommentMutations() {
     onSuccess: (_data, vars) => {
       const key = vars.kind === "project" ? ["comments", "project", vars.id] : ["comments", "task", vars.id];
       void client.invalidateQueries({ queryKey: key });
+      void client.invalidateQueries({ queryKey: ["projects"] });
+      void client.invalidateQueries({ queryKey: ["projects", vars.id, "activity"] });
     },
   });
 

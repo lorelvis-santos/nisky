@@ -35,13 +35,13 @@ export function FutureView({
   ];
 
   return (
-    <section className="space-y-5 rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
+    <section className="space-y-5 rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
       <header className="flex items-center justify-between gap-2 border-b border-outline-variant pb-3">
         <div>
           <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Próximos días</h2>
           <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Tu siguiente ritmo</p>
         </div>
-        <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/tasks?view=week">
+        <Link className="font-label-caps text-label-caps text-primary hover:underline" href="/timeblocks">
           AGENDA <span aria-hidden="true">→</span>
         </Link>
       </header>
@@ -57,7 +57,7 @@ export function FutureView({
                 <h3 className="font-headline-xs text-headline-xs font-semibold text-on-surface">{day.label}</h3>
                 <p className="capitalize font-data-mono text-data-mono text-xs text-on-surface-variant">{day.title}</p>
               </div>
-              <div className="rounded-xl border border-outline-variant/70 bg-surface-container-low p-3">
+              <div className="rounded-lg border border-outline-variant/70 bg-surface-container-low p-3">
                 <div className="space-y-3">
                   {dayBlocks.length === 0 ? (
                     <p className="font-body-sm text-body-sm text-on-surface-variant">Sin bloques</p>

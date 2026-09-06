@@ -51,6 +51,7 @@ export const updateTaskSchema = z
   .object({
     ...taskFields,
     title: taskFields.title.optional(),
+    description: taskFields.description.nullable(),
     dueDate: dateValue.nullable().optional(),
   })
   .superRefine((value, context) => {
@@ -98,7 +99,9 @@ export const taskQuerySchema = z.object({
   order: z.enum(["asc", "desc"]).default("desc"),
   q: z.string().trim().max(100).optional(),
   projectId: z.uuid("El proyecto no es válido").optional(),
+  assigneeId: z.union([z.uuid("El asignado no es válido"), z.literal("__unassigned__")]).optional(),
   scheduled: z.enum(["ALL", "PLANNED", "UNPLANNED"]).default("ALL"),
+  due: z.enum(["ALL", "SET", "UNSET"]).default("ALL"),
 });
 
 export type CreateTaskDto = z.infer<typeof createTaskSchema>;

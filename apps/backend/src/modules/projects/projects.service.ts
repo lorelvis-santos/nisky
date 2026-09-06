@@ -3,10 +3,18 @@ import { prisma } from "../../infra/prisma/client";
 import { AppError } from "../../utils/errors/handler";
 import { pushService } from "../push/push.service";
 import { assertProjectAccess, assertProjectOwner, getProjectAudience, getUserRoleInProject } from "./access";
+import { projectActivityService } from "./project-activity.service";
 import type { CreateProjectDto, UpdateProjectDto } from "./projects.validator";
 import { emitToUsers } from "../../config/socket.emit";
 
 const DEFAULT_COLOR = "#303e51";
+const PROJECT_MEMBER_USER_SELECT = { id: true, email: true, name: true, username: true, avatarUrl: true };
+
+function projectDate(value: string | null | undefined) {
+  if (value === undefined || value === null) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(`${value}T12:00:00.000Z`);
+  return new Date(value);
+}
 
 export class ProjectService {
   private defaultCache = new Map<string, string | null>();
@@ -29,6 +37,70 @@ export class ProjectService {
     return project;
   }
 
+  async getSummary(userId: string, projectId: string) {
+    await assertProjectAccess(userId, projectId);
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) throw new AppError("NOT_FOUND", "Proyecto no encontrado");
+
+    const now = new Date();
+    const taskWhere = { projectId, archivedAt: null };
+    const [members, statusGroups, totalTasks, completedTasks, overdueTasks, upcomingTasks, assigneeGroups, role] = await Promise.all([
+      this.listMembers(userId, projectId),
+      prisma.task.groupBy({ where: taskWhere, by: ["status"], _count: { _all: true } }),
+      prisma.task.count({ where: taskWhere }),
+      prisma.task.count({ where: { ...taskWhere, status: "COMPLETED" } }),
+      prisma.task.count({ where: { ...taskWhere, status: { notIn: ["COMPLETED", "CANCELLED"] }, dueDate: { lt: now } } }),
+      prisma.task.findMany({
+        where: { ...taskWhere, status: { notIn: ["COMPLETED", "CANCELLED"] }, dueDate: { not: null, gte: now } },
+        orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
+        take: 5,
+        include: {
+          assignee: { select: PROJECT_MEMBER_USER_SELECT },
+          _count: { select: { comments: true } },
+        },
+      }),
+      prisma.task.groupBy({ where: taskWhere, by: ["assigneeId"], _count: { _all: true } }),
+      getUserRoleInProject(userId, projectId),
+    ]);
+
+    const counts = {
+      PENDING: 0,
+      IN_PROGRESS: 0,
+      COMPLETED: 0,
+      CANCELLED: 0,
+    };
+    for (const group of statusGroups) counts[group.status] = group._count._all;
+    const assignedCount = new Map(assigneeGroups.map((group) => [group.assigneeId, group._count._all]));
+    const taskCountsByMember = members.map((member) => ({
+      userId: member.userId,
+      count: assignedCount.get(member.userId) ?? 0,
+      user: member.user,
+      role: member.role,
+    }));
+
+    return {
+      project,
+      permissions: {
+        role,
+        canEditProject: role === "OWNER",
+        canDeleteProject: role === "OWNER" && !project.isDefault,
+        canManageMembers: role === "OWNER" && !project.isDefault,
+        canCreateTasks: role !== null,
+        canEditTasks: role !== null,
+      },
+      members,
+      totalTasks,
+      counts: { ...counts, completed: completedTasks, overdue: overdueTasks },
+      progress: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+      upcomingTasks: upcomingTasks.map((task) => ({
+        ...task,
+        commentCount: task._count.comments,
+        _count: undefined,
+      })),
+      taskCountsByMember,
+    };
+  }
+
   async getDefault(userId: string) {
     return prisma.project.findFirst({ where: { userId, isDefault: true } });
   }
@@ -43,14 +115,19 @@ export class ProjectService {
   async create(userId: string, data: CreateProjectDto) {
     const count = await prisma.project.count({ where: { userId } });
     if (count >= 20) throw new AppError("BAD_REQUEST", "Has alcanzado el límite de proyectos");
-    return prisma.project.create({
+    const project = await prisma.project.create({
       data: {
         userId,
         name: data.name,
+        description: data.description ?? null,
+        targetDate: projectDate(data.targetDate),
         color: data.color ?? DEFAULT_COLOR,
         isDefault: false,
+        weeklyTargetMinutes: data.weeklyTargetMinutes ?? null,
       },
     });
+    await projectActivityService.record({ projectId: project.id, actorId: userId, type: "PROJECT_CREATED", entityId: project.id, entityTitle: project.name });
+    return project;
   }
 
   async update(userId: string, id: string, data: UpdateProjectDto) {
@@ -62,14 +139,26 @@ export class ProjectService {
     if (project.isDefault && data.name !== undefined && data.name !== project.name) {
       throw new AppError("FORBIDDEN", "El proyecto por defecto no se puede renombrar");
     }
-    return prisma.project.update({
+    const updated = await prisma.project.update({
       where: { id },
       data: {
         ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+        ...(data.targetDate !== undefined ? { targetDate: projectDate(data.targetDate) } : {}),
         ...(data.color !== undefined ? { color: data.color } : {}),
         ...(data.weeklyTargetMinutes !== undefined ? { weeklyTargetMinutes: data.weeklyTargetMinutes } : {}),
       },
     });
+    await projectActivityService.record({
+      projectId: id,
+      actorId: userId,
+      type: "PROJECT_UPDATED",
+      entityId: id,
+      entityTitle: updated.name,
+      metadata: { fields: Object.keys(data) },
+    });
+    emitToUsers(await getProjectAudience(id), "projects", { kind: "project", projectId: id });
+    return updated;
   }
 
   async setDefault(userId: string, id: string) {
@@ -299,6 +388,13 @@ export class ProjectService {
     ]);
     const project = await prisma.project.findUnique({ where: { id: projectId }, select: { userId: true, name: true } });
     if (project) {
+      await projectActivityService.record({
+        projectId,
+        actorId: project.userId,
+        type: "MEMBER_ADDED",
+        entityId: userId,
+        entityTitle: user.username ? `@${user.username}` : user.email,
+      });
       await pushService.sendToUser(project.userId, {
         title: "Invitación aceptada",
         body: `${user.username ? `@${user.username}` : user.email} aceptó tu invitación a "${project.name}"`,
@@ -336,6 +432,7 @@ export class ProjectService {
       prisma.task.updateMany({ where: { projectId, userId: member.userId }, data: { userId } }),
       prisma.projectMember.delete({ where: { id: member.id } }),
     ]);
+    await projectActivityService.record({ projectId, actorId: userId, type: "MEMBER_REMOVED", entityId: member.userId });
     emitToUsers([member.userId, ...(await getProjectAudience(projectId))], "projects", { kind: "member_removed", projectId, userId: member.userId });
     return { success: true };
   }
@@ -354,6 +451,7 @@ export class ProjectService {
       prisma.task.updateMany({ where: { projectId, userId }, data: { userId: project.userId } }),
       prisma.projectMember.delete({ where: { id: member.id } }),
     ]);
+    await projectActivityService.record({ projectId, actorId: userId, type: "MEMBER_REMOVED", entityId: userId });
     emitToUsers(await getProjectAudience(projectId), "projects", { kind: "member_removed", projectId, userId });
     return { success: true };
   }
@@ -383,6 +481,7 @@ export class ProjectService {
         data: { role: "MEMBER" },
       });
     }
+    await projectActivityService.record({ projectId, actorId: userId, type: "MEMBER_ROLE_CHANGED", entityId: member.userId, metadata: { role } });
     emitToUsers(await getProjectAudience(projectId), "projects", { kind: "member_role_changed", projectId, userId: member.userId, role });
     return { success: true };
   }

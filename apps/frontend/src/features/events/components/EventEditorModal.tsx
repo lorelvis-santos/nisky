@@ -165,7 +165,7 @@ export function EventEditorModal({
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="top-auto bottom-0 flex max-h-[90vh] w-full max-w-md translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl rounded-b-none border-outline-variant bg-surface p-0 shadow-cadence-3 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:rounded-2xl" showCloseButton={false}>
+      <DialogContent className="top-auto bottom-0 flex max-h-[90vh] w-full max-w-md translate-y-0 flex-col gap-0 overflow-hidden rounded-t-lg rounded-b-none border-outline-variant bg-surface p-0 shadow-cadence-3 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 sm:rounded-lg" showCloseButton={false}>
         <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface px-5 py-4 text-left">
           <div>
             <DialogTitle className="flex items-center gap-2 font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">

@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { ChevronLeft, ChevronRight, Inbox, LoaderCircle, Plus, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ReactNode } from "react";
 import type { Task, TaskPriority, TaskSchedule } from "@/types/entities";
@@ -93,6 +93,7 @@ export function PlanningBoard({
   selectedProjectId,
   search,
   priority,
+  showCompleted = false,
   onOpen,
   onToggle,
   onStartPomodoro,
@@ -103,7 +104,8 @@ export function PlanningBoard({
   selectedProjectId: string | null;
   search: string;
   priority: TaskPriority | "ALL";
-  onOpen: (task: Task) => void;
+  showCompleted?: boolean;
+  onOpen: (task: Task, plannedDate?: string) => void;
   onToggle: (task: Task) => void;
   onStartPomodoro: (task: Task) => void;
   onCreate: () => void;
@@ -113,6 +115,7 @@ export function PlanningBoard({
   const [mobileDayIndex, setMobileDayIndex] = useState(0);
   const [mobileUnplannedOpen, setMobileUnplannedOpen] = useState(false);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const weekScrollRef = useRef<HTMLDivElement>(null);
   const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)), [weekStart]);
   const from = dateKey(days[0]);
   const to = dateKey(days[6]);
@@ -123,7 +126,7 @@ export function PlanningBoard({
     projectId: selectedProjectId ?? undefined,
     q: search || undefined,
     priority: priority === "ALL" ? undefined : priority,
-  });
+  }, { includeCompleted: showCompleted });
   const scheduleMutations = useTaskScheduleMutations();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -131,7 +134,10 @@ export function PlanningBoard({
     useSensor(KeyboardSensor),
   );
 
-  const schedules = useMemo(() => schedulesQuery.data ?? [], [schedulesQuery.data]);
+  const schedules = useMemo(
+    () => (schedulesQuery.data ?? []).filter((schedule) => showCompleted || schedule.task.status !== "COMPLETED"),
+    [schedulesQuery.data, showCompleted],
+  );
   const unplannedTasks = useMemo(() => unplannedQuery.data?.data ?? [], [unplannedQuery.data]);
   const unplannedCount = unplannedQuery.data?.meta.totalItems ?? unplannedTasks.length;
 
@@ -173,6 +179,23 @@ export function PlanningBoard({
   }, [schedules, unplannedTasks]);
   const activeTask = activeTaskId ? taskById.get(activeTaskId) ?? null : null;
   const visibleDays = isMobile ? [days[mobileDayIndex]] : days;
+  const loading = schedulesQuery.isLoading || unplannedQuery.isLoading;
+  const failed = schedulesQuery.isError || unplannedQuery.isError;
+
+  useEffect(() => {
+    const element = weekScrollRef.current;
+    if (!element || isMobile) return;
+    const todayColumn = element.querySelector<HTMLElement>("[data-today='true']");
+    if (!todayColumn) {
+      element.scrollLeft = 0;
+      return;
+    }
+    const containerRect = element.getBoundingClientRect();
+    const columnRect = todayColumn.getBoundingClientRect();
+    const maxScroll = Math.max(element.scrollWidth - element.clientWidth, 0);
+    const target = element.scrollLeft + (columnRect.left - containerRect.left) - (element.clientWidth - columnRect.width) / 2;
+    element.scrollLeft = Math.min(Math.max(target, 0), maxScroll);
+  }, [isMobile, loading, weekStart]);
 
   const containerForTask = (taskId: string) => {
     const schedule = scheduleByTask.get(taskId);
@@ -264,9 +287,6 @@ export function PlanningBoard({
     }
   };
 
-  const loading = schedulesQuery.isLoading || unplannedQuery.isLoading;
-  const failed = schedulesQuery.isError || unplannedQuery.isError;
-
   if (loading) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
@@ -294,10 +314,10 @@ export function PlanningBoard({
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-surface-container-low p-3 lg:flex-row lg:overflow-hidden">
         <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
           {isMobile && (
-            <div className="flex items-center justify-between border border-outline-variant bg-surface-container-lowest px-3 py-2">
+             <div className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2">
               <button
                 aria-label="Día anterior"
-                className="border border-outline-variant p-1.5 text-on-surface-variant disabled:opacity-40"
+                 className="rounded-md border border-outline-variant p-1.5 text-on-surface-variant disabled:opacity-40"
                 disabled={mobileDayIndex === 0}
                 onClick={() => setMobileDayIndex((value) => Math.max(0, value - 1))}
                 type="button"
@@ -307,7 +327,7 @@ export function PlanningBoard({
               <span className="font-data-mono text-data-mono text-xs text-primary">{weekLabel(weekStart)} · {dayLabel(days[mobileDayIndex])}</span>
               <button
                 aria-label="Día siguiente"
-                className="border border-outline-variant p-1.5 text-on-surface-variant disabled:opacity-40"
+                 className="rounded-md border border-outline-variant p-1.5 text-on-surface-variant disabled:opacity-40"
                 disabled={mobileDayIndex === 6}
                 onClick={() => setMobileDayIndex((value) => Math.min(6, value + 1))}
                 type="button"
@@ -316,56 +336,61 @@ export function PlanningBoard({
               </button>
             </div>
           )}
-          <div className={cn("grid min-h-0 flex-1 gap-2", isMobile ? "grid-cols-1" : "grid-cols-7")}>
-            {visibleDays.map((day) => {
-              const key = dateKey(day);
-              const rows = schedulesByDate.get(key) ?? [];
-              const isToday = key === dateKey(new Date());
-              return (
-                <section className="flex min-h-[360px] min-w-0 flex-col gap-2" key={key}>
-                  <header className={cn("flex items-center justify-between border-b px-3 py-2", isToday ? "border-t-2 border-t-primary bg-secondary-container/40 text-primary" : "border-outline-variant bg-surface-container-lowest")}>
-                    <span className={cn("font-data-mono text-data-mono text-xs", isToday ? "font-bold" : "text-on-surface-variant")}>
-                      {isToday ? "HOY · " : ""}{dayLabel(day)}
-                    </span>
-                    <button aria-label={`Crear tarea para ${dayLabel(day)}`} className="p-1 text-on-surface-variant hover:text-primary" onClick={() => onCreateOnDay(key)} type="button">
-                      <Plus size={15} />
-                    </button>
-                  </header>
-                  <DropZone className="flex min-h-0 flex-1 flex-col gap-3 border border-outline-variant bg-surface-container-lowest p-3" id={dayContainerId(key)}>
-                    {rows.length === 0 ? (
-                      <span className="flex flex-1 items-center justify-center text-center font-body-sm text-body-sm text-on-surface-variant">
-                        Arrastra una tarea aquí
+          <div
+            className={cn("min-h-0 flex-1 overflow-y-auto", !isMobile && "overflow-x-auto overscroll-x-contain")}
+            ref={weekScrollRef}
+          >
+            <div className={cn("grid min-h-full gap-2", isMobile ? "grid-cols-1" : "min-w-[1798px] grid-cols-[repeat(7,minmax(250px,1fr))]")}>
+              {visibleDays.map((day) => {
+                const key = dateKey(day);
+                const rows = schedulesByDate.get(key) ?? [];
+                const isToday = key === dateKey(new Date());
+                return (
+                  <section className="flex min-h-[360px] min-w-0 flex-col gap-2" data-today={isToday ? "true" : undefined} key={key}>
+                     <header className={cn("flex items-center justify-between rounded-t-lg border-b px-3 py-2", isToday ? "border-t-2 border-t-primary bg-secondary-container/40 text-primary" : "border-outline-variant bg-surface-container-lowest")}>
+                      <span className={cn("font-data-mono text-data-mono text-xs", isToday ? "font-bold" : "text-on-surface-variant")}>
+                        {isToday ? "HOY · " : ""}{dayLabel(day)}
                       </span>
-                    ) : (
-                      <SortableContext items={rows.map((row) => `task:${row.taskId}`)} strategy={verticalListSortingStrategy}>
-                        {rows.map((schedule) => (
-                          <div className="flex flex-col gap-1" key={schedule.id}>
-                            {schedule.timeBlockId && (
-                              <span className="font-label-caps text-[10px] uppercase text-on-surface-variant">
-                                {schedule.timeBlock?.name ?? "Bloque"}
-                                {schedule.occurrence?.occurs ? ` · ${minToTime(schedule.occurrence.startMin)}` : " · Bloque no disponible"}
-                              </span>
-                            )}
-                            <SortableTaskCard
-                              onOpen={() => onOpen(schedule.task)}
-                              onStartPomodoro={() => onStartPomodoro(schedule.task)}
-                              onToggle={() => onToggle(schedule.task)}
-                              task={schedule.task}
-                            />
-                          </div>
-                        ))}
-                      </SortableContext>
-                    )}
-                  </DropZone>
-                </section>
-              );
-            })}
+                       <button aria-label={`Crear tarea para ${dayLabel(day)}`} className="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => onCreateOnDay(key)} type="button">
+                        <Plus size={15} />
+                      </button>
+                    </header>
+                     <DropZone className="flex min-h-0 flex-1 flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-3" id={dayContainerId(key)}>
+                      {rows.length === 0 ? (
+                        <span className="flex flex-1 items-center justify-center text-center font-body-sm text-body-sm text-on-surface-variant">
+                          Arrastra una tarea aquí
+                        </span>
+                      ) : (
+                        <SortableContext items={rows.map((row) => `task:${row.taskId}`)} strategy={verticalListSortingStrategy}>
+                          {rows.map((schedule) => (
+                            <div className="flex flex-col gap-1" key={schedule.id}>
+                              {schedule.timeBlockId && (
+                                <span className="font-label-caps text-[10px] uppercase text-on-surface-variant">
+                                  {schedule.timeBlock?.name ?? "Bloque"}
+                                  {schedule.occurrence?.occurs ? ` · ${minToTime(schedule.occurrence.startMin)}` : " · Bloque no disponible"}
+                                </span>
+                              )}
+                              <SortableTaskCard
+                                onOpen={() => onOpen(schedule.task, schedule.date)}
+                                onStartPomodoro={() => onStartPomodoro(schedule.task)}
+                                onToggle={() => onToggle(schedule.task)}
+                                task={schedule.task}
+                              />
+                            </div>
+                          ))}
+                        </SortableContext>
+                      )}
+                    </DropZone>
+                  </section>
+                );
+              })}
+            </div>
           </div>
         </main>
         {isMobile && (
           <button
             aria-expanded={mobileUnplannedOpen}
-            className="flex items-center justify-between border border-outline-variant bg-surface-container-lowest px-3 py-2 font-label-caps text-[10px] uppercase text-primary"
+             className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 font-label-caps text-[10px] uppercase text-primary"
             onClick={() => setMobileUnplannedOpen((open) => !open)}
             type="button"
           >
@@ -374,7 +399,7 @@ export function PlanningBoard({
           </button>
         )}
         <aside className={cn(
-          "w-full shrink-0 flex-col border border-outline-variant bg-surface-container-lowest lg:w-80 lg:flex",
+           "w-full shrink-0 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest lg:w-80 lg:flex",
           isMobile ? (mobileUnplannedOpen ? "fixed inset-x-3 bottom-3 z-40 flex max-h-[70vh]" : "hidden") : "flex",
         )}>
           <div className="flex items-center justify-between border-b border-outline-variant p-3">
@@ -383,12 +408,12 @@ export function PlanningBoard({
               <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Tareas sin día asignado</p>
             </div>
             {isMobile ? (
-              <button aria-label="Cerrar tareas por planificar" className="text-on-surface-variant hover:text-primary" onClick={() => setMobileUnplannedOpen(false)} type="button">
+               <button aria-label="Cerrar tareas por planificar" className="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setMobileUnplannedOpen(false)} type="button">
                 <X size={18} />
               </button>
             ) : <Inbox className="text-on-surface-variant" size={18} />}
           </div>
-          <DropZone className="flex min-h-[180px] flex-1 flex-col gap-2 overflow-y-auto p-3" id={UNPLANNED_CONTAINER}>
+           <DropZone className="flex min-h-[180px] flex-1 flex-col gap-2 overflow-y-auto p-3" id={UNPLANNED_CONTAINER}>
             {unplannedTasks.length === 0 ? (
               <p className="flex flex-1 items-center justify-center text-center font-body-sm text-body-sm text-on-surface-variant">No hay tareas pendientes por planificar.</p>
             ) : (
@@ -408,7 +433,7 @@ export function PlanningBoard({
           {unplannedQuery.data && (
             <TaskPagination isFetching={unplannedQuery.isFetching} meta={unplannedQuery.data.meta} onPageChange={setUnplannedPage} />
           )}
-          <button className="flex items-center justify-center gap-1 border-t border-outline-variant px-3 py-2 font-label-caps text-[10px] uppercase text-primary hover:bg-primary-container/20" onClick={onCreate} type="button">
+           <button className="flex items-center justify-center gap-1 rounded-b-lg border-t border-outline-variant px-3 py-2 font-label-caps text-[10px] uppercase text-primary hover:bg-primary-container/20" onClick={onCreate} type="button">
             <Plus size={13} /> Nueva tarea
           </button>
         </aside>

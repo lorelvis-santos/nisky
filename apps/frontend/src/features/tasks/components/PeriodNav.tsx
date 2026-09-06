@@ -28,7 +28,7 @@ export function PeriodNav({
       {onJumpPrevious && (
         <button
           aria-label={jumpPreviousLabel ?? "Saltar atrás"}
-          className="border border-outline-variant bg-surface-container-lowest px-3 py-1.5 hover:bg-surface-container-high"
+          className="min-h-11 rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-1.5 hover:bg-surface-container-high"
           onClick={onJumpPrevious}
           type="button"
         >
@@ -37,14 +37,14 @@ export function PeriodNav({
       )}
       <button
         aria-label={previousLabel}
-        className="border border-outline-variant bg-surface-container-lowest px-3 py-1.5 hover:bg-surface-container-high"
+        className="min-h-11 rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-1.5 hover:bg-surface-container-high"
         onClick={onPrevious}
         type="button"
       >
         <ChevronLeft size={16} />
       </button>
       <button
-        className="border border-outline-variant bg-surface-container-lowest px-3 py-1.5 font-body-sm text-body-sm hover:bg-surface-container-high"
+        className="min-h-11 rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-1.5 font-body-sm text-body-sm hover:bg-surface-container-high"
         onClick={onToday}
         type="button"
       >
@@ -52,7 +52,7 @@ export function PeriodNav({
       </button>
       <button
         aria-label={nextLabel}
-        className="border border-outline-variant bg-surface-container-lowest px-3 py-1.5 hover:bg-surface-container-high"
+        className="min-h-11 rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-1.5 hover:bg-surface-container-high"
         onClick={onNext}
         type="button"
       >
@@ -61,7 +61,7 @@ export function PeriodNav({
       {onJumpNext && (
         <button
           aria-label={jumpNextLabel ?? "Saltar adelante"}
-          className="border border-outline-variant bg-surface-container-lowest px-3 py-1.5 hover:bg-surface-container-high"
+          className="min-h-11 rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-1.5 hover:bg-surface-container-high"
           onClick={onJumpNext}
           type="button"
         >

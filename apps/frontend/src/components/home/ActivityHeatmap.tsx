@@ -54,7 +54,7 @@ export function ActivityHeatmap({ activity }: { activity: HomeActivityPoint[] | 
   const hasActivity = Boolean(activity && activity.length > 0);
 
   return (
-    <section className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
+    <section className="rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-headline-xs text-headline-xs font-bold text-on-surface">Actividad · últimas 12 semanas</h2>
         <div className="flex items-center gap-1.5 font-label-caps text-label-caps text-on-surface-variant">

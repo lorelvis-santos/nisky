@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { Button } from "@/components/ui/button";
 import { useLogin } from "@/features/auth/hooks/useLogin";
 import { usePublicConfigQuery } from "@/features/auth/hooks/useAuthConfig";
 import { loginSchema, type LoginFormData } from "@/features/auth/schemas/auth.schema";
@@ -24,8 +26,59 @@ export default function LoginPage() {
   });
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
 
-  return <section className="w-full max-w-md border border-outline-variant bg-surface-container-lowest p-6"><div className="mb-6 border-b border-outline-variant pb-4"><p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Nisky / Acceso</p><h1 className="mt-1 font-headline-sm text-headline-sm text-on-surface">Iniciar sesión</h1><p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Tu día te está esperando. Entra y sigue organizándote.</p></div><form className="space-y-4" onSubmit={handleSubmit((values) => mutate(values))}><Field label="Correo" error={errors.email?.message}><input autoComplete="email" className="field" type="email" {...register("email")} /></Field><Field label="Contraseña" error={errors.password?.message}><PasswordInput autoComplete="current-password" {...register("password")} /></Field><button className="h-10 w-full border border-primary bg-primary-container px-4 font-headline-xs text-headline-xs text-primary-foreground hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50" disabled={isPending} type="submit">{isPending ? "Entrando..." : "Ingresar"}</button>{error && <MutationError error={error as ApiError} />}</form>{config.data?.publicSignup && <p className="mt-6 text-center font-body-sm text-body-sm text-on-surface-variant">¿No tienes cuenta? <Link className="text-primary underline" href="/register">Crear cuenta</Link></p>}</section>;
+  return (
+    <section className="w-full">
+      <div className="mb-8 flex items-center gap-3 lg:hidden">
+        <span className="flex size-10 items-center justify-center rounded-md bg-primary font-headline-md text-headline-md font-bold text-on-primary">N</span>
+        <span className="font-headline-lg text-headline-lg font-bold tracking-tight text-primary">Nisky</span>
+      </div>
+
+      <div className="rounded-lg border border-outline-variant bg-surface p-6 shadow-cadence-2 sm:p-8">
+        <div className="mb-8">
+          <p className="font-label-caps text-label-caps text-secondary">NISKY / ACCESO</p>
+          <h1 className="mt-2 font-headline-lg text-headline-lg text-on-surface">Iniciar sesión</h1>
+          <p className="mt-2 font-body-md text-body-md text-on-surface-variant">Retoma tus tareas, tus notas y el plan del día.</p>
+        </div>
+
+        <form className="space-y-5" onSubmit={handleSubmit((values) => mutate(values))}>
+          <Field label="Correo electrónico" error={errors.email?.message}>
+            <input autoComplete="email" className="field" type="email" {...register("email")} />
+          </Field>
+          <Field label="Contraseña" error={errors.password?.message}>
+            <PasswordInput autoComplete="current-password" {...register("password")} />
+          </Field>
+           <Button className="w-full font-body-md text-body-md !text-white" disabled={isPending} type="submit">
+            {isPending ? "Entrando..." : "Ingresar"}
+            {!isPending && <ArrowRight aria-hidden="true" size={16} />}
+          </Button>
+          {error && <MutationError error={error as ApiError} />}
+        </form>
+
+        {config.data?.publicSignup && (
+          <div className="mt-7 border-t border-outline-variant pt-5">
+            <p className="font-body-sm text-body-sm text-on-surface-variant">
+              ¿Primera vez en Nisky?{" "}
+              <Link className="font-medium text-secondary underline underline-offset-4 hover:text-primary" href="/register">Crear cuenta</Link>
+            </p>
+          </div>
+        )}
+      </div>
+
+      <p className="mt-5 text-center font-label-md text-label-md text-on-surface-variant">Un lugar tranquilo para organizar lo importante.</p>
+    </section>
+  );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) { return <label className="block"><span className="mb-1 block font-label-caps text-label-caps uppercase text-on-surface-variant">{label}</span>{children}{error && <span className="mt-1 block text-xs text-error">{error}</span>}</label>; }
-function MutationError({ error }: { error?: ApiError }) { return error ? <p className="border border-error bg-error-container p-2 text-sm text-on-error-container">{error.message}</p> : null; }
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block font-label-md text-label-md font-medium text-on-surface">{label}</span>
+      {children}
+      {error && <span className="mt-1.5 block font-body-sm text-body-sm text-error">{error}</span>}
+    </label>
+  );
+}
+
+function MutationError({ error }: { error?: ApiError }) {
+  return error ? <p className="rounded-md border border-error/30 bg-error-container px-3 py-2.5 font-body-sm text-body-sm text-on-error-container" role="alert">{error.message}</p> : null;
+}

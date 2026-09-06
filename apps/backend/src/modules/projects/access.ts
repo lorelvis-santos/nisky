@@ -43,9 +43,10 @@ export async function assertTaskAccess(userId: string, taskId: string): Promise<
 }
 
 export async function assertNoteAccess(userId: string, noteId: string): Promise<void> {
-  const note = await prisma.note.findUnique({ where: { id: noteId }, select: { userId: true } });
+  const note = await prisma.note.findUnique({ where: { id: noteId }, select: { userId: true, projectId: true } });
   if (!note) throw new AppError("NOT_FOUND", "Nota no encontrada");
   if (note.userId === userId) return;
+  if (note.projectId && (await getAccessibleProjectIds(userId)).includes(note.projectId)) return;
   throw new AppError("FORBIDDEN", "No tienes acceso a esta nota");
 }
 

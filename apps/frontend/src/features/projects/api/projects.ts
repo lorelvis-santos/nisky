@@ -13,6 +13,8 @@ export async function getProject(id: string) {
 
 export type CreateProjectPayload = {
   name: string;
+  description?: string | null;
+  targetDate?: string | null;
   color?: string;
   weeklyTargetMinutes?: number | null;
 };

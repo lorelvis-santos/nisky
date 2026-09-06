@@ -105,7 +105,7 @@ export function ProjectNotes({ project }: { project: Project }) {
             type="search"
             value={search}
           />
-          <button className="hidden shrink-0 items-center gap-2 rounded-md bg-primary px-3.5 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90 sm:inline-flex" onClick={openNew} type="button">
+          <button className="hidden h-10 shrink-0 items-center gap-2 rounded-md bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary shadow-sm transition-colors hover:bg-primary/90 sm:inline-flex" onClick={openNew} type="button">
             <Plus size={16} /> Nueva nota
           </button>
         </div>

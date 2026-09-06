@@ -35,12 +35,14 @@ export function TaskList({
 
   const datedTasks = visibleTasks.filter((task) => task.dueDate);
   const overdueTasks = datedTasks
+    .filter((task) => task.status !== "COMPLETED" && task.status !== "CANCELLED")
     .filter((task) => dateKey(task.dueDate!) < today)
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.order - b.order);
-  const upcomingTasks = datedTasks
-    .filter((task) => dateKey(task.dueDate!) >= today)
+  const overdueIds = new Set(overdueTasks.map((task) => task.id));
+  const dateGroupedTasks = datedTasks
+    .filter((task) => !overdueIds.has(task.id))
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.order - b.order);
-  const dayKeys = Array.from(new Set(upcomingTasks.map((task) => dateKey(task.dueDate!))));
+  const dayKeys = Array.from(new Set(dateGroupedTasks.map((task) => dateKey(task.dueDate!))));
 
   if (datedTasks.length === 0) {
     return (
@@ -101,7 +103,7 @@ export function TaskList({
         </section>
       )}
       {dayKeys.map((key) => {
-        const dayTasks = upcomingTasks.filter((task) => dateKey(task.dueDate!) === key);
+        const dayTasks = dateGroupedTasks.filter((task) => dateKey(task.dueDate!) === key);
         const day = new Date(`${key}T00:00:00`);
         const isToday = key === today;
         return (

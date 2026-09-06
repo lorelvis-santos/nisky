@@ -1,10 +1,10 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { api, refreshAccessToken, setAccessToken } from "@/lib/api";
-import type { User } from "@/types/entities";
+import type { AuthResponse, User } from "@/types/entities";
 
 interface AuthContextValue {
   user: User | null;
@@ -19,12 +19,16 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const hasSession = useRef(false);
+  const restorePromise = useRef<Promise<AuthResponse | null> | null>(null);
 
   const setAuth = useCallback((result: { accessToken: string; user: User }) => {
+    hasSession.current = true;
     setAccessToken(result.accessToken);
     setToken(result.accessToken);
     setUser(result.user);
@@ -32,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearSession = useCallback(() => {
+    hasSession.current = false;
     setAccessToken(null);
     setToken(null);
     setUser(null);
@@ -63,14 +68,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router, setAuth, clearSession]);
 
   useEffect(() => {
+    const isAuthPath = pathname === "/login" || pathname === "/register";
+    if (isAuthPath || hasSession.current) {
+      return;
+    }
+
+    restorePromise.current ??= refreshAccessToken();
     let active = true;
-    void refreshAccessToken().then((result) => {
+    void restorePromise.current.then((result) => {
       if (!active) return;
       if (result) setAuth(result);
       setIsLoading(false);
     });
     return () => { active = false; };
-  }, [setAuth]);
+  }, [pathname, setAuth]);
 
   return (
     <AuthContext.Provider value={{ user, accessToken, isAuthenticated: Boolean(user && accessToken), isLoading, setAuth, logout }}>

@@ -1,12 +1,10 @@
 "use client";
 
 import { Check, UserPlus, X } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import { useInvitationMutations, usePendingInvitations } from "../hooks/useProjects";
 
-export function InvitationsPanel() {
-  const [open, setOpen] = useState(false);
+export function InvitationsPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const invitationsQuery = usePendingInvitations();
   const mutations = useInvitationMutations();
   const invitations = invitationsQuery.data ?? [];
@@ -36,7 +34,7 @@ export function InvitationsPanel() {
         aria-expanded={open}
         aria-label={`Invitaciones a proyectos${pending > 0 ? ` (${pending})` : ""}`}
         className="relative rounded-md p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => onOpenChange(!open)}
         type="button"
       >
         <UserPlus size={19} />
@@ -53,7 +51,7 @@ export function InvitationsPanel() {
               <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">INVITACIONES</p>
               <h3 className="mt-1 font-headline-xs text-headline-xs">Proyectos compartidos</h3>
             </div>
-            <button aria-label="Cerrar invitaciones" className="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" onClick={() => setOpen(false)} type="button"><X size={16} /></button>
+            <button aria-label="Cerrar invitaciones" className="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" onClick={() => onOpenChange(false)} type="button"><X size={16} /></button>
           </div>
           {pending === 0 ? (
             <p className="px-1 py-5 font-body-sm text-body-sm text-on-surface-variant">No tienes invitaciones pendientes.</p>

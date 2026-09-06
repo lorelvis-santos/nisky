@@ -82,11 +82,12 @@ function recurrenceData(data: { recurrence?: { repeatType?: "DAILY" | "WEEKLY" |
 }
 
 function taskProgress<T extends { _count?: { comments: number }; subtasks?: Array<{ completed: boolean }> }>(task: T) {
-  const { _count, subtasks, ...rest } = task;
+  const { _count, ...rest } = task;
+  const subtasks = task.subtasks ?? [];
   return {
     ...rest,
-    subtaskCount: subtasks?.length ?? 0,
-    completedSubtasks: subtasks?.filter((subtask) => subtask.completed).length ?? 0,
+    subtaskCount: subtasks.length,
+    completedSubtasks: subtasks.filter((subtask) => subtask.completed).length,
     commentCount: _count?.comments ?? 0,
   };
 }

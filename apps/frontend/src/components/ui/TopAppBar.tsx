@@ -16,6 +16,7 @@ import { useProjectQuery } from "@/features/projects/hooks/useProjects";
 import type { QuickNote, Reminder, Task } from "@/types/entities";
 
 const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
+type OpenPanel = "invitations" | "notifications" | "profile" | null;
 
 const titles: Record<string, string> = {
   "/": "Inicio",
@@ -37,8 +38,7 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   const router = useRouter();
   const pomodoro = usePomodoro();
   const { user, logout } = useAuth();
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
   const remindersQuery = useRemindersQuery();
   const pendingQuery = usePendingRemindersQuery();
   const tasksQuery = useTasksQuery({ limit: 20, sort: "dueDate", order: "asc" });
@@ -80,20 +80,20 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
           Nota
           <kbd className="font-data-mono text-data-mono text-[10px] text-on-surface-variant">Alt+N</kbd>
         </button>
-<InvitationsPanel />
-          <div className="relative">
-             <button aria-expanded={notificationsOpen} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative rounded-md p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setNotificationsOpen((open) => !open)} type="button">
-            <Bell size={19} />
+          <InvitationsPanel open={openPanel === "invitations"} onOpenChange={(open) => setOpenPanel(open ? "invitations" : null)} />
+           <div className="relative">
+              <button aria-expanded={openPanel === "notifications"} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative rounded-md p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setOpenPanel((panel) => panel === "notifications" ? null : "notifications")} type="button">
+             <Bell size={19} />
             {pending.length > 0 && <span aria-hidden="true" className="absolute bottom-0.5 right-0.5 h-2 w-2 rounded-full bg-error" />}
             {notices.length > 0 && <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-data-mono text-[10px] text-on-primary">{notices.length > 9 ? "9+" : notices.length}</span>}
           </button>
-           {notificationsOpen && <NotificationPanel notices={notices} onClose={() => setNotificationsOpen(false)} onOpen={(url, kind) => { setNotificationsOpen(false); if (kind === "pending") { window.dispatchEvent(new CustomEvent(OPEN_PENDING_EVENT)); return; } router.push(url); }} />}
-        </div>
-        <div className="relative">
-          <button aria-expanded={profileOpen} aria-label="Perfil" className="rounded-full p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setProfileOpen((open) => !open)} type="button"><Avatar avatarUrl={user?.avatarUrl} email={user?.email} name={user?.name} size="sm" /></button>
-          {profileOpen && (
-            <>
-              <button aria-label="Cerrar menú de perfil" className="fixed inset-0 z-40 cursor-default" onClick={() => setProfileOpen(false)} type="button" />
+            {openPanel === "notifications" && <NotificationPanel notices={notices} onClose={() => setOpenPanel(null)} onOpen={(url, kind) => { setOpenPanel(null); if (kind === "pending") { window.dispatchEvent(new CustomEvent(OPEN_PENDING_EVENT)); return; } router.push(url); }} />}
+         </div>
+         <div className="relative">
+           <button aria-expanded={openPanel === "profile"} aria-label="Perfil" className="rounded-full p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setOpenPanel((panel) => panel === "profile" ? null : "profile")} type="button"><Avatar avatarUrl={user?.avatarUrl} email={user?.email} name={user?.name} size="sm" /></button>
+           {openPanel === "profile" && (
+             <>
+               <button aria-label="Cerrar menú de perfil" className="fixed inset-0 z-40 cursor-default" onClick={() => setOpenPanel(null)} type="button" />
               <div className="fixed inset-x-4 top-16 z-50 rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-left shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-56">
                 <div className="flex items-center gap-3 border-b border-outline-variant pb-3">
                   <Avatar avatarUrl={user?.avatarUrl} email={user?.email} name={user?.name} size="md" />
@@ -102,8 +102,8 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
                     <p className="truncate font-data-mono text-data-mono text-xs text-on-surface-variant">{user?.email}</p>
                   </div>
                 </div>
-                <button className="mt-2 flex w-full items-center gap-2 rounded-md px-2 py-2 font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low hover:text-primary" onClick={() => { setProfileOpen(false); router.push("/settings"); }} type="button"><Settings size={16} /> Ajustes</button>
-                <button className="flex w-full items-center gap-2 rounded-md px-2 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-error" onClick={() => { setProfileOpen(false); void logout(); }} type="button"><LogOut size={16} /> Cerrar sesión</button>
+                 <button className="mt-2 flex w-full items-center gap-2 rounded-md px-2 py-2 font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low hover:text-primary" onClick={() => { setOpenPanel(null); router.push("/settings"); }} type="button"><Settings size={16} /> Ajustes</button>
+                 <button className="flex w-full items-center gap-2 rounded-md px-2 py-2 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-error" onClick={() => { setOpenPanel(null); void logout(); }} type="button"><LogOut size={16} /> Cerrar sesión</button>
               </div>
             </>
           )}

@@ -216,7 +216,7 @@ function TasksPageContent() {
       due: "SET",
       page: view === "list" ? taskPage : 1,
     },
-    { pageSize: view === "list" ? 50 : 1 },
+    { pageSize: view === "list" ? 10 : 1 },
   );
   const backlogQuery = usePaginatedTasksQuery(
     {

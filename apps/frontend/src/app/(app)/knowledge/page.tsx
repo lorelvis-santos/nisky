@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
+import { FAB } from "@/components/ui/FAB";
 import { KnowledgeSidebar } from "@/features/knowledge/components/KnowledgeSidebar";
 import type { KnowledgeFilter } from "@/features/knowledge/components/KnowledgeSidebar";
 import { NoteCard } from "@/features/knowledge/components/NoteCard";
@@ -99,8 +100,8 @@ export default function KnowledgePage() {
             placeholder="Buscar notas..."
             value={search}
           />
-          <button className="shrink-0 rounded-lg bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary shadow-sm hover:bg-primary-container" onClick={openNew} type="button">
-            Nueva nota
+          <button className="hidden shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2 font-body-sm text-body-sm text-on-primary shadow-sm hover:bg-primary-container sm:inline-flex" onClick={openNew} type="button">
+            <Plus size={16} /> Nueva nota
           </button>
         </div>
       </div>
@@ -120,12 +121,7 @@ export default function KnowledgePage() {
                 <p className="max-w-xl font-body-sm text-body-sm text-on-surface-variant">
                   {filter || search ? "No encontramos notas con esa búsqueda." : "Guarda aquí tus notas, referencias e ideas."}
                 </p>
-                {!filter && !search && (
-                   <button className="mt-2 rounded-md bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={openNew} type="button">
-                    Nueva nota
-                  </button>
-                )}
-              </div>
+               </div>
              ) : (
                <>
                  <div className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -140,7 +136,10 @@ export default function KnowledgePage() {
            </div>
         )}
       </div>
-      {modalOpen && (
+       <div className="sm:hidden">
+         <FAB ariaLabel="Nueva nota" onClick={openNew} raised={modalOpen} />
+       </div>
+       {modalOpen && (
         <NoteEditorModal
           key={editing?.id ?? "new"}
           note={editing}

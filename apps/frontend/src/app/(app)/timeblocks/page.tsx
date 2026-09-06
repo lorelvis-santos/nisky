@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { TimeBlockEditor } from "@/features/timeblocks/components/TimeBlockEditor";
 import { TimeBlockWeekGrid } from "@/features/timeblocks/components/TimeBlockWeekGrid";
+import { MobileAgenda } from "@/features/timeblocks/components/MobileAgenda";
 import { TaskAssignmentPanel } from "@/features/timeblocks/components/TaskAssignmentPanel";
 import { AgendaEntryChooser, type AgendaEntryKind } from "@/features/timeblocks/components/AgendaEntryChooser";
 import { AgendaDayTasksDialog } from "@/features/timeblocks/components/AgendaDayTasksDialog";
@@ -238,6 +239,8 @@ function TimeBlocksContent() {
   const settings = settingsQuery.data;
   const isMobile = useIsMobile(1023);
   const blocks = query.data ?? [];
+  const [mobileDate, setMobileDate] = useState(() => new Date());
+  const [mobileView, setMobileView] = useState<"day" | "week">("day");
   const [editing, setEditing] = useState<TimeBlock | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<SlotPrefill | null>(null);
@@ -269,9 +272,17 @@ function TimeBlocksContent() {
   weekStart.setDate(weekStart.getDate() - (day === 0 ? 6 : day - 1));
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
-  
-  const from = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
-  const to = `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, "0")}-${String(weekEnd.getDate()).padStart(2, "0")}`;
+
+  const mobileWeekStart = new Date(mobileDate);
+  mobileWeekStart.setHours(0, 0, 0, 0);
+  const mobileDay = mobileWeekStart.getDay();
+  mobileWeekStart.setDate(mobileWeekStart.getDate() - (mobileDay === 0 ? 6 : mobileDay - 1));
+  const queryWeekStart = isMobile ? mobileWeekStart : weekStart;
+  const queryWeekEnd = new Date(queryWeekStart);
+  queryWeekEnd.setDate(queryWeekEnd.getDate() + 6);
+
+  const from = toISODateString(queryWeekStart);
+  const to = toISODateString(queryWeekEnd);
   
   const eventsQuery = useEventsQuery(from, to);
   const events = eventsQuery.data ?? [];
@@ -523,6 +534,23 @@ function TimeBlocksContent() {
     }
   };
 
+  const shiftMobileDate = (amount: number) => {
+    setMobileDate((current) => {
+      const next = new Date(current);
+      next.setDate(next.getDate() + amount);
+      return next;
+    });
+  };
+
+  const openMobileCreate = () => {
+    const slot = defaultAgendaSlot();
+    openEntryChooser({
+      ...slot,
+      dayOfWeek: mobileDate.getDay(),
+      date: toISODateString(mobileDate),
+    });
+  };
+
   const skipToday = async (date?: string) => {
     if (!editing) return;
     const dateStr = date ?? (() => {
@@ -622,7 +650,32 @@ function TimeBlocksContent() {
   );
 
   return (
-    <section className="h-full overflow-y-auto bg-background p-container-padding sm:p-section-gap lg:flex lg:flex-col lg:overflow-hidden">
+    <section className="h-full overflow-y-auto bg-background lg:flex lg:flex-col lg:overflow-hidden">
+      <div className="lg:hidden">
+        <MobileAgenda
+          blocks={blocks}
+          dayEndMin={settings?.dayEndMin ?? 23 * 60}
+          dayStartMin={settings?.dayStartMin ?? 6 * 60}
+          events={events}
+          exceptions={exceptions}
+          onAdd={openMobileCreate}
+          onBlockClick={openBlock}
+          onDateChange={setMobileDate}
+          onDayTasksClick={(date) => setDayTaskDate(date)}
+          onEventClick={openEvent}
+          onNextDay={() => shiftMobileDate(1)}
+          onPreviousDay={() => shiftMobileDate(-1)}
+          onToday={() => setMobileDate(new Date())}
+          onViewChange={setMobileView}
+          projects={projects}
+          selectedDate={mobileDate}
+          taskCounts={taskCounts}
+          taskSchedules={taskSchedules}
+          view={mobileView}
+          weekStart={mobileWeekStart}
+        />
+      </div>
+      <div className="hidden min-h-0 flex-1 flex-col p-container-padding sm:p-section-gap lg:flex">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-outline-variant pb-5">
         <div>
           <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
@@ -754,17 +807,9 @@ function TimeBlocksContent() {
           taskCounts={taskCounts}
           taskSchedules={taskSchedules}
           weekStart={weekStart}
-        />
+         />
       </div>
-
-      <button
-        aria-label="Añadir a Agenda"
-        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-outline-variant bg-primary text-on-primary shadow-cadence-2 transition-colors hover:bg-primary/90 sm:bottom-6 lg:hidden"
-        onClick={() => openEntryChooser()}
-        type="button"
-      >
-        <Plus size={22} />
-      </button>
+      </div>
 
       {!isMobile && (editing || prefill) && (
         <DesktopEditorModal

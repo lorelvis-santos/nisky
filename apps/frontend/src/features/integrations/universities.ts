@@ -50,6 +50,15 @@ export const UNIVERSITY_CATALOG: UniversityCatalogEntry[] = [
     helpHint: "Pega un token de acceso personal de Canvas (Account › Settings › Integraciones aprobadas).",
   },
   {
+    slug: "unphu",
+    name: "UNPHU",
+    logoUrl: "/universities/unphu.png",
+    domain: "https://virtual.unphu.edu.do",
+    provider: "MOODLE",
+    credentialsMode: "both",
+    helpHint: "Usuario y contraseña de UNPHU, o pega un token de Moodle.",
+  },
+  {
     slug: "ucne",
     name: "UCNE",
     logoUrl: "/universities/ucne.png",

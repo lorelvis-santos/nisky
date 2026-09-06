@@ -43,8 +43,8 @@ export function HomeHabitsSummary({
       {isLoading ? (
         <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando hábitos...</p>
       ) : matrix?.habits.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-primary/30 bg-primary-fixed/30 px-4 py-6 text-center">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-fixed text-primary">
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-outline-variant/70 bg-surface-container-lowest px-4 py-5 text-center">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-low text-on-surface-variant">
             <Sparkles aria-hidden="true" size={18} />
           </span>
           <div>
@@ -53,7 +53,7 @@ export function HomeHabitsSummary({
               Crea un hábito pequeño y márcalo cada día para ver tu progreso.
             </p>
           </div>
-          <button className="min-h-10 rounded-md bg-primary px-3.5 py-2 font-label-md text-label-md font-semibold text-on-primary transition-colors hover:bg-primary/90" onClick={onOpenManager} type="button">
+          <button className="min-h-9 rounded-md border border-outline-variant bg-transparent px-3 py-1.5 font-label-md text-label-md font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface" onClick={onOpenManager} type="button">
             Crear primer hábito
           </button>
         </div>

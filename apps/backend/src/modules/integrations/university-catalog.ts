@@ -8,6 +8,7 @@ export const UNIVERSITY_CATALOG: UniversityCatalogEntry[] = [
   { name: "INTEC", domain: "https://campusvirtual.intec.edu.do" },
   { name: "PUCMM", domain: "https://campusvirtual.pucmm.edu.do/moodle" },
   { name: "UNAPEC", domain: "https://canvas.unapec.edu.do" },
+  { name: "UNPHU", domain: "https://virtual.unphu.edu.do" },
   { name: "UCNE", domain: "https://ucnevirtual.ucne.edu.do" },
 ];
 

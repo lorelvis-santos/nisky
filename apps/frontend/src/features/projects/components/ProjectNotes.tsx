@@ -3,6 +3,7 @@
 import { BookOpen, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { FAB } from "@/components/ui/FAB";
 import { KnowledgeSidebar, type KnowledgeFilter } from "@/features/knowledge/components/KnowledgeSidebar";
 import { NoteCard } from "@/features/knowledge/components/NoteCard";
 import { NoteEditorModal } from "@/features/knowledge/components/NoteEditorModal";
@@ -104,7 +105,7 @@ export function ProjectNotes({ project }: { project: Project }) {
             type="search"
             value={search}
           />
-          <button className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md bg-primary px-3.5 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90" onClick={openNew} type="button">
+          <button className="hidden shrink-0 items-center gap-2 rounded-md bg-primary px-3.5 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90 sm:inline-flex" onClick={openNew} type="button">
             <Plus size={16} /> Nueva nota
           </button>
         </div>
@@ -125,7 +126,6 @@ export function ProjectNotes({ project }: { project: Project }) {
               <BookOpen className="text-primary" size={28} />
               <p className="font-label-caps text-label-caps text-on-surface-variant">NOTAS DEL PROYECTO</p>
               <p className="max-w-md font-body-sm text-body-sm text-on-surface-variant">{hasFilters ? "No encontramos notas con esa búsqueda." : "Guarda aquí el contexto y las referencias del proyecto."}</p>
-              {!hasFilters && <button className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-md bg-primary-container px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary" onClick={openNew} type="button"><Plus size={16} /> Nueva nota</button>}
             </div>
           ) : (
             <>
@@ -140,6 +140,9 @@ export function ProjectNotes({ project }: { project: Project }) {
         </div>
       </div>
 
+      <div className="sm:hidden">
+        <FAB ariaLabel="Nueva nota" onClick={openNew} raised={modalOpen} />
+      </div>
       {modalOpen && <NoteEditorModal defaultProjectId={project.id} key={editing?.id ?? "new-project-note"} note={editing} onClose={closeModal} onDelete={editing && editing.user?.id === user?.id ? remove : undefined} onSave={save} />}
     </section>
   );

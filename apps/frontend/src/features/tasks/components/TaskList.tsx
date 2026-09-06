@@ -20,7 +20,6 @@ export function TaskList({
   onStartPomodoro,
   onPostponeToday,
   onCreateOnDay,
-  onCreate,
 }: {
   tasks: Task[];
   onOpen: (task: Task) => void;
@@ -28,7 +27,6 @@ export function TaskList({
   onStartPomodoro: (task: Task) => void;
   onPostponeToday?: (task: Task) => void;
   onCreateOnDay: (dateKey: string) => void;
-  onCreate?: () => void;
 }) {
   const today = dateKey(new Date());
   const visibleTasks = tasks;
@@ -59,16 +57,6 @@ export function TaskList({
               Todo al día. Puedes crear una tarea nueva o revisar las tareas por organizar.
             </p>
           </div>
-          {onCreate && (
-            <button
-              aria-label="Crear primera tarea"
-              className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 font-label-md text-label-md font-semibold text-on-primary hover:bg-surface-container-high hover:text-on-surface"
-              onClick={onCreate}
-              type="button"
-            >
-              <Plus size={15} /> Crear tarea
-            </button>
-          )}
         </div>
       </div>
     );

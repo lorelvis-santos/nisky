@@ -4,6 +4,7 @@ import { Check, FolderKanban, ListTodo, Plus, Search, Users, X } from "lucide-re
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { FAB } from "@/components/ui/FAB";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { useAuth } from "@/context/AuthProvider";
@@ -144,7 +145,7 @@ export default function ProjectsPage() {
                 ))}
               </div>
               <button
-                className="flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
+                className="hidden shrink-0 items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container sm:inline-flex"
                 onClick={() => setCreateOpen(true)}
                 type="button"
               >
@@ -197,6 +198,9 @@ export default function ProjectsPage() {
         </div>
       </div>
 
+      <div className="sm:hidden">
+        <FAB ariaLabel="Nuevo proyecto" onClick={() => setCreateOpen(true)} />
+      </div>
       {createOpen && <CreateProjectModal onClose={() => setCreateOpen(false)} onCreate={projectMutations.create.mutateAsync} />}
     </section>
   );

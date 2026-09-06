@@ -1,0 +1,549 @@
+"use client";
+
+import { Fragment } from "react";
+import { ChevronLeft, ChevronRight, ListChecks } from "lucide-react";
+import type { CalendarEvent, Project, TaskSchedule, TimeBlock, TimeBlockException } from "@/types/entities";
+import { cn } from "@/lib/utils";
+import { FAB } from "@/components/ui/FAB";
+import { DAY_ORDER, hexToRgba, minToTime, parseDateOnly, toDateKey } from "../lib/time";
+
+type MobileAgendaView = "day" | "week";
+
+type AgendaItem = {
+  kind: "block" | "event" | "task";
+  id: string;
+  title: string;
+  subtitle: string;
+  startMin: number;
+  endMin: number;
+  color: string;
+  block?: TimeBlock;
+  event?: CalendarEvent;
+  taskCount?: number;
+};
+
+const DAY_LETTERS: Record<number, string> = {
+  0: "D",
+  1: "L",
+  2: "M",
+  3: "X",
+  4: "J",
+  5: "V",
+  6: "S",
+};
+
+function monday(date: Date) {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  const day = result.getDay();
+  result.setDate(result.getDate() - (day === 0 ? 6 : day - 1));
+  return result;
+}
+
+function sameLocalDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
+}
+
+function blockOccurrenceOn(block: TimeBlock, date: Date, exceptions: TimeBlockException[]) {
+  if (block.date && !sameLocalDay(parseDateOnly(block.date), date)) return null;
+  if (!block.daysOfWeek.includes(date.getDay())) return null;
+  if (block.repeatEndsAt && monday(parseDateOnly(block.repeatEndsAt)) < monday(date)) return null;
+  if (block.repeatEveryWeeks > 1) {
+    const weeks = Math.floor((monday(date).getTime() - monday(new Date(block.createdAt)).getTime()) / (7 * 86_400_000));
+    if (weeks < 0 || weeks % block.repeatEveryWeeks !== 0) return null;
+  }
+
+  const exception = exceptions.find(
+    (item) => item.blockId === block.id && sameLocalDay(parseDateOnly(item.date), date),
+  );
+  if (exception?.action === "skip") return null;
+
+  return {
+    startMin: exception?.action === "move" && exception.startMin !== null ? exception.startMin : block.startMin,
+    endMin: exception?.action === "move" && exception.endMin !== null ? exception.endMin : block.endMin,
+  };
+}
+
+function formatDuration(startMin: number, endMin: number) {
+  const duration = Math.max(endMin - startMin, 0);
+  return `${Math.floor(duration / 60)}h ${String(duration % 60).padStart(2, "0")}m`;
+}
+
+function formatDate(date: Date) {
+  const label = new Intl.DateTimeFormat("es-DO", {
+    day: "numeric",
+    month: "long",
+    weekday: "long",
+  }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function formatCompactDate(date: Date) {
+  const label = new Intl.DateTimeFormat("es-DO", {
+    day: "numeric",
+    month: "short",
+    weekday: "short",
+  }).format(date).replaceAll(".", "");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function buildDays(weekStart: Date) {
+  return DAY_ORDER.map((dayOfWeek, index) => {
+    const date = new Date(weekStart);
+    date.setDate(date.getDate() + index);
+    return { date, dayOfWeek, key: toDateKey(date) };
+  });
+}
+
+function buildAgendaItems(
+  date: Date,
+  blocks: TimeBlock[],
+  projects: Project[],
+  events: CalendarEvent[],
+  exceptions: TimeBlockException[],
+  taskCounts: Record<string, number>,
+  taskSchedules: TaskSchedule[],
+) {
+  const dateKey = toDateKey(date);
+  const blockItems: AgendaItem[] = blocks.flatMap((block) => {
+    const occurrence = blockOccurrenceOn(block, date, exceptions);
+    if (!occurrence) return [];
+    const project = projects.find((item) => item.id === block.projectId);
+    const title = block.name ?? project?.name ?? "Tiempo libre";
+    const subtitle = project?.name && project.name !== title
+      ? project.name
+      : block.isActive
+        ? "Tiempo para trabajar"
+        : "Bloque pausado";
+    return [{
+      kind: "block",
+      id: block.id,
+      title,
+      subtitle,
+      startMin: occurrence.startMin,
+      endMin: occurrence.endMin,
+      color: project?.color ?? "#7a8494",
+      block,
+      taskCount: taskCounts[`${block.id}:${dateKey}`] ?? 0,
+    }];
+  });
+
+  const eventItems: AgendaItem[] = events
+    .filter((event) => !event.allDay && event.startMin !== null && event.endMin !== null)
+    .filter((event) => sameLocalDay(parseDateOnly(event.date), date))
+    .map((event) => ({
+      kind: "event",
+      id: event.id,
+      title: event.title,
+      subtitle: event.location ?? "Evento",
+      startMin: event.startMin!,
+      endMin: event.endMin!,
+      color: event.color ?? "#316bf3",
+      event,
+    }));
+
+  const unassignedTaskItems: AgendaItem[] = taskSchedules.flatMap((schedule) => {
+    const occurrence = schedule.occurrence;
+    if (schedule.date.slice(0, 10) !== dateKey || schedule.timeBlockId || !occurrence || !occurrence.occurs) return [];
+    return [{
+      kind: "task" as const,
+      id: schedule.id,
+      title: schedule.task.title,
+      subtitle: schedule.task.project?.name ?? "Tarea planificada",
+      startMin: occurrence.startMin,
+      endMin: occurrence.endMin,
+      color: schedule.task.project?.color ?? "#7a8494",
+    }];
+  });
+
+  return [...blockItems, ...eventItems, ...unassignedTaskItems].sort(
+    (a, b) => a.startMin - b.startMin || (a.kind === "event" ? -1 : 1),
+  );
+}
+
+function DaySelector({
+  days,
+  selectedDate,
+  onSelect,
+}: {
+  days: Array<{ date: Date; dayOfWeek: number; key: string }>;
+  selectedDate: Date;
+  onSelect: (date: Date) => void;
+}) {
+  const selectedKey = toDateKey(selectedDate);
+  return (
+    <nav aria-label="Días de la semana" className="grid grid-cols-7 gap-1 border-b border-outline-variant pb-4">
+      {days.map((day) => {
+        const selected = day.key === selectedKey;
+        return (
+          <button
+            aria-current={selected ? "date" : undefined}
+            aria-label={day.date.toLocaleDateString("es-DO", { weekday: "long", day: "numeric", month: "long" })}
+            className={cn(
+              "flex min-h-[4.5rem] flex-col items-center justify-center gap-1 rounded-2xl transition-colors",
+              selected
+                ? "bg-primary-container text-on-primary shadow-cadence-1"
+                : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface",
+            )}
+            key={day.key}
+            onClick={() => onSelect(day.date)}
+            type="button"
+          >
+            <span className="font-label-caps text-label-caps">{DAY_LETTERS[day.dayOfWeek]}</span>
+            <span className={cn("font-headline-sm text-headline-sm", selected ? "font-semibold" : "font-medium")}>{day.date.getDate()}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+function NowDivider({ nowMin }: { nowMin: number }) {
+  return (
+    <div className="grid grid-cols-[4rem_minmax(0,1fr)] items-center gap-x-4" aria-label={`Hora actual ${minToTime(nowMin)}`}>
+      <span />
+      <div className="flex items-center gap-3">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-secondary" />
+        <span className="h-px flex-1 bg-secondary/60" />
+        <span className="font-data-mono text-data-mono text-sm font-medium text-secondary">{minToTime(nowMin)}</span>
+      </div>
+    </div>
+  );
+}
+
+function AgendaItemRow({
+  item,
+  date,
+  onBlockClick,
+  onEventClick,
+}: {
+  item: AgendaItem;
+  date: Date;
+  onBlockClick: (block: TimeBlock, date: Date) => void;
+  onEventClick: (event: CalendarEvent, date: Date) => void;
+}) {
+  const isTask = item.kind === "task";
+  return (
+    <div className="grid grid-cols-[4rem_minmax(0,1fr)] items-start gap-x-4">
+      <time className="pt-4 font-data-mono text-data-mono text-base text-on-surface-variant" dateTime={`${toDateKey(date)}T${minToTime(item.startMin)}`}>
+        {minToTime(item.startMin)}
+      </time>
+      <button
+        className={cn(
+          "w-full rounded-2xl border border-l-[3px] px-4 py-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+          isTask
+            ? "min-h-16 border-outline-variant/70 bg-surface-container-low hover:border-secondary hover:bg-surface-container"
+            : "min-h-28 border-outline-variant/70 bg-surface-container-lowest shadow-sm hover:border-outline hover:bg-surface-container-low",
+        )}
+        onClick={() => {
+          if (item.block) onBlockClick(item.block, date);
+          else if (item.event) onEventClick(item.event, date);
+        }}
+        style={{
+          borderLeftColor: item.color,
+          ...(isTask ? {} : { backgroundColor: hexToRgba(item.color, 0.035) }),
+        }}
+        type="button"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <span className={cn("min-w-0 truncate text-on-surface", isTask ? "font-body-lg text-body-lg" : "font-headline-sm text-headline-sm font-semibold")}>
+            {item.title}
+          </span>
+          <span className="shrink-0 font-data-mono text-data-mono text-sm text-on-surface-variant">
+            {formatDuration(item.startMin, item.endMin)}
+          </span>
+        </div>
+        <p className={cn("mt-2 truncate text-on-surface-variant", isTask ? "font-body-sm text-body-sm" : "font-body-md text-body-md")}>
+          {item.subtitle}
+        </p>
+        {item.taskCount && item.taskCount > 0 ? (
+          <p className="mt-2 font-label-caps text-label-caps text-on-surface-variant">
+            {item.taskCount} {item.taskCount === 1 ? "tarea planificada" : "tareas planificadas"}
+          </p>
+        ) : null}
+      </button>
+    </div>
+  );
+}
+
+function MobileDayAgenda({
+  date,
+  items,
+  events,
+  dayTaskCount,
+  dayStartMin,
+  dayEndMin,
+  onBlockClick,
+  onEventClick,
+  onDayTasksClick,
+}: {
+  date: Date;
+  items: AgendaItem[];
+  events: CalendarEvent[];
+  dayTaskCount: number;
+  dayStartMin: number;
+  dayEndMin: number;
+  onBlockClick: (block: TimeBlock, date: Date) => void;
+  onEventClick: (event: CalendarEvent, date: Date) => void;
+  onDayTasksClick: (date: string) => void;
+}) {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const showNow = sameLocalDay(now, date) && nowMin >= dayStartMin && nowMin <= dayEndMin;
+  const allDayEvents = events.filter((event) => event.allDay && sameLocalDay(parseDateOnly(event.date), date));
+  const nowIndex = showNow ? items.findIndex((item) => nowMin <= item.startMin) : -1;
+
+  return (
+    <div className="mt-7 space-y-4">
+      {allDayEvents.length > 0 && (
+        <div className="rounded-2xl border border-secondary-fixed bg-surface-container-low px-4 py-3">
+          <p className="font-label-caps text-label-caps text-secondary">TODO EL DÍA</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {allDayEvents.map((event) => <span className="rounded-full bg-surface-container-high px-3 py-1 font-body-sm text-body-sm text-on-surface" key={event.id}>{event.title}</span>)}
+          </div>
+        </div>
+      )}
+      {dayTaskCount > 0 && (
+        <button
+          aria-label={`Ver ${dayTaskCount} ${dayTaskCount === 1 ? "tarea planificada" : "tareas planificadas"}`}
+          className="group flex min-h-16 w-full items-center justify-between gap-4 rounded-2xl border border-primary/25 bg-primary-fixed/30 px-4 py-3 text-left shadow-cadence-1 transition-colors hover:border-primary/45 hover:bg-primary-fixed/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          onClick={() => onDayTasksClick(toDateKey(date))}
+          type="button"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-fixed text-primary">
+              <ListChecks aria-hidden="true" size={18} />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate font-body-md text-body-md font-semibold text-on-surface">
+                {dayTaskCount} {dayTaskCount === 1 ? "tarea planificada" : "tareas planificadas"}
+              </span>
+              <span className="mt-0.5 block font-body-sm text-body-sm text-on-surface-variant">
+                Revisar en Tareas
+              </span>
+            </span>
+          </span>
+          <ChevronRight aria-hidden="true" className="shrink-0 text-primary" size={20} />
+        </button>
+      )}
+      {items.length === 0 && !showNow ? (
+        <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container-lowest px-5 py-12 text-center">
+          <p className="font-headline-sm text-headline-sm font-semibold text-on-surface">Día despejado</p>
+          <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">No hay bloques ni eventos reservados.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {items.map((item, index) => {
+            return (
+              <Fragment key={`${item.kind}-${item.id}`}>
+                {index === nowIndex && <NowDivider nowMin={nowMin} />}
+                <AgendaItemRow date={date} item={item} onBlockClick={onBlockClick} onEventClick={onEventClick} />
+              </Fragment>
+            );
+          })}
+          {showNow && nowIndex === -1 && <NowDivider nowMin={nowMin} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileWeekAgenda({
+  days,
+  selectedDate,
+  blocks,
+  projects,
+  events,
+  exceptions,
+  taskCounts,
+  taskSchedules,
+  onDateChange,
+  onBlockClick,
+  onEventClick,
+}: {
+  days: Array<{ date: Date; dayOfWeek: number; key: string }>;
+  selectedDate: Date;
+  blocks: TimeBlock[];
+  projects: Project[];
+  events: CalendarEvent[];
+  exceptions: TimeBlockException[];
+  taskCounts: Record<string, number>;
+  taskSchedules: TaskSchedule[];
+  onDateChange: (date: Date) => void;
+  onBlockClick: (block: TimeBlock, date: Date) => void;
+  onEventClick: (event: CalendarEvent, date: Date) => void;
+}) {
+  const selectedKey = toDateKey(selectedDate);
+  return (
+    <div className="mt-7 space-y-3">
+      {days.map((day) => {
+        const items = buildAgendaItems(day.date, blocks, projects, events, exceptions, taskCounts, taskSchedules);
+        const selected = day.key === selectedKey;
+        return (
+          <section className={cn("overflow-hidden rounded-2xl border bg-surface-container-lowest", selected ? "border-secondary shadow-sm" : "border-outline-variant/70")} key={day.key}>
+            <button className="flex min-h-14 w-full items-center justify-between gap-3 border-b border-outline-variant/70 px-4 text-left" onClick={() => onDateChange(day.date)} type="button">
+              <span className="flex items-center gap-2">
+                <span className="font-label-caps text-label-caps text-secondary">{DAY_LETTERS[day.dayOfWeek]}</span>
+                <span className="font-headline-sm text-headline-sm font-semibold text-on-surface">{formatDate(day.date)}</span>
+              </span>
+              <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{items.length}</span>
+            </button>
+            {items.length === 0 ? (
+              <p className="px-4 py-4 font-body-sm text-body-sm text-on-surface-variant">Día despejado</p>
+            ) : (
+              <div className="divide-y divide-outline-variant/70">
+                {items.slice(0, 5).map((item) => (
+                  <button
+                    className="flex min-h-14 w-full items-center gap-3 px-4 text-left hover:bg-surface-container-low"
+                    key={`${item.kind}-${item.id}`}
+                    onClick={() => {
+                      if (item.block) onBlockClick(item.block, day.date);
+                      else if (item.event) onEventClick(item.event, day.date);
+                    }}
+                    type="button"
+                  >
+                    <span className="w-12 shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant">{minToTime(item.startMin)}</span>
+                    <span className="min-w-0 flex-1 truncate font-body-md text-body-md text-on-surface">{item.title}</span>
+                    <span className="shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant">{formatDuration(item.startMin, item.endMin)}</span>
+                  </button>
+                ))}
+                {items.length > 5 && <p className="px-4 py-3 font-label-md text-label-md text-on-surface-variant">+{items.length - 5} más</p>}
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+export function MobileAgenda({
+  blocks,
+  projects,
+  events,
+  exceptions,
+  taskCounts,
+  taskSchedules,
+  weekStart,
+  selectedDate,
+  view,
+  dayStartMin,
+  dayEndMin,
+  onViewChange,
+  onDateChange,
+  onPreviousDay,
+  onNextDay,
+  onToday,
+  onBlockClick,
+  onEventClick,
+  onDayTasksClick,
+  onAdd,
+}: {
+  blocks: TimeBlock[];
+  projects: Project[];
+  events: CalendarEvent[];
+  exceptions: TimeBlockException[];
+  taskCounts: Record<string, number>;
+  taskSchedules: TaskSchedule[];
+  weekStart: Date;
+  selectedDate: Date;
+  view: MobileAgendaView;
+  dayStartMin: number;
+  dayEndMin: number;
+  onViewChange: (view: MobileAgendaView) => void;
+  onDateChange: (date: Date) => void;
+  onPreviousDay: () => void;
+  onNextDay: () => void;
+  onToday: () => void;
+  onBlockClick: (block: TimeBlock, date?: Date) => void;
+  onEventClick: (event: CalendarEvent, date: Date) => void;
+  onDayTasksClick: (date: string) => void;
+  onAdd: () => void;
+}) {
+  const days = buildDays(weekStart);
+  const items = buildAgendaItems(selectedDate, blocks, projects, events, exceptions, taskCounts, taskSchedules);
+  const selectedDateKey = toDateKey(selectedDate);
+  const dayTaskCount = taskSchedules.filter((schedule) => schedule.date.slice(0, 10) === selectedDateKey).length;
+
+  return (
+    <div className="min-h-full bg-background px-6 pb-32 pt-8">
+      <div className="mx-auto w-full max-w-2xl">
+        <header className="space-y-5">
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="font-display-hero-mobile text-display-hero-mobile font-bold tracking-tight text-on-surface">Agenda</h1>
+            <div className="inline-flex shrink-0 rounded-full bg-surface-container-low p-1" role="tablist" aria-label="Vista de agenda">
+              <button
+                aria-selected={view === "day"}
+                className={cn("min-h-10 rounded-full px-4 font-body-md text-body-md transition-colors", view === "day" ? "bg-surface-container-lowest font-medium text-on-surface shadow-sm" : "text-on-surface-variant")}
+                onClick={() => onViewChange("day")}
+                role="tab"
+                type="button"
+              >
+                Día
+              </button>
+              <button
+                aria-selected={view === "week"}
+                className={cn("min-h-10 rounded-full px-4 font-body-md text-body-md transition-colors", view === "week" ? "bg-surface-container-lowest font-medium text-on-surface shadow-sm" : "text-on-surface-variant")}
+                onClick={() => onViewChange("week")}
+                role="tab"
+                type="button"
+              >
+                Semana
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="min-w-0 flex-1 font-headline-sm text-headline-sm font-semibold leading-6 text-on-surface">
+              <span className="inline min-[400px]:hidden">{formatCompactDate(selectedDate)}</span>
+              <span className="hidden min-[400px]:inline">{formatDate(selectedDate)}</span>
+            </h2>
+            <div className="flex shrink-0 items-center gap-0.5">
+              <button aria-label="Día anterior" className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" onClick={onPreviousDay} type="button">
+                <ChevronLeft size={21} />
+              </button>
+              <button className="rounded-full px-2.5 py-1.5 font-body-md text-body-md text-on-surface hover:bg-surface-container-low" onClick={onToday} type="button">Hoy</button>
+              <button aria-label="Día siguiente" className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" onClick={onNextDay} type="button">
+                <ChevronRight size={21} />
+              </button>
+            </div>
+          </div>
+
+          <DaySelector days={days} onSelect={onDateChange} selectedDate={selectedDate} />
+        </header>
+
+        {view === "day" ? (
+          <MobileDayAgenda
+            date={selectedDate}
+            dayEndMin={dayEndMin}
+            dayStartMin={dayStartMin}
+            dayTaskCount={dayTaskCount}
+            events={events}
+            items={items}
+            onBlockClick={(block, date) => onBlockClick(block, date)}
+            onDayTasksClick={onDayTasksClick}
+            onEventClick={onEventClick}
+          />
+        ) : (
+          <MobileWeekAgenda
+            blocks={blocks}
+            days={days}
+            events={events}
+            exceptions={exceptions}
+            onBlockClick={(block, date) => onBlockClick(block, date)}
+            onDateChange={onDateChange}
+            onEventClick={onEventClick}
+            projects={projects}
+            selectedDate={selectedDate}
+            taskCounts={taskCounts}
+            taskSchedules={taskSchedules}
+          />
+        )}
+      </div>
+
+      <FAB ariaLabel="Nuevo bloque" onClick={onAdd} />
+    </div>
+  );
+}

@@ -3,6 +3,7 @@
 import { Inbox, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { FAB } from "@/components/ui/FAB";
 import { useCapture } from "@/context/CaptureContext";
 import { QuickNoteItem } from "@/features/quicknotes/components/QuickNoteItem";
 import { useQuickNotesQuery } from "@/features/quicknotes/hooks/useQuickNotes";
@@ -36,7 +37,7 @@ export default function QuickNotesPage() {
           <h1 className="mt-1 font-display-hero-mobile text-display-hero-mobile text-on-surface sm:font-display-hero sm:text-display-hero">{view === "INBOX" ? "Bandeja de entrada" : "Capturas archivadas"}</h1>
           <p className="mt-2 max-w-xl font-body-sm text-body-sm text-on-surface-variant">{view === "INBOX" ? "Captura ideas y decide qué hacer con ellas después." : "Revisa las capturas que archivaste."}</p>
         </div>
-        <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+        <div className="hidden w-full items-center justify-end gap-2 sm:flex sm:w-auto">
           <button className="inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-3.5 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90" onClick={openCapture} type="button">
             <Plus size={16} /> Nueva captura
           </button>
@@ -76,7 +77,6 @@ export default function QuickNotesPage() {
               <Inbox className="text-primary" size={28} />
               <p className="font-label-caps text-label-caps text-on-surface-variant">{view === "INBOX" ? "BANDEJA DESPEJADA" : "SIN ARCHIVO"}</p>
               <p className="max-w-md font-body-sm text-body-sm text-on-surface-variant">{view === "INBOX" ? "Captura una idea cuando aparezca y procésala después." : "Las capturas que archives aparecerán aquí."}</p>
-              {view === "INBOX" && <button className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-4 font-body-sm text-body-sm text-on-primary transition-colors hover:bg-primary/90" onClick={openCapture} type="button"><Plus size={16} /> Nueva captura</button>}
             </div>
           ) : (
             <div className="grid grid-cols-1 divide-y divide-outline-variant rounded-lg border border-outline-variant bg-surface-container-lowest px-4 shadow-sm sm:px-5 lg:grid-cols-2 lg:gap-4 lg:divide-y-0 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:shadow-none">
@@ -92,6 +92,9 @@ export default function QuickNotesPage() {
           )}
 
         </div>
+      </div>
+      <div className="sm:hidden">
+        <FAB ariaLabel="Nueva captura" onClick={openCapture} raised={capture.isOpen} />
       </div>
     </section>
   );

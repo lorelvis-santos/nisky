@@ -9,6 +9,7 @@ import {
   ListChecks,
   MapPin,
   Play,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -199,41 +200,45 @@ export function ActiveBlockBanner({
       );
     }
     return (
-      <div className="flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <span
-              aria-hidden="true"
-              className="h-2.5 w-2.5 shrink-0 rounded-full bg-outline-variant"
-            />
-            <p className="truncate font-headline-xs text-headline-xs font-bold text-on-surface">
-              Sin bloque activo ahora
-            </p>
+      <div className="relative flex flex-col gap-4 overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest p-container-padding shadow-cadence-2">
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-1 bg-primary"
+        />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-secondary-fixed text-secondary">
+              <CalendarDays size={20} />
+            </span>
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-1 rounded-md bg-surface-container px-2 py-0.5 font-label-caps text-label-caps font-semibold text-on-surface-variant">
+                Agenda libre
+              </span>
+              <p className="mt-1.5 font-headline-sm text-headline-sm font-bold text-on-surface">
+                Crea tu próximo bloque
+              </p>
+              <p className="mt-1 max-w-xl font-body-sm text-body-sm text-on-surface-variant">
+                No tienes un bloque activo ni uno próximo. Reserva un espacio
+                para proteger tu tiempo de enfoque.
+              </p>
+            </div>
           </div>
-          <p className="font-body-sm text-body-sm text-on-surface-variant">
-            Organiza tu siguiente espacio de enfoque.
-          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-outline-variant pt-3">
-          <Link
-            className="font-label-caps text-label-caps text-primary hover:underline"
-            href="/timeblocks"
-          >
-            VER HORARIO
-          </Link>
-          <Link
-            className="font-label-caps text-label-caps text-primary hover:underline"
-            href="/timeblocks"
-          >
-            NUEVO BLOQUE
-          </Link>
-          <button
-            className="ml-auto flex h-9 items-center gap-2 rounded-md border border-primary bg-primary px-4 font-body-sm text-body-sm text-on-primary hover:bg-primary-container hover:text-on-primary-container"
-            onClick={() => onPlayPomodoro()}
-            type="button"
-          >
-            <Play size={15} /> Comenzar enfoque
-          </button>
+        <div className="flex flex-col gap-3 border-t border-outline-variant pt-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            <Link
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-outline-variant px-3 py-2 font-body-sm text-body-sm font-medium text-on-surface-variant hover:border-secondary hover:bg-surface-container-low hover:text-secondary"
+              href="/timeblocks"
+            >
+              Ver agenda <ArrowRight size={14} />
+            </Link>
+            <Link
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container"
+              href="/timeblocks"
+            >
+              <Plus size={15} /> Nuevo bloque
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -322,7 +327,7 @@ export function ActiveBlockBanner({
               <li className="flex items-center gap-2 py-1.5" key={task.id}>
                 <button
                   aria-label={`Completar ${task.title}`}
-                   className="shrink-0 rounded-md p-1 text-outline hover:bg-surface-container-low hover:text-primary"
+                  className="shrink-0 rounded-md p-1 text-outline hover:bg-surface-container-low hover:text-primary"
                   onClick={() => onToggleTask(task)}
                   type="button"
                 >
@@ -339,7 +344,7 @@ export function ActiveBlockBanner({
                   {task.title}
                 </Link>
                 {task.id === nextTask?.id && task.status !== "COMPLETED" && (
-                   <span className="shrink-0 rounded-md border border-primary px-1.5 py-0.5 font-label-caps text-label-caps text-[10px] uppercase text-primary">
+                  <span className="shrink-0 rounded-md border border-primary px-1.5 py-0.5 font-label-caps text-label-caps text-[10px] uppercase text-primary">
                     Siguiente
                   </span>
                 )}
@@ -364,7 +369,7 @@ export function ActiveBlockBanner({
           className="font-label-caps text-label-caps text-primary hover:underline"
           href="/timeblocks"
         >
-          VER HORARIO
+          VER AGENDA
         </Link>
       </div>
     </div>

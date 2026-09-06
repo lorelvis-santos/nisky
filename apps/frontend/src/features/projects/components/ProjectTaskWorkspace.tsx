@@ -129,13 +129,15 @@ export function ProjectTaskWorkspace({
             <div className="flex items-center gap-2">
               <div className="relative">
                  <button aria-expanded={filtersOpen} className={cn("flex h-10 items-center gap-1.5 rounded-md border bg-white px-3 text-[13px] font-semibold transition-colors", filtersOpen || hasAdvancedFilters ? "border-[#1e3a5f] text-[#1e3a5f]" : "border-[#dde1e2] text-[#5f6872] hover:border-[#b8c0c4] hover:text-[#1e3a5f]")} onClick={() => setFiltersOpen((open) => !open)} type="button">
-                   <SlidersHorizontal size={15} /> Filtros {hasAdvancedFilters && <span className="h-1.5 w-1.5 rounded-full bg-[#1e3a5f]" />}
-                </button>
-                {filtersOpen && <AdvancedFilters assigneeId={assigneeId} members={members} onAssigneeChange={onAssigneeChange} onClose={() => setFiltersOpen(false)} onPriorityChange={onPriorityChange} priority={priority} onReset={onResetFilters} />}
+                    <SlidersHorizontal size={15} /> Filtros {hasAdvancedFilters && <span className="h-1.5 w-1.5 rounded-full bg-[#1e3a5f]" />}
+                 </button>
+                 {filtersOpen && <AdvancedFilters assigneeId={assigneeId} members={members} onAssigneeChange={onAssigneeChange} onClose={() => setFiltersOpen(false)} onPriorityChange={onPriorityChange} priority={priority} onReset={onResetFilters} />}
+               </div>
+               <button className="hidden h-10 shrink-0 items-center gap-1.5 rounded-md bg-[#1e3a5f] px-3.5 text-[13px] font-semibold text-white shadow-[0_2px_6px_rgba(30,58,95,0.18)] hover:bg-[#152c48] sm:inline-flex" onClick={onCreateTask} type="button">
+                 <Plus size={16} /> Nueva tarea
+               </button>
               </div>
-               <button className="flex h-10 shrink-0 items-center gap-1.5 rounded-md bg-[#1e3a5f] px-3.5 text-[13px] font-semibold text-white shadow-[0_2px_6px_rgba(30,58,95,0.18)] hover:bg-[#152c48]" onClick={onCreateTask} type="button"><Plus size={16} /> <span className="hidden sm:inline">Nueva tarea</span></button>
-            </div>
-          </div>
+           </div>
         </div>
 
         <div className="project-panel overflow-visible">
@@ -148,8 +150,8 @@ export function ProjectTaskWorkspace({
             <span>Responsable</span>
             <span />
           </div>
-          {isLoading ? <TaskSkeleton /> : isError ? <TaskError onRetry={onRetry} /> : tasks.length === 0 ? <TaskEmpty hasFilters={mode === "MINE" || Boolean(search) || hasAdvancedFilters} mode={mode} onReset={onResetFilters} onCreate={onCreateTask} /> : (
-            <>
+           {isLoading ? <TaskSkeleton /> : isError ? <TaskError onRetry={onRetry} /> : tasks.length === 0 ? <TaskEmpty hasFilters={mode === "MINE" || Boolean(search) || hasAdvancedFilters} mode={mode} onReset={onResetFilters} /> : (
+             <>
                <div className="divide-y divide-[#e7e9e8]">
                  {orderedTasks.map((task) => <ProjectTaskRow key={task.id} onOpen={() => onOpen(task)} onStartPomodoro={() => onStartPomodoro(task)} onToggle={() => onToggle(task)} task={task} />)}
               </div>
@@ -222,8 +224,8 @@ function TaskError({ onRetry }: { onRetry: () => void }) {
   return <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-4 text-center"><RefreshCw className="text-[#c73b52]" size={22} /><p className="text-[13px] text-[#5f6872]">No pudimos cargar las tareas del proyecto.</p><button className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#dde1e2] px-3 text-[13px] font-semibold text-[#1e3a5f] hover:bg-[#eff1f0]" onClick={onRetry} type="button"><RefreshCw size={14} /> Reintentar</button></div>;
 }
 
-function TaskEmpty({ hasFilters, mode, onReset, onCreate }: { hasFilters: boolean; mode: ProjectTaskMode; onReset: () => void; onCreate: () => void }) {
+function TaskEmpty({ hasFilters, mode, onReset }: { hasFilters: boolean; mode: ProjectTaskMode; onReset: () => void }) {
   const title = hasFilters ? "No hay tareas con estos filtros." : mode === "ACTIVE" ? "No hay tareas activas en este proyecto." : mode === "MINE" ? "No tienes tareas asignadas." : "Todavía no hay tareas en este proyecto.";
   const description = hasFilters ? "Prueba otra combinación o limpia los filtros." : mode === "ACTIVE" ? "Las tareas completadas siguen disponibles en Todas." : mode === "MINE" ? "Crea una tarea o revisa la vista Todas." : "Crea la primera tarea desde la entrada rápida.";
-  return <div className="flex min-h-64 flex-col items-center justify-center gap-2 px-4 text-center"><Circle className="text-[#1e3a5f]" size={23} /><p className="mt-1 text-[13px] font-medium text-[#2f3b45]">{title}</p><p className="text-[12px] text-[#5f6872]">{description}</p><button className="mt-2 rounded-lg border border-[#dde1e2] px-3 py-2 text-[12px] font-semibold text-[#1e3a5f] hover:bg-[#eff1f0]" onClick={hasFilters ? onReset : onCreate} type="button">{hasFilters ? "Limpiar filtros" : "Añadir tarea"}</button></div>;
+  return <div className="flex min-h-64 flex-col items-center justify-center gap-2 px-4 text-center"><Circle className="text-[#1e3a5f]" size={23} /><p className="mt-1 text-[13px] font-medium text-[#2f3b45]">{title}</p><p className="text-[12px] text-[#5f6872]">{description}</p>{hasFilters && <button className="mt-2 rounded-lg border border-[#dde1e2] px-3 py-2 text-[12px] font-semibold text-[#1e3a5f] hover:bg-[#eff1f0]" onClick={onReset} type="button">Limpiar filtros</button>}</div>;
 }

@@ -9,15 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { CaptureComposer, type CaptureMode } from "./CaptureComposer";
 
 const modeLabels: Record<CaptureMode, string> = {
@@ -32,31 +23,15 @@ function ModeIcon({ mode }: { mode: CaptureMode }) {
   return <FileText aria-hidden="true" size={18} />;
 }
 
-function CaptureHeading({ mode, kind }: { mode: CaptureMode; kind: "dialog" | "drawer" }) {
+function CaptureHeading({ mode }: { mode: CaptureMode }) {
   const title = modeLabels[mode];
   const description = mode === "QUICK_NOTE"
     ? "Guárdala en Capturas rápidas para procesarla después."
     : "Captura una idea, tarea o recordatorio sin perder el contexto.";
-  if (kind === "drawer") {
-    return (
-      <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-secondary-container text-secondary"><ModeIcon mode={mode} /></span>
-          <div className="min-w-0">
-            <DrawerTitle className="font-headline-sm text-headline-sm font-semibold normal-case tracking-normal text-on-surface">{title}</DrawerTitle>
-            <DrawerDescription className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">{description}</DrawerDescription>
-          </div>
-        </div>
-        <DrawerClose asChild>
-          <button aria-label="Cerrar captura" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button"><X size={19} /></button>
-        </DrawerClose>
-      </DrawerHeader>
-    );
-  }
   return (
-    <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+    <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] text-left">
       <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-secondary-container text-secondary"><ModeIcon mode={mode} /></span>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-secondary-container text-secondary"><ModeIcon mode={mode} /></span>
         <div className="min-w-0">
           <DialogTitle className="font-headline-sm text-headline-sm font-semibold text-on-surface">{title}</DialogTitle>
           <DialogDescription className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">{description}</DialogDescription>
@@ -70,23 +45,10 @@ function CaptureHeading({ mode, kind }: { mode: CaptureMode; kind: "dialog" | "d
 }
 
 export function QuickCaptureModal({ open, onClose, initialMode = "TASK" }: { open: boolean; onClose: () => void; initialMode?: CaptureMode }) {
-  const isSmallScreen = useIsMobile(639);
-
-  if (isSmallScreen) {
-    return (
-      <Drawer open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }} repositionInputs>
-         <DrawerContent className="flex h-[min(92dvh,48rem)] min-h-0 max-h-[92dvh] overflow-hidden rounded-t-lg border-outline-variant bg-surface-bright">
-          <CaptureHeading kind="drawer" mode={initialMode} />
-          <CaptureComposer initialMode={initialMode} key={`${open ? "open" : "closed"}-${initialMode}`} onClose={onClose} />
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[88dvh] max-w-xl flex-col gap-0 overflow-hidden rounded-lg border-outline-variant bg-surface-bright p-0" showCloseButton={false}>
-        <CaptureHeading kind="dialog" mode={initialMode} />
+      <DialogContent className="fixed bottom-auto left-1/2 right-auto top-0 flex h-[100dvh] max-h-[100dvh] w-screen max-w-none -translate-x-1/2 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 bg-surface-bright p-0 sm:max-w-none" showCloseButton={false}>
+        <CaptureHeading mode={initialMode} />
         <CaptureComposer initialMode={initialMode} key={`${open ? "open" : "closed"}-${initialMode}`} onClose={onClose} />
       </DialogContent>
     </Dialog>

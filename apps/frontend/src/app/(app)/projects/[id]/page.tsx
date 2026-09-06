@@ -5,6 +5,7 @@ import { useParams, usePathname, useRouter, useSearchParams } from "next/navigat
 import { toast } from "sonner";
 import { ColorPicker } from "@/components/ui/ColorPicker";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { FAB } from "@/components/ui/FAB";
 import {
   Dialog,
   DialogClose,
@@ -269,11 +270,11 @@ function ProjectDetailPageContent() {
               mode={taskMode}
               onAssigneeChange={(value) => { setTaskPage(1); setTaskAssigneeId(value); }}
               onModeChange={(value) => { resetTaskPage(); setTaskMode(value); }}
-              onOpen={openTask}
-              onPageChange={setTaskPage}
-              onPriorityChange={(value) => { resetTaskPage(); setTaskPriority(value); }}
-              onCreateTask={openCreateTask}
-              onQuickAdd={quickAdd}
+               onOpen={openTask}
+               onPageChange={setTaskPage}
+               onPriorityChange={(value) => { resetTaskPage(); setTaskPriority(value); }}
+               onCreateTask={openCreateTask}
+               onQuickAdd={quickAdd}
               onResetFilters={() => { resetTaskPage(); setTaskMode("ACTIVE"); setTaskSearch(""); setTaskPriority("ALL"); setTaskAssigneeId(""); }}
               onRetry={() => void tasksQuery.refetch()}
               onSearchChange={(value) => { resetTaskPage(); setTaskSearch(value); }}
@@ -293,6 +294,11 @@ function ProjectDetailPageContent() {
         {activeTab === "resources" && <ProjectResources project={project} />}
       </main>
 
+      {activeTab === "tasks" && (
+        <div className="sm:hidden">
+          <FAB ariaLabel="Nueva tarea" onClick={openCreateTask} />
+        </div>
+      )}
       {taskModalOpen && <TaskModal defaultProjectId={project.id} key={editingTask?.id ?? "new-project-task"} onAddSubtask={async (taskId, title) => { await taskMutations.addSubtask.mutateAsync({ taskId, title }); }} onClose={closeTaskModal} onDelete={editingTask ? deleteTask : undefined} onDeleteSubtask={async (taskId, subtaskId) => { await taskMutations.removeSubtask.mutateAsync({ taskId, subtaskId }); }} onSave={saveTask} onStartPomodoro={editingTask ? () => router.push(`/focus?taskId=${encodeURIComponent(editingTask.id)}&projectId=${encodeURIComponent(project.id)}`) : undefined} onToggleSubtask={async (taskId, subtaskId, completed) => { await taskMutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed }); }} projects={[project]} task={editingTask} />}
       {editOpen && <EditProjectModal canRename={!project.isDefault} color={editColor} description={editDescription} name={editName} onClose={() => setEditOpen(false)} onColorChange={setEditColor} onDescriptionChange={setEditDescription} onNameChange={setEditName} onSave={() => void saveProject()} onTargetDateChange={setEditTargetDate} onTargetHoursChange={setEditTargetHours} onTargetMinutesChange={setEditTargetMinutes} targetDate={editTargetDate} targetHours={editTargetHours} targetMinutes={editTargetMinutes} />}
       {confirmDelete && <ConfirmModal cancelLabel="Cancelar" confirmLabel="Eliminar" danger loading={projectMutations.remove.isPending} message={<>¿Eliminar <strong>{project.name}</strong>? Sus tareas se moverán al proyecto personal y esta acción no se puede deshacer.</>} onClose={() => setConfirmDelete(false)} onConfirm={() => void removeProject()} title="¿Eliminar proyecto?" />}

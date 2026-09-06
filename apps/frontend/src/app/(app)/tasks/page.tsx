@@ -2,7 +2,9 @@
 
 import { Suspense, useMemo, useState } from "react";
 import {
+  Check,
   CheckSquare,
+  ChevronDown,
   Plus,
   Search,
   SlidersHorizontal,
@@ -11,8 +13,9 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import type { Task, TaskPriority, TaskStatus } from "@/types/entities";
+import type { Project, Task, TaskPriority, TaskStatus } from "@/types/entities";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { FAB } from "@/components/ui/FAB";
 import {
   Drawer,
   DrawerClose,
@@ -40,6 +43,7 @@ import {
 } from "@/features/projects/hooks/useProjects";
 import { useTaskScheduleMutations } from "@/features/task-schedules/hooks/useTaskSchedules";
 import { localDateKey } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   TaskSelectionProvider,
   useTaskSelection,
@@ -191,6 +195,7 @@ function TasksPageContent() {
   const [taskPage, setTaskPage] = useState(1);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const isMobile = useIsMobile(1023);
   const selection = useTaskSelection();
   const modalUrl = useModalUrl();
   const taskStatus: TaskStatus | TaskStatus[] | undefined =
@@ -293,6 +298,13 @@ function TasksPageContent() {
   const setTaskStatus = (value: typeof statusFilter) => {
     setTaskPage(1);
     setStatusFilter(value);
+  };
+
+  const clearTaskFilters = () => {
+    setTaskStatus("ACTIVE");
+    setTaskPriority("ALL");
+    selectProject(null);
+    setTaskSort("dueDate");
   };
 
   const toggleTask = async (task: Task) => {
@@ -494,7 +506,7 @@ function TasksPageContent() {
                 <CheckSquare size={15} /> Seleccionar
               </button>
               <button
-                className="flex h-10 items-center gap-1.5 rounded-lg bg-primary px-3 font-label-md text-label-md text-on-primary shadow-sm hover:bg-surface-container-high hover:text-on-surface"
+                className="hidden h-10 items-center gap-1.5 rounded-lg bg-primary px-3.5 font-label-md text-label-md text-on-primary shadow-sm hover:bg-primary-container hover:text-on-primary-container sm:inline-flex"
                 onClick={openCreate}
                 type="button"
               >
@@ -567,7 +579,7 @@ function TasksPageContent() {
                 </button>
               </div>
 
-              <div className="hidden items-center gap-2 lg:flex">
+              <div className="hidden items-center gap-3 lg:flex">
                 <div className="relative min-w-0 max-w-sm flex-1">
                   <Search
                     className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-outline"
@@ -582,71 +594,50 @@ function TasksPageContent() {
                     value={search}
                   />
                 </div>
-                <div className="flex min-w-0 flex-1 flex-wrap justify-end gap-2">
-                  <select
-                    aria-label="Filtrar por proyecto"
-                    className="field h-10 min-w-0 flex-1 sm:w-40 sm:flex-none"
-                    onChange={(event) =>
-                      selectProject(event.target.value || null)
-                    }
-                    value={selectedProjectId ?? ""}
+                <div className="relative shrink-0">
+                  <button
+                    aria-expanded={filtersOpen}
+                    aria-haspopup="dialog"
+                    className={`flex h-10 items-center gap-2 rounded-lg border px-3 font-label-md text-label-md shadow-sm transition-colors ${filtersOpen || activeFilterCount > 0 ? "border-secondary bg-secondary-container text-on-secondary-container" : "border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:border-secondary hover:text-secondary"}`}
+                    onClick={() => setFiltersOpen((open) => !open)}
+                    type="button"
                   >
-                    <option value="">Proyecto: Todos</option>
-                    {allProjects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    aria-label="Filtrar por estado"
-                    className="field h-10 min-w-0 flex-1 sm:w-36 sm:flex-none"
-                    onChange={(event) =>
-                      setTaskStatus(event.target.value as typeof statusFilter)
-                    }
-                    value={statusFilter}
-                  >
-                    <option value="ACTIVE">Estado: Activas</option>
-                    <option value="COMPLETED">Estado: Completadas</option>
-                    <option value="ALL">Estado: Todas</option>
-                  </select>
-                  <select
-                    aria-label="Filtrar por prioridad"
-                    className="field h-10 min-w-0 flex-1 sm:w-36 sm:flex-none"
-                    onChange={(event) =>
-                      setTaskPriority(
-                        event.target.value as TaskPriority | "ALL",
-                      )
-                    }
-                    value={priority}
-                  >
-                    <option value="ALL">Prioridad: Todas</option>
-                    <option value="URGENT">Urgentes</option>
-                    <option value="HIGH">Altas</option>
-                    <option value="NORMAL">Normales</option>
-                    <option value="LOW">Bajas</option>
-                  </select>
-                  <select
-                    aria-label="Ordenar tareas"
-                    className="field h-10 min-w-0 flex-1 sm:w-44 sm:flex-none"
-                    onChange={(event) =>
-                      setTaskSort(event.target.value as typeof sort)
-                    }
-                    value={sort}
-                  >
-                    <option value="dueDate">Ordenar: Vencimiento</option>
-                    <option value="priority">Ordenar: Prioridad</option>
-                    <option value="createdAt">Ordenar: Más recientes</option>
-                    <option value="title">Ordenar: Título</option>
-                  </select>
+                    <SlidersHorizontal size={16} />
+                    <span>Filtros</span>
+                    {activeFilterCount > 0 && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary px-1 font-label-sm text-label-sm font-semibold text-on-secondary">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                    <ChevronDown className={`transition-transform ${filtersOpen ? "rotate-180" : ""}`} size={15} />
+                  </button>
+                  {filtersOpen && (
+                    <>
+                      <button aria-label="Cerrar filtros" className="fixed inset-0 z-20 hidden cursor-default lg:block" onClick={() => setFiltersOpen(false)} type="button" />
+                      <DesktopTaskFilters
+                        allProjects={allProjects}
+                        onClear={clearTaskFilters}
+                        onClose={() => setFiltersOpen(false)}
+                        onPriorityChange={setTaskPriority}
+                        onProjectChange={selectProject}
+                        onSortChange={setTaskSort}
+                        onStatusChange={setTaskStatus}
+                        priority={priority}
+                        selectedProjectId={selectedProjectId}
+                        sort={sort}
+                        statusFilter={statusFilter}
+                      />
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
       </header>
-      <Drawer fixed open={filtersOpen} onOpenChange={setFiltersOpen} repositionInputs>
-        <DrawerContent className="flex h-[min(85dvh,42rem)] min-h-0 max-h-[85dvh] overflow-hidden border-outline-variant bg-surface-bright lg:hidden">
+      {isMobile && (
+        <Drawer fixed open={filtersOpen} onOpenChange={setFiltersOpen} repositionInputs>
+          <DrawerContent className="flex h-[min(85dvh,42rem)] min-h-0 max-h-[85dvh] overflow-hidden border-outline-variant bg-surface-bright">
           <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant px-5 py-4 text-left">
             <div>
               <DrawerTitle className="text-left">Filtrar tareas</DrawerTitle>
@@ -740,12 +731,7 @@ function TasksPageContent() {
             <div className="flex items-center justify-between gap-2 border-t border-outline-variant pt-4">
               <button
                 className="rounded-lg border border-outline-variant px-3 py-2 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
-                onClick={() => {
-                  setTaskStatus("ACTIVE");
-                  setTaskPriority("ALL");
-                  selectProject(null);
-                  setTaskSort("dueDate");
-                }}
+                onClick={clearTaskFilters}
                 type="button"
               >
                 Limpiar
@@ -760,8 +746,9 @@ function TasksPageContent() {
               </DrawerClose>
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
+          </DrawerContent>
+        </Drawer>
+      )}
       {selection.mode && (
         <div className="shrink-0 border-b border-outline-variant bg-secondary-container/30">
           <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-container-padding py-2 sm:px-6 lg:px-10">
@@ -852,7 +839,6 @@ function TasksPageContent() {
                   />
                 ) : (
                   <TaskList
-                    onCreate={openCreate}
                     onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
                     onOpen={openEdit}
                     onPostponeToday={(task) => void postponeToday(task)}
@@ -868,14 +854,9 @@ function TasksPageContent() {
           </div>
         )}
       </main>
-      <button
-        aria-label="Nueva tarea"
-        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-outline-variant bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container lg:hidden"
-        onClick={openCreate}
-        type="button"
-      >
-        <Plus size={22} />
-      </button>
+      <div className="sm:hidden">
+        <FAB ariaLabel="Nueva tarea" onClick={openCreate} />
+      </div>
       {confirmBulkDelete && (
         <ConfirmModal
           confirmLabel="Eliminar"
@@ -940,6 +921,151 @@ function TasksPageContent() {
         />
       )}
     </section>
+  );
+}
+
+function DesktopTaskFilters({
+  allProjects,
+  selectedProjectId,
+  statusFilter,
+  priority,
+  sort,
+  onProjectChange,
+  onStatusChange,
+  onPriorityChange,
+  onSortChange,
+  onClear,
+  onClose,
+}: {
+  allProjects: Project[];
+  selectedProjectId: string | null;
+  statusFilter: "ACTIVE" | "COMPLETED" | "ALL";
+  priority: TaskPriority | "ALL";
+  sort: "priority" | "dueDate" | "createdAt" | "title";
+  onProjectChange: (projectId: string | null) => void;
+  onStatusChange: (value: "ACTIVE" | "COMPLETED" | "ALL") => void;
+  onPriorityChange: (value: TaskPriority | "ALL") => void;
+  onSortChange: (value: "priority" | "dueDate" | "createdAt" | "title") => void;
+  onClear: () => void;
+  onClose: () => void;
+}) {
+  const activeCount =
+    (statusFilter !== "ACTIVE" ? 1 : 0)
+    + (priority !== "ALL" ? 1 : 0)
+    + (selectedProjectId ? 1 : 0)
+    + (sort !== "dueDate" ? 1 : 0);
+
+  return (
+    <div
+      aria-label="Filtros de tareas"
+      className="absolute right-0 top-[calc(100%+0.75rem)] z-30 w-[min(31rem,calc(100vw-2rem))] rounded-xl border border-outline-variant bg-surface-container-lowest p-4 text-left shadow-cadence-3"
+      role="dialog"
+    >
+      <div className="flex items-start justify-between gap-4 border-b border-outline-variant pb-3">
+        <div>
+          <p className="font-label-caps text-label-caps text-on-surface-variant">PERSONALIZA TU VISTA</p>
+          <h3 className="mt-1 font-headline-xs text-headline-xs font-semibold text-on-surface">Filtrar tareas</h3>
+        </div>
+        <button
+          aria-label="Cerrar filtros"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+          onClick={onClose}
+          type="button"
+        >
+          <X size={17} />
+        </button>
+      </div>
+
+      <div className="grid gap-4 py-4">
+        <FilterGroup label="Proyecto">
+          <select
+            aria-label="Filtrar por proyecto"
+            className="field h-10 w-full"
+            onChange={(event) => onProjectChange(event.target.value || null)}
+            value={selectedProjectId ?? ""}
+          >
+            <option value="">Todos los proyectos</option>
+            {allProjects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </FilterGroup>
+
+        <FilterGroup label="Estado">
+          <div className="flex flex-wrap gap-2">
+            <FilterChip active={statusFilter === "ACTIVE"} onClick={() => onStatusChange("ACTIVE")}>Activas</FilterChip>
+            <FilterChip active={statusFilter === "COMPLETED"} onClick={() => onStatusChange("COMPLETED")}>Completadas</FilterChip>
+            <FilterChip active={statusFilter === "ALL"} onClick={() => onStatusChange("ALL")}>Todas</FilterChip>
+          </div>
+        </FilterGroup>
+
+        <FilterGroup label="Prioridad">
+          <div className="flex flex-wrap gap-2">
+            <FilterChip active={priority === "ALL"} onClick={() => onPriorityChange("ALL")}>Todas</FilterChip>
+            <FilterChip active={priority === "URGENT"} onClick={() => onPriorityChange("URGENT")}>Urgentes</FilterChip>
+            <FilterChip active={priority === "HIGH"} onClick={() => onPriorityChange("HIGH")}>Altas</FilterChip>
+            <FilterChip active={priority === "NORMAL"} onClick={() => onPriorityChange("NORMAL")}>Normales</FilterChip>
+            <FilterChip active={priority === "LOW"} onClick={() => onPriorityChange("LOW")}>Bajas</FilterChip>
+          </div>
+        </FilterGroup>
+
+        <FilterGroup label="Ordenar por">
+          <div className="flex flex-wrap gap-2">
+            <FilterChip active={sort === "dueDate"} onClick={() => onSortChange("dueDate")}>Vencimiento</FilterChip>
+            <FilterChip active={sort === "priority"} onClick={() => onSortChange("priority")}>Prioridad</FilterChip>
+            <FilterChip active={sort === "createdAt"} onClick={() => onSortChange("createdAt")}>Más recientes</FilterChip>
+            <FilterChip active={sort === "title"} onClick={() => onSortChange("title")}>Título</FilterChip>
+          </div>
+        </FilterGroup>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 border-t border-outline-variant pt-3">
+        <span className="font-body-sm text-body-sm text-on-surface-variant">
+          {activeCount === 0 ? "Vista predeterminada" : `${activeCount} ${activeCount === 1 ? "filtro activo" : "filtros activos"}`}
+        </span>
+        <div className="flex gap-2">
+          <button
+            className="rounded-lg px-3 py-2 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+            onClick={onClear}
+            type="button"
+          >
+            Limpiar
+          </button>
+          <button
+            className="rounded-lg bg-primary px-3.5 py-2 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container"
+            onClick={onClose}
+            type="button"
+          >
+            Listo
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section className="grid gap-2">
+      <h4 className="font-label-caps text-label-caps text-on-surface-variant">{label}</h4>
+      {children}
+    </section>
+  );
+}
+
+function FilterChip({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      aria-pressed={active}
+      className={`inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border px-3 py-1.5 font-label-md text-label-md transition-colors ${active ? "border-secondary bg-secondary-container text-on-secondary-container" : "border-outline-variant bg-surface text-on-surface-variant hover:border-secondary hover:bg-surface-container-low hover:text-secondary"}`}
+      onClick={onClick}
+      type="button"
+    >
+      {active && <Check aria-hidden="true" size={13} />}
+      {children}
+    </button>
   );
 }
 

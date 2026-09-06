@@ -8,7 +8,7 @@ import { formatCreatedAt } from "@/lib/utils";
 import { useQuickNoteMutations } from "../hooks/useQuickNotes";
 import { detectDate, type DetectedDate } from "../utils/detectDate";
 
-export function QuickNoteItem({ note, onConvertToTask, archived = false }: { note: QuickNote; onConvertToTask?: (note: QuickNote, detected: DetectedDate | null) => void; archived?: boolean }) {
+export function QuickNoteItem({ note, onOpen, onConvertToTask, archived = false }: { note: QuickNote; onOpen?: (note: QuickNote) => void; onConvertToTask?: (note: QuickNote, detected: DetectedDate | null) => void; archived?: boolean }) {
   const mutations = useQuickNoteMutations();
   const detected = detectDate(note.content);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -28,7 +28,13 @@ export function QuickNoteItem({ note, onConvertToTask, archived = false }: { not
 
   return (
     <div className="border-b border-outline-variant py-3 last:border-b-0 lg:flex lg:h-full lg:min-h-40 lg:flex-col lg:rounded-lg lg:border lg:bg-surface-container-lowest lg:p-4 lg:shadow-sm lg:last:border-b">
-      <p className="line-clamp-3 break-words font-body-sm text-body-sm leading-relaxed text-on-surface">{note.content}</p>
+      {onOpen ? (
+        <button aria-label="Vista previa de la captura" className="block w-full rounded-md text-left" onClick={() => onOpen(note)} type="button">
+          <p className="line-clamp-3 break-words font-body-sm text-body-sm leading-relaxed text-on-surface">{note.content}</p>
+        </button>
+      ) : (
+        <p className="line-clamp-3 break-words font-body-sm text-body-sm leading-relaxed text-on-surface">{note.content}</p>
+      )}
       <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">Capturada {formatCreatedAt(note.createdAt)}</p>
       {detected && <span className="mt-1 inline-flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary"><CalendarClock size={12} /> Fecha: {detected.label}</span>}
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3 pt-2 lg:mt-auto">

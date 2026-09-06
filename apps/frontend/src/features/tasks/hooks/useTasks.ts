@@ -115,6 +115,7 @@ export function useTaskMutations() {
   const reorder = useMutation({ mutationFn: reorderTasks, onSuccess: invalidate });
   const addSubtask = useMutation({ mutationFn: ({ taskId, title }: { taskId: string; title: string }) => createSubtask(taskId, title), onSuccess: invalidate });
   const toggleSubtask = useMutation({ mutationFn: ({ taskId, subtaskId, completed }: { taskId: string; subtaskId: string; completed: boolean }) => updateSubtask(taskId, subtaskId, { completed }), onSuccess: invalidate });
+  const updateSubtaskMutation = useMutation({ mutationFn: ({ taskId, subtaskId, payload }: { taskId: string; subtaskId: string; payload: { title?: string; completed?: boolean } }) => updateSubtask(taskId, subtaskId, payload), onSuccess: invalidate });
   const removeSubtask = useMutation({ mutationFn: ({ taskId, subtaskId }: { taskId: string; subtaskId: string }) => deleteSubtask(taskId, subtaskId), onSuccess: invalidate });
-  return { create, update, remove, bulkRemove, bulkMove, reorder, addSubtask, toggleSubtask, removeSubtask };
+  return { create, update, remove, bulkRemove, bulkMove, reorder, addSubtask, toggleSubtask, updateSubtask: updateSubtaskMutation, removeSubtask };
 }

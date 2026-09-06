@@ -8,6 +8,7 @@ import { KnowledgeSidebar } from "@/features/knowledge/components/KnowledgeSideb
 import type { KnowledgeFilter } from "@/features/knowledge/components/KnowledgeSidebar";
 import { NoteCard } from "@/features/knowledge/components/NoteCard";
 import { NoteEditorModal } from "@/features/knowledge/components/NoteEditorModal";
+import { NotePreviewModal } from "@/features/knowledge/components/NotePreviewModal";
 import { NotePagination } from "@/features/knowledge/components/NotePagination";
 import { useFacetsQuery, useNoteMutations, useNotesQuery } from "@/features/knowledge/hooks/useKnowledge";
 import type { NoteForm } from "@/features/knowledge/schemas/knowledge.schema";
@@ -18,6 +19,7 @@ export default function KnowledgePage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<Note | null>(null);
+  const [previewing, setPreviewing] = useState<Note | null>(null);
   const [creating, setCreating] = useState(false);
 
   const query = useNotesQuery({
@@ -53,6 +55,7 @@ export default function KnowledgePage() {
     }
     setEditing(null);
     setCreating(false);
+    setPreviewing(null);
   };
 
   const remove = async () => {
@@ -61,6 +64,7 @@ export default function KnowledgePage() {
     toast.success("¡Nota eliminada!");
     setEditing(null);
     setCreating(false);
+    setPreviewing(null);
   };
 
   const togglePin = async (note: Note) => {
@@ -72,11 +76,19 @@ export default function KnowledgePage() {
   };
 
   const openNew = () => {
+    setPreviewing(null);
     setEditing(null);
     setCreating(true);
   };
 
+  const openPreview = (note: Note) => {
+    setCreating(false);
+    setEditing(null);
+    setPreviewing(note);
+  };
+
   const openEdit = (note: Note) => {
+    setPreviewing(null);
     setCreating(false);
     setEditing(note);
   };
@@ -85,6 +97,8 @@ export default function KnowledgePage() {
     setEditing(null);
     setCreating(false);
   };
+
+  const closePreview = () => setPreviewing(null);
 
   return (
     <section className="h-full min-h-0 overflow-y-auto bg-background">
@@ -126,7 +140,7 @@ export default function KnowledgePage() {
                <>
                  <div className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
                    {notes.map((note) => (
-                     <NoteCard key={note.id} note={note} onEdit={openEdit} onTogglePin={togglePin} />
+                      <NoteCard key={note.id} note={note} onEdit={openEdit} onOpen={openPreview} onTogglePin={togglePin} />
                    ))}
                  </div>
                  <NotePagination isFetching={query.isFetching} meta={query.data?.meta} onPageChange={setPage} />
@@ -137,9 +151,17 @@ export default function KnowledgePage() {
         )}
       </div>
        <div className="sm:hidden">
-         <FAB ariaLabel="Nueva nota" onClick={openNew} raised={modalOpen} />
-       </div>
-       {modalOpen && (
+         <FAB ariaLabel="Nueva nota" onClick={openNew} raised={modalOpen || Boolean(previewing)} />
+        </div>
+        {previewing && (
+          <NotePreviewModal
+            note={previewing}
+            onClose={closePreview}
+            onEdit={() => openEdit(previewing)}
+            onTogglePin={() => void togglePin(previewing)}
+          />
+        )}
+        {modalOpen && (
         <NoteEditorModal
           key={editing?.id ?? "new"}
           note={editing}

@@ -1,13 +1,14 @@
 "use client";
 
-import { CalendarDays, CheckSquare2, GripVertical, MessageSquare, MoreHorizontal, Play, Square, Timer } from "lucide-react";
+import { CalendarDays, CheckSquare2, GripVertical, MessageSquare, Pencil, Play, Square, Timer } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import type { Task } from "@/types/entities";
-import { cn, formatDateTime, isTaskOverdue } from "@/lib/utils";
+import { cn, isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "./PriorityChip";
 import { taskDragId } from "../dnd/TasksDnDProvider";
+import { formatTaskDueDate } from "../lib/task-utils";
 import { useTaskSelection } from "../selection/TaskSelectionContext";
 
 type HandleProps = {
@@ -19,6 +20,8 @@ type HandleProps = {
 export function BacklogItemShell({
   task,
   onOpen,
+  onEdit,
+  isPreviewed = false,
   onToggle,
   onPlanToday,
   onStartPomodoro,
@@ -28,6 +31,8 @@ export function BacklogItemShell({
 }: {
   task: Task;
   onOpen: () => void;
+  onEdit?: () => void;
+  isPreviewed?: boolean;
   onToggle: () => void;
   onPlanToday?: () => void;
   onStartPomodoro?: () => void;
@@ -41,6 +46,7 @@ export function BacklogItemShell({
   const selection = useTaskSelection();
   const isSelecting = selection.mode;
   const selected = selection.isSelected(task.id);
+  const edit = onEdit ?? onOpen;
   return (
     <article
       aria-label={`Tarea pendiente: ${task.title}`}
@@ -49,7 +55,7 @@ export function BacklogItemShell({
       className={cn(
          "group relative flex min-h-[104px] flex-col gap-2 rounded-lg border bg-surface p-3 transition-colors hover:border-outline",
         isSelecting && "cursor-pointer",
-        selected ? "border-2 border-primary bg-primary-fixed/20" : dropTarget ? "border-2 border-primary bg-primary-container/20" : "border-outline-variant",
+         selected ? "border-2 border-primary bg-primary-fixed/20" : isPreviewed ? "border-2 border-primary bg-primary-fixed/20 shadow-md" : dropTarget ? "border-2 border-primary bg-primary-container/20" : "border-outline-variant",
         isSelecting && !selected && "hover:border-primary/60",
         dragging && "opacity-40",
       )}
@@ -95,6 +101,7 @@ export function BacklogItemShell({
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {isPreviewed && <span className="hidden rounded-md bg-primary-fixed px-2 py-1 font-label-caps text-[10px] font-semibold uppercase tracking-wide text-primary sm:inline-flex">Abierta en panel</span>}
           {/* eslint-disable react-hooks/refs -- los listeners de dnd-kit se aplican por spread (falso positivo) */}
           {handleProps && !isSelecting && (
             <button
@@ -111,12 +118,15 @@ export function BacklogItemShell({
           {/* eslint-enable react-hooks/refs */}
           {!isSelecting && (
             <button
-              aria-label={`Más detalles de ${task.title}`}
+              aria-label={`Editar ${task.title}`}
                className="mt-0.5 shrink-0 rounded-md p-1 text-on-surface-variant opacity-50 transition-opacity hover:bg-surface-container-low hover:text-primary group-hover:opacity-100"
-              onClick={onOpen}
+              onClick={(event) => {
+                event.stopPropagation();
+                edit();
+              }}
               type="button"
             >
-              <MoreHorizontal size={17} />
+              <Pencil size={15} />
             </button>
           )}
         </div>
@@ -139,7 +149,7 @@ export function BacklogItemShell({
               title={task.dueDate}
             >
               <CalendarDays size={12} />
-              {formatDateTime(task.dueDate)}
+              {formatTaskDueDate(task.dueDate)}
             </span>
           )}
           <span className="flex items-center gap-1 font-data-mono text-data-mono text-xs text-tertiary" title="Pomodoros"><Timer size={13} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>
@@ -179,11 +189,15 @@ export function BacklogItemShell({
 export function SortableBacklogItem({
   task,
   onOpen,
+  onEdit,
+  isPreviewed,
   onToggle,
   onStartPomodoro,
 }: {
   task: Task;
   onOpen: () => void;
+  onEdit?: () => void;
+  isPreviewed?: boolean;
   onToggle: () => void;
   onStartPomodoro?: () => void;
 }) {
@@ -199,8 +213,10 @@ export function SortableBacklogItem({
       <BacklogItemShell
         dropTarget={Boolean(over) && over?.id === taskDragId(task.id)}
         dragging={isDragging}
-        handleProps={{ attributes, listeners, ref: setActivatorNodeRef }}
-        onOpen={onOpen}
+         handleProps={{ attributes, listeners, ref: setActivatorNodeRef }}
+          onEdit={onEdit}
+          isPreviewed={isPreviewed}
+          onOpen={onOpen}
         onStartPomodoro={onStartPomodoro}
         onToggle={onToggle}
         task={task}

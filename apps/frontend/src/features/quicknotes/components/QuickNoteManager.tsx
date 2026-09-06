@@ -15,12 +15,14 @@ import type { QuickNote } from "@/types/entities";
 import { formatCreatedAt } from "@/lib/utils";
 import { useQuickNoteMutations, useQuickNotesQuery } from "../hooks/useQuickNotes";
 import { QuickNoteItem } from "./QuickNoteItem";
+import { QuickNotePreviewModal } from "./QuickNotePreviewModal";
 import type { DetectedDate } from "../utils/detectDate";
 
 export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }: { onClose: () => void; view?: "inbox" | "archived"; onConvertToTask?: (note: QuickNote, detected: DetectedDate | null) => void }) {
   const query = useQuickNotesQuery(view === "inbox" ? "INBOX" : "ARCHIVED", 50);
   const mutations = useQuickNoteMutations();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<QuickNote | null>(null);
 
   const restore = async (note: QuickNote) => {
     try {
@@ -63,12 +65,12 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
         </DialogHeader>
         <div className="min-h-0 flex-1 overflow-y-auto p-5" data-modal-scroll>
           {query.isLoading ? <p className="font-body-sm text-body-sm text-on-surface-variant">Cargando capturas...</p> : query.isError ? <p className="font-body-sm text-body-sm text-error">{inbox ? "Ups, no pudimos cargar tus capturas. Inténtalo de nuevo." : "Ups, no pudimos cargar las capturas archivadas. Inténtalo de nuevo."}</p> : notes.length === 0 ? <p className="font-body-sm text-body-sm text-on-surface-variant">{inbox ? "Aún no tienes capturas pendientes." : "Aún no hay capturas archivadas."}</p> : inbox && onConvertToTask ? (
-            notes.map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} />)
+             notes.map((note) => <QuickNoteItem key={note.id} note={note} onConvertToTask={onConvertToTask} onOpen={setPreviewing} />)
           ) : (
             <div className="divide-y divide-outline-variant border-y border-outline-variant">
               {notes.map((note) => (
                 <div className="py-3" key={note.id}>
-                  <p className="font-body-sm text-body-sm text-on-surface">{note.content}</p>
+                   <button className="block w-full rounded-md text-left" onClick={() => setPreviewing(note)} type="button"><p className="font-body-sm text-body-sm text-on-surface">{note.content}</p></button>
                   <p className="mt-1 font-data-mono text-data-mono text-xs text-on-surface-variant">Capturada {formatCreatedAt(note.createdAt)}</p>
                   <div className="mt-2 flex items-center gap-3">
                     <button className="flex items-center gap-1 rounded-md px-2 py-1 font-body-sm text-body-sm text-primary hover:bg-surface-container-low hover:underline" onClick={() => void restore(note)} type="button"><ArchiveRestore size={14} /> Restaurar</button>
@@ -84,6 +86,7 @@ export function QuickNoteManager({ onClose, view = "archived", onConvertToTask }
             <button className="min-h-11 rounded-md border border-outline-variant px-4 py-2 font-body-sm text-body-sm hover:bg-surface-container-high" type="button">Cerrar</button>
           </DialogClose>
         </div>
+        {previewing && <QuickNotePreviewModal note={previewing} onClose={() => setPreviewing(null)} onConvertToTask={onConvertToTask} />}
       </DialogContent>
     </Dialog>
   );

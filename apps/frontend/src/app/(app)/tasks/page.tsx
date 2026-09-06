@@ -32,6 +32,7 @@ import {
   TaskModal,
   type TaskForm,
 } from "@/features/tasks/components/TaskModal";
+import { TaskPreviewModal } from "@/features/tasks/components/TaskPreviewModal";
 import {
   usePaginatedTasksQuery,
   useTaskMutations,
@@ -57,6 +58,7 @@ function useModalUrl() {
   const searchParams = useSearchParams();
   const state = {
     taskId: searchParams.get("taskId"),
+    edit: searchParams.get("modal") === "edit",
     create: searchParams.get("modal") === "create",
     prefill: searchParams.get("prefill"),
     quickNoteId: searchParams.get("quickNoteId"),
@@ -76,6 +78,20 @@ function useModalUrl() {
       params.delete("modal");
       params.delete("prefill");
       params.delete("quickNoteId");
+      params.set("taskId", taskId);
+      if (plannedDate) {
+        params.set(
+          "prefill",
+          encodeURIComponent(JSON.stringify({ plannedDate })),
+        );
+      }
+      navigateWithModal(params);
+    },
+    openEdit: (taskId: string, plannedDate?: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("prefill");
+      params.delete("quickNoteId");
+      params.set("modal", "edit");
       params.set("taskId", taskId);
       if (plannedDate) {
         params.set(
@@ -266,8 +282,9 @@ function TasksPageContent() {
     urlTaskQuery.data ??
     tasks.find((task) => task.id === modalUrl.state.taskId) ??
     null;
-  const editingTask = taskFromUrl;
-  const modalOpen = Boolean(modalUrl.state.taskId || modalUrl.state.create);
+  const editingTask = modalUrl.state.edit ? taskFromUrl : null;
+  const previewOpen = Boolean(taskFromUrl && modalUrl.state.taskId && !modalUrl.state.edit && !modalUrl.state.create);
+  const modalOpen = Boolean(modalUrl.state.create || editingTask);
   const initialForm = parsePrefill(modalUrl.state.prefill);
   const taskDefaultProjectId =
     selectedProjectId ??
@@ -383,8 +400,9 @@ function TasksPageContent() {
   };
 
   const openCreate = () => modalUrl.openCreate();
+  const openPreview = (task: Task) => modalUrl.openTask(task.id);
   const openEdit = (task: Task, plannedDate?: string) =>
-    modalUrl.openTask(task.id, plannedDate);
+    modalUrl.openEdit(task.id, plannedDate);
   const openFocus = (task: Task) =>
     modalUrl.openFocus(task.id, task.projectId ?? undefined);
   const closeModal = () => modalUrl.close();
@@ -831,20 +849,24 @@ function TasksPageContent() {
                 {view === "backlog" ? (
                   <BacklogPanel
                     count={backlogCount}
-                    onOpen={openEdit}
+                    onEdit={openEdit}
+                    onOpen={openPreview}
                     onPlanToday={(task) => void planToday(task)}
                     onStartPomodoro={openFocus}
                     onToggle={(task) => void toggleTask(task)}
                     tasks={tasks}
+                    previewedTaskId={previewOpen ? modalUrl.state.taskId : null}
                   />
                 ) : (
                   <TaskList
                     onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
-                    onOpen={openEdit}
+                    onEdit={openEdit}
+                    onOpen={openPreview}
                     onPostponeToday={(task) => void postponeToday(task)}
                     onStartPomodoro={openFocus}
                     onToggle={(task) => void toggleTask(task)}
                     tasks={tasks}
+                    previewedTaskId={previewOpen ? modalUrl.state.taskId : null}
                   />
                 )}
             </div>
@@ -855,7 +877,7 @@ function TasksPageContent() {
         )}
       </main>
       <div className="sm:hidden">
-        <FAB ariaLabel="Nueva tarea" onClick={openCreate} />
+        <FAB ariaLabel="Nueva tarea" onClick={openCreate} raised={modalOpen || previewOpen} />
       </div>
       {confirmBulkDelete && (
         <ConfirmModal
@@ -868,6 +890,33 @@ function TasksPageContent() {
           title="¿Eliminar tareas seleccionadas?"
         />
       )}
+      {previewOpen && taskFromUrl && (
+        <TaskPreviewModal
+          key={taskFromUrl.id}
+          onAddSubtask={async (taskId, title) => {
+            await mutations.addSubtask.mutateAsync({ taskId, title });
+          }}
+          onClose={closeModal}
+          onDeleteSubtask={async (taskId, subtaskId) => {
+            await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
+          }}
+          onEdit={() => openEdit(taskFromUrl)}
+          onStartPomodoro={() => openFocus(taskFromUrl)}
+          onToggleSubtask={async (taskId, subtaskId, completed) => {
+            await mutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed });
+          }}
+          onUpdateDescription={async (taskId, description) => {
+            await mutations.update.mutateAsync({ id: taskId, payload: { description: description || null } });
+          }}
+          onUpdateTask={async (taskId, payload) => {
+            await mutations.update.mutateAsync({ id: taskId, payload });
+          }}
+          onUpdateSubtask={async (taskId, subtaskId, title) => {
+            await mutations.updateSubtask.mutateAsync({ taskId, subtaskId, payload: { title } });
+          }}
+          task={taskFromUrl}
+        />
+      )}
       {modalOpen && (!modalUrl.state.taskId || editingTask) && (
         <TaskModal
           defaultProjectId={taskDefaultProjectId}
@@ -877,9 +926,6 @@ function TasksPageContent() {
               ? `${editingTask.id}:${modalUrl.state.prefill ?? ""}`
               : (modalUrl.state.prefill ?? "new")
           }
-          onAddSubtask={async (taskId, title) => {
-            await mutations.addSubtask.mutateAsync({ taskId, title });
-          }}
           onClose={closeModal}
           projects={allProjects}
           onDelete={
@@ -897,26 +943,7 @@ function TasksPageContent() {
                 }
               : undefined
           }
-          onDeleteSubtask={async (taskId, subtaskId) => {
-            await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
-          }}
           onSave={saveTask}
-          onStartPomodoro={
-            editingTask
-              ? () =>
-                  modalUrl.openFocus(
-                    editingTask.id,
-                    editingTask.projectId ?? undefined,
-                  )
-              : undefined
-          }
-          onToggleSubtask={async (taskId, subtaskId, completed) => {
-            await mutations.toggleSubtask.mutateAsync({
-              taskId,
-              subtaskId,
-              completed,
-            });
-          }}
           task={editingTask}
         />
       )}

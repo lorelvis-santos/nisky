@@ -10,13 +10,15 @@ function noteDate(value: string) {
 
 export function NoteCard({
   note,
+  onOpen,
   onEdit,
   onTogglePin,
   canEdit = true,
   showAuthor = false,
 }: {
   note: Note;
-  onEdit: (note: Note) => void;
+  onOpen: (note: Note) => void;
+  onEdit?: (note: Note) => void;
   onTogglePin: (note: Note) => Promise<void>;
   canEdit?: boolean;
   showAuthor?: boolean;
@@ -24,7 +26,9 @@ export function NoteCard({
   return (
     <article className="group flex min-w-0 flex-col rounded-lg border border-outline-variant/70 bg-surface-container-lowest shadow-sm transition-shadow hover:shadow-md">
       <div className="flex min-w-0 items-start justify-between gap-2 p-5 pb-0">
-        <h2 className="line-clamp-2 min-w-0 break-words font-headline-xs text-headline-xs font-semibold text-on-surface">{note.title}</h2>
+        <button aria-label={`Vista previa de ${note.title}`} className="min-w-0 rounded-md text-left" onClick={() => onOpen(note)} type="button">
+          <h2 className="line-clamp-2 min-w-0 break-words font-headline-xs text-headline-xs font-semibold text-on-surface">{note.title}</h2>
+        </button>
         {canEdit && <button
             aria-label={note.pinned ? "Desfijar" : "Fijar"}
             className={`shrink-0 rounded-lg p-2 ${note.pinned ? "bg-secondary-fixed text-secondary" : "text-on-surface-variant hover:bg-surface-container-low hover:text-primary"}`}
@@ -34,11 +38,9 @@ export function NoteCard({
             <Pin size={16} fill={note.pinned ? "currentColor" : "none"} />
           </button>}
       </div>
-      {canEdit ? <button className="min-w-0 flex-1 rounded-md p-5 text-left" onClick={() => onEdit(note)} type="button">
-          <p className="line-clamp-5 break-words whitespace-pre-line font-body-md text-body-md leading-relaxed text-on-surface">{note.content}</p>
-        </button> : <div className="min-w-0 flex-1 p-5 text-left">
-          <p className="line-clamp-5 break-words whitespace-pre-line font-body-md text-body-md leading-relaxed text-on-surface">{note.content}</p>
-        </div>}
+      <button aria-label={`Vista previa de ${note.title}`} className="min-w-0 flex-1 rounded-md p-5 text-left" onClick={() => onOpen(note)} type="button">
+        <p className="line-clamp-5 break-words whitespace-pre-line font-body-md text-body-md leading-relaxed text-on-surface">{note.content}</p>
+      </button>
       <div className="flex items-end justify-between gap-2 px-5 pb-5 pt-0">
         <div className="min-w-0 flex-1">
           {note.tags.length > 0 && (
@@ -56,7 +58,7 @@ export function NoteCard({
             <span>{note.category ? `${note.category} · ` : ""}{noteDate(note.updatedAt)}</span>
           </div>
         </div>
-        {canEdit && <div className="flex shrink-0 items-center gap-1">
+        {canEdit && onEdit && <div className="flex shrink-0 items-center gap-1">
             <button aria-label="Editar" className="rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => onEdit(note)} title="Editar" type="button">
               <Pencil size={14} />
             </button>

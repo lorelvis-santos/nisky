@@ -1,3 +1,26 @@
+import { isLegacyNoonDate } from "@/lib/utils";
+
+export function formatTaskDueDate(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value);
+  const dateLabel = new Intl.DateTimeFormat("es-CO", {
+    day: "numeric",
+    month: "short",
+    weekday: "short",
+  })
+    .format(date)
+    .replace(/[.,]/g, "");
+  const label = `${dateLabel.charAt(0).toUpperCase()}${dateLabel.slice(1)}`;
+  const isEndOfDay = (date.getHours() === 23 && date.getMinutes() === 59) || isLegacyNoonDate(value);
+  if (isEndOfDay) return label;
+
+  const time = date.toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    hour12: false,
+    minute: "2-digit",
+  });
+  return `${label} · ${time}`;
+}
+
 export function formatDueTime(dueDate: string | null): string {
   if (!dueDate) return "";
   const date = new Date(dueDate);

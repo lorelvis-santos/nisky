@@ -17,7 +17,7 @@ export function PriorityChip({ priority }: { priority: TaskPriority }) {
   };
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full border px-1.5 py-0.5 font-label-caps text-[11px] leading-4 ${styles[priority]}`}
+      className={`inline-flex min-h-7 shrink-0 items-center rounded-full border px-2.5 py-1 font-label-md text-label-md font-semibold leading-4 ${styles[priority]}`}
     >
       {labels[priority]}
     </span>

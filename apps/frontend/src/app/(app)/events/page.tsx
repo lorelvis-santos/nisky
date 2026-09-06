@@ -5,6 +5,7 @@ import { Clock, MapPin, Plus } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEventsQuery } from "@/features/events/hooks/useEvents";
 import { EventEditorModal } from "@/features/events/components/EventEditorModal";
+import { EventPreviewModal } from "@/features/events/components/EventPreviewModal";
 import type { CalendarEvent } from "@/types/entities";
 import { hexToRgba, parseDateOnly } from "@/features/timeblocks/lib/time";
 
@@ -42,20 +43,20 @@ export default function EventsPage() {
   const { data: events = [], isLoading } = useEventsQuery(from, to);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [previewingEvent, setPreviewingEvent] = useState<CalendarEvent | null>(null);
   const eventIdParam = searchParams.get("eventId");
   const handledEventIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!eventIdParam || handledEventIdRef.current === eventIdParam || isModalOpen || isLoading) return;
+    if (!eventIdParam || handledEventIdRef.current === eventIdParam || isModalOpen || previewingEvent || isLoading) return;
     const target = events.find((event) => event.id === eventIdParam);
     if (target) {
       // The URL is the source of truth for opening a deep-linked event.
       handledEventIdRef.current = eventIdParam;
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setEditingEvent(target);
-      setIsModalOpen(true);
+      setPreviewingEvent(target);
     }
-  }, [eventIdParam, events, isModalOpen, isLoading]);
+  }, [eventIdParam, events, isLoading, isModalOpen, previewingEvent]);
 
   const prevMonth = () => setCurrentMonth((month) => {
     const next = new Date(month);
@@ -70,7 +71,20 @@ export default function EventsPage() {
   });
 
   const openCreate = () => {
+    setPreviewingEvent(null);
     setEditingEvent(null);
+    setIsModalOpen(true);
+  };
+
+  const openPreview = (event: CalendarEvent) => {
+    setIsModalOpen(false);
+    setEditingEvent(null);
+    setPreviewingEvent(event);
+  };
+
+  const openEdit = (event: CalendarEvent) => {
+    setPreviewingEvent(null);
+    setEditingEvent(event);
     setIsModalOpen(true);
   };
 
@@ -122,8 +136,7 @@ export default function EventsPage() {
                       <button
                         key={`${event.id}-${event.date}`}
                         onClick={() => {
-                          setEditingEvent(event);
-                          setIsModalOpen(true);
+                           openPreview(event);
                         }}
                         className="flex min-h-20 flex-col rounded-lg border border-outline-variant bg-surface p-4 text-left shadow-cadence-1 transition-colors hover:border-outline hover:shadow-cadence-2"
                         style={{ borderLeft: `3px solid ${eventColor}`, backgroundColor: hexToRgba(eventColor, 0.06) }}
@@ -155,6 +168,13 @@ export default function EventsPage() {
         )}
       </div>
 
+      {previewingEvent && (
+        <EventPreviewModal
+          event={previewingEvent}
+          onClose={() => setPreviewingEvent(null)}
+          onEdit={() => openEdit(previewingEvent)}
+        />
+      )}
       {isModalOpen && (
         <EventEditorModal
           event={editingEvent}

@@ -9,7 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -22,6 +22,11 @@ function targetDateLabel(value: string) {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function resizeDescriptionInput(input: HTMLTextAreaElement) {
+  input.style.height = "auto";
+  input.style.height = `${input.scrollHeight}px`;
 }
 
 export function ProjectHeader({
@@ -47,21 +52,38 @@ export function ProjectHeader({
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [descriptionSaving, setDescriptionSaving] = useState(false);
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
+  const cancelDescriptionRef = useRef(false);
   const isMobile = useIsMobile(639);
   const isShared = !project.isDefault && members.length > 1;
   const hasDescription = Boolean(project.description?.trim());
 
   const openDescriptionEditor = () => {
+    cancelDescriptionRef.current = false;
     setDescriptionDraft(project.description ?? "");
     setDescriptionOpen(true);
   };
 
   const closeDescriptionEditor = () => {
+    cancelDescriptionRef.current = true;
     setDescriptionOpen(false);
     setDescriptionDraft(project.description ?? "");
   };
 
+  useEffect(() => {
+    if (!descriptionOpen || !descriptionInputRef.current) return;
+    const input = descriptionInputRef.current;
+    resizeDescriptionInput(input);
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }, [descriptionOpen]);
+
   const saveDescription = async () => {
+    if (descriptionSaving) return;
+    if (cancelDescriptionRef.current) {
+      cancelDescriptionRef.current = false;
+      return;
+    }
     const description = descriptionDraft.trim();
     if (description === (project.description ?? "").trim()) {
       closeDescriptionEditor();
@@ -132,35 +154,41 @@ export function ProjectHeader({
             </span>
           </div>
           {descriptionOpen ? (
-            <div className="mt-3 max-w-2xl">
-              <textarea
+            <textarea
+                aria-busy={descriptionSaving}
                 aria-label="Descripción del proyecto"
-                autoFocus
-                className="project-input min-h-24 resize-y py-2"
+                className="mt-3 block min-h-6 w-full max-w-2xl resize-none overflow-hidden border-0 bg-transparent p-0 text-[14px] leading-6 text-[#5f6872] outline-none placeholder:text-[#858d91] focus:border-0 focus:outline-none focus:ring-0"
                 maxLength={2000}
-                onChange={(event) => setDescriptionDraft(event.target.value)}
+                onBlur={() => void saveDescription()}
+                onChange={(event) => {
+                  setDescriptionDraft(event.target.value);
+                  resizeDescriptionInput(event.currentTarget);
+                }}
                 onKeyDown={(event) => {
-                  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") void saveDescription();
-                  if (event.key === "Escape") closeDescriptionEditor();
+                  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                    event.preventDefault();
+                    void saveDescription();
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    closeDescriptionEditor();
+                  }
                 }}
                 placeholder="Qué contexto debe conocer el equipo..."
+                ref={descriptionInputRef}
                 value={descriptionDraft}
               />
-              <div className="mt-2 flex items-center gap-2">
-                <button className="rounded-md border border-[#dde1e2] px-3 py-2 text-[12px] font-semibold text-[#5f6872] hover:bg-[#eff1f0]" onClick={closeDescriptionEditor} type="button">Cancelar</button>
-                <button className="rounded-md bg-[#1e3a5f] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#152c48] disabled:cursor-not-allowed disabled:opacity-50" disabled={!descriptionDraft.trim() || descriptionSaving} onClick={() => void saveDescription()} type="button">{descriptionSaving ? "Guardando..." : "Guardar"}</button>
-              </div>
-            </div>
           ) : hasDescription ? (
             canEdit ? (
               <button
                 aria-label="Editar descripción del proyecto"
-                className="mt-3 block w-full max-w-2xl rounded-md text-left text-[14px] leading-6 text-[#5f6872] transition-colors hover:bg-white hover:text-[#1e3a5f]"
+                className="group mt-3 flex w-full max-w-2xl items-start gap-2 rounded-md text-left text-[14px] leading-6 text-[#5f6872] transition-colors hover:text-[#1e3a5f]"
                 onClick={openDescriptionEditor}
                 title="Editar descripción"
                 type="button"
               >
-                {project.description}
+                <span className="min-w-0 flex-1">{project.description}</span>
+                <Pencil aria-hidden="true" className="mt-1 shrink-0 opacity-0 transition-opacity group-hover:opacity-60" size={13} />
               </button>
             ) : (
               <p className="mt-3 max-w-2xl text-[14px] leading-6 text-[#5f6872]">

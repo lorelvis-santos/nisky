@@ -5,10 +5,12 @@ import { toast } from "sonner";
 import { NotebookPen } from "lucide-react";
 import { JournalEditor } from "@/features/journal/components/JournalEditor";
 import { JournalLocked } from "@/features/journal/components/JournalLocked";
+import { JournalPreviewModal } from "@/features/journal/components/JournalPreviewModal";
 import { JournalSidebar } from "@/features/journal/components/JournalSidebar";
 import { useJournalMutations, useJournalQuery } from "@/features/journal/hooks/useJournal";
 import type { JournalEntryForm } from "@/features/journal/schemas/journal.schema";
 import type { ApiError } from "@/types/api.types";
+import type { JournalEntry } from "@/types/entities";
 
 function isForbidden(error: unknown) {
   return Boolean(error && typeof error === "object" && (error as ApiError).code === "FORBIDDEN");
@@ -17,6 +19,7 @@ function isForbidden(error: unknown) {
 export default function JournalPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [previewing, setPreviewing] = useState<JournalEntry | null>(null);
   const query = useJournalQuery({ limit: 50 });
   const mutations = useJournalMutations();
 
@@ -33,13 +36,17 @@ export default function JournalPage() {
   }
 
   const openNew = () => {
+    setPreviewing(null);
     setSelectedId(null);
     setCreating(true);
   };
 
   const openEntry = (id: string) => {
+    const entry = entries.find((item) => item.id === id);
+    if (!entry) return;
     setCreating(false);
     setSelectedId(id);
+    setPreviewing(entry);
   };
 
   const save = async (form: JournalEntryForm) => {
@@ -48,6 +55,7 @@ export default function JournalPage() {
       toast.success("¡Entrada guardada!");
       setCreating(false);
       setSelectedId(created.id);
+      setPreviewing(null);
     } else if (selected) {
       await mutations.update.mutateAsync({ id: selected.id, payload: form });
       toast.success("¡Entrada actualizada!");
@@ -60,9 +68,21 @@ export default function JournalPage() {
     toast.success("¡Entrada eliminada!");
     setSelectedId(null);
     setCreating(false);
+    setPreviewing(null);
   };
 
-  const editing = selected;
+  const openEdit = (entry: JournalEntry) => {
+    setPreviewing(null);
+    setCreating(false);
+    setSelectedId(entry.id);
+  };
+
+  const closePreview = () => {
+    setPreviewing(null);
+    setSelectedId(null);
+  };
+
+  const editing = previewing ? null : selected;
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-background">
@@ -112,6 +132,7 @@ export default function JournalPage() {
           </>
         )}
       </div>
+      {previewing && <JournalPreviewModal entry={previewing} onClose={closePreview} onEdit={() => openEdit(previewing)} />}
     </section>
   );
 }

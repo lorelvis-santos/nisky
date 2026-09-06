@@ -1,13 +1,14 @@
 "use client";
 
-import { CalendarDays, CheckCircle2, CheckSquare2, Circle, GripVertical, MessageSquare, MoreHorizontal, Play, Square, Timer } from "lucide-react";
+import { CalendarDays, CheckCircle2, CheckSquare2, Circle, GripVertical, MessageSquare, Pencil, Play, Square, Timer } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import type { Task } from "@/types/entities";
-import { cn, isLegacyNoonDate, isTaskOverdue } from "@/lib/utils";
+import { cn, isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "./PriorityChip";
 import { taskDragId } from "../dnd/TasksDnDProvider";
+import { formatTaskDueDate } from "../lib/task-utils";
 import { useTaskSelection } from "../selection/TaskSelectionContext";
 
 type HandleProps = {
@@ -16,29 +17,11 @@ type HandleProps = {
   listeners: DraggableSyntheticListeners;
 };
 
-function formatDueDate(value: string) {
-  const date = new Date(value);
-  const dateLabel = new Intl.DateTimeFormat("es-CO", {
-    day: "numeric",
-    month: "short",
-    weekday: "short",
-  })
-    .format(date)
-    .replace(/[.,]/g, "");
-  const compactDateLabel = `${dateLabel.charAt(0).toUpperCase()}${dateLabel.slice(1)}`;
-  const isEndOfDay = (date.getHours() === 23 && date.getMinutes() === 59) || isLegacyNoonDate(value);
-  if (isEndOfDay) return compactDateLabel;
-  const timeLabel = date.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  return `${compactDateLabel} · ${timeLabel}`;
-}
-
 export function TaskCardShell({
   task,
   onOpen,
+  onEdit,
+  isPreviewed = false,
   onToggle,
   onPostponeToday,
   onPlanToday,
@@ -49,6 +32,8 @@ export function TaskCardShell({
 }: {
   task: Task;
   onOpen: () => void;
+  onEdit?: () => void;
+  isPreviewed?: boolean;
   onToggle: () => void;
   onPostponeToday?: () => void;
   onPlanToday?: () => void;
@@ -64,6 +49,7 @@ export function TaskCardShell({
   const selection = useTaskSelection();
   const isSelecting = selection.mode;
   const selected = selection.isSelected(task.id);
+  const edit = onEdit ?? onOpen;
   return (
     <article
       aria-label={`Tarea: ${task.title}`}
@@ -74,8 +60,9 @@ export function TaskCardShell({
         !overdue && "hover:border-outline",
         !overdue && "hover:-translate-y-px hover:shadow-md",
         isSelecting && "cursor-pointer",
-        selected ? "border-2 border-primary bg-primary-fixed/20" : completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant",
-        isSelecting && !selected && "hover:border-primary/60",
+         selected ? "border-2 border-primary bg-primary-fixed/20" : completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant",
+         isPreviewed && !selected && "border-2 border-primary bg-primary-fixed/20 shadow-md",
+         isSelecting && !selected && "hover:border-primary/60",
         overdue && "border-l-4 border-l-error hover:border-l-error hover:shadow-md",
         dropTarget && "border-2 border-primary bg-primary-container/20",
         dragging && "opacity-40",
@@ -124,6 +111,7 @@ export function TaskCardShell({
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {isPreviewed && <span className="hidden rounded-md bg-primary-fixed px-2 py-1 font-label-caps text-[10px] font-semibold uppercase tracking-wide text-primary sm:inline-flex">Abierta en panel</span>}
           {/* eslint-disable react-hooks/refs -- los listeners de dnd-kit se aplican por spread (falso positivo) */}
           {handleProps && !isSelecting && (
             <button
@@ -140,12 +128,15 @@ export function TaskCardShell({
           {/* eslint-enable react-hooks/refs */}
           {!isSelecting && (
             <button
-              aria-label={`Más detalles de ${task.title}`}
+              aria-label={`Editar ${task.title}`}
               className="mt-0.5 shrink-0 rounded-md p-1 text-on-surface-variant opacity-50 transition-opacity hover:bg-surface-container-low hover:text-primary group-hover:opacity-100"
-              onClick={onOpen}
+              onClick={(event) => {
+                event.stopPropagation();
+                edit();
+              }}
               type="button"
             >
-              <MoreHorizontal size={17} />
+              <Pencil size={15} />
             </button>
           )}
         </div>
@@ -171,7 +162,7 @@ export function TaskCardShell({
               title={task.dueDate}
             >
                <CalendarDays className="shrink-0" size={12} />
-               {formatDueDate(task.dueDate)}
+                {formatTaskDueDate(task.dueDate)}
              </time>
            )}
          </div>
@@ -213,11 +204,15 @@ export function TaskCardShell({
 export function SortableTaskCard({
   task,
   onOpen,
+  onEdit,
+  isPreviewed,
   onToggle,
   onStartPomodoro,
 }: {
   task: Task;
   onOpen: () => void;
+  onEdit?: () => void;
+  isPreviewed?: boolean;
   onToggle: () => void;
   onStartPomodoro?: () => void;
 }) {
@@ -233,8 +228,10 @@ export function SortableTaskCard({
       <TaskCardShell
         dragging={isDragging}
         dropTarget={Boolean(over) && over?.id === taskDragId(task.id)}
-        handleProps={{ attributes, listeners, ref: setActivatorNodeRef }}
-        onOpen={onOpen}
+         handleProps={{ attributes, listeners, ref: setActivatorNodeRef }}
+          onEdit={onEdit}
+          isPreviewed={isPreviewed}
+          onOpen={onOpen}
         onStartPomodoro={onStartPomodoro}
         onToggle={onToggle}
         task={task}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronDown, ChevronUp, Timer, X } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -76,10 +76,6 @@ export function TaskModal({
   onClose,
   onSave,
   onDelete,
-  onStartPomodoro,
-  onAddSubtask,
-  onToggleSubtask,
-  onDeleteSubtask,
 }: {
   task: Task | null;
   initialForm?: Partial<TaskForm>;
@@ -88,14 +84,6 @@ export function TaskModal({
   onClose: () => void;
   onSave: (form: TaskForm) => Promise<void>;
   onDelete?: () => Promise<void>;
-  onStartPomodoro?: () => void;
-  onAddSubtask: (taskId: string, title: string) => Promise<void>;
-  onToggleSubtask: (
-    taskId: string,
-    subtaskId: string,
-    completed: boolean,
-  ) => Promise<void>;
-  onDeleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
 }) {
   const { data: detail } = useTaskQuery(task?.id ?? null);
   const current = detail ?? task;
@@ -132,7 +120,6 @@ export function TaskModal({
           scheduleChanged: initialForm?.scheduleChanged ?? Boolean(initialForm?.plannedDate),
         },
    );
-  const [subtaskTitle, setSubtaskTitle] = useState("");
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(Boolean(task));
@@ -147,7 +134,6 @@ export function TaskModal({
   );
 
   if (!task && current) return null;
-  const subtasks = current?.subtasks ?? [];
   const submit = async () => {
     const result = taskSchema.safeParse(form);
     if (!result.success) {
@@ -160,11 +146,6 @@ export function TaskModal({
       plannedDate: form.plannedDate,
       scheduleChanged: form.scheduleChanged,
     });
-  };
-  const addSubtask = async () => {
-    if (!current || !subtaskTitle.trim()) return;
-    await onAddSubtask(current.id, subtaskTitle.trim());
-    setSubtaskTitle("");
   };
   const setRecurrence = (patch: Partial<TaskRecurrenceFormData>) => {
     setForm({ ...form, recurrence: { ...(form.recurrence ?? emptyRecurrence), ...patch } });
@@ -222,17 +203,8 @@ export function TaskModal({
              </DialogTitle>
              <DialogDescription className="sr-only">Edita los detalles, recordatorios y subtareas de la tarea.</DialogDescription>
            </div>
-           <div className="flex shrink-0 items-center gap-2">
-             {task && onStartPomodoro && (
-               <button
-                 className="flex items-center gap-1 rounded-md border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
-                 onClick={onStartPomodoro}
-                 type="button"
-               >
-                 <Timer size={14} /> <span className="hidden sm:inline">Pomodoro</span>
-               </button>
-             )}
-             <DialogClose asChild>
+            <div className="flex shrink-0 items-center gap-2">
+              <DialogClose asChild>
                <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
                  <X size={19} />
                </button>
@@ -547,72 +519,6 @@ export function TaskModal({
                   Ponle fecha límite para poder recordarla.
                 </p>
               )}
-            </section>
-          )}
-          {task && current && (
-            <section className="border-t border-outline-variant pt-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-label-caps text-label-caps text-on-surface-variant">
-                  SUBTAREAS
-                </span>
-                <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">
-                  {subtasks.filter((subtask) => subtask.completed).length}/
-                  {subtasks.length}
-                </span>
-              </div>
-              <div className="mb-2 flex gap-2">
-                <input
-                  className="field h-8"
-                  onChange={(event) => setSubtaskTitle(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") void addSubtask();
-                  }}
-                  placeholder="Añadir subtarea..."
-                  value={subtaskTitle}
-                />
-                <button
-                   className="rounded-md border border-outline-variant px-3 text-body-sm hover:bg-surface-container-high"
-                  onClick={() => void addSubtask()}
-                  type="button"
-                >
-                  Añadir
-                </button>
-              </div>
-              <div className="space-y-1">
-                {subtasks.map((subtask) => (
-                  <div
-                    className="flex items-center gap-2 border-b border-outline-variant py-2"
-                    key={subtask.id}
-                  >
-                    <input
-                      checked={subtask.completed}
-                      className="h-4 w-4 accent-primary"
-                      onChange={() =>
-                        void onToggleSubtask(
-                          current.id,
-                          subtask.id,
-                          !subtask.completed,
-                        )
-                      }
-                      type="checkbox"
-                    />
-                    <span
-                      className={`flex-1 font-body-sm text-body-sm ${subtask.completed ? "line-through text-on-surface-variant" : ""}`}
-                    >
-                      {subtask.title}
-                    </span>
-                    <button
-                       className="rounded-md px-2 py-1 text-xs text-on-surface-variant hover:bg-error-container/30 hover:text-error"
-                      onClick={() =>
-                        void onDeleteSubtask(current.id, subtask.id)
-                      }
-                      type="button"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                ))}
-              </div>
             </section>
           )}
           {task && current && (

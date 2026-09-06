@@ -29,6 +29,7 @@ import { ProjectWorkspaceShell } from "@/features/projects/components/ProjectWor
 import { useProjectActivity, useProjectSummary } from "@/features/projects/hooks/useProjectWorkspace";
 import { useProjectMembers, useProjectMutations, useProjectQuery } from "@/features/projects/hooks/useProjects";
 import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
+import { TaskPreviewModal } from "@/features/tasks/components/TaskPreviewModal";
 import { usePaginatedTasksQuery, useTaskMutations } from "@/features/tasks/hooks/useTasks";
 import { useTaskScheduleMutations } from "@/features/task-schedules/hooks/useTaskSchedules";
 import type { Task, TaskPriority } from "@/types/entities";
@@ -62,6 +63,7 @@ function ProjectDetailPageContent() {
   const [taskAssigneeId, setTaskAssigneeId] = useState("");
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [previewingTask, setPreviewingTask] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -103,8 +105,9 @@ function ProjectDetailPageContent() {
   };
 
   const resetTaskPage = () => setTaskPage(1);
-  const openTask = (task: Task) => { setEditingTask(task); setTaskModalOpen(true); };
-  const openCreateTask = () => { setEditingTask(null); setTaskModalOpen(true); };
+  const openTask = (task: Task) => { setPreviewingTask(task); };
+  const openEditTask = (task: Task) => { setPreviewingTask(null); setEditingTask(task); setTaskModalOpen(true); };
+  const openCreateTask = () => { setPreviewingTask(null); setEditingTask(null); setTaskModalOpen(true); };
   const closeTaskModal = () => { setEditingTask(null); setTaskModalOpen(false); };
   const saveProjectDescription = async (description: string) => {
     await projectMutations.update.mutateAsync({ id: project.id, payload: { description: description || null } });
@@ -252,7 +255,7 @@ function ProjectDetailPageContent() {
   };
 
   return (
-    <ProjectWorkspaceShell>
+     <ProjectWorkspaceShell>
        <ProjectHeader canDelete={permissions.canDeleteProject} canEdit={permissions.canEditProject} members={members} onBack={() => router.push("/projects")} onDelete={() => setConfirmDelete(true)} onEdit={openEditProject} onSaveDescription={saveProjectDescription} project={project} />
        <ProjectSectionNav activeTab={activeTab} onNavigate={(tab) => navigateToTab(tab)} />
 
@@ -268,9 +271,10 @@ function ProjectDetailPageContent() {
               members={members}
               meta={tasksQuery.data?.meta}
               mode={taskMode}
-              onAssigneeChange={(value) => { setTaskPage(1); setTaskAssigneeId(value); }}
-              onModeChange={(value) => { resetTaskPage(); setTaskMode(value); }}
-               onOpen={openTask}
+                onAssigneeChange={(value) => { setTaskPage(1); setTaskAssigneeId(value); }}
+                onModeChange={(value) => { resetTaskPage(); setTaskMode(value); }}
+                onEdit={openEditTask}
+                onOpen={openTask}
                onPageChange={setTaskPage}
                onPriorityChange={(value) => { resetTaskPage(); setTaskPriority(value); }}
                onCreateTask={openCreateTask}
@@ -280,6 +284,7 @@ function ProjectDetailPageContent() {
               onSearchChange={(value) => { resetTaskPage(); setTaskSearch(value); }}
               onStartPomodoro={(task) => router.push(`/focus?taskId=${encodeURIComponent(task.id)}&projectId=${encodeURIComponent(project.id)}`)}
               onToggle={(task) => void toggleTask(task)}
+              previewedTaskId={previewingTask?.id}
               priority={taskPriority}
               search={taskSearch}
               tasks={tasksQuery.data?.data ?? []}
@@ -296,10 +301,11 @@ function ProjectDetailPageContent() {
 
       {activeTab === "tasks" && (
         <div className="sm:hidden">
-          <FAB ariaLabel="Nueva tarea" onClick={openCreateTask} />
-        </div>
-      )}
-      {taskModalOpen && <TaskModal defaultProjectId={project.id} key={editingTask?.id ?? "new-project-task"} onAddSubtask={async (taskId, title) => { await taskMutations.addSubtask.mutateAsync({ taskId, title }); }} onClose={closeTaskModal} onDelete={editingTask ? deleteTask : undefined} onDeleteSubtask={async (taskId, subtaskId) => { await taskMutations.removeSubtask.mutateAsync({ taskId, subtaskId }); }} onSave={saveTask} onStartPomodoro={editingTask ? () => router.push(`/focus?taskId=${encodeURIComponent(editingTask.id)}&projectId=${encodeURIComponent(project.id)}`) : undefined} onToggleSubtask={async (taskId, subtaskId, completed) => { await taskMutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed }); }} projects={[project]} task={editingTask} />}
+           <FAB ariaLabel="Nueva tarea" onClick={openCreateTask} raised={taskModalOpen || Boolean(previewingTask)} />
+         </div>
+       )}
+       {previewingTask && <TaskPreviewModal key={previewingTask.id} onAddSubtask={async (taskId, title) => { await taskMutations.addSubtask.mutateAsync({ taskId, title }); }} onClose={() => setPreviewingTask(null)} onDeleteSubtask={async (taskId, subtaskId) => { await taskMutations.removeSubtask.mutateAsync({ taskId, subtaskId }); }} onEdit={() => openEditTask(previewingTask)} onStartPomodoro={() => router.push(`/focus?taskId=${encodeURIComponent(previewingTask.id)}&projectId=${encodeURIComponent(project.id)}`)} onToggleSubtask={async (taskId, subtaskId, completed) => { await taskMutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed }); }} onUpdateDescription={async (taskId, description) => { await taskMutations.update.mutateAsync({ id: taskId, payload: { description: description || null } }); }} onUpdateTask={async (taskId, payload) => { await taskMutations.update.mutateAsync({ id: taskId, payload }); }} onUpdateSubtask={async (taskId, subtaskId, title) => { await taskMutations.updateSubtask.mutateAsync({ taskId, subtaskId, payload: { title } }); }} task={previewingTask} />}
+       {taskModalOpen && <TaskModal defaultProjectId={project.id} key={editingTask?.id ?? "new-project-task"} onClose={closeTaskModal} onDelete={editingTask ? deleteTask : undefined} onSave={saveTask} projects={[project]} task={editingTask} />}
       {editOpen && <EditProjectModal canRename={!project.isDefault} color={editColor} description={editDescription} name={editName} onClose={() => setEditOpen(false)} onColorChange={setEditColor} onDescriptionChange={setEditDescription} onNameChange={setEditName} onSave={() => void saveProject()} onTargetDateChange={setEditTargetDate} onTargetHoursChange={setEditTargetHours} onTargetMinutesChange={setEditTargetMinutes} targetDate={editTargetDate} targetHours={editTargetHours} targetMinutes={editTargetMinutes} />}
       {confirmDelete && <ConfirmModal cancelLabel="Cancelar" confirmLabel="Eliminar" danger loading={projectMutations.remove.isPending} message={<>¿Eliminar <strong>{project.name}</strong>? Sus tareas se moverán al proyecto personal y esta acción no se puede deshacer.</>} onClose={() => setConfirmDelete(false)} onConfirm={() => void removeProject()} title="¿Eliminar proyecto?" />}
     </ProjectWorkspaceShell>

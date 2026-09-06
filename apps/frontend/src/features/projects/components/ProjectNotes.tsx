@@ -7,6 +7,7 @@ import { FAB } from "@/components/ui/FAB";
 import { KnowledgeSidebar, type KnowledgeFilter } from "@/features/knowledge/components/KnowledgeSidebar";
 import { NoteCard } from "@/features/knowledge/components/NoteCard";
 import { NoteEditorModal } from "@/features/knowledge/components/NoteEditorModal";
+import { NotePreviewModal } from "@/features/knowledge/components/NotePreviewModal";
 import { NotePagination } from "@/features/knowledge/components/NotePagination";
 import { useNoteMutations, useFacetsQuery, useNotesQuery } from "@/features/knowledge/hooks/useKnowledge";
 import type { Note } from "@/types/entities";
@@ -21,6 +22,7 @@ export function ProjectNotes({ project }: { project: Project }) {
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Note | null>(null);
+  const [previewing, setPreviewing] = useState<Note | null>(null);
   const query = useNotesQuery({
     page,
     q: search.trim() || undefined,
@@ -55,6 +57,7 @@ export function ProjectNotes({ project }: { project: Project }) {
     }
     setCreating(false);
     setEditing(null);
+    setPreviewing(null);
   };
 
   const remove = async () => {
@@ -62,6 +65,7 @@ export function ProjectNotes({ project }: { project: Project }) {
     await mutations.remove.mutateAsync(editing.id);
     toast.success("Nota eliminada");
     setEditing(null);
+    setPreviewing(null);
   };
 
   const togglePin = async (note: Note) => {
@@ -74,11 +78,19 @@ export function ProjectNotes({ project }: { project: Project }) {
   };
 
   const openNew = () => {
+    setPreviewing(null);
     setEditing(null);
     setCreating(true);
   };
 
+  const openPreview = (note: Note) => {
+    setCreating(false);
+    setEditing(null);
+    setPreviewing(note);
+  };
+
   const openEdit = (note: Note) => {
+    setPreviewing(null);
     setCreating(false);
     setEditing(note);
   };
@@ -131,7 +143,7 @@ export function ProjectNotes({ project }: { project: Project }) {
             <>
               <div className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {notes.map((note) => (
-                  <NoteCard canEdit={note.user?.id === user?.id} key={note.id} note={note} onEdit={openEdit} onTogglePin={togglePin} showAuthor />
+                  <NoteCard canEdit={note.user?.id === user?.id} key={note.id} note={note} onEdit={openEdit} onOpen={openPreview} onTogglePin={togglePin} showAuthor />
                 ))}
               </div>
               <NotePagination isFetching={query.isFetching} meta={query.data?.meta} onPageChange={setPage} />
@@ -141,9 +153,17 @@ export function ProjectNotes({ project }: { project: Project }) {
       </div>
 
       <div className="sm:hidden">
-        <FAB ariaLabel="Nueva nota" onClick={openNew} raised={modalOpen} />
-      </div>
-      {modalOpen && <NoteEditorModal defaultProjectId={project.id} key={editing?.id ?? "new-project-note"} note={editing} onClose={closeModal} onDelete={editing && editing.user?.id === user?.id ? remove : undefined} onSave={save} />}
+         <FAB ariaLabel="Nueva nota" onClick={openNew} raised={modalOpen || Boolean(previewing)} />
+       </div>
+       {previewing && (
+         <NotePreviewModal
+           note={previewing}
+           onClose={() => setPreviewing(null)}
+           onEdit={previewing.user?.id === user?.id ? () => openEdit(previewing) : undefined}
+           onTogglePin={previewing.user?.id === user?.id ? () => void togglePin(previewing) : undefined}
+         />
+       )}
+       {modalOpen && <NoteEditorModal defaultProjectId={project.id} key={editing?.id ?? "new-project-note"} note={editing} onClose={closeModal} onDelete={editing && editing.user?.id === user?.id ? remove : undefined} onSave={save} />}
     </section>
   );
 }

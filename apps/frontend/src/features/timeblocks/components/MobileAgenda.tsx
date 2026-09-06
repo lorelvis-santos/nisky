@@ -2,7 +2,7 @@
 
 import { Fragment } from "react";
 import { ChevronLeft, ChevronRight, ListChecks } from "lucide-react";
-import type { CalendarEvent, Project, TaskSchedule, TimeBlock, TimeBlockException } from "@/types/entities";
+import type { CalendarEvent, Project, Task, TaskSchedule, TimeBlock, TimeBlockException } from "@/types/entities";
 import { cn } from "@/lib/utils";
 import { FAB } from "@/components/ui/FAB";
 import { DAY_ORDER, hexToRgba, minToTime, parseDateOnly, toDateKey } from "../lib/time";
@@ -19,6 +19,7 @@ type AgendaItem = {
   color: string;
   block?: TimeBlock;
   event?: CalendarEvent;
+  task?: Task;
   taskCount?: number;
 };
 
@@ -154,8 +155,9 @@ function buildAgendaItems(
       subtitle: schedule.task.project?.name ?? "Tarea planificada",
       startMin: occurrence.startMin,
       endMin: occurrence.endMin,
-      color: schedule.task.project?.color ?? "#7a8494",
-    }];
+       color: schedule.task.project?.color ?? "#7a8494",
+       task: schedule.task,
+     }];
   });
 
   return [...blockItems, ...eventItems, ...unassignedTaskItems].sort(
@@ -218,11 +220,13 @@ function AgendaItemRow({
   date,
   onBlockClick,
   onEventClick,
+  onTaskClick,
 }: {
   item: AgendaItem;
   date: Date;
   onBlockClick: (block: TimeBlock, date: Date) => void;
   onEventClick: (event: CalendarEvent, date: Date) => void;
+  onTaskClick: (task: Task) => void;
 }) {
   const isTask = item.kind === "task";
   return (
@@ -237,10 +241,11 @@ function AgendaItemRow({
             ? "min-h-16 border-outline-variant/70 bg-surface-container-low hover:border-secondary hover:bg-surface-container"
             : "min-h-28 border-outline-variant/70 bg-surface-container-lowest shadow-sm hover:border-outline hover:bg-surface-container-low",
         )}
-        onClick={() => {
-          if (item.block) onBlockClick(item.block, date);
-          else if (item.event) onEventClick(item.event, date);
-        }}
+         onClick={() => {
+           if (item.block) onBlockClick(item.block, date);
+           else if (item.event) onEventClick(item.event, date);
+           else if (item.task) onTaskClick(item.task);
+         }}
         style={{
           borderLeftColor: item.color,
           ...(isTask ? {} : { backgroundColor: hexToRgba(item.color, 0.035) }),
@@ -277,6 +282,7 @@ function MobileDayAgenda({
   dayEndMin,
   onBlockClick,
   onEventClick,
+  onTaskClick,
   onDayTasksClick,
 }: {
   date: Date;
@@ -287,6 +293,7 @@ function MobileDayAgenda({
   dayEndMin: number;
   onBlockClick: (block: TimeBlock, date: Date) => void;
   onEventClick: (event: CalendarEvent, date: Date) => void;
+  onTaskClick: (task: Task) => void;
   onDayTasksClick: (date: string) => void;
 }) {
   const now = new Date();
@@ -300,8 +307,8 @@ function MobileDayAgenda({
       {allDayEvents.length > 0 && (
         <div className="rounded-2xl border border-secondary-fixed bg-surface-container-low px-4 py-3">
           <p className="font-label-caps text-label-caps text-secondary">TODO EL DÍA</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {allDayEvents.map((event) => <span className="rounded-full bg-surface-container-high px-3 py-1 font-body-sm text-body-sm text-on-surface" key={event.id}>{event.title}</span>)}
+           <div className="mt-2 flex flex-wrap gap-2">
+             {allDayEvents.map((event) => <button className="rounded-full bg-surface-container-high px-3 py-1 font-body-sm text-body-sm text-on-surface hover:bg-surface-container-highest" key={event.id} onClick={() => onEventClick(event, date)} type="button">{event.title}</button>)}
           </div>
         </div>
       )}
@@ -339,7 +346,7 @@ function MobileDayAgenda({
             return (
               <Fragment key={`${item.kind}-${item.id}`}>
                 {index === nowIndex && <NowDivider nowMin={nowMin} />}
-                <AgendaItemRow date={date} item={item} onBlockClick={onBlockClick} onEventClick={onEventClick} />
+                 <AgendaItemRow date={date} item={item} onBlockClick={onBlockClick} onEventClick={onEventClick} onTaskClick={onTaskClick} />
               </Fragment>
             );
           })}
@@ -362,6 +369,7 @@ function MobileWeekAgenda({
   onDateChange,
   onBlockClick,
   onEventClick,
+  onTaskClick,
 }: {
   days: Array<{ date: Date; dayOfWeek: number; key: string }>;
   selectedDate: Date;
@@ -374,6 +382,7 @@ function MobileWeekAgenda({
   onDateChange: (date: Date) => void;
   onBlockClick: (block: TimeBlock, date: Date) => void;
   onEventClick: (event: CalendarEvent, date: Date) => void;
+  onTaskClick: (task: Task) => void;
 }) {
   const selectedKey = toDateKey(selectedDate);
   return (
@@ -399,8 +408,9 @@ function MobileWeekAgenda({
                     className="flex min-h-14 w-full items-center gap-3 px-4 text-left hover:bg-surface-container-low"
                     key={`${item.kind}-${item.id}`}
                     onClick={() => {
-                      if (item.block) onBlockClick(item.block, day.date);
-                      else if (item.event) onEventClick(item.event, day.date);
+                       if (item.block) onBlockClick(item.block, day.date);
+                       else if (item.event) onEventClick(item.event, day.date);
+                       else if (item.task) onTaskClick(item.task);
                     }}
                     type="button"
                   >
@@ -438,6 +448,7 @@ export function MobileAgenda({
   onToday,
   onBlockClick,
   onEventClick,
+  onTaskClick,
   onDayTasksClick,
   onAdd,
 }: {
@@ -459,6 +470,7 @@ export function MobileAgenda({
   onToday: () => void;
   onBlockClick: (block: TimeBlock, date?: Date) => void;
   onEventClick: (event: CalendarEvent, date: Date) => void;
+  onTaskClick: (task: Task) => void;
   onDayTasksClick: (date: string) => void;
   onAdd: () => void;
 }) {
@@ -523,8 +535,9 @@ export function MobileAgenda({
             events={events}
             items={items}
             onBlockClick={(block, date) => onBlockClick(block, date)}
-            onDayTasksClick={onDayTasksClick}
-            onEventClick={onEventClick}
+             onDayTasksClick={onDayTasksClick}
+             onEventClick={onEventClick}
+             onTaskClick={onTaskClick}
           />
         ) : (
           <MobileWeekAgenda
@@ -534,7 +547,8 @@ export function MobileAgenda({
             exceptions={exceptions}
             onBlockClick={(block, date) => onBlockClick(block, date)}
             onDateChange={onDateChange}
-            onEventClick={onEventClick}
+             onEventClick={onEventClick}
+             onTaskClick={onTaskClick}
             projects={projects}
             selectedDate={selectedDate}
             taskCounts={taskCounts}

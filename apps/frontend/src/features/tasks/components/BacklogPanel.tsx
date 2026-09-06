@@ -7,6 +7,8 @@ export function BacklogPanel({
   tasks,
   count,
   onOpen,
+  onEdit,
+  previewedTaskId,
   onPlanToday,
   onToggle,
   onStartPomodoro,
@@ -14,6 +16,8 @@ export function BacklogPanel({
   tasks: Task[];
   count: number;
   onOpen: (task: Task) => void;
+  onEdit: (task: Task) => void;
+  previewedTaskId?: string | null;
   onPlanToday: (task: Task) => void;
   onToggle: (task: Task) => void;
   onStartPomodoro: (task: Task) => void;
@@ -47,10 +51,12 @@ export function BacklogPanel({
           {tasks.map((task) => (
             <TaskCardShell
               key={task.id}
+              onEdit={() => onEdit(task)}
               onOpen={() => onOpen(task)}
               onPlanToday={() => onPlanToday(task)}
               onStartPomodoro={() => onStartPomodoro(task)}
               onToggle={() => onToggle(task)}
+              isPreviewed={previewedTaskId === task.id}
               task={task}
             />
           ))}

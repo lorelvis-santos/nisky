@@ -6,6 +6,7 @@ import { useState } from "react";
 import { FAB } from "@/components/ui/FAB";
 import { useCapture } from "@/context/CaptureContext";
 import { QuickNoteItem } from "@/features/quicknotes/components/QuickNoteItem";
+import { QuickNotePreviewModal } from "@/features/quicknotes/components/QuickNotePreviewModal";
 import { useQuickNotesQuery } from "@/features/quicknotes/hooks/useQuickNotes";
 import type { DetectedDate } from "@/features/quicknotes/utils/detectDate";
 import type { QuickNote, QuickNoteStatus } from "@/types/entities";
@@ -14,6 +15,7 @@ export default function QuickNotesPage() {
   const router = useRouter();
   const capture = useCapture();
   const [view, setView] = useState<QuickNoteStatus>("INBOX");
+  const [previewing, setPreviewing] = useState<QuickNote | null>(null);
   const inboxQuery = useQuickNotesQuery("INBOX", 50);
   const archivedQuery = useQuickNotesQuery("ARCHIVED", 50);
   const currentQuery = view === "INBOX" ? inboxQuery : archivedQuery;
@@ -24,10 +26,12 @@ export default function QuickNotesPage() {
       title: note.content,
       dueDate: detected?.isoDate ?? "",
     }));
+    setPreviewing(null);
     router.push(`/tasks?modal=create&prefill=${prefill}&quickNoteId=${encodeURIComponent(note.id)}`);
   };
 
   const openCapture = () => capture.open("QUICK_NOTE");
+  const openPreview = (note: QuickNote) => setPreviewing(note);
 
   return (
     <section className="h-full min-h-0 overflow-y-auto bg-background">
@@ -81,20 +85,28 @@ export default function QuickNotesPage() {
           ) : (
             <div className="grid grid-cols-1 divide-y divide-outline-variant rounded-lg border border-outline-variant bg-surface-container-lowest px-4 shadow-sm sm:px-5 lg:grid-cols-2 lg:gap-4 lg:divide-y-0 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:shadow-none">
               {notes.map((note) => (
-                <QuickNoteItem
-                  archived={view === "ARCHIVED"}
-                  key={note.id}
-                  note={note}
-                  onConvertToTask={view === "INBOX" ? createTaskFromCapture : undefined}
-                />
+                 <QuickNoteItem
+                   archived={view === "ARCHIVED"}
+                   key={note.id}
+                   note={note}
+                   onOpen={openPreview}
+                   onConvertToTask={view === "INBOX" ? createTaskFromCapture : undefined}
+                 />
               ))}
             </div>
           )}
 
         </div>
       </div>
+      {previewing && (
+        <QuickNotePreviewModal
+          note={previewing}
+          onClose={() => setPreviewing(null)}
+          onConvertToTask={view === "INBOX" ? createTaskFromCapture : undefined}
+        />
+      )}
       <div className="sm:hidden">
-        <FAB ariaLabel="Nueva captura" onClick={openCapture} raised={capture.isOpen} />
+        <FAB ariaLabel="Nueva captura" onClick={openCapture} raised={capture.isOpen || Boolean(previewing)} />
       </div>
     </section>
   );

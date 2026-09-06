@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { formatDueTime } from "@/features/tasks/lib/task-utils";
 import type { Task } from "@/types/entities";
 import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
+import { TaskPreviewModal } from "@/features/tasks/components/TaskPreviewModal";
 import { useTaskMutations, useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import { useTaskScheduleMutations } from "@/features/task-schedules/hooks/useTaskSchedules";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
@@ -211,6 +212,7 @@ export function TasksSidebar({
   const projectsQuery = useProjectsQuery();
   const projects = projectsQuery.data ?? [];
   const [modal, setModal] = useState<{ task: Task | null; creating: boolean } | null>(null);
+  const [previewing, setPreviewing] = useState<Task | null>(null);
 
   const handleComplete = async (task: Task) => {
     if (mutations.update.isPending) return;
@@ -274,14 +276,15 @@ export function TasksSidebar({
   const content = (
     <TasksSidebarContent
       onComplete={(task) => void handleComplete(task)}
-      onOpenCreate={() => {
-        onMobileClose?.();
-        setModal({ task: null, creating: true });
-      }}
-      onOpenTask={(task) => {
-        onMobileClose?.();
-        setModal({ task, creating: false });
-      }}
+         onOpenCreate={() => {
+           onMobileClose?.();
+           setPreviewing(null);
+           setModal({ task: null, creating: true });
+         }}
+         onOpenTask={(task) => {
+           onMobileClose?.();
+           setPreviewing(task);
+         }}
     />
   );
 
@@ -300,21 +303,41 @@ export function TasksSidebar({
           {content}
         </aside>
       )}
+      {previewing && (
+        <TaskPreviewModal
+          key={previewing.id}
+          onAddSubtask={async (taskId, title) => {
+            await mutations.addSubtask.mutateAsync({ taskId, title });
+          }}
+          onClose={() => setPreviewing(null)}
+          onDeleteSubtask={async (taskId, subtaskId) => {
+            await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
+          }}
+          onEdit={() => {
+            setPreviewing(null);
+            setModal({ task: previewing, creating: false });
+          }}
+          onToggleSubtask={async (taskId, subtaskId, completed) => {
+            await mutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed });
+          }}
+          onUpdateDescription={async (taskId, description) => {
+            await mutations.update.mutateAsync({ id: taskId, payload: { description: description || null } });
+          }}
+          onUpdateTask={async (taskId, payload) => {
+            await mutations.update.mutateAsync({ id: taskId, payload });
+          }}
+          onUpdateSubtask={async (taskId, subtaskId, title) => {
+            await mutations.updateSubtask.mutateAsync({ taskId, subtaskId, payload: { title } });
+          }}
+          task={previewing}
+        />
+      )}
       {modal && (
         <TaskModal
           initialForm={undefined}
           key={modal.task?.id ?? "new"}
-          onAddSubtask={async (taskId, title) => {
-            await mutations.addSubtask.mutateAsync({ taskId, title });
-          }}
           onClose={() => setModal(null)}
-          onDeleteSubtask={async (taskId, subtaskId) => {
-            await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
-          }}
           onSave={onSave}
-          onToggleSubtask={async (taskId, subtaskId, completed) => {
-            await mutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed });
-          }}
           projects={projects}
           task={modal.task}
         />

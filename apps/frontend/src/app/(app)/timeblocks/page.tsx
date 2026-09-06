@@ -3,14 +3,17 @@
 import { ChevronLeft, ChevronRight, Plus, SlidersHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { TimeBlockEditor } from "@/features/timeblocks/components/TimeBlockEditor";
+import { TimeBlockPreviewModal } from "@/features/timeblocks/components/TimeBlockPreviewModal";
 import { TimeBlockWeekGrid } from "@/features/timeblocks/components/TimeBlockWeekGrid";
 import { MobileAgenda } from "@/features/timeblocks/components/MobileAgenda";
 import { TaskAssignmentPanel } from "@/features/timeblocks/components/TaskAssignmentPanel";
 import { AgendaEntryChooser, type AgendaEntryKind } from "@/features/timeblocks/components/AgendaEntryChooser";
 import { AgendaDayTasksDialog } from "@/features/timeblocks/components/AgendaDayTasksDialog";
 import { EventEditorModal } from "@/features/events/components/EventEditorModal";
+import { EventPreviewModal } from "@/features/events/components/EventPreviewModal";
 import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
 import {
   useTimeBlockMutations,
@@ -230,6 +233,7 @@ function DesktopEditorModal({
 }
 
 function TimeBlocksContent() {
+  const router = useRouter();
   const query = useTimeBlocksQuery();
   const mutations = useTimeBlockMutations();
   const projectsQuery = useProjectsQuery();
@@ -242,11 +246,15 @@ function TimeBlocksContent() {
   const [mobileDate, setMobileDate] = useState(() => new Date());
   const [mobileView, setMobileView] = useState<"day" | "week">("day");
   const [editing, setEditing] = useState<TimeBlock | null>(null);
+  const [previewingBlock, setPreviewingBlock] = useState<TimeBlock | null>(null);
+  const [previewBlockDate, setPreviewBlockDate] = useState<Date | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<SlotPrefill | null>(null);
   const [entryChooserOpen, setEntryChooserOpen] = useState(false);
   const [entrySlot, setEntrySlot] = useState<SlotPrefill | null>(null);
   const [eventEditor, setEventEditor] = useState<EventEditorState | null>(null);
+  const [previewingEvent, setPreviewingEvent] = useState<CalendarEvent | null>(null);
+  const [previewEventDate, setPreviewEventDate] = useState<Date | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
   const [dayTaskDate, setDayTaskDate] = useState<string | null>(null);
@@ -373,11 +381,25 @@ function TimeBlocksContent() {
     setMobileFormOpen(isMobile);
   };
 
-  const openBlock = (block: TimeBlock, date?: Date) => {
+  const openBlockEdit = (block: TimeBlock, date?: Date) => {
     setEditing(block);
     setPrefill(null);
     setEditDate(date ? toISODateString(date) : null);
     if (isMobile) setMobileFormOpen(true);
+  };
+
+  const openBlockPreview = (block: TimeBlock, date?: Date) => {
+    setPreviewingBlock(block);
+    setPreviewBlockDate(date ?? null);
+  };
+
+  const editPreviewedBlock = () => {
+    if (!previewingBlock) return;
+    const block = previewingBlock;
+    const date = previewBlockDate;
+    setPreviewingBlock(null);
+    setPreviewBlockDate(null);
+    openBlockEdit(block, date ?? undefined);
   };
 
   const resizeBlock = async (block: TimeBlock, startMin: number, endMin: number, days: number[], draggedDate?: string) => {
@@ -471,8 +493,18 @@ function TimeBlocksContent() {
     setMobileFormOpen(false);
   };
 
-  const openEvent = (event: CalendarEvent, date: Date) => {
-    setEventEditor({ event, initialDate: toISODateString(date) });
+  const openEventPreview = (event: CalendarEvent, date: Date) => {
+    setPreviewingEvent(event);
+    setPreviewEventDate(date);
+  };
+
+  const editPreviewedEvent = () => {
+    if (!previewingEvent) return;
+    const event = previewingEvent;
+    const date = previewEventDate;
+    setPreviewingEvent(null);
+    setPreviewEventDate(null);
+    setEventEditor({ event, initialDate: date ? toISODateString(date) : undefined });
   };
 
   const save = async (data: CreateTimeBlockPayload) => {
@@ -659,10 +691,11 @@ function TimeBlocksContent() {
           events={events}
           exceptions={exceptions}
           onAdd={openMobileCreate}
-          onBlockClick={openBlock}
+           onBlockClick={openBlockPreview}
           onDateChange={setMobileDate}
           onDayTasksClick={(date) => setDayTaskDate(date)}
-          onEventClick={openEvent}
+           onEventClick={openEventPreview}
+           onTaskClick={(task) => router.push(`/tasks?taskId=${encodeURIComponent(task.id)}`)}
           onNextDay={() => shiftMobileDate(1)}
           onPreviousDay={() => shiftMobileDate(-1)}
           onToday={() => setMobileDate(new Date())}
@@ -792,8 +825,8 @@ function TimeBlocksContent() {
           dayStartMin={settings?.dayStartMin ?? 6 * 60}
           moveEnabled={!isMobile}
           onDayTasksClick={(date) => setDayTaskDate(date)}
-           onBlockClick={openBlock}
-           onEventClick={openEvent}
+           onBlockClick={openBlockPreview}
+           onEventClick={openEventPreview}
            onEventMove={handleEventMove}
            onEventAction={handleEventAction}
           onResize={resizeBlock}
@@ -810,6 +843,24 @@ function TimeBlocksContent() {
          />
       </div>
       </div>
+
+      {previewingBlock && (
+        <TimeBlockPreviewModal
+          block={previewingBlock}
+          occurrenceDate={previewBlockDate ?? undefined}
+          onClose={() => { setPreviewingBlock(null); setPreviewBlockDate(null); }}
+          onEdit={editPreviewedBlock}
+          project={projects.find((project) => project.id === previewingBlock.projectId)}
+        />
+      )}
+
+      {previewingEvent && (
+        <EventPreviewModal
+          event={previewingEvent}
+          onClose={() => { setPreviewingEvent(null); setPreviewEventDate(null); }}
+          onEdit={editPreviewedEvent}
+        />
+      )}
 
       {!isMobile && (editing || prefill) && (
         <DesktopEditorModal

@@ -25,13 +25,13 @@ bun run db:seed
 bun run dev
 ```
 
-El cliente Moodle usa un venv Python local al repo (portable):
+El fallback de Moodle usa un venv Python local al repo (portable):
 
 ```bash
 cd apps/backend && scripts/setup_moodle.sh
 ```
 
-Crea `scripts/.venv` e instala `curl_cffi`. El backend lo resuelve automáticamente; se puede sobreescribir con `MOODLE_PYTHON_BIN` / `MOODLE_PYTHON_SCRIPT`.
+Crea `scripts/.venv` e instala `curl_cffi`. El cliente primario es `wreq-js`; si falla el transporte o su módulo nativo no carga, el backend usa este fallback. Se puede sobreescribir con `MOODLE_PYTHON_BIN` / `MOODLE_PYTHON_SCRIPT`.
 
 En otra terminal:
 

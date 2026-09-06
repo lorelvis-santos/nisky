@@ -14,7 +14,7 @@ COPY . .
 
 RUN bunx prisma generate
 
-# Cliente Moodle (moodle_fetch.py usa curl_cffi)
+# Fallback Moodle (moodle_fetch.py usa curl_cffi; el cliente primario es wreq-js)
 RUN python3 -m venv scripts/.venv \
   && scripts/.venv/bin/pip install --no-cache-dir -r scripts/requirements.txt
 

@@ -1,6 +1,6 @@
 import { AppError } from "../../../utils/errors/handler";
 import { sanitizeDomain } from "../domain";
-import { moodleEvents, moodleToken } from "./moodle.python";
+import { moodleEvents, moodleToken } from "./moodle.client";
 import type { ConnectInput, IntegrationStrategy, RemoteItem } from "./types";
 
 type TaskEvent = {
@@ -40,12 +40,12 @@ export const moodleStrategy: IntegrationStrategy = {
     const domain = sanitizeDomain(data.domain);
     let token = data.token ?? "";
     if (token) {
-      const probe = moodleEvents(domain, token, 0, 30);
+      const probe = await moodleEvents(domain, token, 0, 30);
       if (!probe.ok) {
         throw new AppError("BAD_REQUEST", probe.error);
       }
     } else {
-      const result = moodleToken(domain, data.username ?? "", data.password ?? "");
+      const result = await moodleToken(domain, data.username ?? "", data.password ?? "", data.service);
       if (!result.ok) throw new AppError("BAD_REQUEST", result.error);
       if (!result.token) throw new AppError("BAD_REQUEST", "Moodle no devolvió un token");
       token = result.token;
@@ -54,7 +54,7 @@ export const moodleStrategy: IntegrationStrategy = {
   },
 
   async fetchItems(domain, token, window) {
-    const result = moodleEvents(domain, token, window.daysPast, window.daysAhead);
+    const result = await moodleEvents(domain, token, window.daysPast, window.daysAhead);
     if (!result.ok) throw new Error(result.error);
     const events = (result.events ?? []) as TaskEvent[];
     return events.map(eventToRemoteItem);

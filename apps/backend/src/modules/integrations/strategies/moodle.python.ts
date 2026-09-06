@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
+import type { MoodleResult } from "./moodle.types";
 
 const PROJECT_ROOT = process.cwd();
 const SCRIPT_PATH = process.env.MOODLE_PYTHON_SCRIPT ?? path.join(PROJECT_ROOT, "scripts", "moodle_fetch.py");
@@ -8,8 +9,7 @@ const LOCAL_VENV = path.join(PROJECT_ROOT, "scripts", ".venv", "bin", "python");
 const PYTHON_BIN = process.env.MOODLE_PYTHON_BIN
   ?? (existsSync(LOCAL_VENV) ? LOCAL_VENV : "python3");
 
-type PythonResult = { ok: true; count?: number; token?: string; events?: Record<string, unknown>[] }
-  | { ok: false; error: string };
+type PythonResult = MoodleResult;
 
 export function runMoodleScript(args: string[]): PythonResult {
   const operation = args[0] ?? "unknown";
@@ -42,10 +42,10 @@ export function runMoodleScript(args: string[]): PythonResult {
   }
 }
 
-export function moodleToken(domain: string, username: string, password: string, service = "moodle_mobile_app"): PythonResult {
+export function moodleToken(domain: string, username: string, password: string, service = "moodle_mobile_app"): MoodleResult {
   return runMoodleScript(["token", "--url", domain, "--username", username, "--password", password, "--service", service]);
 }
 
-export function moodleEvents(domain: string, token: string, daysPast = 14, daysAhead = 365): PythonResult {
+export function moodleEvents(domain: string, token: string, daysPast = 14, daysAhead = 365): MoodleResult {
   return runMoodleScript(["events", "--url", domain, "--token", token, "--days-past", String(daysPast), "--days-ahead", String(daysAhead)]);
 }

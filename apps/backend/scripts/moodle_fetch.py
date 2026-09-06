@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Cliente Moodle para Nisky — REST con impersonación TLS (curl_cffi) para
-saltar Cloudflare. Invoa Bun como subprocess; habla JSON por stdout.
+"""Fallback Moodle para Nisky — REST con impersonación TLS (curl_cffi).
+Invoca Bun como subprocess; habla JSON por stdout.
 
 Uso:
   moodle_fetch.py token   --url <base> --username <u> --password <p>
@@ -11,6 +11,7 @@ Uso:
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -34,6 +35,7 @@ KIND_MAP = {
 }
 
 SERVICE_DEFAULT = "moodle_mobile_app"
+PROXY_URL = os.getenv("MOODLE_PROXY_URL", "").strip()
 
 
 def clean_title(name):
@@ -108,12 +110,20 @@ def _get(base, path, params, impersonate="chrome"):
         "Accept-Language": "es-DO,es;q=0.9,en;q=0.8",
         "Referer": base + "/",
     }
-    resp = requests.get(base + path, impersonate=impersonate, headers=headers, params=params, timeout=40)
+    request_options = {
+        "impersonate": impersonate,
+        "headers": headers,
+        "params": params,
+        "timeout": 40,
+    }
+    if PROXY_URL:
+        request_options["proxies"] = {"http": PROXY_URL, "https": PROXY_URL}
+    resp = requests.get(base + path, **request_options)
     safe_url = _safe_url(str(resp.url))
     server = resp.headers.get("server", "unknown")
     content_type = resp.headers.get("content-type", "unknown")
     print(
-        f"[moodle] client=curl_cffi/{getattr(curl_cffi, '__version__', 'unknown')} impersonate={impersonate} GET {safe_url} -> HTTP {resp.status_code} server={server} content-type={content_type}",
+        f"[moodle] client=curl_cffi/{getattr(curl_cffi, '__version__', 'unknown')} impersonate={impersonate} proxy={'enabled' if PROXY_URL else 'disabled'} GET {safe_url} -> HTTP {resp.status_code} server={server} content-type={content_type}",
         file=sys.stderr,
         flush=True,
     )

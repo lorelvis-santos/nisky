@@ -42,6 +42,7 @@
     "resend": "^6.12.4",
     "socket.io": "^4.8.3",
     "web-push": "3.6.7",
+    "wreq-js": "3.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

@@ -74,7 +74,7 @@
 ## Fase 1: Gestión diaria - Iteración 6: Integración Moodle
 
 - [x] Modelo `MoodleAccount` con token cifrado (AES-GCM), dominio, estado y `lastSyncAt`/`syncError`
-- [x] Cliente Python portable con venv local (`scripts/setup_moodle.sh` + `curl_cffi`)
+- [x] Cliente Moodle primario con `wreq-js` y fallback Python portable (`scripts/setup_moodle.sh` + `curl_cffi`)
 - [x] Tareas de Moodle como tareas reales: `Task.source` (`MANUAL`/`MOODLE`) y `sourceRef` único por usuario
 - [x] Fechas de Moodle normalizadas con zona horaria y archivado de tareas remotas
 - [x] Sync manual por cuenta y API `/api/v1/moodle`

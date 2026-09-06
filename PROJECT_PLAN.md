@@ -725,7 +725,7 @@ bun run db:generate
 ### Backend
 
 - `MoodleAccount` con `domain`, `username`, token cifrado AES-GCM (`tokenCipher`/`tokenIv`/`tokenAuthTag`), `service` `moodle_mobile_app`, `enabled`, `lastSyncAt` y `syncError`.
-- Cliente Python portable con venv local al repo (`scripts/setup_moodle.sh`, instala `curl_cffi`); el backend lo resuelve automáticamente y se puede sobreescribir con `MOODLE_PYTHON_BIN` / `MOODLE_PYTHON_SCRIPT`.
+- Cliente Moodle primario con `wreq-js` y fallback Python portable con venv local al repo (`scripts/setup_moodle.sh`, instala `curl_cffi`); el fallback se puede sobreescribir con `MOODLE_PYTHON_BIN` / `MOODLE_PYTHON_SCRIPT`.
 - Tareas de Moodle como tareas reales: `Task.source` (`MANUAL`/`MOODLE`), `sourceRef`, unicidad `[userId, source, sourceRef]`, fechas normalizadas con zona horaria y archivado.
 - API en `/api/v1/moodle` para conectar, listar, sincronizar, habilitar/deshabilitar y desconectar cuentas; `/api/v1/moodle/tasks` para listar tareas remotas.
 
@@ -757,7 +757,7 @@ Refactor del módulo Moodle a un módulo genérico `integrations` con patrón St
 ### Backend
 
 - `src/modules/integrations/strategies/`: `IntegrationStrategy` con `provider`, `source`, `prefix`, `connect(data)` (probe/validación → token) y `fetchItems(domain, token, window)` → `RemoteItem[] { key, title, description, dueDate }`.
-- Estrategias: `moodle.strategy.ts` (reusa el cliente Python `moodle.python.ts`, movido con `git mv` sin cambios) y `canvas.strategy.ts` (cliente Bun `fetch` directo, sin Python: `/users/self`, `/courses`, `/users/self/todo`).
+- Estrategias: `moodle.strategy.ts` usa `wreq-js` como cliente primario y conserva `moodle.python.ts`/`curl_cffi` como fallback; `canvas.strategy.ts` usa cliente Bun `fetch` directo, sin Python: `/users/self`, `/courses`, `/users/self/todo`.
 - `registry.ts` mapea `MOODLE`/`CANVAS` a su estrategia; `integration.service.ts` usa un delegado tipado para cuentas `MoodleAccount`/`CanvasAccount` y comparte conectividad, limpieza, listado, `setEnabled`, listado de tareas y sincronización con dedupe por `sourceRef` y skip de completadas/canceladas.
 - `TaskSource` ahora `MANUAL | MOODLE | CANVAS`; `Task.sourceRef` conserva el formato `moodle:<id>:<key>` para no romper tareas existentes; Canvas usa `canvas:<id>:<key>` con `key = <todo_type>:<courseId>:<activityId>`.
 - API nueva en `/api/v1/integrations` (con `provider` en params, sin duplicar el módulo): `GET /`, `POST /:provider` (conecta), `POST /:provider/:id/sync`, `PATCH /:provider/:id`, `DELETE /:provider/:id`, `GET|DELETE /tasks?source=&status=&limit=`.

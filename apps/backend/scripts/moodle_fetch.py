@@ -18,6 +18,7 @@ from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
 
+import curl_cffi
 from curl_cffi import requests
 
 PREFIX_RE = re.compile(r"^(Vencimiento de|Se cierra|Se abre|Inicio de)\s+", re.IGNORECASE)
@@ -112,7 +113,7 @@ def _get(base, path, params, impersonate="chrome"):
     server = resp.headers.get("server", "unknown")
     content_type = resp.headers.get("content-type", "unknown")
     print(
-        f"[moodle] GET {safe_url} -> HTTP {resp.status_code} server={server} content-type={content_type}",
+        f"[moodle] client=curl_cffi/{getattr(curl_cffi, '__version__', 'unknown')} impersonate={impersonate} GET {safe_url} -> HTTP {resp.status_code} server={server} content-type={content_type}",
         file=sys.stderr,
         flush=True,
     )

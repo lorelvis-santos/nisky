@@ -11,7 +11,11 @@ import type {
 } from "@/types/entities";
 import { TaskFocusDetails } from "@/features/pomodoro/components/TaskFocusDetails";
 import { TaskPagination } from "@/features/tasks/components/TaskPagination";
-import { useActiveTasksQuery, useTaskMutations, useTaskQuery } from "@/features/tasks/hooks/useTasks";
+import {
+  useActiveTasksQuery,
+  useTaskMutations,
+  useTaskQuery,
+} from "@/features/tasks/hooks/useTasks";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { useActiveBlockQuery } from "@/features/timeblocks/hooks/useTimeBlocks";
 import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
@@ -59,11 +63,15 @@ function FocusPageContent() {
   );
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [taskPage, setTaskPage] = useState(1);
-  const tasksQuery = useActiveTasksQuery(
-    { ...(showAllTasks ? {} : { projectId: selectedProjectId || undefined }), page: taskPage },
-  );
+  const tasksQuery = useActiveTasksQuery({
+    ...(showAllTasks ? {} : { projectId: selectedProjectId || undefined }),
+    page: taskPage,
+  });
   const todayKey = localDateKey(new Date());
-  const schedulesQuery = useTaskSchedulesQuery({ from: todayKey, to: todayKey });
+  const schedulesQuery = useTaskSchedulesQuery({
+    from: todayKey,
+    to: todayKey,
+  });
   const selectedTaskQuery = useTaskQuery(taskIdFromUrl);
   const mutations = usePomodoroMutations();
   const taskMutations = useTaskMutations();
@@ -84,11 +92,22 @@ function FocusPageContent() {
   const initializedRef = useRef(false);
   const scheduledTodayTasks = (schedulesQuery.data ?? [])
     .filter((schedule) => schedule.occurrence?.occurs !== false)
-    .filter((schedule) => !selectedProjectId || schedule.task.projectId === selectedProjectId)
-    .sort((a, b) => Number(b.timeBlockId === activeBlockId) - Number(a.timeBlockId === activeBlockId) || a.order - b.order)
+    .filter(
+      (schedule) =>
+        !selectedProjectId || schedule.task.projectId === selectedProjectId,
+    )
+    .sort(
+      (a, b) =>
+        Number(b.timeBlockId === activeBlockId) -
+          Number(a.timeBlockId === activeBlockId) || a.order - b.order,
+    )
     .map((schedule) => schedule.task);
   const fallbackTasks = tasksQuery.data?.data ?? [];
-  const tasks = (showAllTasks || scheduledTodayTasks.length === 0 ? fallbackTasks : scheduledTodayTasks).filter(
+  const tasks = (
+    showAllTasks || scheduledTodayTasks.length === 0
+      ? fallbackTasks
+      : scheduledTodayTasks
+  ).filter(
     (task) => task.status !== "COMPLETED" && task.status !== "CANCELLED",
   );
 
@@ -108,7 +127,12 @@ function FocusPageContent() {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- fijar el proyecto inicial solo en la primera carga (comportamiento deliberado)
       setSelectedProjectId(initial);
     }
-  }, [projectIdFromUrl, activeBlockQuery.data?.projectId, projectsQuery.data, selectedProjectId]);
+  }, [
+    projectIdFromUrl,
+    activeBlockQuery.data?.projectId,
+    projectsQuery.data,
+    selectedProjectId,
+  ]);
 
   useEffect(() => {
     if (!selectedProjectId) return;
@@ -136,9 +160,11 @@ function FocusPageContent() {
     null;
   const currentSession =
     session === undefined
-      ? (globalPomodoro.activeSession ?? sessionsQuery.data?.data.find(
+      ? (globalPomodoro.activeSession ??
+        sessionsQuery.data?.data.find(
           (item) => item.status === "ACTIVE" || item.status === "PAUSED",
-        ) ?? null)
+        ) ??
+        null)
       : session;
   const displayPhase = currentSession?.phase ?? phase;
   const remainingSec = currentSession
@@ -217,7 +243,9 @@ function FocusPageContent() {
       globalPomodoro.clearActiveSession();
       if (settings.autoCycle) await startPhase(nextPhase, nextCycle);
     } catch {
-      toast.error("Ups, no pudimos guardar el Pomodoro completado. Inténtalo de nuevo.");
+      toast.error(
+        "Ups, no pudimos guardar el Pomodoro completado. Inténtalo de nuevo.",
+      );
     } finally {
       completionInFlight.current = false;
     }
@@ -267,7 +295,9 @@ function FocusPageContent() {
     setShowAllTasks(false);
     const params = new URLSearchParams();
     if (projectId) params.set("projectId", projectId);
-    router.replace(params.toString() ? `/focus?${params.toString()}` : "/focus");
+    router.replace(
+      params.toString() ? `/focus?${params.toString()}` : "/focus",
+    );
   };
 
   const handleToggleShowAll = () => {
@@ -290,7 +320,9 @@ function FocusPageContent() {
       if (taskIdFromUrl) {
         const params = new URLSearchParams();
         if (selectedProjectId) params.set("projectId", selectedProjectId);
-        router.replace(params.toString() ? `/focus?${params.toString()}` : "/focus");
+        router.replace(
+          params.toString() ? `/focus?${params.toString()}` : "/focus",
+        );
       }
     } catch {
       toast.error("Ups, no pudimos completar la tarea. Inténtalo de nuevo.");
@@ -300,7 +332,7 @@ function FocusPageContent() {
   return (
     <main className="relative flex min-h-screen w-full flex-col items-center overflow-y-auto bg-surface px-4 py-6 sm:px-8 sm:py-10">
       <button
-         className="absolute left-4 top-4 flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:border-outline hover:text-primary sm:left-6 sm:top-6"
+        className="absolute left-4 top-4 flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 font-body-sm text-body-sm text-on-surface-variant hover:border-outline hover:text-primary sm:left-6 sm:top-6"
         onClick={() => router.push("/")}
         type="button"
       >
@@ -308,14 +340,14 @@ function FocusPageContent() {
       </button>
       <button
         aria-label="Configuración Pomodoro"
-         className="absolute right-4 top-4 rounded-md border border-outline-variant bg-surface-container-lowest p-2 text-on-surface-variant hover:border-outline hover:text-primary sm:right-6 sm:top-6"
+        className="absolute right-4 top-4 rounded-md border border-outline-variant bg-surface-container-lowest p-2 text-on-surface-variant hover:border-outline hover:text-primary sm:right-6 sm:top-6"
         onClick={() => setSettingsOpen(true)}
         type="button"
       >
         <Settings size={17} />
       </button>
       <div className="flex w-full max-w-2xl flex-col items-center gap-8 pt-16 sm:gap-12 sm:pt-10">
-         <div className="flex w-full flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-4 sm:p-5">
+        <div className="flex w-full flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
               ENFOQUE
@@ -323,13 +355,15 @@ function FocusPageContent() {
             {activeBlockQuery.data?.projectId &&
               activeBlockQuery.data.projectId === selectedProjectId &&
               !showAllTasks && (
-                 <span className="rounded-md border border-outline-variant bg-surface-container-low px-2 py-0.5 font-label-caps text-[10px] uppercase text-primary">
+                <span className="rounded-md border border-outline-variant bg-surface-container-low px-2 py-0.5 font-label-caps text-[10px] uppercase text-primary">
                   Bloque activo
                 </span>
               )}
           </div>
           <label className="block">
-            <span className="font-label-caps text-label-caps text-on-surface-variant">PROYECTO</span>
+            <span className="font-label-caps text-label-caps text-on-surface-variant">
+              PROYECTO
+            </span>
             <select
               aria-label="Seleccionar proyecto"
               className="field mt-1 w-full"
@@ -346,7 +380,9 @@ function FocusPageContent() {
             </select>
           </label>
           <label className="block">
-            <span className="font-label-caps text-label-caps text-on-surface-variant">TAREA</span>
+            <span className="font-label-caps text-label-caps text-on-surface-variant">
+              TAREA
+            </span>
             <select
               aria-label="Seleccionar tarea"
               className="field mt-1 w-full"
@@ -355,7 +391,9 @@ function FocusPageContent() {
               value={selectedTaskId}
             >
               <option value="">
-                {tasks.length === 0 ? "No hay tareas en este proyecto" : "Elige una tarea para empezar"}
+                {tasks.length === 0
+                  ? "No hay tareas en este proyecto"
+                  : "Elige una tarea para empezar"}
               </option>
               {tasks.map((task) => (
                 <option key={task.id} value={task.id}>
@@ -364,18 +402,14 @@ function FocusPageContent() {
               ))}
             </select>
           </label>
-          <button
-            aria-pressed={showAllTasks}
-             className={`flex items-center gap-2 self-start rounded-md border px-3 py-1.5 font-body-sm text-body-sm ${showAllTasks ? "border-primary bg-primary-container text-on-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-container-low hover:text-primary"}`}
-            disabled={running}
-            onClick={handleToggleShowAll}
-            type="button"
-          >
-            {showAllTasks ? "Mostrando todas las tareas" : "Ver todas las tareas"}
-          </button>
-          {tasksQuery.data && (showAllTasks || scheduledTodayTasks.length === 0) && (
-            <TaskPagination isFetching={tasksQuery.isFetching} meta={tasksQuery.data.meta} onPageChange={setTaskPage} />
-          )}
+          {tasksQuery.data &&
+            (showAllTasks || scheduledTodayTasks.length === 0) && (
+              <TaskPagination
+                isFetching={tasksQuery.isFetching}
+                meta={tasksQuery.data.meta}
+                onPageChange={setTaskPage}
+              />
+            )}
         </div>
         {selectedTask && (
           <TaskFocusDetails
@@ -404,7 +438,9 @@ function FocusPageContent() {
         <div className="flex w-full max-w-2xl flex-col gap-4">
           <div className="flex items-center justify-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
             <Timer size={15} />{" "}
-            {settings.autoCycle ? "Pasar al descanso automáticamente" : "Tú decides cuándo descansar"}
+            {settings.autoCycle
+              ? "Pasar al descanso automáticamente"
+              : "Tú decides cuándo descansar"}
           </div>
           <SessionList sessions={sessionsQuery.data?.data ?? []} />
         </div>

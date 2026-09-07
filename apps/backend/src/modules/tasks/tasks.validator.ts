@@ -53,14 +53,6 @@ export const updateTaskSchema = z
     title: taskFields.title.optional(),
     description: taskFields.description.nullable(),
     dueDate: dateValue.nullable().optional(),
-  })
-  .superRefine((value, context) => {
-    if (value.recurrence?.repeatType && !value.dueDate) {
-      context.addIssue({ code: "custom", path: ["dueDate"], message: "Necesita fecha para repetirse" });
-    }
-    if (value.assigneeId && !value.projectId) {
-      context.addIssue({ code: "custom", path: ["projectId"], message: "La tarea debe pertenecer a un proyecto para asignarla" });
-    }
   });
 
 export const reorderTasksSchema = z.object({

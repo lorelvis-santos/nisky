@@ -80,7 +80,7 @@ export function ActiveBlockBanner({
   nextBlockStart: string | null;
   tasks: Task[];
   activeEvent: CalendarEvent | null;
-  onPlayPomodoro: (taskId?: string, projectId?: string) => void;
+  onPlayPomodoro: (taskId?: string, projectId?: string, timeBlockId?: string, timeBlockDate?: string) => void;
   onToggleTask: (task: Task) => void;
 }) {
   const nowMin = useNowMinutes();
@@ -190,7 +190,14 @@ export function ActiveBlockBanner({
             </Link>
             <button
               className="flex h-9 items-center gap-2 rounded-md border border-primary bg-primary px-4 font-body-sm text-body-sm font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container"
-              onClick={() => onPlayPomodoro()}
+              onClick={() => {
+                onPlayPomodoro(
+                  undefined,
+                  nextBlock?.projectId ?? undefined,
+                  nextBlock?.id,
+                  localDateKey(new Date(nextBlockStart)),
+                );
+              }}
               type="button"
             >
               <Play size={15} /> Comenzar enfoque

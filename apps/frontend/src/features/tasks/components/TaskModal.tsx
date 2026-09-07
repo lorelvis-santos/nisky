@@ -132,6 +132,22 @@ export function TaskModal({
   const taskReminders = (reminderQuery.data ?? []).filter(
     (reminder) => reminder.payload?.taskId === current?.id,
   );
+  const dueDateDay = form.dueDate?.slice(0, 10) ?? "";
+  const dueDateTime = form.dueDate?.slice(11, 16) ?? "";
+  const updateDueDateDay = (value: string) => {
+    setForm({
+      ...form,
+      dueDate: value ? `${value}T${dueDateTime || "23:59"}` : "",
+    });
+  };
+  const updateDueDateTime = (value: string) => {
+    setForm({
+      ...form,
+      dueDate: value
+        ? `${dueDateDay || localDateKey(new Date())}T${value}`
+        : dueDateDay,
+    });
+  };
 
   if (!task && current) return null;
   const submit = async () => {
@@ -195,7 +211,16 @@ export function TaskModal({
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="fixed bottom-0 left-0 right-0 top-auto flex h-[min(92dvh,48rem)] max-h-[92dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl border-outline-variant bg-surface p-0 sm:bottom-0 sm:left-auto sm:right-0 sm:top-0 sm:h-full sm:max-h-none sm:w-[min(32rem,100vw)] sm:translate-x-0 sm:translate-y-0 sm:rounded-l-2xl sm:rounded-r-none" data-keyboard-sheet showCloseButton={false}>
+      <DialogContent
+        className="fixed bottom-0 left-0 right-0 top-auto flex h-[min(92dvh,48rem)] max-h-[92dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl border-outline-variant bg-surface p-0 sm:bottom-0 sm:left-auto sm:right-0 sm:top-0 sm:h-full sm:max-h-none sm:w-[min(32rem,100vw)] sm:translate-x-0 sm:translate-y-0 sm:rounded-l-2xl sm:rounded-r-none"
+        data-keyboard-sheet
+        showCloseButton={false}
+        onOpenAutoFocus={(event) => {
+          if (task) {
+            event.preventDefault();
+          }
+        }}
+      >
          <DialogHeader className="flex shrink-0 flex-row items-center justify-between gap-3 border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
            <div className="min-w-0 flex-1">
              <DialogTitle className="truncate font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
@@ -212,20 +237,19 @@ export function TaskModal({
            </div>
          </DialogHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5" data-modal-scroll>
-           <label className="block">
-            <span className="font-label-caps text-label-caps text-on-surface-variant">
-              TÍTULO
-            </span>
-            <input
-              autoFocus
-              className="field mt-1"
-              onChange={(event) =>
-                setForm({ ...form, title: event.target.value })
-              }
-              value={form.title}
-            />
-          </label>
-           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+<label className="block">
+             <span className="font-label-caps text-label-caps text-on-surface-variant">
+               TÍTULO
+             </span>
+             <input
+               className="field mt-1"
+               onChange={(event) =>
+                 setForm({ ...form, title: event.target.value })
+               }
+               value={form.title}
+             />
+           </label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
              <label className="block">
               <span className="font-label-caps text-label-caps text-on-surface-variant">
                 PROYECTO
@@ -244,28 +268,28 @@ export function TaskModal({
                  ))}
                </select>
              </label>
-             <label className="block">
-               <span className="font-label-caps text-label-caps text-on-surface-variant">
-                 PLANIFICAR PARA (OPCIONAL)
+              <label className="block">
+                <span className="font-label-caps text-label-caps text-on-surface-variant">
+                  PLANIFICAR PARA (OPCIONAL)
+                </span>
+                <input
+                  className="field mt-1 min-h-11"
+                  onChange={(event) =>
+                    setForm({ ...form, plannedDate: event.target.value, scheduleChanged: true })
+                  }
+                  type="date"
+                  value={form.plannedDate ?? ""}
+                />
+                <p className="mt-1 font-body-xs text-body-xs text-on-surface-variant">
+                  Asigna un día de trabajo sin cambiar la fecha límite.
+                </p>
+              </label>
+              <label className="block">
+                <span className="font-label-caps text-label-caps text-on-surface-variant">
+                  PRIORIDAD
                </span>
-               <input
-                 className="field mt-1"
-                 onChange={(event) =>
-                   setForm({ ...form, plannedDate: event.target.value, scheduleChanged: true })
-                 }
-                 type="date"
-                 value={form.plannedDate ?? ""}
-               />
-               <p className="mt-1 font-body-xs text-body-xs text-on-surface-variant">
-                 Asigna un día de trabajo sin cambiar la fecha límite.
-               </p>
-             </label>
-             <label className="block">
-               <span className="font-label-caps text-label-caps text-on-surface-variant">
-                 PRIORIDAD
-              </span>
               <select
-                className="field mt-1"
+                className="field mt-1 min-h-11"
                 onChange={(event) =>
                   setForm({
                     ...form,
@@ -280,19 +304,42 @@ export function TaskModal({
                 <option value="LOW">Baja</option>
                </select>
              </label>
-             <label className="block">
-              <span className="font-label-caps text-label-caps text-on-surface-variant">
-                 VENCE (OPCIONAL)
-              </span>
-              <input
-                className="field mt-1"
-                onChange={(event) =>
-                  setForm({ ...form, dueDate: event.target.value })
-                }
-                type="datetime-local"
-                 value={form.dueDate}
-               />
-             </label>
+              <fieldset className="min-w-0">
+                <legend className="font-label-caps text-label-caps text-on-surface-variant">
+                  VENCE (OPCIONAL)
+                </legend>
+                <div className="mt-1 grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-2">
+                  <label className="min-w-0">
+                    <span className="sr-only">Día de vencimiento</span>
+                    <input
+                      aria-label="Día de vencimiento"
+                      className="field min-h-11 w-full min-w-0"
+                      onChange={(event) => updateDueDateDay(event.target.value)}
+                      type="date"
+                      value={dueDateDay}
+                    />
+                  </label>
+                  <label className="min-w-0">
+                    <span className="sr-only">Hora de vencimiento</span>
+                    <input
+                      aria-label="Hora de vencimiento"
+                      className="field min-h-11 w-full min-w-0"
+                      onChange={(event) => updateDueDateTime(event.target.value)}
+                      type="time"
+                      value={dueDateTime}
+                    />
+                  </label>
+                </div>
+                {form.dueDate && (
+                  <button
+                    className="mt-1 min-h-9 rounded-md px-2 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+                    onClick={() => setForm({ ...form, dueDate: "" })}
+                    type="button"
+                  >
+                    Quitar vencimiento
+                  </button>
+                )}
+              </fieldset>
            </div>
            <button
              aria-controls="task-advanced-options"
@@ -316,7 +363,7 @@ export function TaskModal({
                 DESCRIPCIÓN
               </span>
              <textarea
-               className="field mt-1 h-20 resize-y py-2"
+               className="field mt-1 h-20 resize-y py-2 min-h-11"
                onChange={(event) =>
                  setForm({ ...form, description: event.target.value })
                }
@@ -329,7 +376,7 @@ export function TaskModal({
                   ASIGNADO A
                 </span>
                 <select
-                  className="field mt-1"
+                  className="field mt-1 min-h-11"
                   disabled={!currentProjectId}
                   onChange={(event) =>
                     setForm({ ...form, assigneeId: event.target.value || null })
@@ -349,7 +396,7 @@ export function TaskModal({
                   ESTIMADO POMODOROS
                 </span>
                 <input
-                  className="field mt-1"
+                  className="field mt-1 min-h-11"
                   min={0}
                   onChange={(event) =>
                     setForm({
@@ -366,7 +413,7 @@ export function TaskModal({
                   ESTADO
                 </span>
                 <select
-                  className="field mt-1"
+                  className="field mt-1 min-h-11"
                   onChange={(event) =>
                     setForm({
                       ...form,
@@ -394,7 +441,7 @@ export function TaskModal({
                 ["MONTHLY", "Cada mes"],
               ] as const).map(([value, label]) => (
                 <button
-                   className={`rounded-md border px-3 py-1.5 font-body-sm text-body-sm ${form.recurrence?.repeatType === value ? "bg-primary-container text-on-primary" : "border-outline-variant hover:bg-surface-container-low hover:text-primary"}`}
+                   className={`min-h-11 rounded-md border px-3 py-1.5 font-body-sm text-body-sm ${form.recurrence?.repeatType === value ? "bg-primary-container text-on-primary" : "border-outline-variant hover:bg-surface-container-low hover:text-primary"}`}
                   key={value}
                   onClick={() =>
                     setRecurrence({
@@ -413,7 +460,7 @@ export function TaskModal({
                 {WEEKDAY_LETTERS.map((letter, day) => (
                   <button
                     aria-label={`${letter}${form.recurrence?.repeatDaysOfWeek.includes(day) ? " (seleccionado)" : ""}`}
-                     className={`h-8 w-8 rounded-md border font-data-mono text-data-mono text-sm ${form.recurrence?.repeatDaysOfWeek.includes(day) ? "border-primary bg-primary-container text-on-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-container-low"}`}
+                     className={`min-h-11 min-w-11 rounded-md border font-data-mono text-data-mono text-sm ${form.recurrence?.repeatDaysOfWeek.includes(day) ? "border-primary bg-primary-container text-on-primary" : "border-outline-variant text-on-surface-variant hover:bg-surface-container-low"}`}
                     key={day}
                     onClick={() => toggleWeekday(day)}
                     type="button"
@@ -430,7 +477,7 @@ export function TaskModal({
                     CADA N
                   </span>
                   <input
-                    className="field mt-1"
+                    className="field mt-1 min-h-11"
                     min={1}
                     max={365}
                     onChange={(event) =>
@@ -445,7 +492,7 @@ export function TaskModal({
                     HASTA (OPCIONAL)
                   </span>
                   <input
-                    className="field mt-1"
+                    className="field mt-1 min-h-11"
                     onChange={(event) =>
                       setRecurrence({ repeatEndsAt: event.target.value || undefined })
                     }
@@ -496,7 +543,7 @@ export function TaskModal({
               <div className="flex flex-wrap items-center gap-2">
                 <select
                   aria-label="Cuánto antes avisar"
-                  className="field h-8 min-w-0 flex-1"
+                  className="field h-11 min-w-0 flex-1"
                   onChange={(event) => setReminderLead(Number(event.target.value))}
                   value={reminderLead}
                 >
@@ -507,7 +554,7 @@ export function TaskModal({
                   ))}
                 </select>
                 <button
-                   className="flex items-center gap-1 rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
+                   className="flex min-h-11 items-center gap-1 rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
                   onClick={() => void createReminder()}
                   type="button"
                 >
@@ -543,7 +590,7 @@ export function TaskModal({
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-container-low px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:gap-3 sm:pb-4">
           {task && onDelete ? (
             <button
-               className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap rounded-md`}
+               className={`${confirmDelete ? "bg-error px-3 py-2 font-body-sm text-body-sm text-error-foreground" : "min-h-11 px-2 py-2 font-body-sm text-body-sm text-error hover:bg-error-container/30"} whitespace-nowrap rounded-md`}
               onClick={() => {
                 if (!confirmDelete) {
                   setConfirmDelete(true);
@@ -563,7 +610,7 @@ export function TaskModal({
               </button>
             </DialogClose>
             <button
-               className="whitespace-nowrap rounded-md bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
+               className="min-h-11 whitespace-nowrap rounded-md bg-primary-container px-4 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
               onClick={() => void submit()}
               type="button"
             >

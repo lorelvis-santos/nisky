@@ -9,6 +9,7 @@ import { QuickCaptureModal } from "@/features/quicknotes/components/QuickCapture
 import { Sidebar } from "@/components/ui/Sidebar";
 import { TopAppBar } from "@/components/ui/TopAppBar";
 import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
+import { FloatingPomodoro } from "@/components/ui/FloatingPomodoro";
 import { TasksSidebarProvider } from "@/context/TasksSidebarContext";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -91,6 +92,7 @@ function AuthenticatedAppLayout({ children }: { children: React.ReactNode }) {
       </TasksSidebarProvider>
       <PendingRemindersGate />
       <QuickCaptureModal initialMode={capture.mode} onClose={capture.close} open={capture.isOpen} />
+      <FloatingPomodoro />
       <MobileBottomNav />
     </div>
   );

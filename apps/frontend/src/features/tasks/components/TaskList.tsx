@@ -15,6 +15,7 @@ function dayLabel(day: Date) {
 
 export function TaskList({
   tasks,
+  plannedTasks = [],
   onOpen,
   onEdit,
   previewedTaskId,
@@ -24,6 +25,7 @@ export function TaskList({
   onCreateOnDay,
 }: {
   tasks: Task[];
+  plannedTasks?: Task[];
   onOpen: (task: Task) => void;
   onEdit: (task: Task) => void;
   previewedTaskId?: string | null;
@@ -34,8 +36,9 @@ export function TaskList({
 }) {
   const today = dateKey(new Date());
   const visibleTasks = tasks;
+  const plannedIds = new Set(plannedTasks.map((task) => task.id));
 
-  const datedTasks = visibleTasks.filter((task) => task.dueDate);
+  const datedTasks = visibleTasks.filter((task) => task.dueDate && !plannedIds.has(task.id));
   const overdueTasks = datedTasks
     .filter((task) => task.status !== "COMPLETED" && task.status !== "CANCELLED")
     .filter((task) => dateKey(task.dueDate!) < today)
@@ -46,7 +49,7 @@ export function TaskList({
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.order - b.order);
   const dayKeys = Array.from(new Set(dateGroupedTasks.map((task) => dateKey(task.dueDate!))));
 
-  if (datedTasks.length === 0) {
+  if (datedTasks.length === 0 && plannedTasks.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center py-12">
         <div className="flex w-full max-w-md flex-col items-center gap-3 rounded-2xl bg-surface-container-lowest p-10 text-center shadow-sm">
@@ -68,6 +71,33 @@ export function TaskList({
 
   return (
     <div className="flex flex-col gap-5">
+      {plannedTasks.length > 0 && (
+        <section className="pt-1">
+          <header className="flex items-center justify-between px-1 py-1">
+            <div className="flex items-center gap-2">
+              <span className="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-secondary">
+                Planificadas hoy
+              </span>
+              <span className="rounded-full bg-surface-container-high px-2 py-0.5 font-label-sm text-label-sm text-secondary">
+                {plannedTasks.length}
+              </span>
+            </div>
+          </header>
+          <div className="flex flex-col gap-2">
+            {plannedTasks.map((task) => (
+              <TaskCardShell
+                key={task.id}
+                onEdit={() => onEdit(task)}
+                onOpen={() => onOpen(task)}
+                onStartPomodoro={() => onStartPomodoro(task)}
+                onToggle={() => onToggle(task)}
+                isPreviewed={previewedTaskId === task.id}
+                task={task}
+              />
+            ))}
+          </div>
+        </section>
+      )}
       {overdueTasks.length > 0 && (
         <section className="pt-4">
           <header className="flex items-center justify-between px-1 py-1">

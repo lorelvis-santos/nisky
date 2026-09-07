@@ -52,10 +52,17 @@ export default function DashboardPage() {
     }
   };
 
-  const handlePlayPomodoro = (taskId?: string, projectId?: string) => {
+  const handlePlayPomodoro = (
+    taskId?: string,
+    projectId?: string,
+    timeBlockId?: string,
+    timeBlockDate?: string,
+  ) => {
     const params = new URLSearchParams();
     if (taskId) params.set("taskId", taskId);
     if (projectId) params.set("projectId", projectId);
+    if (timeBlockId) params.set("timeBlockId", timeBlockId);
+    if (timeBlockDate) params.set("timeBlockDate", timeBlockDate);
     router.push(params.toString() ? `/focus?${params.toString()}` : "/focus");
   };
 

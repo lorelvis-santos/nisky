@@ -148,7 +148,7 @@ export function TimeBlockEditor({
       {oneOff ? (
         <label className="block">
           <span className="font-label-md text-label-md text-on-surface-variant">Fecha</span>
-          <input className="field mt-1" onChange={(event) => changeOneOffDate(event.target.value)} type="date" value={oneOffDate} />
+          <input className="field mt-1 min-h-11" onChange={(event) => changeOneOffDate(event.target.value)} type="date" value={oneOffDate} />
         </label>
       ) : (
         <div>
@@ -157,7 +157,7 @@ export function TimeBlockEditor({
             {DAY_ORDER.map((day) => (
               <button
                 aria-pressed={daysOfWeek.includes(day)}
-                className={`min-h-11 rounded-md border px-3 py-1.5 font-body-sm text-body-sm transition-colors ${daysOfWeek.includes(day) ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface hover:bg-surface-container-low hover:text-secondary"}`}
+                className={`min-h-11 min-w-[64px] rounded-md border px-3 py-1.5 font-body-sm text-body-sm transition-colors ${daysOfWeek.includes(day) ? "border-primary bg-primary text-on-primary" : "border-outline-variant bg-surface hover:bg-surface-container-low hover:text-secondary"}`}
                 key={day}
                 onClick={() => toggleDay(day)}
                 type="button"
@@ -171,11 +171,11 @@ export function TimeBlockEditor({
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
           <span className="font-label-md text-label-md text-on-surface-variant">Inicio</span>
-          <input className="field mt-1" onChange={(event) => setStartTime(event.target.value)} type="time" value={startTime} />
+          <input className="field mt-1 min-h-11" onChange={(event) => setStartTime(event.target.value)} type="time" value={startTime} />
         </label>
         <label className="block">
           <span className="font-label-md text-label-md text-on-surface-variant">Fin</span>
-          <input className="field mt-1" onChange={(event) => setEndTime(event.target.value)} type="time" value={endTime} />
+          <input className="field mt-1 min-h-11" onChange={(event) => setEndTime(event.target.value)} type="time" value={endTime} />
         </label>
       </div>
       <label className="block">
@@ -245,7 +245,7 @@ export function TimeBlockEditor({
             <label className="mt-3 block">
               <span className="font-label-md text-label-md text-on-surface-variant">Hasta (opcional)</span>
               <input
-                className="field mt-1"
+                className="field mt-1 min-h-11"
                 onChange={(event) => setRepeatEndsAt(event.target.value)}
                 type="date"
                 value={repeatEndsAt}
@@ -287,7 +287,7 @@ export function TimeBlockEditor({
           <label className="flex-1">
             <span className="font-label-md text-label-md text-on-surface-variant">Saltar un día</span>
             <input
-              className="field mt-1"
+              className="field mt-1 min-h-11"
               min="2000-01-01"
               onChange={(event) => setSkipDate(event.target.value)}
               type="date"

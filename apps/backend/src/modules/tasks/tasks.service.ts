@@ -192,14 +192,31 @@ export class TaskService {
     await assertTaskAccess(userId, id);
     const existing = await prisma.task.findUnique({
       where: { id },
-      select: { projectId: true, assigneeId: true, title: true, status: true, priority: true },
+      select: {
+        projectId: true,
+        assigneeId: true,
+        dueDate: true,
+        recurrenceType: true,
+        title: true,
+        status: true,
+        priority: true,
+      },
     });
     if (!existing) throw new AppError("NOT_FOUND", "Tarea no encontrada");
+
+    const effectiveProjectId = data.projectId !== undefined ? data.projectId : existing.projectId;
+    const effectiveDueDate = data.dueDate !== undefined ? taskDate(data.dueDate) : existing.dueDate;
+    const effectiveRecurrenceType = data.recurrence !== undefined
+      ? data.recurrence.repeatType
+      : existing.recurrenceType;
+    if (effectiveRecurrenceType && !effectiveDueDate) {
+      throw new AppError("BAD_REQUEST", "Necesita fecha para repetirse");
+    }
 
     // Validar assigneeId
     if (data.assigneeId !== undefined) {
       if (data.assigneeId) {
-        const targetProjectId = data.projectId ?? existing.projectId;
+        const targetProjectId = effectiveProjectId;
         if (!targetProjectId) throw new AppError("BAD_REQUEST", "La tarea debe pertenecer a un proyecto para asignarla");
         const member = await prisma.projectMember.findUnique({
           where: { projectId_userId: { projectId: targetProjectId, userId: data.assigneeId } },

@@ -28,6 +28,7 @@ import { archiveQuickNote } from "@/features/quicknotes/api/quicknotes";
 import { BacklogPanel } from "@/features/tasks/components/BacklogPanel";
 import { TaskList } from "@/features/tasks/components/TaskList";
 import { TaskPagination } from "@/features/tasks/components/TaskPagination";
+import type { TaskUpdatePayload } from "@/features/tasks/api/tasks";
 import {
   TaskModal,
   type TaskForm,
@@ -42,7 +43,10 @@ import {
   useAccessibleProjects,
   useProjectsQuery,
 } from "@/features/projects/hooks/useProjects";
-import { useTaskScheduleMutations } from "@/features/task-schedules/hooks/useTaskSchedules";
+import {
+  useTaskScheduleMutations,
+  useTaskSchedulesQuery,
+} from "@/features/task-schedules/hooks/useTaskSchedules";
 import { localDateKey } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import {
@@ -174,6 +178,27 @@ function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
   }
 }
 
+function matchesTaskFilters(
+  task: Task,
+  search: string,
+  priority: TaskPriority | "ALL",
+  statusFilter: "ACTIVE" | "COMPLETED" | "ALL",
+  projectId: string | null,
+) {
+  const normalizedSearch = search.trim().toLocaleLowerCase();
+  if (
+    normalizedSearch &&
+    !`${task.title} ${task.description ?? ""}`.toLocaleLowerCase().includes(normalizedSearch)
+  ) {
+    return false;
+  }
+  if (priority !== "ALL" && task.priority !== priority) return false;
+  if (statusFilter === "ACTIVE" && !["PENDING", "IN_PROGRESS"].includes(task.status)) return false;
+  if (statusFilter === "COMPLETED" && task.status !== "COMPLETED") return false;
+  if (projectId && task.projectId !== projectId) return false;
+  return true;
+}
+
 type TaskView = "list" | "backlog";
 
 const TASK_VIEW_KEY = "nisky:task-view";
@@ -249,6 +274,8 @@ function TasksPageContent() {
     { pageSize: view === "backlog" ? 25 : 1 },
   );
   const query = view === "backlog" ? backlogQuery : listQuery;
+  const todayKey = localDateKey(new Date());
+  const todaySchedulesQuery = useTaskSchedulesQuery({ from: todayKey, to: todayKey });
   const urlTaskQuery = useTaskQuery(modalUrl.state.taskId);
   const mutations = useTaskMutations();
   const scheduleMutations = useTaskScheduleMutations();
@@ -262,13 +289,26 @@ function TasksPageContent() {
     return merged;
   }, [projectsQuery.data, accessibleProjectsQuery.data]);
   const allTasks = query.data?.data ?? emptyTasks;
-  const tasks = allTasks;
+  const plannedTodayTasks = useMemo(() => {
+    if (view !== "list") return emptyTasks;
+    return (todaySchedulesQuery.data ?? [])
+      .filter((schedule) => schedule.occurrence?.occurs !== false)
+      .map((schedule) => schedule.task)
+      .filter((task) => matchesTaskFilters(task, search, priority, statusFilter, selectedProjectId));
+  }, [priority, search, selectedProjectId, statusFilter, todaySchedulesQuery.data, view]);
+  const tasks = useMemo(() => {
+    if (view !== "list" || plannedTodayTasks.length === 0) return allTasks;
+    const existingIds = new Set(allTasks.map((task) => task.id));
+    return [...allTasks, ...plannedTodayTasks.filter((task) => !existingIds.has(task.id))];
+  }, [allTasks, plannedTodayTasks, view]);
   const selectedTasks = useMemo(
     () => tasks.filter((task) => selection.selectedIds.has(task.id)),
     [tasks, selection.selectedIds],
   );
   const backlogCount = backlogQuery.data?.meta.totalItems ?? 0;
-  const listCount = listQuery.data?.meta.totalItems ?? 0;
+  const listCount =
+    (listQuery.data?.meta.totalItems ?? 0) +
+    plannedTodayTasks.filter((task) => !task.dueDate).length;
   const totalCount = backlogCount + listCount;
   const activeFilterCount =
     (statusFilter !== "ACTIVE" ? 1 : 0) +
@@ -353,7 +393,10 @@ function TasksPageContent() {
     };
     try {
       if (editingTask) {
-        const updatePayload = { ...payload } as Partial<typeof payload>;
+        const updatePayload: TaskUpdatePayload = {
+          ...payload,
+          dueDate: form.dueDate || null,
+        };
         await mutations.update.mutateAsync({
           id: editingTask.id,
           payload: updatePayload,
@@ -865,6 +908,7 @@ function TasksPageContent() {
                     onPostponeToday={(task) => void postponeToday(task)}
                     onStartPomodoro={openFocus}
                     onToggle={(task) => void toggleTask(task)}
+                    plannedTasks={plannedTodayTasks}
                     tasks={tasks}
                     previewedTaskId={previewOpen ? modalUrl.state.taskId : null}
                   />

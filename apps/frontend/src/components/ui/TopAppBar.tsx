@@ -1,11 +1,9 @@
 "use client";
 
-import { AlarmClock, Bell, CalendarClock, ChevronRight, ListTodo, LogOut, Menu, Pause, Play, Settings, Square, StickyNote, X } from "lucide-react";
+import { AlarmClock, Bell, CalendarClock, ChevronRight, ListTodo, LogOut, Menu, Settings, StickyNote, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { formatPomodoroTime, usePomodoro } from "@/context/PomodoroProvider";
 import { useAuth } from "@/context/AuthProvider";
 import { Avatar } from "@/components/ui/Avatar";
 import { useRemindersQuery, usePendingRemindersQuery } from "@/features/reminders/hooks/useReminders";
@@ -36,7 +34,6 @@ const titles: Record<string, string> = {
 export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpenCapture: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const pomodoro = usePomodoro();
   const { user, logout } = useAuth();
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
   const remindersQuery = useRemindersQuery();
@@ -49,14 +46,6 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
   const pending = pendingQuery.data ?? [];
   const notices = buildNotices(tasksQuery.data?.data ?? [], remindersQuery.data ?? [], pending, quickNotesQuery.data ?? []);
 
-  const togglePause = async () => {
-    try { await pomodoro.pauseResume(); } catch { toast.error("Ups, no pudimos actualizar el Pomodoro."); }
-  };
-
-  const cancel = async () => {
-    try { await pomodoro.cancel(); toast.success("¡Listo, Pomodoro cancelado!"); } catch { toast.error("Ups, no pudimos cancelar el Pomodoro."); }
-  };
-
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-container-padding lg:px-8">
       <div className="flex items-center gap-element-gap-sm">
@@ -64,7 +53,6 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
           <button aria-label="Abrir menú" className="hidden rounded-md p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary sm:flex lg:hidden" onClick={onMenu} type="button"><Menu size={20} /></button>
           <Link aria-label="Ir a Inicio" className="font-headline-lg text-headline-lg font-bold tracking-tight text-primary hover:underline lg:hidden" href="/">Nisky</Link>
         </div>
-        {pomodoro.activeSession && pomodoro.remainingSec !== null && <div className="flex items-center gap-1 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1"><button aria-label={pomodoro.activeSession.status === "PAUSED" ? "Reanudar Pomodoro" : "Pausar Pomodoro"} className="rounded-md p-1 text-primary hover:bg-surface-container-low hover:text-primary-container" onClick={() => void togglePause()} type="button">{pomodoro.activeSession.status === "PAUSED" ? <Play size={14} /> : <Pause size={14} />}</button><button aria-label="Abrir Pomodoro" className="rounded-md px-1 py-0.5 font-data-mono text-data-mono text-xs text-primary hover:bg-surface-container-low hover:underline" onClick={() => router.push(`/focus${pomodoro.activeSession?.taskId ? `?taskId=${encodeURIComponent(pomodoro.activeSession.taskId)}` : ""}`)} type="button">{formatPomodoroTime(pomodoro.remainingSec)}</button><button aria-label="Cancelar Pomodoro" className="rounded-md p-1 text-on-surface-variant hover:bg-error-container hover:text-error" onClick={() => void cancel()} type="button"><Square size={13} /></button></div>}
       </div>
       <div className="hidden flex-1 md:block" />
       <h2 className="absolute left-1/2 hidden -translate-x-1/2 font-headline-sm text-headline-sm font-bold text-on-surface lg:block">{title}</h2>

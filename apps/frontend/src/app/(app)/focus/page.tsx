@@ -17,7 +17,10 @@ import {
   useTaskQuery,
 } from "@/features/tasks/hooks/useTasks";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
-import { useActiveBlockQuery } from "@/features/timeblocks/hooks/useTimeBlocks";
+import {
+  useActiveBlockQuery,
+  useTimeBlocksQuery,
+} from "@/features/timeblocks/hooks/useTimeBlocks";
 import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
 import { Controls } from "@/features/pomodoro/components/Controls";
 import { SessionList } from "@/features/pomodoro/components/SessionList";
@@ -54,10 +57,20 @@ function FocusPageContent() {
   const searchParams = useSearchParams();
   const taskIdFromUrl = searchParams.get("taskId");
   const projectIdFromUrl = searchParams.get("projectId");
+  const timeBlockIdFromUrl = searchParams.get("timeBlockId");
+  const todayKey = localDateKey(new Date());
+  const requestedScheduleDate = searchParams.get("timeBlockDate");
+  const scheduleDate = requestedScheduleDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedScheduleDate)
+    ? requestedScheduleDate
+    : todayKey;
   const settingsQuery = usePomodoroSettingsQuery();
   const sessionsQuery = usePomodoroSessionsQuery({ limit: 8 });
   const projectsQuery = useProjectsQuery();
   const activeBlockQuery = useActiveBlockQuery();
+  const timeBlocksQuery = useTimeBlocksQuery();
+  const focusTimeBlock = timeBlockIdFromUrl
+    ? timeBlocksQuery.data?.find((block) => block.id === timeBlockIdFromUrl) ?? null
+    : null;
   const [selectedProjectId, setSelectedProjectId] = useState(
     projectIdFromUrl ?? "",
   );
@@ -67,10 +80,9 @@ function FocusPageContent() {
     ...(showAllTasks ? {} : { projectId: selectedProjectId || undefined }),
     page: taskPage,
   });
-  const todayKey = localDateKey(new Date());
   const schedulesQuery = useTaskSchedulesQuery({
-    from: todayKey,
-    to: todayKey,
+    from: scheduleDate,
+    to: scheduleDate,
   });
   const selectedTaskQuery = useTaskQuery(taskIdFromUrl);
   const mutations = usePomodoroMutations();
@@ -94,7 +106,9 @@ function FocusPageContent() {
     .filter((schedule) => schedule.occurrence?.occurs !== false)
     .filter(
       (schedule) =>
-        !selectedProjectId || schedule.task.projectId === selectedProjectId,
+        (timeBlockIdFromUrl
+          ? schedule.timeBlockId === timeBlockIdFromUrl
+          : !selectedProjectId || schedule.task.projectId === selectedProjectId),
     )
     .sort(
       (a, b) =>
@@ -115,6 +129,7 @@ function FocusPageContent() {
     if (initializedRef.current) return;
     const candidates = [
       projectIdFromUrl ?? undefined,
+      focusTimeBlock?.projectId ?? undefined,
       activeBlockQuery.data?.projectId ?? undefined,
       typeof window !== "undefined"
         ? (localStorage.getItem(FOCUS_PROJECT_KEY) ?? undefined)
@@ -129,6 +144,7 @@ function FocusPageContent() {
     }
   }, [
     projectIdFromUrl,
+    focusTimeBlock?.projectId,
     activeBlockQuery.data?.projectId,
     projectsQuery.data,
     selectedProjectId,
@@ -138,6 +154,32 @@ function FocusPageContent() {
     if (!selectedProjectId) return;
     localStorage.setItem(FOCUS_PROJECT_KEY, selectedProjectId);
   }, [selectedProjectId]);
+
+  // Start with the first task scheduled in the selected block when available.
+  useEffect(() => {
+    if (!timeBlockIdFromUrl) return;
+    if (selectedTaskId) return;
+    const blockTask = scheduledTodayTasks.find(
+      (task) => task.status !== "COMPLETED" && task.status !== "CANCELLED",
+    );
+    if (blockTask) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza la tarea inicial con el bloque solicitado
+      setSelectedTaskId(blockTask.id);
+      const params = new URLSearchParams();
+      if (selectedProjectId) params.set("projectId", selectedProjectId);
+      params.set("taskId", blockTask.id);
+      if (timeBlockIdFromUrl) params.set("timeBlockId", timeBlockIdFromUrl);
+      if (requestedScheduleDate) params.set("timeBlockDate", requestedScheduleDate);
+      router.replace(`/focus?${params.toString()}`);
+    }
+  }, [
+    timeBlockIdFromUrl,
+    requestedScheduleDate,
+    scheduledTodayTasks,
+    selectedProjectId,
+    selectedTaskId,
+    router,
+  ]);
 
   useEffect(() => {
     if (selectedTaskId) return;
@@ -300,12 +342,6 @@ function FocusPageContent() {
     );
   };
 
-  const handleToggleShowAll = () => {
-    setTaskPage(1);
-    setShowAllTasks((value) => !value);
-    setSelectedTaskId("");
-  };
-
   const completeTask = async () => {
     if (!selectedTask) return;
     const completedId = selectedTask.id;
@@ -352,9 +388,15 @@ function FocusPageContent() {
             <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
               ENFOQUE
             </span>
+            {timeBlockIdFromUrl && focusTimeBlock && !showAllTasks && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/5 px-2 py-0.5 font-label-caps text-[10px] uppercase text-primary">
+                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Bloque: {focusTimeBlock.name ?? "Enfoque"}
+              </span>
+            )}
             {activeBlockQuery.data?.projectId &&
               activeBlockQuery.data.projectId === selectedProjectId &&
-              !showAllTasks && (
+              !showAllTasks && !timeBlockIdFromUrl && (
                 <span className="rounded-md border border-outline-variant bg-surface-container-low px-2 py-0.5 font-label-caps text-[10px] uppercase text-primary">
                   Bloque activo
                 </span>

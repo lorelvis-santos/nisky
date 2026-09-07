@@ -1,17 +1,19 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { CalendarDays, CalendarPlus, Check, CheckCircle2, Circle, ChevronDown, Flag, ListChecks, Pencil, Plus, Repeat2, Timer, Trash2, UserRound } from "lucide-react";
+import { CalendarDays, CalendarPlus, Check, CheckCircle2, Circle, ChevronDown, Flag, ListChecks, Pencil, Plus, Repeat2, Timer, Trash2, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import type { Task, TaskPriority, TaskStatus } from "@/types/entities";
 import { Avatar } from "@/components/ui/Avatar";
 import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerNestedRoot, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PreviewSheet } from "@/components/ui/PreviewSheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useAccessibleProjects, useProjectMembers, useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { useTaskQuery } from "@/features/tasks/hooks/useTasks";
 import type { TaskUpdatePayload } from "../api/tasks";
@@ -110,6 +112,87 @@ function PreviewDetail({ icon: Icon, label, children }: { icon: LucideIcon; labe
   );
 }
 
+function DueDateEditor({
+  dueDateDraft,
+  fullWidth = false,
+  onCancel,
+  onDateChange,
+  onRemove,
+  onSave,
+  onTimeChange,
+  pending,
+}: {
+  dueDateDraft: string;
+  fullWidth?: boolean;
+  onCancel: () => void;
+  onDateChange: (date: Date) => void;
+  onRemove: () => void;
+  onSave: () => void;
+  onTimeChange: (time: string) => void;
+  pending: boolean;
+}) {
+  return (
+    <>
+      <Calendar
+        aria-label="Seleccionar fecha de vencimiento"
+        className={fullWidth ? "w-full" : "mx-auto"}
+        classNames={fullWidth ? {
+          day: "relative flex-1 p-0 text-center text-sm",
+          day_button: "size-full min-h-9",
+          weekday: "h-8 flex-1 rounded-md text-center font-label-caps text-[10px] text-on-surface-variant",
+          weekdays: "flex w-full",
+        } : undefined}
+        defaultMonth={dateFromDatetimeLocal(dueDateDraft) ?? new Date()}
+        mode="single"
+        onSelect={(date) => {
+          if (date) onDateChange(date);
+        }}
+        selected={dateFromDatetimeLocal(dueDateDraft)}
+      />
+      <div className="border-t border-outline-variant p-3">
+        <label className="flex items-center justify-between gap-3 font-label-caps text-label-caps text-on-surface-variant">
+          Hora
+          <input
+            aria-label="Hora de vencimiento"
+            className="h-9 rounded-lg border border-outline-variant bg-surface-container-lowest px-2.5 font-data-mono text-data-mono text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-wait disabled:opacity-60"
+            disabled={pending}
+            onChange={(event) => onTimeChange(event.target.value)}
+            type="time"
+            value={dueDateDraft.slice(11, 16)}
+          />
+        </label>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <button
+            className="rounded-lg px-2 py-1.5 font-label-md text-label-md font-semibold text-error hover:bg-error-container disabled:cursor-wait disabled:opacity-50"
+            disabled={pending}
+            onClick={onRemove}
+            type="button"
+          >
+            Quitar fecha
+          </button>
+          <span className="flex items-center gap-1.5">
+            <button
+              className="rounded-lg px-2.5 py-1.5 font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+              onClick={onCancel}
+              type="button"
+            >
+              Cancelar
+            </button>
+            <button
+              className="rounded-lg bg-primary px-3 py-1.5 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
+              disabled={pending || !dueDateDraft}
+              onClick={onSave}
+              type="button"
+            >
+              Guardar
+            </button>
+          </span>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function TaskPreviewModal({
   task,
   onClose,
@@ -135,6 +218,7 @@ export function TaskPreviewModal({
 }) {
   const detailQuery = useTaskQuery(task.id);
   const current = detailQuery.data ?? task;
+  const isMobile = useIsMobile(1023);
   const [pendingSubtaskId, setPendingSubtaskId] = useState<string | null>(null);
   const [subtaskOverrides, setSubtaskOverrides] = useState<Record<string, boolean>>({});
   const [subtaskTitleOverrides, setSubtaskTitleOverrides] = useState<Record<string, string>>({});
@@ -314,6 +398,30 @@ export function TaskPreviewModal({
     setDueDateDraft(displayDueDate ? toDatetimeLocal(displayDueDate) : `${localDateKey(new Date())}T09:00`);
     setDueDateOpen(true);
   };
+
+  const handleDueDateOpenChange = (open: boolean) => {
+    if (open) openDueDateEditor();
+    else setDueDateOpen(false);
+  };
+
+  const dueDateTrigger = (
+    <button className={cn("max-w-[14rem] truncate rounded-md px-1 py-1 text-right font-medium outline-none hover:bg-surface-container-low hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/20", !displayDueDate && "text-on-surface-variant", overdue && "font-semibold text-error")} type="button">
+      {displayDueDate ? formatTaskDueDate(displayDueDate) : "Sin fecha límite"}
+    </button>
+  );
+
+  const dueDateEditor = (
+    <DueDateEditor
+      dueDateDraft={dueDateDraft}
+      fullWidth={isMobile}
+      onCancel={() => setDueDateOpen(false)}
+      onDateChange={(date) => setDueDateDraft((value) => datetimeWithDate(value, date))}
+      onRemove={() => { void updateDueDate(""); }}
+      onSave={() => { void updateDueDate(dueDateDraft); }}
+      onTimeChange={(time) => setDueDateDraft((value) => datetimeWithTime(value, time))}
+      pending={pendingTaskField !== null}
+    />
+  );
 
   useEffect(() => {
     if (!descriptionOpen || !descriptionInputRef.current) return;
@@ -572,72 +680,54 @@ export function TaskPreviewModal({
               </Popover>
             </PreviewDetail>
             <PreviewDetail icon={CalendarDays} label="Vencimiento">
-              <Popover
-                open={dueDateOpen}
-                onOpenChange={(open) => {
-                  if (open) openDueDateEditor();
-                  else setDueDateOpen(false);
-                }}
-              >
-                <PopoverTrigger asChild>
-                  <button className={cn("max-w-[14rem] truncate rounded-md px-1 py-1 text-right font-medium outline-none hover:bg-surface-container-low hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/20", !displayDueDate && "text-on-surface-variant", overdue && "font-semibold text-error")} type="button">
-                    {displayDueDate ? formatTaskDueDate(displayDueDate) : "Sin fecha límite"}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  avoidCollisions
-                  className="w-auto max-w-[var(--radix-popover-content-available-width)] overflow-hidden p-0"
-                  collisionPadding={{ bottom: 16, left: 16, right: 16, top: 16 }}
-                  hideWhenDetached
-                  side="bottom"
-                  sideOffset={8}
-                  sticky="always"
-                  updatePositionStrategy="always"
-                >
-                  <div className="border-b border-outline-variant px-4 py-3">
-                    <p className="font-label-caps text-label-caps text-on-surface-variant">Vencimiento</p>
-                    <p className="mt-0.5 font-body-sm text-body-sm font-semibold text-on-surface">
-                      {dueDateDraft ? formatTaskDueDate(dueDateDraft) : "Elige una fecha"}
-                    </p>
-                  </div>
-                  <Calendar
-                    aria-label="Seleccionar fecha de vencimiento"
-                    defaultMonth={dateFromDatetimeLocal(dueDateDraft) ?? new Date()}
-                    mode="single"
-                    onSelect={(date) => {
-                      if (date) setDueDateDraft((value) => datetimeWithDate(value, date));
-                    }}
-                    selected={dateFromDatetimeLocal(dueDateDraft)}
-                  />
-                  <div className="border-t border-outline-variant p-3">
-                    <label className="flex items-center justify-between gap-3 font-label-caps text-label-caps text-on-surface-variant">
-                      Hora
-                      <input
-                        aria-label="Hora de vencimiento"
-                        className="h-9 rounded-lg border border-outline-variant bg-surface-container-lowest px-2.5 font-data-mono text-data-mono text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-wait disabled:opacity-60"
-                        disabled={pendingTaskField !== null}
-                        onChange={(event) => setDueDateDraft((value) => datetimeWithTime(value, event.target.value))}
-                        type="time"
-                        value={dueDateDraft.slice(11, 16)}
-                      />
-                    </label>
-                    <div className="mt-3 flex items-center justify-between gap-2">
-                      <button className="rounded-lg px-2 py-1.5 font-label-md text-label-md font-semibold text-error hover:bg-error-container disabled:cursor-wait disabled:opacity-50" disabled={pendingTaskField !== null} onClick={() => void updateDueDate("")} type="button">
-                        Quitar fecha
-                      </button>
-                      <span className="flex items-center gap-1.5">
-                        <button className="rounded-lg px-2.5 py-1.5 font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" onClick={() => setDueDateOpen(false)} type="button">
-                          Cancelar
+              {isMobile ? (
+                <DrawerNestedRoot fixed open={dueDateOpen} onOpenChange={handleDueDateOpenChange}>
+                  <DrawerTrigger asChild>{dueDateTrigger}</DrawerTrigger>
+                  <DrawerContent className="flex h-auto min-h-0 max-h-[calc(100dvh-1rem)] w-full max-w-none flex-col rounded-t-2xl border-outline-variant bg-surface-bright p-0 shadow-cadence-3 data-[vaul-drawer-direction=bottom]:max-h-[calc(100dvh-1rem)]">
+                    <DrawerHeader className="flex shrink-0 flex-row items-center justify-between gap-3 border-b border-outline-variant px-5 py-4 !text-left">
+                      <div className="min-w-0">
+                        <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
+                          Vencimiento
+                        </DrawerTitle>
+                        <DrawerDescription className="!text-left">
+                          {dueDateDraft ? formatTaskDueDate(dueDateDraft) : "Elige una fecha"}
+                        </DrawerDescription>
+                      </div>
+                      <DrawerClose asChild>
+                        <button aria-label="Cerrar selector de vencimiento" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
+                          <X size={19} />
                         </button>
-                        <button className="rounded-lg bg-primary px-3 py-1.5 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60" disabled={pendingTaskField !== null || !dueDateDraft} onClick={() => void updateDueDate(dueDateDraft)} type="button">
-                          Guardar
-                        </button>
-                      </span>
+                      </DrawerClose>
+                    </DrawerHeader>
+                    <div className="w-full" data-vaul-no-drag>
+                      {dueDateEditor}
                     </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  </DrawerContent>
+                </DrawerNestedRoot>
+              ) : (
+                <Popover open={dueDateOpen} onOpenChange={handleDueDateOpenChange}>
+                  <PopoverTrigger asChild>{dueDateTrigger}</PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    avoidCollisions
+                    className="w-auto max-w-[var(--radix-popover-content-available-width)] overflow-hidden p-0"
+                    collisionPadding={{ bottom: 16, left: 16, right: 16, top: 16 }}
+                    hideWhenDetached
+                    side="bottom"
+                    sideOffset={8}
+                    sticky="always"
+                    updatePositionStrategy="always"
+                  >
+                    <div className="border-b border-outline-variant px-4 py-3">
+                      <p className="font-label-caps text-label-caps text-on-surface-variant">Vencimiento</p>
+                      <p className="mt-0.5 font-body-sm text-body-sm font-semibold text-on-surface">
+                        {dueDateDraft ? formatTaskDueDate(dueDateDraft) : "Elige una fecha"}
+                      </p>
+                    </div>
+                    {dueDateEditor}
+                  </PopoverContent>
+                </Popover>
+              )}
             </PreviewDetail>
           </dl>
           <button

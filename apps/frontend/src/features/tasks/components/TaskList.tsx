@@ -47,7 +47,12 @@ export function TaskList({
   const dateGroupedTasks = datedTasks
     .filter((task) => !overdueIds.has(task.id))
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.order - b.order);
-  const dayKeys = Array.from(new Set(dateGroupedTasks.map((task) => dateKey(task.dueDate!))));
+  const todayDatedTasks = dateGroupedTasks.filter((task) => dateKey(task.dueDate!) === today);
+  const todayTasks = [...plannedTasks, ...todayDatedTasks];
+  const dayKeys = [
+    ...(todayTasks.length > 0 ? [today] : []),
+    ...Array.from(new Set(dateGroupedTasks.map((task) => dateKey(task.dueDate!)))).filter((key) => key !== today),
+  ];
 
   if (datedTasks.length === 0 && plannedTasks.length === 0) {
     return (
@@ -71,33 +76,6 @@ export function TaskList({
 
   return (
     <div className="flex flex-col gap-5">
-      {plannedTasks.length > 0 && (
-        <section className="pt-1">
-          <header className="flex items-center justify-between px-1 py-1">
-            <div className="flex items-center gap-2">
-              <span className="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-secondary">
-                Planificadas hoy
-              </span>
-              <span className="rounded-full bg-surface-container-high px-2 py-0.5 font-label-sm text-label-sm text-secondary">
-                {plannedTasks.length}
-              </span>
-            </div>
-          </header>
-          <div className="flex flex-col gap-2">
-            {plannedTasks.map((task) => (
-              <TaskCardShell
-                key={task.id}
-                onEdit={() => onEdit(task)}
-                onOpen={() => onOpen(task)}
-                onStartPomodoro={() => onStartPomodoro(task)}
-                onToggle={() => onToggle(task)}
-                isPreviewed={previewedTaskId === task.id}
-                task={task}
-              />
-            ))}
-          </div>
-        </section>
-      )}
       {overdueTasks.length > 0 && (
         <section className="pt-4">
           <header className="flex items-center justify-between px-1 py-1">
@@ -127,7 +105,9 @@ export function TaskList({
         </section>
       )}
       {dayKeys.map((key) => {
-        const dayTasks = dateGroupedTasks.filter((task) => dateKey(task.dueDate!) === key);
+        const dayTasks = key === today
+          ? todayTasks
+          : dateGroupedTasks.filter((task) => dateKey(task.dueDate!) === key);
         const day = new Date(`${key}T00:00:00`);
         const isToday = key === today;
         return (

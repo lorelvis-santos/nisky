@@ -231,16 +231,6 @@
   .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
 }
 
-@keyframes nisky-preview-sheet-in-mobile {
-  from { opacity: 0.98; transform: translate3d(0, 100%, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
-}
-
-@keyframes nisky-preview-sheet-out-mobile {
-  from { opacity: 1; transform: translate3d(0, 0, 0); }
-  to { opacity: 0.98; transform: translate3d(0, 100%, 0); }
-}
-
 @keyframes nisky-preview-sheet-in-desktop {
   from { opacity: 0.98; transform: translate3d(100%, 0, 0); }
   to { opacity: 1; transform: translate3d(0, 0, 0); }
@@ -266,15 +256,6 @@
   animation-fill-mode: both;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity, transform;
-}
-
-[data-preview-sheet="true"][data-state="open"] {
-  animation-name: nisky-preview-sheet-in-mobile;
-}
-
-[data-preview-sheet="true"][data-state="closed"] {
-  animation-name: nisky-preview-sheet-out-mobile;
-  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
 }
 
 .preview-sheet-overlay {

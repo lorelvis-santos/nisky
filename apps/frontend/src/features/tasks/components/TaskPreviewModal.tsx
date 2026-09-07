@@ -587,12 +587,12 @@ export function TaskPreviewModal({
                 <PopoverContent
                   align="end"
                   avoidCollisions
-                  className="w-auto max-w-[calc(100vw-2rem)] max-h-[var(--radix-popover-content-available-height)] overflow-x-hidden overflow-y-auto p-0"
-                  collisionPadding={16}
+                  className="w-auto max-w-[var(--radix-popover-content-available-width)] overflow-hidden p-0"
+                  collisionPadding={{ bottom: 16, left: 16, right: 16, top: 16 }}
                   hideWhenDetached
                   side="bottom"
                   sideOffset={8}
-                  sticky="partial"
+                  sticky="always"
                   updatePositionStrategy="always"
                 >
                   <div className="border-b border-outline-variant px-4 py-3">

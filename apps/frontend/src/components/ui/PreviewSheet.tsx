@@ -95,7 +95,7 @@ function PreviewHeader({
   ) : (
     <DialogClose asChild>{closeButton}</DialogClose>
   );
-  const className = "flex shrink-0 flex-row items-start justify-between gap-4 border-b border-outline-variant px-5 py-4 text-left lg:px-6";
+  const className = "flex shrink-0 flex-row items-start justify-between gap-4 border-b border-outline-variant px-5 py-4 !text-left lg:px-6";
 
   return primitive === "drawer" ? (
     <DrawerHeader className={className}>

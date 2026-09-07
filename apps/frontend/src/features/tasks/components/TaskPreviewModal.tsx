@@ -699,7 +699,15 @@ export function TaskPreviewModal({
                         </button>
                       </DrawerClose>
                     </DrawerHeader>
-                    <div className="w-full" data-vaul-no-drag onPointerDown={(event) => event.stopPropagation()}>
+                    <div
+                      className="w-full"
+                      onPointerDown={(event) => {
+                        const target = event.target;
+                        if (target instanceof Element && target.closest("button, input, [role='button']")) {
+                          event.stopPropagation();
+                        }
+                      }}
+                    >
                       {dueDateEditor}
                     </div>
                   </DrawerContent>

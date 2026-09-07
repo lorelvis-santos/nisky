@@ -584,7 +584,17 @@ export function TaskPreviewModal({
                     {displayDueDate ? formatTaskDueDate(displayDueDate) : "Sin fecha límite"}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-auto max-w-[calc(100vw-2rem)] overflow-hidden p-0" sideOffset={8}>
+                <PopoverContent
+                  align="end"
+                  avoidCollisions
+                  className="w-auto max-w-[calc(100vw-2rem)] max-h-[var(--radix-popover-content-available-height)] overflow-x-hidden overflow-y-auto p-0"
+                  collisionPadding={16}
+                  hideWhenDetached
+                  side="bottom"
+                  sideOffset={8}
+                  sticky="partial"
+                  updatePositionStrategy="always"
+                >
                   <div className="border-b border-outline-variant px-4 py-3">
                     <p className="font-label-caps text-label-caps text-on-surface-variant">Vencimiento</p>
                     <p className="mt-0.5 font-body-sm text-body-sm font-semibold text-on-surface">

@@ -163,7 +163,7 @@ function DueDateEditor({
         </label>
         <div className="mt-3 flex items-center justify-between gap-2">
           <button
-            className="rounded-lg px-2 py-1.5 font-label-md text-label-md font-semibold text-error hover:bg-error-container disabled:cursor-wait disabled:opacity-50"
+            className="min-h-11 rounded-lg px-3 py-2 font-label-md text-label-md font-semibold text-error hover:bg-error-container disabled:cursor-wait disabled:opacity-50"
             disabled={pending}
             onClick={onRemove}
             type="button"
@@ -172,14 +172,14 @@ function DueDateEditor({
           </button>
           <span className="flex items-center gap-1.5">
             <button
-              className="rounded-lg px-2.5 py-1.5 font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+              className="min-h-11 rounded-lg px-3 py-2 font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
               onClick={onCancel}
               type="button"
             >
               Cancelar
             </button>
             <button
-              className="rounded-lg bg-primary px-3 py-1.5 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
+              className="min-h-11 rounded-lg bg-primary px-4 py-2 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
               disabled={pending || !dueDateDraft}
               onClick={onSave}
               type="button"
@@ -699,7 +699,7 @@ export function TaskPreviewModal({
                         </button>
                       </DrawerClose>
                     </DrawerHeader>
-                    <div className="w-full" data-vaul-no-drag>
+                    <div className="w-full" data-vaul-no-drag onPointerDown={(event) => event.stopPropagation()}>
                       {dueDateEditor}
                     </div>
                   </DrawerContent>

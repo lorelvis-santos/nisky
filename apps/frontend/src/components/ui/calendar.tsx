@@ -42,12 +42,12 @@ function Calendar({ className, classNames, ...props }: React.ComponentProps<type
       className={cn("relative w-fit p-3", className)}
       classNames={{
         months: "flex flex-col gap-4",
-        month: "space-y-4",
+        month: "relative space-y-4",
         month_caption: "relative flex h-10 items-center justify-center px-12",
         caption_label: "font-body-sm text-body-sm font-semibold text-on-surface",
         nav: "absolute inset-x-0 top-1 flex items-center justify-between px-1",
-        button_previous: "inline-flex size-10 items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:pointer-events-none disabled:opacity-40",
-        button_next: "inline-flex size-10 items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:pointer-events-none disabled:opacity-40",
+        button_previous: "absolute left-1 top-1 inline-flex size-10 items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:pointer-events-none disabled:opacity-40",
+        button_next: "absolute right-1 top-1 inline-flex size-10 items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:pointer-events-none disabled:opacity-40",
         month_grid: "w-full border-collapse",
         weekdays: "flex",
         weekday: "h-8 w-9 rounded-md text-center font-label-caps text-[10px] text-on-surface-variant",
@@ -66,6 +66,7 @@ function Calendar({ className, classNames, ...props }: React.ComponentProps<type
       }}
       components={{ Chevron: CalendarChevron, DayButton: CalendarDayButton }}
       locale={es}
+      navLayout="around"
       weekStartsOn={1}
       {...props}
     />

@@ -1,8 +1,7 @@
 "use client";
 
-import { Bell, ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogClose,
@@ -14,9 +13,9 @@ import {
 import type { Project, Task, TaskPriority, TaskStatus } from "@/types/entities";
 import { useProjectMembers } from "@/features/projects/hooks/useProjects";
 import { CommentThread } from "@/features/comments/CommentThread";
-import { useReminderMutations, useRemindersQuery } from "@/features/reminders/hooks/useReminders";
 import { useTaskQuery } from "../hooks/useTasks";
 import { taskSchema, type TaskRecurrenceFormData } from "../schemas/task.schema";
+import { TaskReminderPanel } from "./TaskReminderPanel";
 import { localDateKey, toDatetimeLocal } from "@/lib/utils";
 
 export type TaskForm = {
@@ -48,21 +47,7 @@ const emptyForm: TaskForm = {
   recurrence: emptyRecurrence,
 };
 
-const REMINDER_LEADS: { label: string; minutes: number }[] = [
-  { label: "Hora exacta", minutes: 0 },
-  { label: "5 min antes", minutes: 5 },
-  { label: "10 min antes", minutes: 10 },
-  { label: "20 min antes", minutes: 20 },
-  { label: "30 min antes", minutes: 30 },
-  { label: "1 hora antes", minutes: 60 },
-  { label: "1 día antes", minutes: 1440 },
-];
-
 const WEEKDAY_LETTERS = ["D", "L", "M", "X", "J", "V", "S"];
-
-function formatTrigger(value: string) {
-  return new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
-}
 
 export function TaskModal({
   task,
@@ -119,12 +104,6 @@ export function TaskModal({
   const currentProjectId = form.projectId && form.projectId !== "" ? form.projectId : null;
   const membersQuery = useProjectMembers(currentProjectId);
   const members = membersQuery.data ?? [];
-  const reminderQuery = useRemindersQuery();
-  const reminderMutations = useReminderMutations();
-  const [reminderLead, setReminderLead] = useState(1440);
-  const taskReminders = (reminderQuery.data ?? []).filter(
-    (reminder) => reminder.payload?.taskId === current?.id,
-  );
   const dueDateDay = form.dueDate?.slice(0, 10) ?? "";
   const dueDateTime = form.dueDate?.slice(11, 16) ?? "";
   const updateDueDateDay = (value: string) => {
@@ -162,42 +141,6 @@ export function TaskModal({
     else days.push(day);
     setRecurrence({ repeatDaysOfWeek: days });
   };
-  const createReminder = async () => {
-    if (!current || !current.dueDate) {
-      toast.error("La tarea necesita fecha límite para recordarla.");
-      return;
-    }
-    const due = new Date(current.dueDate);
-    const triggerAt = new Date(due.getTime() - reminderLead * 60_000).toISOString();
-    try {
-      await reminderMutations.create.mutateAsync({
-        title: `Tarea: ${current.title}`,
-        body: `Recuerda: ${current.title}`,
-        triggerAt,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        ...(current.recurrenceType
-          ? {
-              repeatType: current.recurrenceType,
-              repeatInterval: current.recurrenceInterval,
-              repeatDaysOfWeek: current.recurrenceDaysOfWeek,
-            }
-          : {}),
-        payload: { type: "TASK_DUE", taskId: current.id },
-      });
-      toast.success("¡Recordatorio creado!");
-    } catch {
-      toast.error("Ups, no pudimos crear el recordatorio. Inténtalo de nuevo.");
-    }
-  };
-  const removeReminder = async (id: string) => {
-    try {
-      await reminderMutations.remove.mutateAsync(id);
-      toast.success("Recordatorio eliminado");
-    } catch {
-      toast.error("Ups, no pudimos eliminar el recordatorio. Inténtalo de nuevo.");
-    }
-  };
-
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
       <DialogContent
@@ -477,70 +420,17 @@ export function TaskModal({
             )}
           </section>
            {task && current && (
-             <section className="border-t border-outline-variant pt-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-label-caps text-label-caps text-on-surface-variant">
-                  RECORDATORIOS
-                </span>
-                <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">
-                  {taskReminders.length}{" "}
-                  {taskReminders.length === 1 ? "aviso" : "avisos"}
-                </span>
-              </div>
-              {taskReminders.length > 0 && (
-                <div className="mb-3 space-y-1">
-                  {taskReminders.map((reminder) => (
-                    <div
-                      className="flex items-center gap-2 border-b border-outline-variant py-2"
-                      key={reminder.id}
-                    >
-                      <Bell className="shrink-0 text-primary" size={14} />
-                      <span className="flex-1 font-data-mono text-data-mono text-xs text-on-surface-variant">
-                        {formatTrigger(reminder.triggerAt)}
-                        {reminder.repeatType
-                          ? ` · ${reminder.repeatType === "DAILY" ? "cada día" : reminder.repeatType === "WEEKLY" ? "cada semana" : "cada mes"}`
-                          : ""}
-                      </span>
-                      <button
-                        aria-label="Eliminar recordatorio"
-                         className="rounded-md px-2 py-1 text-xs text-on-surface-variant hover:bg-error-container/30 hover:text-error"
-                        onClick={() => void removeReminder(reminder.id)}
-                        type="button"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  aria-label="Cuánto antes avisar"
-                  className="field h-11 min-w-0 flex-1"
-                  onChange={(event) => setReminderLead(Number(event.target.value))}
-                  value={reminderLead}
-                >
-                  {REMINDER_LEADS.map((lead) => (
-                    <option key={lead.minutes} value={lead.minutes}>
-                      {lead.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                   className="flex min-h-11 items-center gap-1 rounded-md border border-outline-variant px-3 py-1.5 font-body-sm text-body-sm text-primary hover:bg-surface-container-high"
-                  onClick={() => void createReminder()}
-                  type="button"
-                >
-                  <Bell size={13} /> Añadir
-                </button>
-              </div>
-              {!current.dueDate && (
-                <p className="mt-1.5 font-body-sm text-body-sm text-on-surface-variant">
-                  Ponle fecha límite para poder recordarla.
-                </p>
-              )}
-            </section>
-          )}
+             <TaskReminderPanel
+               dueDate={form.dueDate || null}
+               recurrence={form.recurrence ? {
+                 repeatType: form.recurrence.repeatType,
+                 repeatInterval: form.recurrence.repeatInterval,
+                 repeatDaysOfWeek: form.recurrence.repeatDaysOfWeek,
+               } : undefined}
+               taskId={current.id}
+               taskTitle={current.title}
+             />
+           )}
           {task && current && (
             <section className="border-t border-outline-variant pt-4">
               <div className="mb-2 flex items-center justify-between">

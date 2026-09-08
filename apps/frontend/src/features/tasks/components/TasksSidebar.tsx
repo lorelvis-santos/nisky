@@ -284,11 +284,14 @@ export function TasksSidebar({
           key={previewing.id}
           onAddSubtask={async (taskId, title) => {
             await mutations.addSubtask.mutateAsync({ taskId, title });
-          }}
-          onClose={() => setPreviewing(null)}
-          onDeleteSubtask={async (taskId, subtaskId) => {
-            await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
-          }}
+           }}
+           onClose={() => setPreviewing(null)}
+           onDelete={async (taskId) => {
+             await mutations.remove.mutateAsync(taskId);
+           }}
+           onDeleteSubtask={async (taskId, subtaskId) => {
+             await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
+           }}
           onEdit={() => {
             setPreviewing(null);
             setModal({ task: previewing, creating: false });

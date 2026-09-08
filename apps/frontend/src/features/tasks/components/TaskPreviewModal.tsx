@@ -1,21 +1,24 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { CalendarDays, CalendarPlus, Check, CheckCircle2, Circle, ChevronDown, Flag, ListChecks, Pencil, Plus, Repeat2, Timer, Trash2, UserRound, X } from "lucide-react";
+import { CalendarDays, CalendarPlus, Check, CheckCircle2, Circle, ChevronDown, Flag, ListChecks, MessageSquare, Pencil, Plus, Repeat2, Timer, Trash2, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import type { Task, TaskPriority, TaskStatus } from "@/types/entities";
 import { Avatar } from "@/components/ui/Avatar";
 import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerNestedRoot, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PreviewSheet } from "@/components/ui/PreviewSheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { CommentThread } from "@/features/comments/CommentThread";
 import { useAccessibleProjects, useProjectMembers, useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { useTaskQuery } from "@/features/tasks/hooks/useTasks";
+import { TaskReminderPanel } from "./TaskReminderPanel";
 import type { TaskUpdatePayload } from "../api/tasks";
 import { cn, isTaskOverdue, localDateKey, toDatetimeLocal } from "@/lib/utils";
 import { formatTaskDueDate } from "../lib/task-utils";
@@ -204,6 +207,7 @@ export function TaskPreviewModal({
   onUpdateTask,
   onToggleSubtask,
   onStartPomodoro,
+  onDelete,
 }: {
   task: Task;
   onClose: () => void;
@@ -215,6 +219,7 @@ export function TaskPreviewModal({
   onUpdateTask: (taskId: string, payload: TaskUpdatePayload) => Promise<void>;
   onToggleSubtask: (taskId: string, subtaskId: string, completed: boolean) => Promise<void>;
   onStartPomodoro?: () => void;
+  onDelete: (taskId: string) => Promise<void>;
 }) {
   const detailQuery = useTaskQuery(task.id);
   const current = detailQuery.data ?? task;
@@ -237,6 +242,9 @@ export function TaskPreviewModal({
   const [assigneeOpen, setAssigneeOpen] = useState(false);
   const [dueDateOpen, setDueDateOpen] = useState(false);
   const [dueDateDraft, setDueDateDraft] = useState("");
+  const [activePanel, setActivePanel] = useState<"details" | "comments">("details");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [taskDeleting, setTaskDeleting] = useState(false);
   const savingSubtaskRef = useRef(false);
   const skipEditBlurRef = useRef(false);
   const editingSubtaskRef = useRef<HTMLSpanElement>(null);
@@ -594,26 +602,78 @@ export function TaskPreviewModal({
     }
   };
 
+  const deleteTask = async () => {
+    if (taskDeleting) return;
+    setTaskDeleting(true);
+    try {
+      await onDelete(current.id);
+      setConfirmDelete(false);
+      toast.success("Tarea eliminada");
+      onClose();
+    } catch {
+      toast.error("Ups, no pudimos eliminar la tarea. Inténtalo de nuevo.");
+    } finally {
+      setTaskDeleting(false);
+    }
+  };
+
   return (
-    <PreviewSheet
-      eyebrow="Tarea"
-      eyebrowIcon={ListChecks}
-      footer={
-        <div className="flex w-full items-center gap-3">
-          {onStartPomodoro && (
-            <button className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-outline-variant px-3 py-2.5 font-label-md text-label-md font-semibold text-on-surface hover:bg-surface-container-low hover:text-primary" onClick={onStartPomodoro} type="button">
-              <Timer className="text-error" size={16} /> Pomodoro
+    <>
+      <PreviewSheet
+        eyebrow="Tarea"
+        eyebrowIcon={ListChecks}
+        footer={
+          <div className="flex w-full flex-wrap items-center gap-2">
+            <button
+              aria-label="Eliminar tarea"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 font-label-md text-label-md font-semibold text-error hover:bg-error-container/40 disabled:cursor-wait disabled:opacity-60"
+              disabled={taskDeleting}
+              onClick={() => setConfirmDelete(true)}
+              type="button"
+            >
+              <Trash2 size={16} /> Eliminar
             </button>
-          )}
-          <button className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-inverse-surface px-3 py-2.5 font-label-md text-label-md font-semibold text-inverse-on-surface shadow-sm hover:bg-primary" onClick={onEdit} type="button">
-            <Pencil size={16} /> Editar tarea
-          </button>
-        </div>
-      }
-      onClose={onClose}
-      title={current.title}
-    >
-      <div className="space-y-7">
+            <div className="ml-auto flex min-w-0 flex-1 gap-2">
+              {onStartPomodoro && (
+                <button className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-outline-variant px-3 py-2.5 font-label-md text-label-md font-semibold text-on-surface hover:bg-surface-container-low hover:text-primary" onClick={onStartPomodoro} type="button">
+                  <Timer className="shrink-0 text-error" size={16} /> Pomodoro
+                </button>
+              )}
+              <button className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-inverse-surface px-3 py-2.5 font-label-md text-label-md font-semibold text-inverse-on-surface shadow-sm hover:bg-primary" onClick={onEdit} type="button">
+                <Pencil className="shrink-0" size={16} /> Editar tarea
+              </button>
+            </div>
+          </div>
+        }
+        headerExtra={
+          <div className="border-b border-outline-variant px-5 pt-3 lg:px-6">
+            <div aria-label="Secciones de la tarea" className="flex rounded-xl bg-surface-container-low p-1" role="tablist">
+              <button
+                aria-selected={activePanel === "details"}
+                className={cn("flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 font-label-md text-label-md font-semibold transition-colors", activePanel === "details" ? "bg-surface-container-lowest text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface")}
+                onClick={() => setActivePanel("details")}
+                role="tab"
+                type="button"
+              >
+                <ListChecks aria-hidden="true" size={15} /> Detalles
+              </button>
+              <button
+                aria-selected={activePanel === "comments"}
+                className={cn("flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 font-label-md text-label-md font-semibold transition-colors", activePanel === "comments" ? "bg-surface-container-lowest text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface")}
+                onClick={() => setActivePanel("comments")}
+                role="tab"
+                type="button"
+              >
+                <MessageSquare aria-hidden="true" size={15} /> Conversación
+              </button>
+            </div>
+          </div>
+        }
+        onClose={onClose}
+        title={current.title}
+      >
+        {activePanel === "details" ? (
+          <div className="space-y-7">
         <section className="rounded-2xl border border-outline-variant/70 bg-surface-container-low/70 p-4">
           <dl className="space-y-3">
             <PreviewDetail icon={Circle} label="Estado">
@@ -815,7 +875,14 @@ export function TaskPreviewModal({
           )}
         </section>
 
-         <section className="space-y-2">
+        <TaskReminderPanel
+          dueDate={displayDueDate}
+          recurrence={displayRecurrence}
+          taskId={current.id}
+          taskTitle={current.title}
+        />
+
+          <section className="space-y-2">
            <h3 className="font-label-caps text-label-caps uppercase text-on-surface-variant">Descripción</h3>
            {descriptionOpen ? (
              <textarea
@@ -956,8 +1023,37 @@ export function TaskPreviewModal({
                 <Check size={15} />
               </button>
             </form>
-          </section>
-      </div>
-    </PreviewSheet>
+           </section>
+
+          </div>
+        ) : (
+          <div className="flex h-[min(60dvh,32rem)] min-h-[24rem] flex-col rounded-2xl border border-outline-variant/70 bg-surface-container-low/40 p-4">
+            <div className="flex items-start gap-3 border-b border-outline-variant/70 pb-4">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-secondary-container text-secondary">
+                <MessageSquare aria-hidden="true" size={17} />
+              </span>
+              <div className="min-w-0">
+                <h2 className="font-label-md text-label-md font-semibold text-on-surface">Conversación</h2>
+                <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Coordina el siguiente paso sin salir de la tarea.</p>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 pt-4">
+              <CommentThread kind="task" id={current.id} projectId={displayProjectId} />
+            </div>
+          </div>
+        )}
+      </PreviewSheet>
+      {confirmDelete && (
+        <ConfirmModal
+          confirmLabel="Eliminar"
+          danger
+          loading={taskDeleting}
+          message={<>Se eliminará <strong>{current.title}</strong> de forma permanente. Esta acción no se puede deshacer.</>}
+          onClose={() => setConfirmDelete(false)}
+          onConfirm={() => void deleteTask()}
+          title="¿Eliminar tarea?"
+        />
+      )}
+    </>
   );
 }

@@ -803,10 +803,13 @@ function TasksPageContent() {
           onAddSubtask={async (taskId, title) => {
             await mutations.addSubtask.mutateAsync({ taskId, title });
           }}
-          onClose={closeModal}
-          onDeleteSubtask={async (taskId, subtaskId) => {
-            await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
-          }}
+           onClose={closeModal}
+           onDelete={async (taskId) => {
+             await mutations.remove.mutateAsync(taskId);
+           }}
+           onDeleteSubtask={async (taskId, subtaskId) => {
+             await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
+           }}
           onEdit={() => openEdit(taskFromUrl)}
           onStartPomodoro={() => openFocus(taskFromUrl)}
           onToggleSubtask={async (taskId, subtaskId, completed) => {

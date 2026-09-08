@@ -181,7 +181,7 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
             <MessageSquare className="text-primary" size={22} />
             <p className="font-label-caps text-label-caps text-on-surface-variant">SIN COMENTARIOS</p>
             <p className="max-w-xs font-body-sm text-body-sm text-on-surface-variant">
-              Aún no hay comentarios. Inicia la conversación con la primera nota.
+               Aún no hay comentarios. Sé el primero en dejar una nota.
             </p>
           </div>
         ) : (

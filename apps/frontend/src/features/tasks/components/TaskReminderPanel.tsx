@@ -1,10 +1,11 @@
 "use client";
 
-import { Bell, Plus, X } from "lucide-react";
+import { Bell, Plus, Repeat2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ReminderRepeatType } from "@/types/entities";
 import { useReminderMutations, useRemindersQuery } from "@/features/reminders/hooks/useReminders";
+import { isTaskOverdue } from "@/lib/utils";
 
 const REMINDER_LEADS: { label: string; minutes: number }[] = [
   { label: "Hora exacta", minutes: 0 },
@@ -16,6 +17,8 @@ const REMINDER_LEADS: { label: string; minutes: number }[] = [
   { label: "1 día antes", minutes: 1440 },
 ];
 
+const REMINDER_SAFETY_WINDOW_MS = 5_000;
+
 export type TaskReminderRecurrence = {
   repeatType?: ReminderRepeatType | null;
   repeatInterval?: number;
@@ -23,13 +26,27 @@ export type TaskReminderRecurrence = {
 };
 
 function formatReminderTrigger(value: string) {
-  return new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  const date = new Date(value);
+  const today = new Date();
+  const dateOnly = (current: Date) => new Date(current.getFullYear(), current.getMonth(), current.getDate()).getTime();
+  const dayDifference = Math.round((dateOnly(date) - dateOnly(today)) / 86_400_000);
+  const time = date.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
+
+  if (dayDifference === 0) return `Hoy, ${time}`;
+  if (dayDifference === 1) return `Mañana, ${time}`;
+  return `${date.toLocaleDateString("es-CO", { day: "numeric", month: "short" })}, ${time}`;
 }
 
 function repeatLabel(type: ReminderRepeatType, interval: number) {
   if (type === "DAILY") return interval === 1 ? "Cada día" : `Cada ${interval} días`;
   if (type === "WEEKLY") return interval === 1 ? "Cada semana" : `Cada ${interval} semanas`;
   return interval === 1 ? "Cada mes" : `Cada ${interval} meses`;
+}
+
+function getAvailableReminderLeads(dueDate: string | null) {
+  const dueTimestamp = dueDate ? new Date(dueDate).getTime() : Number.NaN;
+  if (!Number.isFinite(dueTimestamp)) return [];
+  return REMINDER_LEADS.filter(({ minutes }) => dueTimestamp - minutes * 60_000 > Date.now() + REMINDER_SAFETY_WINDOW_MS);
 }
 
 export function TaskReminderPanel({ taskId, taskTitle, dueDate, recurrence }: {
@@ -42,9 +59,32 @@ export function TaskReminderPanel({ taskId, taskTitle, dueDate, recurrence }: {
   const reminderMutations = useReminderMutations();
   const [reminderLead, setReminderLead] = useState(1440);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [availableReminderLeads, setAvailableReminderLeads] = useState(REMINDER_LEADS);
+  const [reminderUnavailable, setReminderUnavailable] = useState(false);
   const taskReminders = (reminderQuery.data ?? []).filter((reminder) => reminder.payload?.taskId === taskId);
   const composerId = `task-reminder-composer-${taskId}`;
   const headingId = `task-reminders-heading-${taskId}`;
+  const dueDatePast = isTaskOverdue({ dueDate, status: "PENDING" });
+  const canAddReminder = Boolean(dueDate) && !dueDatePast;
+
+  if ((!dueDate || dueDatePast) && taskReminders.length === 0) return null;
+
+  const toggleComposer = () => {
+    if (composerOpen) {
+      setComposerOpen(false);
+      return;
+    }
+    const available = getAvailableReminderLeads(dueDate);
+    if (available.length === 0) {
+      setAvailableReminderLeads([]);
+      setReminderUnavailable(true);
+      return;
+    }
+    setReminderUnavailable(false);
+    setAvailableReminderLeads(available);
+    setReminderLead((current) => available.some(({ minutes }) => minutes === current) ? current : available[available.length - 1].minutes);
+    setComposerOpen(true);
+  };
 
   const createReminder = async () => {
     if (!dueDate) {
@@ -56,11 +96,27 @@ export function TaskReminderPanel({ taskId, taskTitle, dueDate, recurrence }: {
       toast.error("La fecha límite no es válida.");
       return;
     }
+    const available = getAvailableReminderLeads(dueDate);
+    const selectedReminderLead = available.some(({ minutes }) => minutes === reminderLead)
+      ? reminderLead
+      : available[available.length - 1]?.minutes ?? null;
+    if (selectedReminderLead === null) {
+      setAvailableReminderLeads([]);
+      setReminderUnavailable(true);
+      setComposerOpen(false);
+      toast.error("La fecha límite debe permitir un aviso futuro.");
+      return;
+    }
+    const triggerAt = new Date(due.getTime() - selectedReminderLead * 60_000);
+    if (triggerAt.getTime() <= Date.now()) {
+      toast.error("Elige una fecha límite más adelante para crear el aviso.");
+      return;
+    }
     try {
       await reminderMutations.create.mutateAsync({
         title: `Tarea: ${taskTitle}`,
         body: `Recuerda: ${taskTitle}`,
-        triggerAt: new Date(due.getTime() - reminderLead * 60_000).toISOString(),
+        triggerAt: triggerAt.toISOString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         ...(recurrence?.repeatType
           ? {
@@ -88,48 +144,49 @@ export function TaskReminderPanel({ taskId, taskTitle, dueDate, recurrence }: {
   };
 
   return (
-    <section aria-labelledby={headingId} className="rounded-2xl border border-outline-variant/70 bg-surface-container-low/40 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-fixed text-primary">
-            <Bell aria-hidden="true" size={17} />
-          </span>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-label-md text-label-md font-semibold text-on-surface" id={headingId}>Recordatorios</h3>
-              <span className="rounded-full bg-surface-container px-2 py-0.5 font-data-mono text-data-mono text-[10px] text-on-surface-variant">
-                {taskReminders.length}
-              </span>
-            </div>
-            <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Recibe un aviso antes del vencimiento.</p>
+    <section aria-labelledby={headingId} className="rounded-xl border border-outline-variant/70 bg-surface-container-low/30 px-3 py-2.5">
+      <div className="flex items-center gap-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-primary">
+          <Bell aria-hidden="true" size={16} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="font-label-md text-label-md font-semibold text-on-surface" id={headingId}>Recordatorios</h3>
+            {taskReminders.length > 0 && <span aria-label={`${taskReminders.length} recordatorios`} className="rounded-full bg-surface-container px-1.5 py-0.5 font-data-mono text-data-mono text-[10px] text-on-surface-variant">{taskReminders.length}</span>}
           </div>
         </div>
-        <button
-          aria-controls={composerId}
-          aria-expanded={composerOpen}
-          className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest px-2.5 font-label-md text-label-md font-semibold text-primary shadow-sm hover:bg-primary-fixed disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!dueDate || reminderMutations.create.isPending}
-          onClick={() => setComposerOpen((open) => !open)}
-          type="button"
-        >
-          <Plus aria-hidden="true" size={14} /> Añadir
-        </button>
+        {canAddReminder && (
+          <button
+            aria-controls={composerId}
+            aria-expanded={composerOpen}
+            aria-label={composerOpen ? "Cerrar opciones de recordatorio" : "Añadir recordatorio"}
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest text-primary shadow-sm hover:bg-primary-fixed disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={reminderMutations.create.isPending}
+            onClick={toggleComposer}
+            title="Añadir recordatorio"
+            type="button"
+          >
+            {composerOpen ? <X aria-hidden="true" size={15} /> : <Plus aria-hidden="true" size={15} />}
+          </button>
+        )}
       </div>
-      {taskReminders.length > 0 ? (
-        <div className="mt-4 divide-y divide-outline-variant/70 rounded-xl border border-outline-variant/70 bg-surface-container-lowest px-3">
+      {taskReminders.length > 0 && (
+        <div className="mt-3 space-y-1.5">
           {taskReminders.map((reminder) => (
-            <div className="flex items-center gap-3 py-2.5" key={reminder.id}>
+            <div className="group flex items-center gap-3 rounded-xl border border-outline-variant/70 bg-surface-container-lowest px-3 py-2.5 transition-colors hover:bg-surface-container-low" key={reminder.id}>
               <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-primary">
                 <Bell aria-hidden="true" size={14} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-body-sm text-body-sm font-semibold text-on-surface">{formatReminderTrigger(reminder.triggerAt)}</p>
-                <p className="font-data-mono text-data-mono text-[10px] text-on-surface-variant">
-                  {reminder.repeatType ? repeatLabel(reminder.repeatType, reminder.repeatInterval) : "Aviso único"}
-                </p>
+                {reminder.repeatType && (
+                  <p className="mt-0.5 inline-flex items-center gap-1 font-data-mono text-data-mono text-[10px] text-on-surface-variant">
+                    <Repeat2 aria-hidden="true" size={11} /> {repeatLabel(reminder.repeatType, reminder.repeatInterval)}
+                  </p>
+                )}
               </div>
               <button
-                aria-label="Eliminar recordatorio"
+                aria-label={`Eliminar recordatorio de ${formatReminderTrigger(reminder.triggerAt)}`}
                 className="flex size-8 shrink-0 items-center justify-center rounded-lg text-on-surface-variant hover:bg-error-container/40 hover:text-error disabled:cursor-wait disabled:opacity-50"
                 disabled={reminderMutations.remove.isPending}
                 onClick={() => void removeReminder(reminder.id)}
@@ -141,49 +198,37 @@ export function TaskReminderPanel({ taskId, taskTitle, dueDate, recurrence }: {
             </div>
           ))}
         </div>
-      ) : (
-        <p className="mt-4 rounded-xl border border-dashed border-outline-variant px-3 py-3 font-body-sm text-body-sm text-on-surface-variant">Aún no hay avisos para esta tarea.</p>
       )}
-      {composerOpen && dueDate && (
-        <div className="mt-3 rounded-xl bg-surface-container-lowest p-3 ring-1 ring-outline-variant/70" id={composerId}>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="font-label-md text-label-md font-semibold text-on-surface">Nuevo aviso</p>
-              <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Elige cuánto antes quieres recibirlo.</p>
-            </div>
-            <button
-              aria-label="Cerrar nuevo aviso"
-              className="flex size-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
-              onClick={() => setComposerOpen(false)}
-              type="button"
-            >
-              <X aria-hidden="true" size={15} />
-            </button>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <select
-              aria-label="Cuánto antes avisar"
-              className="field h-11 min-w-0 flex-1"
-              disabled={reminderMutations.create.isPending}
-              onChange={(event) => setReminderLead(Number(event.target.value))}
-              value={reminderLead}
-            >
-              {REMINDER_LEADS.map((lead) => (
-                <option key={lead.minutes} value={lead.minutes}>{lead.label}</option>
-              ))}
-            </select>
-            <button
-              className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-3 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary/90 disabled:cursor-wait disabled:opacity-50"
-              disabled={reminderMutations.create.isPending}
-              onClick={() => void createReminder()}
-              type="button"
-            >
-              {reminderMutations.create.isPending ? "Guardando..." : "Guardar"}
-            </button>
-          </div>
+      {composerOpen && canAddReminder && availableReminderLeads.length > 0 && (
+        <div className="mt-2 flex gap-2 border-t border-outline-variant/70 pt-2" id={composerId}>
+          <label className="sr-only" htmlFor={`${composerId}-lead`}>Cuánto antes avisar</label>
+          <select
+            className="field h-10 min-w-0 flex-1"
+            disabled={reminderMutations.create.isPending}
+            id={`${composerId}-lead`}
+            onChange={(event) => setReminderLead(Number(event.target.value))}
+            value={reminderLead}
+          >
+            {availableReminderLeads.map((lead) => (
+              <option key={lead.minutes} value={lead.minutes}>{lead.label}</option>
+            ))}
+          </select>
+          <button
+            className="min-h-10 rounded-lg bg-primary px-3 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary/90 disabled:cursor-wait disabled:opacity-50"
+            disabled={reminderMutations.create.isPending}
+            onClick={() => void createReminder()}
+            type="button"
+          >
+            {reminderMutations.create.isPending ? "..." : "Guardar"}
+          </button>
         </div>
       )}
-      {!dueDate && <p className="mt-3 font-body-sm text-body-sm text-on-surface-variant">Añade una fecha límite para activar los recordatorios.</p>}
+      {!dueDate && taskReminders.length > 0 && <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Añade una fecha límite para nuevos avisos.</p>}
+      {reminderUnavailable && (
+        <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
+          La fecha límite ya pasó o está demasiado cerca para avisar.
+        </p>
+      )}
     </section>
   );
 }

@@ -38,7 +38,9 @@ export function useKeyboardAwareViewport<T extends HTMLElement>() {
   const ref = useCallback((node: T | null) => {
     if (rootRef.current === node) return;
     rootRef.current = node;
-    if (node) setRootVersion((version) => version + 1);
+    if (node?.dataset.slot === "dialog-content") {
+      setRootVersion((version) => version + 1);
+    }
   }, []);
 
   useEffect(() => {

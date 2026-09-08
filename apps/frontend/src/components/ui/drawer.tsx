@@ -64,7 +64,12 @@ function DrawerContent({
 
     if (typeof PointerEvent === "undefined") return;
 
-    event.currentTarget.dispatchEvent(
+    // Vaul 1.1.2 does not release its drag state on pointercancel.
+    const dispatchTarget =
+      event.target instanceof Element && event.currentTarget.contains(event.target)
+        ? event.target
+        : event.currentTarget;
+    dispatchTarget.dispatchEvent(
       new PointerEvent("pointerup", {
         bubbles: true,
         cancelable: true,
@@ -75,6 +80,9 @@ function DrawerContent({
         pointerType: event.pointerType,
         screenX: event.screenX,
         screenY: event.screenY,
+        button: 0,
+        buttons: 0,
+        pressure: 0,
       }),
     );
   };

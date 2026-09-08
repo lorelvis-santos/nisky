@@ -12,6 +12,8 @@ export interface TaskQuery {
   projectId?: string;
   assigneeId?: string;
   due?: "ALL" | "SET" | "UNSET";
+  dueFrom?: string;
+  dueTo?: string;
   sort?: "priority" | "dueDate" | "createdAt" | "title";
   order?: "asc" | "desc";
 }

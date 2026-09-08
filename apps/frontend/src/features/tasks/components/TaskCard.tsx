@@ -38,7 +38,7 @@ export function TaskCardShell({
       aria-selected={isSelecting ? selected : undefined}
       role="option"
       className={cn(
-        "group relative flex min-h-[104px] flex-col gap-3 rounded-xl border bg-surface-container-lowest p-4 shadow-sm transition-all",
+        "group relative flex min-h-[104px] cursor-pointer flex-col gap-3 rounded-xl border bg-surface-container-lowest p-4 shadow-sm transition-all",
         !overdue && "hover:border-outline",
         !overdue && "hover:-translate-y-px hover:shadow-md",
         isSelecting && "cursor-pointer",
@@ -49,8 +49,10 @@ export function TaskCardShell({
       )}
       data-task-card
       data-task-id={task.id}
-      onClick={isSelecting ? () => selection.toggleSelect(task.id) : undefined}
-      onDoubleClick={isSelecting ? undefined : onOpen}
+      onClick={() => {
+        if (isSelecting) selection.toggleSelect(task.id);
+        else onOpen();
+      }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();

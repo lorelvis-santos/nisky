@@ -2,7 +2,7 @@
 
 import { Fragment } from "react";
 import { ChevronLeft, ChevronRight, ListChecks } from "lucide-react";
-import type { CalendarEvent, Project, TaskSchedule, TimeBlock, TimeBlockException } from "@/types/entities";
+import type { CalendarEvent, Project, TimeBlock, TimeBlockException } from "@/types/entities";
 import { cn } from "@/lib/utils";
 import { FAB } from "@/components/ui/FAB";
 import { DAY_ORDER, hexToRgba, minToTime, parseDateOnly, toDateKey } from "../lib/time";
@@ -19,7 +19,6 @@ type AgendaItem = {
   color: string;
   block?: TimeBlock;
   event?: CalendarEvent;
-  taskCount?: number;
 };
 
 const DAY_LETTERS: Record<number, string> = {
@@ -103,9 +102,7 @@ function buildAgendaItems(
   projects: Project[],
   events: CalendarEvent[],
   exceptions: TimeBlockException[],
-  taskCounts: Record<string, number>,
 ) {
-  const dateKey = toDateKey(date);
   const blockItems: AgendaItem[] = blocks.flatMap((block) => {
     const occurrence = blockOccurrenceOn(block, date, exceptions);
     if (!occurrence) return [];
@@ -125,7 +122,6 @@ function buildAgendaItems(
       endMin: occurrence.endMin,
       color: project?.color ?? "#7a8494",
       block,
-      taskCount: taskCounts[`${block.id}:${dateKey}`] ?? 0,
     }];
   });
 
@@ -240,11 +236,6 @@ function AgendaItemRow({
         <p className="mt-2 truncate font-body-md text-body-md text-on-surface-variant">
           {item.subtitle}
         </p>
-        {item.taskCount && item.taskCount > 0 ? (
-          <p className="mt-2 font-label-caps text-label-caps text-on-surface-variant">
-            {item.taskCount} {item.taskCount === 1 ? "tarea asignada" : "tareas asignadas"}
-          </p>
-        ) : null}
       </button>
     </div>
   );
@@ -276,6 +267,7 @@ function MobileDayAgenda({
   const showNow = sameLocalDay(now, date) && nowMin >= dayStartMin && nowMin <= dayEndMin;
   const allDayEvents = events.filter((event) => event.allDay && sameLocalDay(parseDateOnly(event.date), date));
   const nowIndex = showNow ? items.findIndex((item) => nowMin <= item.startMin) : -1;
+  const dueTaskLabel = dayTaskCount === 1 ? "1 tarea vence" : `${dayTaskCount} tareas vencen`;
 
   return (
     <div className="mt-7 space-y-4">
@@ -289,7 +281,7 @@ function MobileDayAgenda({
       )}
       {dayTaskCount > 0 && (
         <button
-           aria-label={`Ver ${dayTaskCount} ${dayTaskCount === 1 ? "tarea asignada" : "tareas asignadas"}`}
+           aria-label={`Ver ${dueTaskLabel}`}
           className="group flex min-h-16 w-full items-center justify-between gap-4 rounded-2xl border border-primary/25 bg-primary-fixed/30 px-4 py-3 text-left shadow-cadence-1 transition-colors hover:border-primary/45 hover:bg-primary-fixed/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           onClick={() => onDayTasksClick(toDateKey(date))}
           type="button"
@@ -300,7 +292,7 @@ function MobileDayAgenda({
             </span>
             <span className="min-w-0">
               <span className="block truncate font-body-md text-body-md font-semibold text-on-surface">
-                 {dayTaskCount} {dayTaskCount === 1 ? "tarea asignada" : "tareas asignadas"}
+                {dueTaskLabel}
               </span>
               <span className="mt-0.5 block font-body-sm text-body-sm text-on-surface-variant">
                 Revisar en Tareas
@@ -310,7 +302,7 @@ function MobileDayAgenda({
           <ChevronRight aria-hidden="true" className="shrink-0 text-primary" size={20} />
         </button>
       )}
-      {items.length === 0 && !showNow ? (
+      {items.length === 0 && !showNow && dayTaskCount === 0 ? (
         <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container-lowest px-5 py-12 text-center">
           <p className="font-headline-sm text-headline-sm font-semibold text-on-surface">Día despejado</p>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">No hay bloques ni eventos reservados.</p>
@@ -339,7 +331,8 @@ function MobileWeekAgenda({
   projects,
   events,
   exceptions,
-  taskCounts,
+  dueTaskCountsByDate,
+  onDayTasksClick,
   onDateChange,
   onBlockClick,
   onEventClick,
@@ -350,7 +343,8 @@ function MobileWeekAgenda({
   projects: Project[];
   events: CalendarEvent[];
   exceptions: TimeBlockException[];
-  taskCounts: Record<string, number>;
+  dueTaskCountsByDate: Record<string, number>;
+  onDayTasksClick: (date: string) => void;
   onDateChange: (date: Date) => void;
   onBlockClick: (block: TimeBlock, date: Date) => void;
   onEventClick: (event: CalendarEvent, date: Date) => void;
@@ -359,19 +353,33 @@ function MobileWeekAgenda({
   return (
     <div className="mt-7 space-y-3">
       {days.map((day) => {
-         const items = buildAgendaItems(day.date, blocks, projects, events, exceptions, taskCounts);
+        const items = buildAgendaItems(day.date, blocks, projects, events, exceptions);
+        const dueTaskCount = dueTaskCountsByDate[day.key] ?? 0;
+        const dueTaskLabel = dueTaskCount === 1 ? "1 vence" : `${dueTaskCount} vencen`;
         const selected = day.key === selectedKey;
         return (
           <section className={cn("overflow-hidden rounded-2xl border bg-surface-container-lowest", selected ? "border-secondary shadow-sm" : "border-outline-variant/70")} key={day.key}>
-            <button className="flex min-h-14 w-full items-center justify-between gap-3 border-b border-outline-variant/70 px-4 text-left" onClick={() => onDateChange(day.date)} type="button">
-              <span className="flex items-center gap-2">
+            <div className="flex min-h-14 items-center gap-3 border-b border-outline-variant/70 px-4">
+              <button className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => onDateChange(day.date)} type="button">
                 <span className="font-label-caps text-label-caps text-secondary">{DAY_LETTERS[day.dayOfWeek]}</span>
-                <span className="font-headline-sm text-headline-sm font-semibold text-on-surface">{formatDate(day.date)}</span>
-              </span>
-              <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{items.length}</span>
-            </button>
+                <span className="truncate font-headline-sm text-headline-sm font-semibold text-on-surface">{formatDate(day.date)}</span>
+              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="font-data-mono text-data-mono text-xs text-on-surface-variant">{items.length}</span>
+                {dueTaskCount > 0 && (
+                  <button
+                    aria-label={`Ver ${dueTaskCount} ${dueTaskCount === 1 ? "tarea con vencimiento" : "tareas con vencimiento"}`}
+                    className="rounded-full bg-primary-container px-2 py-0.5 font-label-caps text-[10px] uppercase text-on-primary transition-colors hover:bg-primary-container/80"
+                    onClick={() => onDayTasksClick(day.key)}
+                    type="button"
+                  >
+                    {dueTaskLabel}
+                  </button>
+                )}
+              </div>
+            </div>
             {items.length === 0 ? (
-              <p className="px-4 py-4 font-body-sm text-body-sm text-on-surface-variant">Día despejado</p>
+              <p className="px-4 py-4 font-body-sm text-body-sm text-on-surface-variant">{dueTaskCount > 0 ? "No hay bloques ni eventos reservados." : "Día despejado"}</p>
             ) : (
               <div className="divide-y divide-outline-variant/70">
                 {items.slice(0, 5).map((item) => (
@@ -404,8 +412,7 @@ export function MobileAgenda({
   projects,
   events,
   exceptions,
-  taskCounts,
-  taskSchedules,
+  dueTaskCountsByDate,
   weekStart,
   selectedDate,
   view,
@@ -425,8 +432,7 @@ export function MobileAgenda({
   projects: Project[];
   events: CalendarEvent[];
   exceptions: TimeBlockException[];
-  taskCounts: Record<string, number>;
-  taskSchedules: TaskSchedule[];
+  dueTaskCountsByDate: Record<string, number>;
   weekStart: Date;
   selectedDate: Date;
   view: MobileAgendaView;
@@ -443,9 +449,9 @@ export function MobileAgenda({
   onAdd: () => void;
 }) {
   const days = buildDays(weekStart);
-  const items = buildAgendaItems(selectedDate, blocks, projects, events, exceptions, taskCounts);
+  const items = buildAgendaItems(selectedDate, blocks, projects, events, exceptions);
   const selectedDateKey = toDateKey(selectedDate);
-  const dayTaskCount = taskSchedules.filter((schedule) => schedule.date.slice(0, 10) === selectedDateKey).length;
+  const dayTaskCount = dueTaskCountsByDate[selectedDateKey] ?? 0;
 
   return (
     <div className="min-h-full bg-background px-6 pb-32 pt-8">
@@ -515,9 +521,10 @@ export function MobileAgenda({
             onBlockClick={(block, date) => onBlockClick(block, date)}
             onDateChange={onDateChange}
              onEventClick={onEventClick}
+            onDayTasksClick={onDayTasksClick}
             projects={projects}
             selectedDate={selectedDate}
-            taskCounts={taskCounts}
+            dueTaskCountsByDate={dueTaskCountsByDate}
           />
         )}
       </div>

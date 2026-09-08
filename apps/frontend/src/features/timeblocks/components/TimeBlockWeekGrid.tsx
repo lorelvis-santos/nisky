@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MapPin, MoreVertical } from "lucide-react";
-import type { CalendarEvent, Project, TaskSchedule, TimeBlock, TimeBlockException } from "@/types/entities";
+import type { CalendarEvent, Project, TimeBlock, TimeBlockException } from "@/types/entities";
 import { cn } from "@/lib/utils";
 import { DAY_NAMES_SHORT, DAY_ORDER, hexToRgba, minToTime, parseDateOnly, toDateKey } from "../lib/time";
 
@@ -110,8 +110,7 @@ export function TimeBlockWeekGrid({
   onEventClick,
   onEventMove,
   onEventAction,
-  taskCounts = {},
-  taskSchedules = [],
+  dueTaskCountsByDate = {},
   onDayTasksClick,
   moveEnabled = true,
   dayStartMin = 6 * 60,
@@ -140,8 +139,7 @@ export function TimeBlockWeekGrid({
     endMin: number,
   ) => void;
   onEventAction?: (event: CalendarEvent, date: Date, action: "skip" | "move") => void;
-  taskCounts?: Record<string, number>;
-  taskSchedules?: TaskSchedule[];
+  dueTaskCountsByDate?: Record<string, number>;
   onDayTasksClick?: (date: string) => void;
   moveEnabled?: boolean;
   dayStartMin?: number;
@@ -193,12 +191,6 @@ export function TimeBlockWeekGrid({
     { length: Math.floor((dayEndMin - dayStartMin) / 60) },
     (_, index) => dayStartMin + (index + 1) * 60,
   );
-  const assignedTaskCountsByDate = taskSchedules.reduce<Record<string, number>>((counts, schedule) => {
-    const date = schedule.date.slice(0, 10);
-    counts[date] = (counts[date] ?? 0) + 1;
-    return counts;
-  }, {});
-
   const [initialScrollTop] = useState(() =>
     Math.max(((nowMin - (dayStartMin + 4 * 60)) * HOUR_PX) / 60, 0),
   );
@@ -607,10 +599,6 @@ export function TimeBlockWeekGrid({
     const project = projects.find((item) => item.id === block.projectId);
     const color = project?.color ?? "#7a8494";
     const label = block.name ?? project?.name ?? "Tiempo libre";
-    const occurrenceDate = dayDate
-      ? `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, "0")}-${String(dayDate.getDate()).padStart(2, "0")}`
-      : "";
-    const taskCount = taskCounts[`${block.id}:${occurrenceDate}`] ?? 0;
     const top = (Math.max(startMin - dayStartMin, 0) * HOUR_PX) / 60;
     const bottom = (Math.min(endMin - dayStartMin, totalMin) * HOUR_PX) / 60;
     const height = Math.max(bottom - top, 12);
@@ -675,11 +663,6 @@ export function TimeBlockWeekGrid({
         {!compact && (
           <p className="truncate font-data-mono text-data-mono text-[10px] text-on-surface-variant">
             {minToTime(startMin)}–{minToTime(endMin)}
-          </p>
-        )}
-        {taskCount > 0 && (
-          <p className="truncate font-label-caps text-[9px] uppercase text-primary">
-            {taskCount} {taskCount === 1 ? "tarea" : "tareas"}
           </p>
         )}
         <div
@@ -845,7 +828,6 @@ export function TimeBlockWeekGrid({
     ? blockDraft.headerOffset + (Math.min(blockDraft.endMin - dayStartMin, totalMin) * HOUR_PX) / 60
     : 0;
   const draftHeight = blockDraft ? Math.max(draftBottom - draftTop, 12) : 0;
-  const draftTaskCount = blockDraft ? taskCounts[`${blockDraft.block.id}:${blockDraft.draggedDate}`] ?? 0 : 0;
   const eventDraftTop = eventDraft
     ? eventDraft.headerOffset + (Math.max(eventDraft.startMin - dayStartMin, 0) * HOUR_PX) / 60
     : 0;
@@ -869,7 +851,10 @@ export function TimeBlockWeekGrid({
               aria-hidden="true"
               className="sticky left-0 top-0 z-50 border-r border-b border-outline-variant bg-surface-container-low"
             />
-            {days.map((day) => (
+            {days.map((day) => {
+              const dueTaskCount = dueTaskCountsByDate[toDateKey(day.date)] ?? 0;
+              const dueTaskLabel = dueTaskCount === 1 ? "1 vence" : `${dueTaskCount} vencen`;
+              return (
               <div
                 className={cn(
                     "sticky top-0 z-40 border-b bg-surface-container-low px-2 py-2 text-center",
@@ -892,20 +877,20 @@ export function TimeBlockWeekGrid({
                     {day.date.getDate()}
                   </p>
                  </span>
-                  {onDayTasksClick && (assignedTaskCountsByDate[toDateKey(day.date)] ?? 0) > 0 && (
+                  {onDayTasksClick && dueTaskCount > 0 && (
                     <button
-                      aria-label={`Ver ${assignedTaskCountsByDate[toDateKey(day.date)]} ${assignedTaskCountsByDate[toDateKey(day.date)] === 1 ? "tarea" : "tareas"} asignadas`}
-                     className="mx-auto mt-1 inline-flex max-w-full items-center truncate rounded-full bg-primary-container px-2 py-0.5 font-label-caps text-[10px] uppercase text-on-primary transition-colors hover:bg-primary-container/80"
-                     onClick={(event) => {
-                       event.stopPropagation();
-                       onDayTasksClick(toDateKey(day.date));
-                     }}
-                      title="Ver tareas asignadas"
-                     type="button"
-                   >
-                      {assignedTaskCountsByDate[toDateKey(day.date)]} {assignedTaskCountsByDate[toDateKey(day.date)] === 1 ? "tarea" : "tareas"}
-                   </button>
-                 )}
+                      aria-label={`Ver ${dueTaskCount} ${dueTaskCount === 1 ? "tarea con vencimiento" : "tareas con vencimiento"}`}
+                      className="mx-auto mt-1 inline-flex max-w-full items-center truncate rounded-full bg-primary-container px-2 py-0.5 font-label-caps text-[10px] uppercase text-on-primary transition-colors hover:bg-primary-container/80"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDayTasksClick(toDateKey(day.date));
+                      }}
+                      title="Ver tareas con vencimiento"
+                      type="button"
+                    >
+                      {dueTaskLabel}
+                    </button>
+                  )}
                  <div className="mt-1 flex flex-col gap-1">
                   {events
                     .filter((e) => e.allDay && sameLocalDay(parseDateOnly(e.date), day.date))
@@ -922,7 +907,8 @@ export function TimeBlockWeekGrid({
                     ))}
                 </div>
               </div>
-            ))}
+              );
+            })}
             <div
               className="sticky left-0 z-20 border-r border-outline-variant bg-surface-container-low"
               style={{ height: totalPx }}
@@ -1035,11 +1021,6 @@ export function TimeBlockWeekGrid({
                 <p className="truncate font-data-mono text-data-mono text-[10px] text-on-surface-variant">
                   {minToTime(blockDraft.startMin)}–{minToTime(blockDraft.endMin)}
                 </p>
-                {draftTaskCount > 0 && (
-                  <p className="truncate font-label-caps text-[9px] uppercase text-primary">
-                    {draftTaskCount} {draftTaskCount === 1 ? "tarea" : "tareas"}
-                  </p>
-                )}
               </div>
             )}
             {eventDraft && renderEventBlock(

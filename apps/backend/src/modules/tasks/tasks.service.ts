@@ -34,6 +34,15 @@ function taskDate(value: string | null | undefined) {
   return new Date(value);
 }
 
+function taskDateBoundary(value: string, endOfDay: boolean) {
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}`
+    : value;
+  const date = DateTime.fromISO(iso, { zone: TASKS_TZ });
+  if (!date.isValid) throw new AppError("BAD_REQUEST", "La fecha no es válida");
+  return date.toUTC().toJSDate();
+}
+
 type RecurrenceSource = {
   dueDate: Date | null;
   recurrenceType: "DAILY" | "WEEKLY" | "MONTHLY" | null;
@@ -104,6 +113,18 @@ export class TaskService {
     const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
     const { skip, take } = getPaginationArgs(page, limit);
     const accessible = await getAccessibleProjectIds(userId);
+    const dueFrom = query.dueFrom ? taskDateBoundary(query.dueFrom, false) : undefined;
+    const dueTo = query.dueTo ? taskDateBoundary(query.dueTo, true) : undefined;
+    if (dueFrom && dueTo && dueFrom > dueTo) {
+      throw new AppError("BAD_REQUEST", "El intervalo de vencimiento no es válido");
+    }
+    const dueDate = dueFrom || dueTo
+      ? { ...(dueFrom ? { gte: dueFrom } : {}), ...(dueTo ? { lte: dueTo } : {}) }
+      : query.due === "SET"
+        ? { not: null }
+        : query.due === "UNSET"
+          ? { equals: null }
+          : undefined;
     const where = {
       OR: [{ userId }, { projectId: { in: accessible } }],
       archivedAt: null,
@@ -114,7 +135,7 @@ export class TaskService {
       ...(query.projectId ? { projectId: query.projectId } : {}),
       ...(query.assigneeId ? { assigneeId: query.assigneeId === "__unassigned__" ? null : query.assigneeId } : {}),
       ...(query.q ? { AND: [{ OR: [{ title: { contains: query.q } }, { description: { contains: query.q } }] }] } : {}),
-      ...(query.due === "SET" ? { dueDate: { not: null } } : query.due === "UNSET" ? { dueDate: null } : {}),
+      ...(dueDate ? { dueDate } : {}),
     };
 
     const orderBy = query.sort === "priority"

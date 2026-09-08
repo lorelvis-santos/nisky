@@ -13,7 +13,7 @@ import { AgendaEntryChooser, type AgendaEntryKind } from "@/features/timeblocks/
 import { AgendaDayTasksDialog } from "@/features/timeblocks/components/AgendaDayTasksDialog";
 import { EventEditorModal } from "@/features/events/components/EventEditorModal";
 import { EventPreviewModal } from "@/features/events/components/EventPreviewModal";
-import { useTaskSchedulesQuery } from "@/features/task-schedules/hooks/useTaskSchedules";
+import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import {
   useTimeBlockMutations,
   useTimeBlockSettingsMutation,
@@ -25,6 +25,7 @@ import { useEventsQuery, useEventMutations } from "@/features/events/hooks/useEv
 import { minToTime, parseDateOnly, timeToMin } from "@/features/timeblocks/lib/time";
 import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { localDateKey } from "@/lib/utils";
 import type { CalendarEvent, TimeBlock } from "@/types/entities";
 import {
   Dialog,
@@ -298,23 +299,27 @@ function TimeBlocksContent() {
   const [eventMoveEnd, setEventMoveEnd] = useState("10:00");
   const exceptionsQuery = useWeekExceptionsQuery(from, to);
   const exceptions = exceptionsQuery.data ?? [];
-  const schedulesQuery = useTaskSchedulesQuery({ from, to });
-  const taskSchedules = useMemo(
-    () => (schedulesQuery.data ?? []).filter((schedule) => schedule.occurrence?.occurs !== false),
-    [schedulesQuery.data],
-  );
-  const taskCounts = useMemo(() => {
+  const tasksQuery = useTasksQuery({
+    dueFrom: from,
+    dueTo: to,
+    status: ["PENDING", "IN_PROGRESS", "COMPLETED"],
+    sort: "dueDate",
+    order: "asc",
+    limit: 100,
+  });
+  const dueTasks = useMemo(() => tasksQuery.data?.data ?? [], [tasksQuery.data]);
+  const dueTaskCountsByDate = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const schedule of taskSchedules) {
-      if (!schedule.timeBlockId) continue;
-      const key = `${schedule.timeBlockId}:${schedule.date.slice(0, 10)}`;
+    for (const task of dueTasks) {
+      if (!task.dueDate) continue;
+      const key = localDateKey(task.dueDate);
       counts[key] = (counts[key] ?? 0) + 1;
     }
     return counts;
-  }, [taskSchedules]);
-  const dayTaskSchedules = useMemo(
-    () => dayTaskDate ? taskSchedules.filter((schedule) => schedule.date.slice(0, 10) === dayTaskDate) : [],
-    [dayTaskDate, taskSchedules],
+  }, [dueTasks]);
+  const dayTasks = useMemo(
+    () => dayTaskDate ? dueTasks.filter((task) => task.dueDate && localDateKey(task.dueDate) === dayTaskDate) : [],
+    [dayTaskDate, dueTasks],
   );
 
   const openSettings = () => {
@@ -699,8 +704,7 @@ function TimeBlocksContent() {
           onViewChange={setMobileView}
           projects={projects}
           selectedDate={mobileDate}
-          taskCounts={taskCounts}
-          taskSchedules={taskSchedules}
+          dueTaskCountsByDate={dueTaskCountsByDate}
           view={mobileView}
           weekStart={mobileWeekStart}
         />
@@ -834,8 +838,7 @@ function TimeBlocksContent() {
             date: toISODateString(date),
           })}
           projects={projects}
-          taskCounts={taskCounts}
-          taskSchedules={taskSchedules}
+          dueTaskCountsByDate={dueTaskCountsByDate}
           weekStart={weekStart}
          />
       </div>
@@ -900,7 +903,7 @@ function TimeBlocksContent() {
         <AgendaDayTasksDialog
           date={dayTaskDate}
           onClose={() => setDayTaskDate(null)}
-          schedules={dayTaskSchedules}
+          tasks={dayTasks}
         />
       )}
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { updateTaskSchema } from "./tasks.validator";
+import { taskQuerySchema, updateTaskSchema } from "./tasks.validator";
 
 const userId = "00000000-0000-4000-8000-000000000001";
 
@@ -12,6 +12,17 @@ describe("task update validator", () => {
     expect(
       updateTaskSchema.safeParse({
         recurrence: { repeatType: "DAILY" },
+      }).success,
+    ).toBe(true);
+  });
+});
+
+describe("task query validator", () => {
+  test("accepts a due-date range for calendar queries", () => {
+    expect(
+      taskQuerySchema.safeParse({
+        dueFrom: "2026-09-01",
+        dueTo: "2026-09-07",
       }).success,
     ).toBe(true);
   });

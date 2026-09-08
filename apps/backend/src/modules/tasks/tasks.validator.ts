@@ -93,6 +93,8 @@ export const taskQuerySchema = z.object({
   projectId: z.uuid("El proyecto no es válido").optional(),
   assigneeId: z.union([z.uuid("El asignado no es válido"), z.literal("__unassigned__")]).optional(),
   due: z.enum(["ALL", "SET", "UNSET"]).default("ALL"),
+  dueFrom: dateValue.optional(),
+  dueTo: dateValue.optional(),
 });
 
 export type CreateTaskDto = z.infer<typeof createTaskSchema>;

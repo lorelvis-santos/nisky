@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { ArrowUpRight, X } from "lucide-react";
-import type { TaskSchedule, TaskStatus } from "@/types/entities";
+import type { Task, TaskStatus } from "@/types/entities";
+import { isLegacyNoonDate } from "@/lib/utils";
 import {
   Dialog,
   DialogClose,
@@ -11,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { minToTime, parseDateOnly } from "../lib/time";
+import { parseDateOnly } from "../lib/time";
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   PENDING: "Pendiente",
@@ -36,26 +37,26 @@ function formatDay(date: string) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function scheduleTime(schedule: TaskSchedule) {
-  const occurrence = schedule.occurrence;
-  if (!occurrence?.occurs) return null;
-  return `${minToTime(occurrence.startMin)}–${minToTime(occurrence.endMin)}`;
+function taskDueTime(task: Task) {
+  if (!task.dueDate) return "Sin fecha límite";
+  const date = new Date(task.dueDate);
+  const endOfDay = (date.getHours() === 23 && date.getMinutes() === 59) || isLegacyNoonDate(task.dueDate);
+  if (endOfDay) return "Final del día";
+  return `Vence a las ${date.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 export function AgendaDayTasksDialog({
   date,
-  schedules,
+  tasks,
   onClose,
 }: {
   date: string;
-  schedules: TaskSchedule[];
+  tasks: Task[];
   onClose: () => void;
 }) {
-  const ordered = [...schedules].sort((a, b) => {
-    const aStart = a.occurrence?.occurs ? a.occurrence.startMin : Number.MAX_SAFE_INTEGER;
-    const bStart = b.occurrence?.occurs ? b.occurrence.startMin : Number.MAX_SAFE_INTEGER;
-    return aStart - bStart || a.order - b.order || a.task.title.localeCompare(b.task.title);
-  });
+  const ordered = [...tasks].sort(
+    (a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.order - b.order || a.title.localeCompare(b.title),
+  );
 
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
@@ -66,7 +67,7 @@ export function AgendaDayTasksDialog({
               Tareas del {formatDay(date)}
             </DialogTitle>
             <DialogDescription className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-              {schedules.length} {schedules.length === 1 ? "tarea asignada" : "tareas asignadas"}
+              {tasks.length} {tasks.length === 1 ? "tarea vence este día" : "tareas vencen este día"}
             </DialogDescription>
           </div>
           <DialogClose asChild>
@@ -82,33 +83,31 @@ export function AgendaDayTasksDialog({
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5" data-modal-scroll>
           <div className="space-y-2">
-            {ordered.map((schedule) => {
-              const time = scheduleTime(schedule);
-              const location = schedule.timeBlock?.name ?? "Sin bloque horario";
-              const project = schedule.task.project?.name;
+            {ordered.map((task) => {
+              const project = task.project?.name;
 
               return (
                 <Link
                   className="group block rounded-lg border border-outline-variant bg-surface-container-lowest p-3 transition-colors hover:border-primary/50 hover:bg-surface-container-low"
-                  href={`/tasks?taskId=${encodeURIComponent(schedule.taskId)}`}
-                  key={schedule.id}
+                  href={`/tasks?taskId=${encodeURIComponent(task.id)}`}
+                  key={task.id}
                   onClick={onClose}
                 >
                   <div className="flex items-start gap-3">
                     <span
                       aria-hidden="true"
-                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${schedule.task.status === "COMPLETED" ? "bg-tertiary" : schedule.task.status === "IN_PROGRESS" ? "bg-primary" : "bg-outline"}`}
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${task.status === "COMPLETED" ? "bg-tertiary" : task.status === "IN_PROGRESS" ? "bg-primary" : "bg-outline"}`}
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-body-md text-body-md font-semibold text-on-surface group-hover:text-primary">
-                        {schedule.task.title}
+                        {task.title}
                       </p>
                       <p className="mt-1 truncate font-data-mono text-data-mono text-[11px] text-on-surface-variant">
-                        {location}{time ? ` · ${time}` : ""}{project ? ` · ${project}` : ""}
+                        {taskDueTime(task)}{project ? ` · ${project}` : ""}
                       </p>
                     </div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 font-label-caps text-[10px] uppercase ${STATUS_STYLES[schedule.task.status]}`}>
-                      {STATUS_LABELS[schedule.task.status]}
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 font-label-caps text-[10px] uppercase ${STATUS_STYLES[task.status]}`}>
+                      {STATUS_LABELS[task.status]}
                     </span>
                   </div>
                   <span className="mt-2 flex items-center justify-end gap-1 font-label-md text-[11px] text-primary">

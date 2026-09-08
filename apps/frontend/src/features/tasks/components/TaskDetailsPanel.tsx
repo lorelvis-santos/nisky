@@ -152,7 +152,8 @@ const weekdayOptions = [
 ];
 
 type RecurrenceDraft = NonNullable<TaskUpdatePayload["recurrence"]>;
-type TaskPreviewOverrides = {
+type TaskDetailsOverrides = {
+  title?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
   dueDate?: string | null;
@@ -160,7 +161,7 @@ type TaskPreviewOverrides = {
   assigneeId?: string | null;
   recurrence?: RecurrenceDraft;
 };
-type EditableTaskField = keyof TaskPreviewOverrides;
+type EditableTaskField = keyof TaskDetailsOverrides;
 
 function PreviewDetail({
   icon: Icon,
@@ -274,10 +275,9 @@ function DueDateEditor({
   );
 }
 
-export function TaskPreviewModal({
+export function TaskDetailsPanel({
   task,
   onClose,
-  onEdit,
   onAddSubtask,
   onDeleteSubtask,
   onUpdateSubtask,
@@ -289,7 +289,6 @@ export function TaskPreviewModal({
 }: {
   task: Task;
   onClose: () => void;
-  onEdit: () => void;
   onAddSubtask: (taskId: string, title: string) => Promise<void>;
   onDeleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
   onUpdateSubtask: (
@@ -324,10 +323,12 @@ export function TaskPreviewModal({
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
+  const [titleEditing, setTitleEditing] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(current.title);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [descriptionSaving, setDescriptionSaving] = useState(false);
-  const [taskOverrides, setTaskOverrides] = useState<TaskPreviewOverrides>({});
+  const [taskOverrides, setTaskOverrides] = useState<TaskDetailsOverrides>({});
   const [pendingTaskField, setPendingTaskField] =
     useState<EditableTaskField | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -347,6 +348,9 @@ export function TaskPreviewModal({
   const skipEditBlurRef = useRef(false);
   const editingSubtaskRef = useRef<HTMLSpanElement>(null);
   const editingSubtaskOriginalTitleRef = useRef("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const titleSavingRef = useRef(false);
+  const cancelTitleRef = useRef(false);
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
   const cancelDescriptionRef = useRef(false);
   const pomodoroDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -357,6 +361,7 @@ export function TaskPreviewModal({
   const pomodoroMountedRef = useRef(true);
   const hasTaskOverride = (field: EditableTaskField) =>
     Object.prototype.hasOwnProperty.call(taskOverrides, field);
+  const displayTitle = taskOverrides.title ?? current.title;
   const displayStatus = taskOverrides.status ?? current.status;
   const displayPriority = taskOverrides.priority ?? current.priority;
   const displayDueDate = hasTaskOverride("dueDate")
@@ -453,7 +458,7 @@ export function TaskPreviewModal({
   const updateTaskField = async (
     field: EditableTaskField,
     payload: TaskUpdatePayload,
-    optimistic: Partial<TaskPreviewOverrides>,
+    optimistic: Partial<TaskDetailsOverrides>,
     errorMessage: string,
   ) => {
     if (pendingTaskField) return false;
@@ -478,6 +483,48 @@ export function TaskPreviewModal({
       return false;
     } finally {
       setPendingTaskField(null);
+    }
+  };
+
+  const openTitleEditor = () => {
+    cancelTitleRef.current = false;
+    setTitleDraft(displayTitle);
+    setTitleEditing(true);
+  };
+
+  const closeTitleEditor = () => {
+    cancelTitleRef.current = true;
+    setTitleEditing(false);
+    setTitleDraft(displayTitle);
+  };
+
+  const saveTitle = async () => {
+    if (titleSavingRef.current || pendingTaskField) return;
+    if (cancelTitleRef.current) {
+      cancelTitleRef.current = false;
+      return;
+    }
+    const title = titleDraft.trim();
+    if (!title) {
+      toast.error("El título no puede estar vacío.");
+      return;
+    }
+    if (title === displayTitle) {
+      setTitleEditing(false);
+      return;
+    }
+    titleSavingRef.current = true;
+    try {
+      const updated = await updateTaskField(
+        "title",
+        { title },
+        { title },
+        "No pudimos actualizar el título.",
+      );
+      if (updated) setTitleEditing(false);
+      else setTitleDraft(displayTitle);
+    } finally {
+      titleSavingRef.current = false;
     }
   };
 
@@ -679,6 +726,12 @@ export function TaskPreviewModal({
       pending={pendingTaskField !== null}
     />
   );
+
+  useEffect(() => {
+    if (!titleEditing || !titleInputRef.current) return;
+    titleInputRef.current.focus();
+    titleInputRef.current.select();
+  }, [titleEditing]);
 
   useEffect(() => {
     if (!descriptionOpen || !descriptionInputRef.current) return;
@@ -918,13 +971,6 @@ export function TaskPreviewModal({
                   <Timer className="shrink-0 text-error" size={16} /> Pomodoro
                 </button>
               )}
-              <button
-                className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-inverse-surface px-3 py-2.5 font-label-md text-label-md font-semibold text-inverse-on-surface shadow-sm hover:bg-primary"
-                onClick={onEdit}
-                type="button"
-              >
-                <Pencil className="shrink-0" size={16} /> Editar tarea
-              </button>
             </div>
           </div>
         }
@@ -967,7 +1013,46 @@ export function TaskPreviewModal({
           </div>
         }
         onClose={handleClose}
-        title={current.title}
+        title={
+          titleEditing ? (
+            <input
+              aria-busy={pendingTaskField === "title"}
+              aria-label="Título de la tarea"
+              autoComplete="off"
+              className="block w-full min-w-0 border-0 bg-transparent p-0 text-xl leading-7 text-on-surface outline-none focus:border-0 focus:outline-none focus:ring-0 disabled:cursor-wait disabled:opacity-60"
+              disabled={pendingTaskField !== null}
+              maxLength={200}
+              onBlur={() => void saveTitle()}
+              onChange={(event) => setTitleDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void saveTitle();
+                }
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  closeTitleEditor();
+                }
+              }}
+              ref={titleInputRef}
+              value={titleDraft}
+            />
+          ) : (
+            <button
+              aria-label="Editar título de la tarea"
+              className="group inline-flex max-w-full items-start gap-2 text-left"
+              onClick={openTitleEditor}
+              type="button"
+            >
+              <span className="min-w-0 break-words">{displayTitle}</span>
+              <Pencil
+                aria-hidden="true"
+                className="mt-1 shrink-0 opacity-0 transition-opacity group-hover:opacity-60"
+                size={13}
+              />
+            </button>
+          )
+        }
       >
         {activePanel === "details" ? (
           <div className="space-y-7">
@@ -1462,7 +1547,7 @@ export function TaskPreviewModal({
                       !current.description?.trim() && "text-on-surface-variant",
                     )}
                   >
-                    {current.description?.trim() || "Sin descripción."}
+                    {current.description?.trim() || "Añade una descripción para dar contexto."}
                   </span>
                   <Pencil
                     aria-hidden="true"

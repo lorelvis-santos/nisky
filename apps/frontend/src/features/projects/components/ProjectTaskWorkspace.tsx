@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CheckCircle2, Circle, Filter, MoreHorizontal, Pencil, Play, Plus, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
+import { Check, CheckCircle2, Circle, Filter, MoreHorizontal, Play, Plus, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
 import { useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { PriorityChip } from "@/features/tasks/components/PriorityChip";
@@ -62,7 +62,6 @@ export function ProjectTaskWorkspace({
   onResetFilters,
   onRetry,
   onOpen,
-  onEdit,
   previewedTaskId,
   onToggle,
   onStartPomodoro,
@@ -87,7 +86,6 @@ export function ProjectTaskWorkspace({
   onResetFilters: () => void;
   onRetry: () => void;
   onOpen: (task: Task) => void;
-  onEdit: (task: Task) => void;
   previewedTaskId?: string | null;
   onToggle: (task: Task) => void;
   onStartPomodoro: (task: Task) => void;
@@ -158,7 +156,7 @@ export function ProjectTaskWorkspace({
            {isLoading ? <TaskSkeleton /> : isError ? <TaskError onRetry={onRetry} /> : tasks.length === 0 ? <TaskEmpty hasFilters={mode === "MINE" || Boolean(search) || hasAdvancedFilters} mode={mode} onReset={onResetFilters} /> : (
              <>
                <div className="divide-y divide-[#e7e9e8]">
-                   {orderedTasks.map((task) => <ProjectTaskRow isPreviewed={previewedTaskId === task.id} key={task.id} onEdit={() => onEdit(task)} onOpen={() => onOpen(task)} onStartPomodoro={() => onStartPomodoro(task)} onToggle={() => onToggle(task)} task={task} />)}
+                    {orderedTasks.map((task) => <ProjectTaskRow isPreviewed={previewedTaskId === task.id} key={task.id} onOpen={() => onOpen(task)} onStartPomodoro={() => onStartPomodoro(task)} onToggle={() => onToggle(task)} task={task} />)}
               </div>
               {meta && <TaskPagination isFetching={isFetching} meta={meta} onPageChange={onPageChange} />}
             </>
@@ -180,7 +178,7 @@ function AdvancedFilters({ assigneeId, members, priority, onAssigneeChange, onPr
   );
 }
 
-function ProjectTaskRow({ task, onOpen, onEdit, onToggle, onStartPomodoro, isPreviewed }: { task: Task; onOpen: () => void; onEdit: () => void; onToggle: () => void; onStartPomodoro: () => void; isPreviewed?: boolean }) {
+function ProjectTaskRow({ task, onOpen, onToggle, onStartPomodoro, isPreviewed }: { task: Task; onOpen: () => void; onToggle: () => void; onStartPomodoro: () => void; isPreviewed?: boolean }) {
   const completed = task.status === "COMPLETED";
   const overdue = isTaskOverdue(task);
   return (
@@ -196,21 +194,21 @@ function ProjectTaskRow({ task, onOpen, onEdit, onToggle, onStartPomodoro, isPre
             {task.assignee ? <span className="inline-flex min-w-0 items-center gap-1.5"><Avatar avatarUrl={task.assignee.avatarUrl} email={task.assignee.email} name={task.assignee.name} size="xs" /><span className="max-w-[8rem] truncate">{task.assignee.name ?? task.assignee.email}</span></span> : <span>Sin asignar</span>}
           </span>
         </button>
-         <TaskRowActions taskTitle={task.title} onEdit={onEdit} onOpen={onOpen} onStartPomodoro={onStartPomodoro} />
+          <TaskRowActions taskTitle={task.title} onOpen={onOpen} onStartPomodoro={onStartPomodoro} />
       </div>
        <button className="hidden min-w-0 rounded-md text-left md:block" onClick={onOpen} type="button"><span className={cn("block truncate text-[13px] font-medium text-[#2f3b45]", completed && "text-[#858d91] line-through")}>{task.title}</span></button>
       <span className="hidden md:inline-flex"><StatusBadge status={task.status} /></span>
       <span className="hidden md:inline-flex"><PriorityChip priority={task.priority} /></span>
         <span className={cn("hidden items-center gap-1 text-[11px] md:flex", overdue ? "font-semibold text-[#c73b52]" : "text-[#5f6872]")}>{task.dueDate ? <>{formatTaskDueDate(task.dueDate)}</> : <span className="text-[#9aa2a5]">Sin fecha</span>}</span>
        <span className="hidden min-w-0 items-center gap-1.5 md:flex">{task.assignee ? <><Avatar avatarUrl={task.assignee.avatarUrl} email={task.assignee.email} name={task.assignee.name} size="xs" /><span className="truncate text-[11px] text-[#5f6872]">{task.assignee.name ?? task.assignee.email}</span></> : <span className="text-[11px] text-[#9aa2a5]">Sin asignar</span>}</span>
-       <div className="hidden justify-end md:flex"><TaskRowActions taskTitle={task.title} onEdit={onEdit} onOpen={onOpen} onStartPomodoro={onStartPomodoro} /></div>
+        <div className="hidden justify-end md:flex"><TaskRowActions taskTitle={task.title} onOpen={onOpen} onStartPomodoro={onStartPomodoro} /></div>
     </article>
   );
 }
 
-function TaskRowActions({ taskTitle, onOpen, onEdit, onStartPomodoro }: { taskTitle: string; onOpen: () => void; onEdit: () => void; onStartPomodoro: () => void }) {
+function TaskRowActions({ taskTitle, onOpen, onStartPomodoro }: { taskTitle: string; onOpen: () => void; onStartPomodoro: () => void }) {
   const [open, setOpen] = useState(false);
-  return <div className="relative flex shrink-0 justify-end"><button aria-expanded={open} aria-haspopup="menu" aria-label={`Acciones de ${taskTitle}`} className="flex h-11 w-11 items-center justify-center rounded-md text-[#858d91] hover:bg-[#e7e9e8] hover:text-[#1e3a5f]" onClick={() => setOpen((value) => !value)} type="button"><MoreHorizontal size={17} /></button>{open && <><button aria-label="Cerrar acciones" className="fixed inset-0 z-20 cursor-default" onClick={() => setOpen(false)} type="button" /><div className="absolute right-0 top-12 z-30 w-48 rounded-lg border border-[#dde1e2] bg-white p-1.5 shadow-[0_12px_32px_rgba(31,41,51,0.12)]" role="menu"><button className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]" onClick={() => { setOpen(false); onOpen(); }} role="menuitem" type="button">Ver tarea</button><button className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]" onClick={() => { setOpen(false); onEdit(); }} role="menuitem" type="button"><Pencil size={14} /> Editar tarea</button><button className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]" onClick={() => { setOpen(false); onStartPomodoro(); }} role="menuitem" type="button"><Play size={14} /> Iniciar Pomodoro</button></div></>}</div>;
+  return <div className="relative flex shrink-0 justify-end"><button aria-expanded={open} aria-haspopup="menu" aria-label={`Acciones de ${taskTitle}`} className="flex h-11 w-11 items-center justify-center rounded-md text-[#858d91] hover:bg-[#e7e9e8] hover:text-[#1e3a5f]" onClick={() => setOpen((value) => !value)} type="button"><MoreHorizontal size={17} /></button>{open && <><button aria-label="Cerrar acciones" className="fixed inset-0 z-20 cursor-default" onClick={() => setOpen(false)} type="button" /><div className="absolute right-0 top-12 z-30 w-48 rounded-lg border border-[#dde1e2] bg-white p-1.5 shadow-[0_12px_32px_rgba(31,41,51,0.12)]" role="menu"><button className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]" onClick={() => { setOpen(false); onOpen(); }} role="menuitem" type="button">Ver tarea</button><button className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]" onClick={() => { setOpen(false); onStartPomodoro(); }} role="menuitem" type="button"><Play size={14} /> Iniciar Pomodoro</button></div></>}</div>;
 }
 
 function StatusBadge({ status }: { status: Task["status"] }) {

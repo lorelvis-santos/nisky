@@ -1,6 +1,13 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Check,
   CheckSquare,
@@ -28,12 +35,7 @@ import { archiveQuickNote } from "@/features/quicknotes/api/quicknotes";
 import { BacklogPanel } from "@/features/tasks/components/BacklogPanel";
 import { TaskList } from "@/features/tasks/components/TaskList";
 import { TaskPagination } from "@/features/tasks/components/TaskPagination";
-import type { TaskUpdatePayload } from "@/features/tasks/api/tasks";
-import {
-  TaskModal,
-  type TaskForm,
-} from "@/features/tasks/components/TaskModal";
-import { TaskPreviewModal } from "@/features/tasks/components/TaskPreviewModal";
+import { TaskDetailsPanel } from "@/features/tasks/components/TaskDetailsPanel";
 import {
   usePaginatedTasksQuery,
   useTaskMutations,
@@ -52,13 +54,21 @@ import {
 
 const emptyTasks: Task[] = [];
 
+type TaskCreateOptions = {
+  title?: string;
+  description?: string;
+  dueDate?: string;
+  priority?: TaskPriority;
+  pomodoroEstimate?: number;
+  projectId?: string;
+};
+
 function useModalUrl() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const state = {
     taskId: searchParams.get("taskId"),
-    edit: searchParams.get("modal") === "edit",
     create: searchParams.get("modal") === "create",
     prefill: searchParams.get("prefill"),
     quickNoteId: searchParams.get("quickNoteId"),
@@ -81,32 +91,6 @@ function useModalUrl() {
       params.set("taskId", taskId);
       navigateWithModal(params);
     },
-    openEdit: (taskId: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("prefill");
-      params.delete("quickNoteId");
-      params.set("modal", "edit");
-      params.set("taskId", taskId);
-      navigateWithModal(params);
-    },
-    openCreate: () => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("taskId");
-      params.delete("prefill");
-      params.delete("quickNoteId");
-      params.set("modal", "create");
-      navigateWithModal(params);
-    },
-    openCreateWithDate: (dueDate: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("taskId");
-      params.set("modal", "create");
-      params.set(
-        "prefill",
-        encodeURIComponent(JSON.stringify({ title: "", dueDate })),
-      );
-      navigateWithModal(params);
-    },
     close: () => {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("taskId");
@@ -123,22 +107,38 @@ function useModalUrl() {
   };
 }
 
-function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
+function parsePrefill(value: string | null): TaskCreateOptions | undefined {
   if (!value) return undefined;
   try {
     const parsed: unknown = JSON.parse(decodeURIComponent(value));
     if (!parsed || typeof parsed !== "object") return undefined;
     const source = parsed as Record<string, unknown>;
     const rawDueDate = typeof source.dueDate === "string" ? source.dueDate : "";
+    const rawPriority = source.priority;
+    const priority =
+      rawPriority === "LOW" ||
+      rawPriority === "NORMAL" ||
+      rawPriority === "HIGH" ||
+      rawPriority === "URGENT"
+        ? rawPriority
+        : undefined;
+    const rawPomodoroEstimate = source.pomodoroEstimate;
+    const pomodoroEstimate =
+      typeof rawPomodoroEstimate === "number" &&
+      Number.isFinite(rawPomodoroEstimate)
+        ? Math.min(100, Math.max(0, Math.trunc(rawPomodoroEstimate)))
+        : undefined;
     return {
       title: typeof source.title === "string" ? source.title.trim() : "",
+      description:
+        typeof source.description === "string" ? source.description : undefined,
       dueDate: /^\d{4}-\d{2}-\d{2}$/.test(rawDueDate)
         ? `${rawDueDate}T23:59`
         : rawDueDate,
-      status: "PENDING",
-      priority: "NORMAL",
-      description: "",
-      pomodoroEstimate: 0,
+      priority,
+      pomodoroEstimate,
+      projectId:
+        typeof source.projectId === "string" ? source.projectId : undefined,
     };
   } catch {
     return undefined;
@@ -182,9 +182,12 @@ function TasksPageContent() {
   const [taskPage, setTaskPage] = useState(1);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [createdTask, setCreatedTask] = useState<Task | null>(null);
   const isMobile = useIsMobile(1023);
   const selection = useTaskSelection();
   const modalUrl = useModalUrl();
+  const creatingTaskRef = useRef(false);
+  const createFromUrlRef = useRef(false);
   const taskStatus: TaskStatus | TaskStatus[] | undefined =
     statusFilter === "ACTIVE"
       ? ["PENDING", "IN_PROGRESS"]
@@ -250,14 +253,64 @@ function TasksPageContent() {
   const taskFromUrl =
     urlTaskQuery.data ??
     tasks.find((task) => task.id === modalUrl.state.taskId) ??
-    null;
-  const editingTask = modalUrl.state.edit ? taskFromUrl : null;
-  const previewOpen = Boolean(taskFromUrl && modalUrl.state.taskId && !modalUrl.state.edit && !modalUrl.state.create);
-  const modalOpen = Boolean(modalUrl.state.create || editingTask);
-  const initialForm = parsePrefill(modalUrl.state.prefill);
+    (createdTask?.id === modalUrl.state.taskId ? createdTask : null);
+  const previewOpen = Boolean(
+    taskFromUrl && modalUrl.state.taskId && !modalUrl.state.create,
+  );
   const taskDefaultProjectId =
     selectedProjectId ??
     projectsQuery.data?.find((project) => project.isDefault)?.id;
+
+  const createTaskAndOpen = useCallback(
+    async (options: TaskCreateOptions = {}) => {
+      if (creatingTaskRef.current) return;
+      creatingTaskRef.current = true;
+      try {
+        const created = await mutations.create.mutateAsync({
+          title: options.title?.trim() || "Nueva tarea",
+          description: options.description?.trim() || undefined,
+          dueDate: options.dueDate || undefined,
+          status: "PENDING",
+          priority: options.priority ?? "NORMAL",
+          pomodoroEstimate: options.pomodoroEstimate ?? 0,
+          projectId: options.projectId ?? taskDefaultProjectId ?? undefined,
+        });
+        setCreatedTask(created);
+        if (modalUrl.state.quickNoteId) {
+          try {
+            await archiveQuickNote(modalUrl.state.quickNoteId);
+          } catch {
+            toast.warning(
+              "La tarea se creó, pero no pudimos archivar la captura original.",
+            );
+          }
+        }
+        modalUrl.openTask(created.id);
+        toast.success("¡Listo, tarea creada!");
+      } catch {
+        createFromUrlRef.current = false;
+        toast.error("Ups, no pudimos crear la tarea. Inténtalo de nuevo.");
+      } finally {
+        creatingTaskRef.current = false;
+      }
+    },
+    [modalUrl, mutations, taskDefaultProjectId],
+  );
+
+  useEffect(() => {
+    if (!modalUrl.state.create) {
+      createFromUrlRef.current = false;
+      return;
+    }
+    if (createFromUrlRef.current) return;
+    createFromUrlRef.current = true;
+    void createTaskAndOpen(parsePrefill(modalUrl.state.prefill));
+  }, [
+    createTaskAndOpen,
+    modalUrl.state.create,
+    modalUrl.state.prefill,
+    modalUrl.state.quickNoteId,
+  ]);
 
   const setTaskView = (next: TaskView) => {
     setTaskPage(1);
@@ -306,56 +359,24 @@ function TasksPageContent() {
     }
   };
 
-  const saveTask = async (form: TaskForm) => {
-    const payload = {
-      ...form,
-      description: form.description || undefined,
-      dueDate: form.dueDate || undefined,
-      recurrence: {
-        repeatType: form.recurrence?.repeatType,
-        repeatInterval: form.recurrence?.repeatInterval ?? 1,
-        repeatDaysOfWeek: form.recurrence?.repeatDaysOfWeek ?? [],
-        repeatDayOfMonth: form.recurrence?.repeatDayOfMonth,
-        repeatEndsAt: form.recurrence?.repeatEndsAt || null,
-      },
-    };
-    try {
-      if (editingTask) {
-        const updatePayload: TaskUpdatePayload = {
-          ...payload,
-          dueDate: form.dueDate || null,
-        };
-        await mutations.update.mutateAsync({
-          id: editingTask.id,
-          payload: updatePayload,
-        });
-      } else {
-        await mutations.create.mutateAsync(payload);
-        if (modalUrl.state.quickNoteId) {
-          try {
-            await archiveQuickNote(modalUrl.state.quickNoteId);
-          } catch {
-            toast.warning(
-              "La tarea se creó, pero no pudimos archivar la captura original.",
-            );
-          }
-        }
-      }
-      modalUrl.close();
-      toast.success(
-        editingTask ? "¡Listo, tarea actualizada!" : "¡Listo, tarea creada!",
-      );
-    } catch {
-      toast.error("Ups, no pudimos guardar la tarea. Inténtalo de nuevo.");
-    }
+  const openCreate = () => {
+    setCreatedTask(null);
+    void createTaskAndOpen();
   };
-
-  const openCreate = () => modalUrl.openCreate();
-  const openPreview = (task: Task) => modalUrl.openTask(task.id);
-  const openEdit = (task: Task) => modalUrl.openEdit(task.id);
+  const openCreateOnDay = (dateKey: string) => {
+    setCreatedTask(null);
+    void createTaskAndOpen({ dueDate: `${dateKey}T23:59` });
+  };
+  const openPreview = (task: Task) => {
+    setCreatedTask(null);
+    modalUrl.openTask(task.id);
+  };
   const openFocus = (task: Task) =>
     modalUrl.openFocus(task.id, task.projectId ?? undefined);
-  const closeModal = () => modalUrl.close();
+  const closeModal = () => {
+    setCreatedTask(null);
+    modalUrl.close();
+  };
 
   const selectProject = (projectId: string | null) => {
     setTaskPage(1);
@@ -757,7 +778,6 @@ function TasksPageContent() {
                 {view === "backlog" ? (
                   <BacklogPanel
                     count={backlogCount}
-                    onEdit={openEdit}
                     onOpen={openPreview}
                     onStartPomodoro={openFocus}
                     onToggle={(task) => void toggleTask(task)}
@@ -766,8 +786,7 @@ function TasksPageContent() {
                   />
                 ) : (
                   <TaskList
-                    onCreateOnDay={(key) => modalUrl.openCreateWithDate(key)}
-                    onEdit={openEdit}
+                    onCreateOnDay={openCreateOnDay}
                     onOpen={openPreview}
                     onPostponeToday={(task) => void postponeToday(task)}
                     onStartPomodoro={openFocus}
@@ -784,7 +803,11 @@ function TasksPageContent() {
         )}
       </main>
       <div className="sm:hidden">
-        <FAB ariaLabel="Nueva tarea" onClick={openCreate} raised={modalOpen || previewOpen} />
+        <FAB
+          ariaLabel="Nueva tarea"
+          onClick={openCreate}
+          raised={mutations.create.isPending || previewOpen}
+        />
       </div>
       {confirmBulkDelete && (
         <ConfirmModal
@@ -798,7 +821,7 @@ function TasksPageContent() {
         />
       )}
       {previewOpen && taskFromUrl && (
-        <TaskPreviewModal
+        <TaskDetailsPanel
           key={taskFromUrl.id}
           onAddSubtask={async (taskId, title) => {
             await mutations.addSubtask.mutateAsync({ taskId, title });
@@ -810,8 +833,7 @@ function TasksPageContent() {
            onDeleteSubtask={async (taskId, subtaskId) => {
              await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
            }}
-          onEdit={() => openEdit(taskFromUrl)}
-          onStartPomodoro={() => openFocus(taskFromUrl)}
+           onStartPomodoro={() => openFocus(taskFromUrl)}
           onToggleSubtask={async (taskId, subtaskId, completed) => {
             await mutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed });
           }}
@@ -825,36 +847,6 @@ function TasksPageContent() {
             await mutations.updateSubtask.mutateAsync({ taskId, subtaskId, payload: { title } });
           }}
           task={taskFromUrl}
-        />
-      )}
-      {modalOpen && (!modalUrl.state.taskId || editingTask) && (
-        <TaskModal
-          defaultProjectId={taskDefaultProjectId}
-          initialForm={initialForm}
-          key={
-            editingTask
-              ? `${editingTask.id}:${modalUrl.state.prefill ?? ""}`
-              : (modalUrl.state.prefill ?? "new")
-          }
-          onClose={closeModal}
-          projects={allProjects}
-          onDelete={
-            editingTask
-              ? async () => {
-                  try {
-                    await mutations.remove.mutateAsync(editingTask.id);
-                    modalUrl.close();
-                    toast.success("¡Listo, tarea eliminada!");
-                  } catch {
-                    toast.error(
-                      "Ups, no pudimos eliminarla. Inténtalo de nuevo.",
-                    );
-                  }
-                }
-              : undefined
-          }
-          onSave={saveTask}
-          task={editingTask}
         />
       )}
     </section>

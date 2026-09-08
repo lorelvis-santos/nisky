@@ -135,7 +135,7 @@ export function ProjectHeader({
       </div>
 
       <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
+        <div className="min-w-0 lg:flex-1">
           <div className="flex flex-wrap items-center gap-3">
             <span
               aria-hidden="true"
@@ -157,7 +157,7 @@ export function ProjectHeader({
             <textarea
                 aria-busy={descriptionSaving}
                 aria-label="Descripción del proyecto"
-                className="mt-3 block min-h-6 w-full max-w-2xl resize-none overflow-hidden border-0 bg-transparent p-0 text-[14px] leading-6 text-[#5f6872] outline-none placeholder:text-[#858d91] focus:border-0 focus:outline-none focus:ring-0"
+                className="mt-3 block min-h-6 w-full max-w-4xl resize-none overflow-hidden border-0 bg-transparent p-0 text-[14px] leading-6 text-[#5f6872] outline-none placeholder:text-[#858d91] focus:border-0 focus:outline-none focus:ring-0"
                 maxLength={2000}
                 onBlur={() => void saveDescription()}
                 onChange={(event) => {
@@ -182,7 +182,7 @@ export function ProjectHeader({
             canEdit ? (
               <button
                 aria-label="Editar descripción del proyecto"
-                className="group mt-3 flex w-full max-w-2xl items-start gap-2 rounded-md text-left text-[14px] leading-6 text-[#5f6872] transition-colors hover:text-[#1e3a5f]"
+                className="group mt-3 flex w-full max-w-4xl items-start gap-2 rounded-md text-left text-[14px] leading-6 text-[#5f6872] transition-colors hover:text-[#1e3a5f]"
                 onClick={openDescriptionEditor}
                 title="Editar descripción"
                 type="button"
@@ -191,7 +191,7 @@ export function ProjectHeader({
                 <Pencil aria-hidden="true" className="mt-1 shrink-0 opacity-0 transition-opacity group-hover:opacity-60" size={13} />
               </button>
             ) : (
-              <p className="mt-3 max-w-2xl text-[14px] leading-6 text-[#5f6872]">
+              <p className="mt-3 max-w-4xl text-[14px] leading-6 text-[#5f6872]">
                 {project.description}
               </p>
             )

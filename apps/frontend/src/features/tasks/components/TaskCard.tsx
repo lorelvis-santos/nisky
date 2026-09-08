@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CheckCircle2, CheckSquare2, Circle, MessageSquare, Pencil, Play, Square, Timer } from "lucide-react";
+import { CalendarDays, CheckCircle2, CheckSquare2, Circle, MessageSquare, Play, Square, Timer } from "lucide-react";
 import type { Task } from "@/types/entities";
 import { cn, isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "./PriorityChip";
@@ -10,7 +10,6 @@ import { useTaskSelection } from "../selection/TaskSelectionContext";
 export function TaskCardShell({
   task,
   onOpen,
-  onEdit,
   isPreviewed = false,
   onToggle,
   onPostponeToday,
@@ -18,7 +17,6 @@ export function TaskCardShell({
 }: {
   task: Task;
   onOpen: () => void;
-  onEdit?: () => void;
   isPreviewed?: boolean;
   onToggle: () => void;
   onPostponeToday?: () => void;
@@ -31,7 +29,6 @@ export function TaskCardShell({
   const selection = useTaskSelection();
   const isSelecting = selection.mode;
   const selected = selection.isSelected(task.id);
-  const edit = onEdit ?? onOpen;
   return (
     <article
       aria-label={`Tarea: ${task.title}`}
@@ -94,19 +91,6 @@ export function TaskCardShell({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {isPreviewed && <span className="hidden rounded-md bg-primary-fixed px-2 py-1 font-label-caps text-[10px] font-semibold uppercase tracking-wide text-primary sm:inline-flex">Abierta en panel</span>}
-          {!isSelecting && (
-            <button
-              aria-label={`Editar ${task.title}`}
-              className="mt-0.5 shrink-0 rounded-md p-1 text-on-surface-variant opacity-50 transition-opacity hover:bg-surface-container-low hover:text-primary group-hover:opacity-100"
-              onClick={(event) => {
-                event.stopPropagation();
-                edit();
-              }}
-              type="button"
-            >
-              <Pencil size={15} />
-            </button>
-          )}
         </div>
       </div>
       <div className="ml-7 mt-auto flex flex-wrap items-center justify-between gap-2">

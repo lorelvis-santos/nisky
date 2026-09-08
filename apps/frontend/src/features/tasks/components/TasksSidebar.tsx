@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { CheckCircle2, MoreHorizontal, Plus, X } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDueTime } from "@/features/tasks/lib/task-utils";
 import type { Task } from "@/types/entities";
-import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
-import { TaskPreviewModal } from "@/features/tasks/components/TaskPreviewModal";
+import { TaskDetailsPanel } from "@/features/tasks/components/TaskDetailsPanel";
 import { useTaskMutations, useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { useTasksSidebar } from "@/context/TasksSidebarContext";
@@ -208,8 +207,9 @@ export function TasksSidebar({
   const mutations = useTaskMutations();
   const projectsQuery = useProjectsQuery();
   const projects = projectsQuery.data ?? [];
-  const [modal, setModal] = useState<{ task: Task | null; creating: boolean } | null>(null);
   const [previewing, setPreviewing] = useState<Task | null>(null);
+  const creatingTaskRef = useRef(false);
+  const defaultProjectId = projects.find((project) => project.isDefault)?.id;
 
   const handleComplete = async (task: Task) => {
     if (mutations.update.isPending) return;
@@ -223,39 +223,33 @@ export function TasksSidebar({
     }
   };
 
-  const onSave = async (form: TaskForm) => {
-    const payload = {
-      ...form,
-      description: form.description || undefined,
-      dueDate: form.dueDate || undefined,
-      recurrence: {
-        repeatType: form.recurrence?.repeatType,
-        repeatInterval: form.recurrence?.repeatInterval ?? 1,
-        repeatDaysOfWeek: form.recurrence?.repeatDaysOfWeek ?? [],
-        repeatDayOfMonth: form.recurrence?.repeatDayOfMonth,
-        repeatEndsAt: form.recurrence?.repeatEndsAt || null,
-      },
-    };
+  const createTaskAndOpen = async () => {
+    if (creatingTaskRef.current) return;
+    creatingTaskRef.current = true;
     try {
-      if (modal?.creating) {
-        await mutations.create.mutateAsync(payload);
-      } else if (modal?.task) {
-        await mutations.update.mutateAsync({ id: modal.task.id, payload });
-      }
-      setModal(null);
-      toast.success(modal?.creating ? "¡Listo, tarea creada!" : "¡Listo, tarea actualizada!");
+      const created = await mutations.create.mutateAsync({
+        title: "Nueva tarea",
+        status: "PENDING",
+        priority: "NORMAL",
+        pomodoroEstimate: 0,
+        projectId: defaultProjectId,
+      });
+      setPreviewing(created);
+      toast.success("¡Listo, tarea creada!");
     } catch {
-      toast.error("Ups, no pudimos guardar la tarea. Inténtalo de nuevo.");
+      toast.error("Ups, no pudimos crear la tarea. Inténtalo de nuevo.");
+    } finally {
+      creatingTaskRef.current = false;
     }
   };
 
   const content = (
     <TasksSidebarContent
       onComplete={(task) => void handleComplete(task)}
-         onOpenCreate={() => {
-           onMobileClose?.();
-           setPreviewing(null);
-           setModal({ task: null, creating: true });
+           onOpenCreate={() => {
+            onMobileClose?.();
+            setPreviewing(null);
+            void createTaskAndOpen();
          }}
          onOpenTask={(task) => {
            onMobileClose?.();
@@ -280,7 +274,7 @@ export function TasksSidebar({
         </aside>
       )}
       {previewing && (
-        <TaskPreviewModal
+        <TaskDetailsPanel
           key={previewing.id}
           onAddSubtask={async (taskId, title) => {
             await mutations.addSubtask.mutateAsync({ taskId, title });
@@ -292,10 +286,6 @@ export function TasksSidebar({
            onDeleteSubtask={async (taskId, subtaskId) => {
              await mutations.removeSubtask.mutateAsync({ taskId, subtaskId });
            }}
-          onEdit={() => {
-            setPreviewing(null);
-            setModal({ task: previewing, creating: false });
-          }}
           onToggleSubtask={async (taskId, subtaskId, completed) => {
             await mutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed });
           }}
@@ -309,16 +299,6 @@ export function TasksSidebar({
             await mutations.updateSubtask.mutateAsync({ taskId, subtaskId, payload: { title } });
           }}
           task={previewing}
-        />
-      )}
-      {modal && (
-        <TaskModal
-          initialForm={undefined}
-          key={modal.task?.id ?? "new"}
-          onClose={() => setModal(null)}
-          onSave={onSave}
-          projects={projects}
-          task={modal.task}
         />
       )}
     </>

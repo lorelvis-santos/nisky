@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useDeferredValue, useState } from "react";
+import { Suspense, useDeferredValue, useRef, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ColorPicker } from "@/components/ui/ColorPicker";
@@ -28,8 +28,7 @@ import { ProjectTaskMode, ProjectTaskWorkspace } from "@/features/projects/compo
 import { ProjectWorkspaceShell } from "@/features/projects/components/ProjectWorkspaceShell";
 import { useProjectActivity, useProjectSummary } from "@/features/projects/hooks/useProjectWorkspace";
 import { useProjectMembers, useProjectMutations, useProjectQuery } from "@/features/projects/hooks/useProjects";
-import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
-import { TaskPreviewModal } from "@/features/tasks/components/TaskPreviewModal";
+import { TaskDetailsPanel } from "@/features/tasks/components/TaskDetailsPanel";
 import { usePaginatedTasksQuery, useTaskMutations } from "@/features/tasks/hooks/useTasks";
 import type { Task, TaskPriority } from "@/types/entities";
 
@@ -59,8 +58,6 @@ function ProjectDetailPageContent() {
   const [taskSearch, setTaskSearch] = useState("");
   const [taskPriority, setTaskPriority] = useState<TaskPriority | "ALL">("ALL");
   const [taskAssigneeId, setTaskAssigneeId] = useState("");
-  const [taskModalOpen, setTaskModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [previewingTask, setPreviewingTask] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
@@ -70,6 +67,7 @@ function ProjectDetailPageContent() {
   const [editTargetHours, setEditTargetHours] = useState("");
   const [editTargetMinutes, setEditTargetMinutes] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const creatingTaskRef = useRef(false);
 
   const project = projectQuery.data;
   const summary = summaryQuery.data;
@@ -104,41 +102,31 @@ function ProjectDetailPageContent() {
 
   const resetTaskPage = () => setTaskPage(1);
   const openTask = (task: Task) => { setPreviewingTask(task); };
-  const openEditTask = (task: Task) => { setPreviewingTask(null); setEditingTask(task); setTaskModalOpen(true); };
-  const openCreateTask = () => { setPreviewingTask(null); setEditingTask(null); setTaskModalOpen(true); };
-  const closeTaskModal = () => { setEditingTask(null); setTaskModalOpen(false); };
+  const createTaskAndOpen = async () => {
+    if (creatingTaskRef.current) return;
+    creatingTaskRef.current = true;
+    try {
+      const created = await taskMutations.create.mutateAsync({
+        title: "Nueva tarea",
+        status: "PENDING",
+        priority: "NORMAL",
+        pomodoroEstimate: 0,
+        projectId: project.id,
+      });
+      setPreviewingTask(created);
+      toast.success("Tarea creada en el proyecto");
+    } catch {
+      toast.error("No pudimos crear la tarea. Inténtalo de nuevo.");
+    } finally {
+      creatingTaskRef.current = false;
+    }
+  };
+  const openCreateTask = () => {
+    setPreviewingTask(null);
+    void createTaskAndOpen();
+  };
   const saveProjectDescription = async (description: string) => {
     await projectMutations.update.mutateAsync({ id: project.id, payload: { description: description || null } });
-  };
-
-  const saveTask = async (form: TaskForm) => {
-    const common = {
-      title: form.title,
-      status: form.status,
-      priority: form.priority,
-      pomodoroEstimate: form.pomodoroEstimate,
-      projectId: project.id,
-      assigneeId: form.assigneeId ?? null,
-      recurrence: form.recurrence,
-    };
-    try {
-      if (editingTask) {
-        await taskMutations.update.mutateAsync({
-          id: editingTask.id,
-          payload: { ...common, description: form.description?.trim() || null, dueDate: form.dueDate || null },
-        });
-      } else {
-        await taskMutations.create.mutateAsync({
-          ...common,
-          description: form.description?.trim() || undefined,
-          dueDate: form.dueDate || undefined,
-        });
-      }
-      closeTaskModal();
-      toast.success(editingTask ? "Tarea actualizada" : "Tarea creada en el proyecto");
-    } catch {
-      toast.error("No pudimos guardar la tarea. Inténtalo de nuevo.");
-    }
   };
 
   const quickAdd = async (title: string) => {
@@ -173,13 +161,6 @@ function ProjectDetailPageContent() {
     } catch {
       toast.error("No pudimos actualizar la tarea.");
     }
-  };
-
-  const deleteTask = async () => {
-    if (!editingTask) return;
-    await taskMutations.remove.mutateAsync(editingTask.id);
-    closeTaskModal();
-    toast.success("Tarea eliminada");
   };
 
   const openEditProject = () => {
@@ -251,7 +232,6 @@ function ProjectDetailPageContent() {
               mode={taskMode}
                 onAssigneeChange={(value) => { setTaskPage(1); setTaskAssigneeId(value); }}
                 onModeChange={(value) => { resetTaskPage(); setTaskMode(value); }}
-                onEdit={openEditTask}
                 onOpen={openTask}
                onPageChange={setTaskPage}
                onPriorityChange={(value) => { resetTaskPage(); setTaskPriority(value); }}
@@ -279,11 +259,10 @@ function ProjectDetailPageContent() {
 
       {activeTab === "tasks" && (
         <div className="sm:hidden">
-           <FAB ariaLabel="Nueva tarea" onClick={openCreateTask} raised={taskModalOpen || Boolean(previewingTask)} />
+           <FAB ariaLabel="Nueva tarea" onClick={openCreateTask} raised={Boolean(previewingTask)} />
          </div>
        )}
-       {previewingTask && <TaskPreviewModal key={previewingTask.id} onAddSubtask={async (taskId, title) => { await taskMutations.addSubtask.mutateAsync({ taskId, title }); }} onClose={() => setPreviewingTask(null)} onDelete={async (taskId) => { await taskMutations.remove.mutateAsync(taskId); }} onDeleteSubtask={async (taskId, subtaskId) => { await taskMutations.removeSubtask.mutateAsync({ taskId, subtaskId }); }} onEdit={() => openEditTask(previewingTask)} onStartPomodoro={() => router.push(`/focus?taskId=${encodeURIComponent(previewingTask.id)}&projectId=${encodeURIComponent(project.id)}`)} onToggleSubtask={async (taskId, subtaskId, completed) => { await taskMutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed }); }} onUpdateDescription={async (taskId, description) => { await taskMutations.update.mutateAsync({ id: taskId, payload: { description: description || null } }); }} onUpdateTask={async (taskId, payload) => { await taskMutations.update.mutateAsync({ id: taskId, payload }); }} onUpdateSubtask={async (taskId, subtaskId, title) => { await taskMutations.updateSubtask.mutateAsync({ taskId, subtaskId, payload: { title } }); }} task={previewingTask} />}
-       {taskModalOpen && <TaskModal defaultProjectId={project.id} key={editingTask?.id ?? "new-project-task"} onClose={closeTaskModal} onDelete={editingTask ? deleteTask : undefined} onSave={saveTask} projects={[project]} task={editingTask} />}
+       {previewingTask && <TaskDetailsPanel key={previewingTask.id} onAddSubtask={async (taskId, title) => { await taskMutations.addSubtask.mutateAsync({ taskId, title }); }} onClose={() => setPreviewingTask(null)} onDelete={async (taskId) => { await taskMutations.remove.mutateAsync(taskId); }} onDeleteSubtask={async (taskId, subtaskId) => { await taskMutations.removeSubtask.mutateAsync({ taskId, subtaskId }); }} onStartPomodoro={() => router.push(`/focus?taskId=${encodeURIComponent(previewingTask.id)}&projectId=${encodeURIComponent(project.id)}`)} onToggleSubtask={async (taskId, subtaskId, completed) => { await taskMutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed }); }} onUpdateDescription={async (taskId, description) => { await taskMutations.update.mutateAsync({ id: taskId, payload: { description: description || null } }); }} onUpdateTask={async (taskId, payload) => { await taskMutations.update.mutateAsync({ id: taskId, payload }); }} onUpdateSubtask={async (taskId, subtaskId, title) => { await taskMutations.updateSubtask.mutateAsync({ taskId, subtaskId, payload: { title } }); }} task={previewingTask} />}
       {editOpen && <EditProjectModal canRename={!project.isDefault} color={editColor} description={editDescription} name={editName} onClose={() => setEditOpen(false)} onColorChange={setEditColor} onDescriptionChange={setEditDescription} onNameChange={setEditName} onSave={() => void saveProject()} onTargetDateChange={setEditTargetDate} onTargetHoursChange={setEditTargetHours} onTargetMinutesChange={setEditTargetMinutes} targetDate={editTargetDate} targetHours={editTargetHours} targetMinutes={editTargetMinutes} />}
       {confirmDelete && <ConfirmModal cancelLabel="Cancelar" confirmLabel="Eliminar" danger loading={projectMutations.remove.isPending} message={<>¿Eliminar <strong>{project.name}</strong>? Sus tareas se moverán al proyecto personal y esta acción no se puede deshacer.</>} onClose={() => setConfirmDelete(false)} onConfirm={() => void removeProject()} title="¿Eliminar proyecto?" />}
     </ProjectWorkspaceShell>

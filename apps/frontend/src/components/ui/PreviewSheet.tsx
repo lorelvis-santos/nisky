@@ -25,7 +25,7 @@ import {
 const MOBILE_PREVIEW_QUERY = "(max-width: 1023px)";
 
 type PreviewSheetProps = {
-  title: string;
+  title: ReactNode;
   eyebrow?: string;
   description?: string;
   children: ReactNode;

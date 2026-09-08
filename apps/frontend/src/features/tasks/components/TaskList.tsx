@@ -16,7 +16,6 @@ function dayLabel(day: Date) {
 export function TaskList({
   tasks,
   onOpen,
-  onEdit,
   previewedTaskId,
   onToggle,
   onStartPomodoro,
@@ -25,7 +24,6 @@ export function TaskList({
 }: {
   tasks: Task[];
   onOpen: (task: Task) => void;
-  onEdit: (task: Task) => void;
   previewedTaskId?: string | null;
   onToggle: (task: Task) => void;
   onStartPomodoro: (task: Task) => void;
@@ -89,7 +87,6 @@ export function TaskList({
             {overdueTasks.map((task) => (
               <TaskCardShell
                 key={task.id}
-                onEdit={() => onEdit(task)}
                 onOpen={() => onOpen(task)}
                 onPostponeToday={onPostponeToday ? () => onPostponeToday(task) : undefined}
                 onStartPomodoro={() => onStartPomodoro(task)}
@@ -131,7 +128,6 @@ export function TaskList({
               {dayTasks.map((task) => (
                 <TaskCardShell
                 key={task.id}
-                onEdit={() => onEdit(task)}
                 onOpen={() => onOpen(task)}
                 onStartPomodoro={() => onStartPomodoro(task)}
                 onToggle={() => onToggle(task)}

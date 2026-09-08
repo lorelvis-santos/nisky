@@ -11,6 +11,7 @@ import {
   Flag,
   ListChecks,
   MessageSquare,
+  Minus,
   Pencil,
   Plus,
   Repeat2,
@@ -100,6 +101,12 @@ function datetimeWithDate(value: string, date: Date) {
 function datetimeWithTime(value: string, time: string) {
   const date = value.slice(0, 10) || localDateKey(new Date());
   return `${date}T${time}`;
+}
+
+const POMODORO_SAVE_DEBOUNCE_MS = 400;
+
+function normalizePomodoroEstimate(value: number) {
+  return Math.min(100, Math.max(0, Math.trunc(value)));
 }
 
 const statusOptions: { value: TaskStatus; label: string }[] = [
@@ -328,6 +335,9 @@ export function TaskPreviewModal({
   const [assigneeOpen, setAssigneeOpen] = useState(false);
   const [dueDateOpen, setDueDateOpen] = useState(false);
   const [dueDateDraft, setDueDateDraft] = useState("");
+  const [pomodoroEstimateDraft, setPomodoroEstimateDraft] = useState(
+    current.pomodoroEstimate,
+  );
   const [activePanel, setActivePanel] = useState<"details" | "comments">(
     "details",
   );
@@ -339,6 +349,12 @@ export function TaskPreviewModal({
   const editingSubtaskOriginalTitleRef = useRef("");
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
   const cancelDescriptionRef = useRef(false);
+  const pomodoroDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pomodoroSavingRef = useRef(false);
+  const pomodoroLatestValueRef = useRef(current.pomodoroEstimate);
+  const pomodoroCommittedValueRef = useRef(current.pomodoroEstimate);
+  const pomodoroRevisionRef = useRef(0);
+  const pomodoroMountedRef = useRef(true);
   const hasTaskOverride = (field: EditableTaskField) =>
     Object.prototype.hasOwnProperty.call(taskOverrides, field);
   const displayStatus = taskOverrides.status ?? current.status;
@@ -480,6 +496,72 @@ export function TaskPreviewModal({
     if (updated) setDueDateOpen(false);
   };
 
+  const flushPomodoroEstimate = async () => {
+    if (pomodoroSavingRef.current) return;
+    const value = pomodoroLatestValueRef.current;
+    const revision = pomodoroRevisionRef.current;
+    if (value === pomodoroCommittedValueRef.current) return;
+
+    pomodoroSavingRef.current = true;
+    try {
+      await onUpdateTask(current.id, { pomodoroEstimate: value });
+      pomodoroCommittedValueRef.current = value;
+    } catch {
+      if (revision === pomodoroRevisionRef.current) {
+        pomodoroLatestValueRef.current = pomodoroCommittedValueRef.current;
+        if (pomodoroMountedRef.current) {
+          setPomodoroEstimateDraft(pomodoroCommittedValueRef.current);
+          toast.error("No pudimos actualizar los pomodoros estimados.");
+        }
+      }
+    } finally {
+      pomodoroSavingRef.current = false;
+      if (revision !== pomodoroRevisionRef.current && !pomodoroDebounceRef.current) {
+        pomodoroDebounceRef.current = setTimeout(() => {
+          pomodoroDebounceRef.current = null;
+          void flushPomodoroEstimate();
+        }, POMODORO_SAVE_DEBOUNCE_MS);
+      }
+    }
+  };
+
+  const queuePomodoroEstimate = (estimate: number) => {
+    if (pendingTaskField) return;
+    const nextEstimate = normalizePomodoroEstimate(estimate);
+    setPomodoroEstimateDraft(nextEstimate);
+    pomodoroLatestValueRef.current = nextEstimate;
+    pomodoroRevisionRef.current += 1;
+    if (pomodoroDebounceRef.current) clearTimeout(pomodoroDebounceRef.current);
+    pomodoroDebounceRef.current = setTimeout(() => {
+      pomodoroDebounceRef.current = null;
+      void flushPomodoroEstimate();
+    }, POMODORO_SAVE_DEBOUNCE_MS);
+  };
+
+  const flushPomodoroEstimateNow = () => {
+    if (pomodoroDebounceRef.current) clearTimeout(pomodoroDebounceRef.current);
+    pomodoroDebounceRef.current = null;
+    void flushPomodoroEstimate();
+  };
+
+  const resetPomodoroEstimate = () => {
+    if (pomodoroSavingRef.current) return;
+    if (pomodoroDebounceRef.current) clearTimeout(pomodoroDebounceRef.current);
+    pomodoroDebounceRef.current = null;
+    pomodoroLatestValueRef.current = pomodoroCommittedValueRef.current;
+    pomodoroRevisionRef.current += 1;
+    setPomodoroEstimateDraft(pomodoroCommittedValueRef.current);
+  };
+
+  const adjustPomodoroEstimate = (amount: number) => {
+    queuePomodoroEstimate(pomodoroLatestValueRef.current + amount);
+  };
+
+  const handleClose = () => {
+    flushPomodoroEstimateNow();
+    onClose();
+  };
+
   const updateRecurrence = (value: string) => {
     const repeatType =
       value === "NONE" ? undefined : (value as RecurrenceDraft["repeatType"]);
@@ -617,6 +699,19 @@ export function TaskPreviewModal({
     selection?.removeAllRanges();
     selection?.addRange(range);
   }, [editingSubtaskId]);
+
+  useEffect(() => {
+    pomodoroMountedRef.current = true;
+    return () => {
+      pomodoroMountedRef.current = false;
+      if (
+        pomodoroDebounceRef.current &&
+        pomodoroLatestValueRef.current === pomodoroCommittedValueRef.current
+      ) {
+        clearTimeout(pomodoroDebounceRef.current);
+      }
+    };
+  }, []);
 
   const toggleSubtask = async (subtaskId: string, completed: boolean) => {
     if (pendingSubtaskId) return;
@@ -871,7 +966,7 @@ export function TaskPreviewModal({
             </div>
           </div>
         }
-        onClose={onClose}
+        onClose={handleClose}
         title={current.title}
       >
         {activePanel === "details" ? (
@@ -1248,14 +1343,65 @@ export function TaskPreviewModal({
                       )}
                     </span>
                   </PreviewDetail>
-                  {(current.pomodoroCount > 0 ||
-                    current.pomodoroEstimate > 0) && (
-                    <PreviewDetail icon={Timer} label="Pomodoros">
-                      <span className="font-semibold text-error">
-                        {current.pomodoroCount} / {current.pomodoroEstimate}
+                  <PreviewDetail icon={Timer} label="Pomodoros">
+                    <span className="inline-flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest">
+                      <span
+                        aria-label={`${current.pomodoroCount} pomodoros completados`}
+                        className="px-2.5 font-data-mono text-data-mono text-sm font-semibold text-error"
+                      >
+                        {current.pomodoroCount}
                       </span>
-                    </PreviewDetail>
-                  )}
+                      <span aria-hidden="true" className="text-on-surface-variant">
+                        /
+                      </span>
+                      <input
+                        aria-label="Pomodoros estimados"
+                        className="number-input-no-spinner h-10 w-12 border-0 bg-transparent px-1 text-center font-data-mono text-data-mono text-sm font-semibold text-on-surface outline-none focus:bg-surface-container-low focus:ring-0"
+                        disabled={pendingTaskField !== null}
+                        max={100}
+                        min={0}
+                        onChange={(event) => {
+                          const value = Number(event.target.value);
+                          queuePomodoroEstimate(Number.isFinite(value) ? value : 0);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            flushPomodoroEstimateNow();
+                          }
+                          if (event.key === "Escape") {
+                            event.preventDefault();
+                            resetPomodoroEstimate();
+                            event.currentTarget.blur();
+                          }
+                        }}
+                        step={1}
+                        type="number"
+                        value={pomodoroEstimateDraft}
+                      />
+                      <span aria-hidden="true" className="mx-1 h-5 w-px bg-outline-variant" />
+                      <button
+                        aria-label="Disminuir pomodoros estimados"
+                        className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:cursor-wait disabled:opacity-50"
+                        disabled={pendingTaskField !== null || pomodoroEstimateDraft === 0}
+                        onClick={() => adjustPomodoroEstimate(-1)}
+                        onPointerDown={(event) => event.preventDefault()}
+                        type="button"
+                      >
+                        <Minus aria-hidden="true" size={15} />
+                      </button>
+                      <button
+                        aria-label="Aumentar pomodoros estimados"
+                        className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:cursor-wait disabled:opacity-50"
+                        disabled={pendingTaskField !== null || pomodoroEstimateDraft === 100}
+                        onClick={() => adjustPomodoroEstimate(1)}
+                        onPointerDown={(event) => event.preventDefault()}
+                        type="button"
+                      >
+                        <Plus aria-hidden="true" size={15} />
+                      </button>
+                    </span>
+                  </PreviewDetail>
                   <PreviewDetail icon={CalendarPlus} label="Creada el">
                     <span>{createdAtLabel(current.createdAt)}</span>
                   </PreviewDetail>

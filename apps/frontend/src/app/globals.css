@@ -184,6 +184,15 @@
     -webkit-appearance: auto;
     appearance: auto;
   }
+  .number-input-no-spinner {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .number-input-no-spinner::-webkit-inner-spin-button,
+  .number-input-no-spinner::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
   @media (max-width: 639px) {
     .field {
       height: 44px;

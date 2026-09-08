@@ -30,19 +30,6 @@ export function useTaskQuery(id: string | null) {
   return useQuery({ queryKey: ["task", id], queryFn: () => fetchTask(id as string), enabled: Boolean(id) });
 }
 
-export function useUnplannedTasksQuery(
-  params: Omit<TaskQuery, "limit" | "scheduled" | "status"> = {},
-  options?: { includeCompleted?: boolean },
-) {
-  return usePaginatedTasksQuery({
-    ...params,
-    scheduled: "UNPLANNED",
-    status: options?.includeCompleted ? undefined : ["PENDING", "IN_PROGRESS"],
-    sort: "priority",
-    order: "desc",
-  });
-}
-
 export function useTodayTasksQuery() {
   return useTasksQuery({
     status: "PENDING",

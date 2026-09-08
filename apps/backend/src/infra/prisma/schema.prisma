@@ -158,8 +158,8 @@ model TaskSchedule {
   taskId      String
   task        Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
   date        DateTime
-  timeBlockId String?
-  timeBlock   TimeBlock? @relation(fields: [timeBlockId], references: [id], onDelete: SetNull)
+  timeBlockId String
+  timeBlock   TimeBlock  @relation(fields: [timeBlockId], references: [id], onDelete: Cascade)
   order       Int        @default(0)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt

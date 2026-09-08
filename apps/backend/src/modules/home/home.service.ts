@@ -97,10 +97,10 @@ export class HomeService {
     const activeBlockTasks = todaySchedules
       .filter((schedule) => schedule.timeBlockId === activeBlock?.id && schedule.occurrence?.occurs !== false)
       .map((schedule) => schedule.task);
-    const plannedTodayTasks = todaySchedules
+    const todayBlockTasks = todaySchedules
       .map((schedule) => ({
         ...schedule.task,
-        scheduleState: schedule.occurrence?.occurs === false ? "REPLAN" as const : "PLANNED" as const,
+        scheduleState: schedule.occurrence?.occurs === false ? "REPLAN" as const : "ASSIGNED" as const,
       }));
 
     const occurrence = nextBlockOccurrence(allBlocks, exceptions as TimeBlockExceptionRow[], now);
@@ -226,7 +226,7 @@ export class HomeService {
       activeBlock,
       activeEvent,
       blockTasks: activeBlockTasks.slice(0, 20),
-      todayTasks: plannedTodayTasks.slice(0, 50),
+      todayTasks: todayBlockTasks.slice(0, 50),
       urgentTasks,
       futureTasks,
       futureBlocks,

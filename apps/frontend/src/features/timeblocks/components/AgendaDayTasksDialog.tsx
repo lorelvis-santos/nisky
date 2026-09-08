@@ -66,7 +66,7 @@ export function AgendaDayTasksDialog({
               Tareas del {formatDay(date)}
             </DialogTitle>
             <DialogDescription className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-              {schedules.length} {schedules.length === 1 ? "tarea planificada" : "tareas planificadas"}
+              {schedules.length} {schedules.length === 1 ? "tarea asignada" : "tareas asignadas"}
             </DialogDescription>
           </div>
           <DialogClose asChild>

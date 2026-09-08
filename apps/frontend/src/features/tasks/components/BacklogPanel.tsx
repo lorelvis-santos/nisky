@@ -9,7 +9,6 @@ export function BacklogPanel({
   onOpen,
   onEdit,
   previewedTaskId,
-  onPlanToday,
   onToggle,
   onStartPomodoro,
 }: {
@@ -18,7 +17,6 @@ export function BacklogPanel({
   onOpen: (task: Task) => void;
   onEdit: (task: Task) => void;
   previewedTaskId?: string | null;
-  onPlanToday: (task: Task) => void;
   onToggle: (task: Task) => void;
   onStartPomodoro: (task: Task) => void;
 }) {
@@ -27,10 +25,10 @@ export function BacklogPanel({
       <header className="flex flex-wrap items-end justify-between gap-2 border-b border-outline-variant pb-3">
         <div>
           <h2 className="font-headline-xs text-headline-xs font-semibold text-on-surface">
-            Por organizar
+            Sin fecha límite
           </h2>
           <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-            Sin fecha ni día planificado.
+            Tareas que todavía no tienen fecha límite.
           </p>
         </div>
         <span className="font-data-mono text-data-mono text-[11px] text-on-surface-variant">
@@ -40,10 +38,10 @@ export function BacklogPanel({
       {tasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest px-6 py-12 text-center">
           <p className="font-headline-xs text-headline-xs font-semibold text-on-surface">
-            No hay tareas por organizar
+            No hay tareas sin fecha límite
           </p>
-          <p className="mt-1 max-w-sm font-body-sm text-body-sm text-on-surface-variant">
-            Las tareas nuevas sin fecha aparecerán aquí.
+            <p className="mt-1 max-w-sm font-body-sm text-body-sm text-on-surface-variant">
+              Las tareas nuevas sin fecha límite aparecerán aquí.
           </p>
         </div>
       ) : (
@@ -51,10 +49,9 @@ export function BacklogPanel({
           {tasks.map((task) => (
             <TaskCardShell
               key={task.id}
-              onEdit={() => onEdit(task)}
-              onOpen={() => onOpen(task)}
-              onPlanToday={() => onPlanToday(task)}
-              onStartPomodoro={() => onStartPomodoro(task)}
+               onEdit={() => onEdit(task)}
+               onOpen={() => onOpen(task)}
+               onStartPomodoro={() => onStartPomodoro(task)}
               onToggle={() => onToggle(task)}
               isPreviewed={previewedTaskId === task.id}
               task={task}

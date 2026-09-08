@@ -193,7 +193,7 @@ export function TimeBlockWeekGrid({
     { length: Math.floor((dayEndMin - dayStartMin) / 60) },
     (_, index) => dayStartMin + (index + 1) * 60,
   );
-  const plannedTaskCountsByDate = taskSchedules.reduce<Record<string, number>>((counts, schedule) => {
+  const assignedTaskCountsByDate = taskSchedules.reduce<Record<string, number>>((counts, schedule) => {
     const date = schedule.date.slice(0, 10);
     counts[date] = (counts[date] ?? 0) + 1;
     return counts;
@@ -892,18 +892,18 @@ export function TimeBlockWeekGrid({
                     {day.date.getDate()}
                   </p>
                  </span>
-                 {onDayTasksClick && (plannedTaskCountsByDate[toDateKey(day.date)] ?? 0) > 0 && (
-                   <button
-                     aria-label={`Ver ${plannedTaskCountsByDate[toDateKey(day.date)]} ${plannedTaskCountsByDate[toDateKey(day.date)] === 1 ? "tarea" : "tareas"} planificadas`}
+                  {onDayTasksClick && (assignedTaskCountsByDate[toDateKey(day.date)] ?? 0) > 0 && (
+                    <button
+                      aria-label={`Ver ${assignedTaskCountsByDate[toDateKey(day.date)]} ${assignedTaskCountsByDate[toDateKey(day.date)] === 1 ? "tarea" : "tareas"} asignadas`}
                      className="mx-auto mt-1 inline-flex max-w-full items-center truncate rounded-full bg-primary-container px-2 py-0.5 font-label-caps text-[10px] uppercase text-on-primary transition-colors hover:bg-primary-container/80"
                      onClick={(event) => {
                        event.stopPropagation();
                        onDayTasksClick(toDateKey(day.date));
                      }}
-                     title="Ver tareas planificadas"
+                      title="Ver tareas asignadas"
                      type="button"
                    >
-                     {plannedTaskCountsByDate[toDateKey(day.date)]} {plannedTaskCountsByDate[toDateKey(day.date)] === 1 ? "tarea" : "tareas"}
+                      {assignedTaskCountsByDate[toDateKey(day.date)]} {assignedTaskCountsByDate[toDateKey(day.date)] === 1 ? "tarea" : "tareas"}
                    </button>
                  )}
                  <div className="mt-1 flex flex-col gap-1">

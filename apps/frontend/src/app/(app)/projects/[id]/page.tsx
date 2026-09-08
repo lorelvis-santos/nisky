@@ -31,7 +31,6 @@ import { useProjectMembers, useProjectMutations, useProjectQuery } from "@/featu
 import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
 import { TaskPreviewModal } from "@/features/tasks/components/TaskPreviewModal";
 import { usePaginatedTasksQuery, useTaskMutations } from "@/features/tasks/hooks/useTasks";
-import { useTaskScheduleMutations } from "@/features/task-schedules/hooks/useTaskSchedules";
 import type { Task, TaskPriority } from "@/types/entities";
 
 type ProjectTab = ProjectVisibleTab;
@@ -54,7 +53,6 @@ function ProjectDetailPageContent() {
   const membersQuery = useProjectMembers(projectId);
   const projectMutations = useProjectMutations();
   const taskMutations = useTaskMutations();
-  const scheduleMutations = useTaskScheduleMutations();
 
   const [taskPage, setTaskPage] = useState(1);
   const [taskMode, setTaskMode] = useState<ProjectTaskMode>("ACTIVE");
@@ -129,32 +127,12 @@ function ProjectDetailPageContent() {
           id: editingTask.id,
           payload: { ...common, description: form.description?.trim() || null, dueDate: form.dueDate || null },
         });
-        if (form.scheduleChanged) {
-          if (form.plannedDate) {
-            await scheduleMutations.save.mutateAsync({
-              taskId: editingTask.id,
-              payload: { date: form.plannedDate, timeBlockId: null },
-            });
-          } else {
-            await scheduleMutations.remove.mutateAsync(editingTask.id);
-          }
-        }
       } else {
-        const createdTask = await taskMutations.create.mutateAsync({
+        await taskMutations.create.mutateAsync({
           ...common,
           description: form.description?.trim() || undefined,
           dueDate: form.dueDate || undefined,
         });
-        if (form.plannedDate) {
-          try {
-            await scheduleMutations.save.mutateAsync({
-              taskId: createdTask.id,
-              payload: { date: form.plannedDate, timeBlockId: null },
-            });
-          } catch {
-            toast.warning("La tarea se creó, pero no pudimos planificarla.");
-          }
-        }
       }
       closeTaskModal();
       toast.success(editingTask ? "Tarea actualizada" : "Tarea creada en el proyecto");

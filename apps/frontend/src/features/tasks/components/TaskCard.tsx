@@ -1,21 +1,11 @@
 "use client";
 
-import { CalendarDays, CheckCircle2, CheckSquare2, Circle, GripVertical, MessageSquare, Pencil, Play, Square, Timer } from "lucide-react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
+import { CalendarDays, CheckCircle2, CheckSquare2, Circle, MessageSquare, Pencil, Play, Square, Timer } from "lucide-react";
 import type { Task } from "@/types/entities";
 import { cn, isTaskOverdue } from "@/lib/utils";
 import { PriorityChip } from "./PriorityChip";
-import { taskDragId } from "../dnd/TasksDnDProvider";
 import { formatTaskDueDate } from "../lib/task-utils";
 import { useTaskSelection } from "../selection/TaskSelectionContext";
-
-type HandleProps = {
-  ref: (node: HTMLElement | null) => void;
-  attributes: DraggableAttributes;
-  listeners: DraggableSyntheticListeners;
-};
 
 export function TaskCardShell({
   task,
@@ -24,11 +14,7 @@ export function TaskCardShell({
   isPreviewed = false,
   onToggle,
   onPostponeToday,
-  onPlanToday,
   onStartPomodoro,
-  dragging = false,
-  dropTarget = false,
-  handleProps,
 }: {
   task: Task;
   onOpen: () => void;
@@ -36,11 +22,7 @@ export function TaskCardShell({
   isPreviewed?: boolean;
   onToggle: () => void;
   onPostponeToday?: () => void;
-  onPlanToday?: () => void;
   onStartPomodoro?: () => void;
-  dragging?: boolean;
-  dropTarget?: boolean;
-  handleProps?: HandleProps;
 }) {
   const completed = task.status === "COMPLETED";
   const overdue = isTaskOverdue(task);
@@ -63,9 +45,7 @@ export function TaskCardShell({
          selected ? "border-2 border-primary bg-primary-fixed/20" : completed ? "border-outline-variant/60 opacity-60" : "border-outline-variant",
          isPreviewed && !selected && "border-2 border-primary bg-primary-fixed/20 shadow-md",
          isSelecting && !selected && "hover:border-primary/60",
-        overdue && "border-l-4 border-l-error hover:border-l-error hover:shadow-md",
-        dropTarget && "border-2 border-primary bg-primary-container/20",
-        dragging && "opacity-40",
+         overdue && "border-l-4 border-l-error hover:border-l-error hover:shadow-md",
       )}
       data-task-card
       data-task-id={task.id}
@@ -112,20 +92,6 @@ export function TaskCardShell({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {isPreviewed && <span className="hidden rounded-md bg-primary-fixed px-2 py-1 font-label-caps text-[10px] font-semibold uppercase tracking-wide text-primary sm:inline-flex">Abierta en panel</span>}
-          {/* eslint-disable react-hooks/refs -- los listeners de dnd-kit se aplican por spread (falso positivo) */}
-          {handleProps && !isSelecting && (
-            <button
-              aria-label={`Arrastrar ${task.title}`}
-              className="flex cursor-grab touch-none items-center rounded-md p-1 text-on-surface-variant hover:bg-surface-container-low hover:text-primary active:cursor-grabbing"
-              ref={handleProps.ref}
-              type="button"
-              {...handleProps.attributes}
-              {...handleProps.listeners}
-            >
-              <GripVertical size={16} />
-            </button>
-          )}
-          {/* eslint-enable react-hooks/refs */}
           {!isSelecting && (
             <button
               aria-label={`Editar ${task.title}`}
@@ -170,19 +136,7 @@ export function TaskCardShell({
            {(task.commentCount ?? 0) > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-on-surface-variant" title="Comentarios"><MessageSquare size={12} /> {task.commentCount}</span>}
            {((task.pomodoroCount ?? 0) > 0 || (task.pomodoroEstimate ?? 0) > 0) && <span className="flex items-center gap-1 font-data-mono text-data-mono text-tertiary" title="Pomodoros"><Timer size={12} /> {task.pomodoroCount ?? 0}/{task.pomodoroEstimate ?? 0}</span>}
            {subtaskTotal > 0 && <span className="flex items-center gap-1 font-data-mono text-data-mono text-secondary" title="Subtareas"><CheckSquare2 size={12} /> {completedSubtasks}/{subtaskTotal}</span>}
-           {onPlanToday && !isSelecting && (
-             <button
-               className="inline-flex h-8 items-center rounded-lg border border-outline-variant bg-surface-container-low px-2.5 font-label-md text-label-md font-semibold text-secondary hover:bg-secondary-fixed"
-               onClick={(event) => {
-                 event.stopPropagation();
-                 onPlanToday();
-               }}
-               type="button"
-             >
-               Planificar hoy
-             </button>
-           )}
-           {overdue && onPostponeToday && !isSelecting && (
+            {overdue && onPostponeToday && !isSelecting && (
              <button
                 className="inline-flex h-8 items-center rounded-lg border border-outline-variant bg-surface-container-low px-2.5 font-label-md text-label-md font-semibold text-on-surface hover:border-error/30 hover:bg-error-container hover:text-on-error-container"
                onClick={(event) => {
@@ -198,44 +152,5 @@ export function TaskCardShell({
         </div>
       </div>
     </article>
-  );
-}
-
-export function SortableTaskCard({
-  task,
-  onOpen,
-  onEdit,
-  isPreviewed,
-  onToggle,
-  onStartPomodoro,
-}: {
-  task: Task;
-  onOpen: () => void;
-  onEdit?: () => void;
-  isPreviewed?: boolean;
-  onToggle: () => void;
-  onStartPomodoro?: () => void;
-}) {
-  const { attributes, isDragging, listeners, over, setActivatorNodeRef, setNodeRef, transform, transition } = useSortable({
-    id: taskDragId(task.id),
-  });
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    transition,
-  };
-  return (
-    <div ref={setNodeRef} style={style}>
-      <TaskCardShell
-        dragging={isDragging}
-        dropTarget={Boolean(over) && over?.id === taskDragId(task.id)}
-         handleProps={{ attributes, listeners, ref: setActivatorNodeRef }}
-          onEdit={onEdit}
-          isPreviewed={isPreviewed}
-          onOpen={onOpen}
-        onStartPomodoro={onStartPomodoro}
-        onToggle={onToggle}
-        task={task}
-      />
-    </div>
   );
 }

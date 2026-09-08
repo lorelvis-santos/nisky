@@ -2,17 +2,17 @@
 
 Organiza tus días, tus tareas, tus hábitos y tus notas desde un solo lugar.
 
-Nisky reúne en un solo lugar todo lo que necesitas para organizar tu día a día. Planifica tu semana, gestiona tus tareas, crea hábitos, toma notas, escribe en tu diario y mantén el foco cuando más lo necesites.
+Nisky reúne en un solo lugar todo lo que necesitas para organizar tu día a día. Gestiona tus tareas, reserva tiempo en tu Agenda, crea hábitos, toma notas, escribe en tu diario y mantén el foco cuando más lo necesites.
 
 ## Lo que puedes hacer
 
-* **Tareas:** organiza tu semana con un tablero de arrastrar y soltar, además de una lista para todo lo que aún no tiene fecha.
+* **Tareas:** gestiona tus fechas límite y asígnalas a bloques de la Agenda cuando quieras reservar tiempo para trabajarlas.
 * **Hábitos:** registra tus hábitos diarios y sigue tus rachas de forma sencilla.
 * **Capturas rápidas:** guarda cualquier idea, pendiente o recordatorio en segundos. Más tarde puedes revisarlo y, si lo deseas, convertirlo en una tarea.
 * **Pomodoro:** concéntrate en una tarea con el modo de enfoque y consulta tu historial y estadísticas.
 * **Diario y notas:** escribe en un diario cifrado en el servidor y guarda tus apuntes en una base de conocimiento organizada.
 * **Recordatorios:** recibe avisos dentro de la aplicación y notificaciones push, con opciones para repetir o posponer.
-* **Moodle:** conecta tu cuenta para importar las tareas de tu aula virtual. Se integran como tareas nativas de Nisky para que puedas planificar tu semana sin cambiar de aplicación.
+* **Moodle:** conecta tu cuenta para importar las tareas de tu aula virtual. Se integran como tareas nativas de Nisky para que puedas gestionarlas sin cambiar de aplicación.
 
 ## Próximamente
 

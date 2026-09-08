@@ -24,8 +24,6 @@ export type TaskForm = {
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  plannedDate?: string;
-  scheduleChanged?: boolean;
   dueDate?: string;
   pomodoroEstimate: number;
   projectId?: string;
@@ -45,8 +43,6 @@ const emptyForm: TaskForm = {
   description: "",
   status: "PENDING",
   priority: "NORMAL",
-  plannedDate: "",
-  scheduleChanged: false,
   dueDate: "",
   pomodoroEstimate: 0,
   recurrence: emptyRecurrence,
@@ -96,9 +92,7 @@ export function TaskModal({
           status: task.status,
           priority: task.priority,
            dueDate: task.dueDate ? toDatetimeLocal(task.dueDate) : "",
-           plannedDate: initialForm?.plannedDate ?? "",
-           scheduleChanged: false,
-           pomodoroEstimate: task.pomodoroEstimate,
+            pomodoroEstimate: task.pomodoroEstimate,
           projectId: task.projectId ?? defaultProjectId ?? defaultProject?.id ?? "",
           assigneeId: task.assigneeId ?? null,
           recurrence: task.recurrenceType
@@ -117,7 +111,6 @@ export function TaskModal({
           ...emptyForm,
           ...initialForm,
           projectId: initialForm?.projectId ?? defaultProjectId ?? defaultProject?.id ?? "",
-          scheduleChanged: initialForm?.scheduleChanged ?? Boolean(initialForm?.plannedDate),
         },
    );
   const [error, setError] = useState("");
@@ -157,11 +150,7 @@ export function TaskModal({
       return;
     }
     setError("");
-    await onSave({
-      ...result.data,
-      plannedDate: form.plannedDate,
-      scheduleChanged: form.scheduleChanged,
-    });
+    await onSave(result.data);
   };
   const setRecurrence = (patch: Partial<TaskRecurrenceFormData>) => {
     setForm({ ...form, recurrence: { ...(form.recurrence ?? emptyRecurrence), ...patch } });
@@ -268,23 +257,7 @@ export function TaskModal({
                  ))}
                </select>
              </label>
-              <label className="block">
-                <span className="font-label-caps text-label-caps text-on-surface-variant">
-                  PLANIFICAR PARA (OPCIONAL)
-                </span>
-                <input
-                  className="field mt-1 min-h-11"
-                  onChange={(event) =>
-                    setForm({ ...form, plannedDate: event.target.value, scheduleChanged: true })
-                  }
-                  type="date"
-                  value={form.plannedDate ?? ""}
-                />
-                <p className="mt-1 font-body-xs text-body-xs text-on-surface-variant">
-                  Asigna un día de trabajo sin cambiar la fecha límite.
-                </p>
-              </label>
-              <label className="block">
+               <label className="block">
                 <span className="font-label-caps text-label-caps text-on-surface-variant">
                   PRIORIDAD
                </span>

@@ -114,8 +114,6 @@ export class TaskService {
       ...(query.projectId ? { projectId: query.projectId } : {}),
       ...(query.assigneeId ? { assigneeId: query.assigneeId === "__unassigned__" ? null : query.assigneeId } : {}),
       ...(query.q ? { AND: [{ OR: [{ title: { contains: query.q } }, { description: { contains: query.q } }] }] } : {}),
-      ...(query.scheduled === "PLANNED" ? { schedules: { some: { userId } } } : {}),
-      ...(query.scheduled === "UNPLANNED" ? { schedules: { none: { userId } } } : {}),
       ...(query.due === "SET" ? { dueDate: { not: null } } : query.due === "UNSET" ? { dueDate: null } : {}),
     };
 

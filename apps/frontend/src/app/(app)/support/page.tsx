@@ -7,9 +7,9 @@ import { MyFeedbackList } from "@/components/feedback/MyFeedbackList";
 
 const FAQS: Array<{ question: string; answer: string }> = [
   {
-    question: "¿Cómo planifico mis tareas?",
+    question: "¿Cómo organizo mis tareas?",
     answer:
-      "Entra a Tareas. Usa la Lista para revisar tus vencimientos y la sección Por organizar para ordenar lo que todavía no tiene fecha ni está planificado. Para reservar una hora concreta, usa Agenda.",
+      "Entra a Tareas. Usa la Lista para revisar tus fechas límite y la sección Sin fecha límite para encontrar lo que todavía necesita una fecha. Para reservar una hora concreta, crea un bloque en Agenda y asígnale las tareas.",
   },
   {
     question: "¿Qué es la Agenda?",

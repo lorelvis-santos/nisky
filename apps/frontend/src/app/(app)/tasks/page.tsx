@@ -43,10 +43,6 @@ import {
   useAccessibleProjects,
   useProjectsQuery,
 } from "@/features/projects/hooks/useProjects";
-import {
-  useTaskScheduleMutations,
-  useTaskSchedulesQuery,
-} from "@/features/task-schedules/hooks/useTaskSchedules";
 import { localDateKey } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import {
@@ -77,32 +73,20 @@ function useModalUrl() {
 
   return {
     state,
-    openTask: (taskId: string, plannedDate?: string) => {
+    openTask: (taskId: string) => {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("modal");
       params.delete("prefill");
       params.delete("quickNoteId");
       params.set("taskId", taskId);
-      if (plannedDate) {
-        params.set(
-          "prefill",
-          encodeURIComponent(JSON.stringify({ plannedDate })),
-        );
-      }
       navigateWithModal(params);
     },
-    openEdit: (taskId: string, plannedDate?: string) => {
+    openEdit: (taskId: string) => {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("prefill");
       params.delete("quickNoteId");
       params.set("modal", "edit");
       params.set("taskId", taskId);
-      if (plannedDate) {
-        params.set(
-          "prefill",
-          encodeURIComponent(JSON.stringify({ plannedDate })),
-        );
-      }
       navigateWithModal(params);
     },
     openCreate: () => {
@@ -120,16 +104,6 @@ function useModalUrl() {
       params.set(
         "prefill",
         encodeURIComponent(JSON.stringify({ title: "", dueDate })),
-      );
-      navigateWithModal(params);
-    },
-    openCreateWithPlannedDate: (plannedDate: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("taskId");
-      params.set("modal", "create");
-      params.set(
-        "prefill",
-        encodeURIComponent(JSON.stringify({ title: "", plannedDate })),
       );
       navigateWithModal(params);
     },
@@ -156,18 +130,11 @@ function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
     if (!parsed || typeof parsed !== "object") return undefined;
     const source = parsed as Record<string, unknown>;
     const rawDueDate = typeof source.dueDate === "string" ? source.dueDate : "";
-    const rawPlannedDate =
-      typeof source.plannedDate === "string" ? source.plannedDate : "";
-    const plannedDate = /^\d{4}-\d{2}-\d{2}$/.test(rawPlannedDate)
-      ? rawPlannedDate
-      : "";
     return {
       title: typeof source.title === "string" ? source.title.trim() : "",
       dueDate: /^\d{4}-\d{2}-\d{2}$/.test(rawDueDate)
         ? `${rawDueDate}T23:59`
         : rawDueDate,
-      plannedDate,
-      scheduleChanged: Boolean(plannedDate),
       status: "PENDING",
       priority: "NORMAL",
       description: "",
@@ -176,27 +143,6 @@ function parsePrefill(value: string | null): Partial<TaskForm> | undefined {
   } catch {
     return undefined;
   }
-}
-
-function matchesTaskFilters(
-  task: Task,
-  search: string,
-  priority: TaskPriority | "ALL",
-  statusFilter: "ACTIVE" | "COMPLETED" | "ALL",
-  projectId: string | null,
-) {
-  const normalizedSearch = search.trim().toLocaleLowerCase();
-  if (
-    normalizedSearch &&
-    !`${task.title} ${task.description ?? ""}`.toLocaleLowerCase().includes(normalizedSearch)
-  ) {
-    return false;
-  }
-  if (priority !== "ALL" && task.priority !== priority) return false;
-  if (statusFilter === "ACTIVE" && !["PENDING", "IN_PROGRESS"].includes(task.status)) return false;
-  if (statusFilter === "COMPLETED" && task.status !== "COMPLETED") return false;
-  if (projectId && task.projectId !== projectId) return false;
-  return true;
 }
 
 type TaskView = "list" | "backlog";
@@ -267,18 +213,14 @@ function TasksPageContent() {
   const backlogQuery = usePaginatedTasksQuery(
     {
       ...commonQuery,
-      scheduled: "UNPLANNED",
       due: "UNSET",
       page: view === "backlog" ? taskPage : 1,
     },
     { pageSize: view === "backlog" ? 25 : 1 },
   );
   const query = view === "backlog" ? backlogQuery : listQuery;
-  const todayKey = localDateKey(new Date());
-  const todaySchedulesQuery = useTaskSchedulesQuery({ from: todayKey, to: todayKey });
   const urlTaskQuery = useTaskQuery(modalUrl.state.taskId);
   const mutations = useTaskMutations();
-  const scheduleMutations = useTaskScheduleMutations();
   const projectsQuery = useProjectsQuery();
   const accessibleProjectsQuery = useAccessibleProjects();
   const allProjects = useMemo(() => {
@@ -289,26 +231,13 @@ function TasksPageContent() {
     return merged;
   }, [projectsQuery.data, accessibleProjectsQuery.data]);
   const allTasks = query.data?.data ?? emptyTasks;
-  const plannedTodayTasks = useMemo(() => {
-    if (view !== "list") return emptyTasks;
-    return (todaySchedulesQuery.data ?? [])
-      .filter((schedule) => schedule.occurrence?.occurs !== false)
-      .map((schedule) => schedule.task)
-      .filter((task) => matchesTaskFilters(task, search, priority, statusFilter, selectedProjectId));
-  }, [priority, search, selectedProjectId, statusFilter, todaySchedulesQuery.data, view]);
-  const tasks = useMemo(() => {
-    if (view !== "list" || plannedTodayTasks.length === 0) return allTasks;
-    const existingIds = new Set(allTasks.map((task) => task.id));
-    return [...allTasks, ...plannedTodayTasks.filter((task) => !existingIds.has(task.id))];
-  }, [allTasks, plannedTodayTasks, view]);
+  const tasks = allTasks;
   const selectedTasks = useMemo(
     () => tasks.filter((task) => selection.selectedIds.has(task.id)),
     [tasks, selection.selectedIds],
   );
   const backlogCount = backlogQuery.data?.meta.totalItems ?? 0;
-  const listCount =
-    (listQuery.data?.meta.totalItems ?? 0) +
-    plannedTodayTasks.filter((task) => !task.dueDate).length;
+  const listCount = listQuery.data?.meta.totalItems ?? 0;
   const totalCount = backlogCount + listCount;
   const activeFilterCount =
     (statusFilter !== "ACTIVE" ? 1 : 0) +
@@ -378,9 +307,8 @@ function TasksPageContent() {
   };
 
   const saveTask = async (form: TaskForm) => {
-    const { plannedDate, scheduleChanged, ...taskForm } = form;
     const payload = {
-      ...taskForm,
+      ...form,
       description: form.description || undefined,
       dueDate: form.dueDate || undefined,
       recurrence: {
@@ -401,28 +329,8 @@ function TasksPageContent() {
           id: editingTask.id,
           payload: updatePayload,
         });
-        if (scheduleChanged) {
-          if (plannedDate) {
-            await scheduleMutations.save.mutateAsync({
-              taskId: editingTask.id,
-              payload: { date: plannedDate, timeBlockId: null },
-            });
-          } else {
-            await scheduleMutations.remove.mutateAsync(editingTask.id);
-          }
-        }
       } else {
-        const createdTask = await mutations.create.mutateAsync(payload);
-        if (plannedDate) {
-          try {
-            await scheduleMutations.save.mutateAsync({
-              taskId: createdTask.id,
-              payload: { date: plannedDate, timeBlockId: null },
-            });
-          } catch {
-            toast.warning("La tarea se creó, pero no pudimos planificarla.");
-          }
-        }
+        await mutations.create.mutateAsync(payload);
         if (modalUrl.state.quickNoteId) {
           try {
             await archiveQuickNote(modalUrl.state.quickNoteId);
@@ -444,8 +352,7 @@ function TasksPageContent() {
 
   const openCreate = () => modalUrl.openCreate();
   const openPreview = (task: Task) => modalUrl.openTask(task.id);
-  const openEdit = (task: Task, plannedDate?: string) =>
-    modalUrl.openEdit(task.id, plannedDate);
+  const openEdit = (task: Task) => modalUrl.openEdit(task.id);
   const openFocus = (task: Task) =>
     modalUrl.openFocus(task.id, task.projectId ?? undefined);
   const closeModal = () => modalUrl.close();
@@ -501,37 +408,6 @@ function TasksPageContent() {
       toast.success("¡Listo, tarea pospuesta para hoy!");
     } catch {
       toast.error("Ups, no pudimos cambiar la fecha.");
-    }
-  };
-
-  const planToday = async (task: Task) => {
-    try {
-      await scheduleMutations.save.mutateAsync({
-        taskId: task.id,
-        payload: { date: localDateKey(new Date()), timeBlockId: null },
-      });
-      toast.success("¡Listo, tarea planificada para hoy!");
-    } catch {
-      toast.error("Ups, no pudimos planificar la tarea.");
-    }
-  };
-
-  const planSelectedToday = async () => {
-    if (selectedTasks.length === 0) return;
-    try {
-      const date = localDateKey(new Date());
-      await Promise.all(
-        selectedTasks.map((task) =>
-          scheduleMutations.save.mutateAsync({
-            taskId: task.id,
-            payload: { date, timeBlockId: null },
-          }),
-        ),
-      );
-      selection.clear();
-      toast.success("¡Listo, tareas planificadas para hoy!");
-    } catch {
-      toast.error("Ups, no pudimos planificar todas las tareas.");
     }
   };
 
@@ -598,7 +474,7 @@ function TasksPageContent() {
                 role="tab"
                 type="button"
               >
-                Por organizar
+                 Sin fecha límite
                 {backlogCount > 0 && (
                   <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-surface-container-highest px-1.5 py-0.5 font-label-md text-[11px] leading-4 font-semibold text-secondary">
                     {backlogCount}
@@ -846,18 +722,7 @@ function TasksPageContent() {
               </option>
             ))}
           </select>
-          <button
-            className="flex h-8 items-center gap-1.5 rounded-md border border-outline-variant px-3 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:opacity-50"
-            disabled={
-              selection.selectedIds.size === 0 ||
-              scheduleMutations.save.isPending
-            }
-            onClick={() => void planSelectedToday()}
-            type="button"
-          >
-            Planificar hoy
-          </button>
-          <button
+           <button
             aria-label="Eliminar tareas seleccionadas"
             className="flex h-8 items-center gap-1.5 rounded-md border border-outline-variant px-3 font-body-sm text-body-sm text-error hover:bg-error hover:text-error-foreground disabled:opacity-50"
             disabled={selection.selectedIds.size === 0}
@@ -894,7 +759,6 @@ function TasksPageContent() {
                     count={backlogCount}
                     onEdit={openEdit}
                     onOpen={openPreview}
-                    onPlanToday={(task) => void planToday(task)}
                     onStartPomodoro={openFocus}
                     onToggle={(task) => void toggleTask(task)}
                     tasks={tasks}
@@ -908,7 +772,6 @@ function TasksPageContent() {
                     onPostponeToday={(task) => void postponeToday(task)}
                     onStartPomodoro={openFocus}
                     onToggle={(task) => void toggleTask(task)}
-                    plannedTasks={plannedTodayTasks}
                     tasks={tasks}
                     previewedTaskId={previewOpen ? modalUrl.state.taskId : null}
                   />

@@ -11,7 +11,6 @@ export interface TaskQuery {
   q?: string;
   projectId?: string;
   assigneeId?: string;
-  scheduled?: "ALL" | "PLANNED" | "UNPLANNED";
   due?: "ALL" | "SET" | "UNSET";
   sort?: "priority" | "dueDate" | "createdAt" | "title";
   order?: "asc" | "desc";

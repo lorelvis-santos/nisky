@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTaskSchedules, removeTaskSchedule, reorderTaskSchedules, saveTaskSchedule, type TaskSchedulePayload, type TaskScheduleQuery } from "../api/taskSchedules";
+import { getTaskSchedules, removeTaskSchedule, saveTaskSchedule, type TaskSchedulePayload, type TaskScheduleQuery } from "../api/taskSchedules";
 import type { TaskSchedule } from "@/types/entities";
 
 type SaveVariables = {
@@ -58,7 +58,7 @@ export function useTaskScheduleMutations() {
         const replacement = optimisticSchedule ?? (existing ? {
           ...existing,
           date: payload.date,
-          timeBlockId: payload.timeBlockId ?? null,
+          timeBlockId: payload.timeBlockId,
           order: payload.order ?? existing.order,
         } : null);
         const next = current.filter((schedule) => schedule.taskId !== taskId);
@@ -89,25 +89,5 @@ export function useTaskScheduleMutations() {
     },
     onSettled: invalidate,
   });
-  const reorder = useMutation<unknown, unknown, { date: string; items: { taskId: string; order: number }[] }, ScheduleMutationContext>({
-    mutationFn: ({ date, items }: { date: string; items: { taskId: string; order: number }[] }) => reorderTaskSchedules(date, items),
-    onMutate: async ({ date, items }) => {
-      await client.cancelQueries({ queryKey: ["task-schedules"] });
-      const previous = client.getQueriesData<TaskSchedule[]>({ queryKey: ["task-schedules"] });
-      const orders = new Map(items.map((item) => [item.taskId, item.order]));
-      client.setQueriesData<TaskSchedule[]>({ queryKey: ["task-schedules"] }, (current) =>
-        current ? sortSchedules(current.map((schedule) =>
-          schedule.date === date && orders.has(schedule.taskId)
-            ? { ...schedule, order: orders.get(schedule.taskId)! }
-            : schedule,
-        )) : current,
-      );
-      return { previous };
-    },
-    onError: (_error, _variables, context) => {
-      context?.previous.forEach(([queryKey, data]) => client.setQueryData(queryKey, data));
-    },
-    onSettled: invalidate,
-  });
-  return { save, remove, reorder };
+  return { save, remove };
 }

@@ -3,7 +3,6 @@
 import { ChevronLeft, ChevronRight, Plus, SlidersHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { TimeBlockEditor } from "@/features/timeblocks/components/TimeBlockEditor";
 import { TimeBlockPreviewModal } from "@/features/timeblocks/components/TimeBlockPreviewModal";
@@ -233,7 +232,6 @@ function DesktopEditorModal({
 }
 
 function TimeBlocksContent() {
-  const router = useRouter();
   const query = useTimeBlocksQuery();
   const mutations = useTimeBlockMutations();
   const projectsQuery = useProjectsQuery();
@@ -692,11 +690,10 @@ function TimeBlocksContent() {
           exceptions={exceptions}
           onAdd={openMobileCreate}
            onBlockClick={openBlockPreview}
-          onDateChange={setMobileDate}
-          onDayTasksClick={(date) => setDayTaskDate(date)}
+           onDateChange={setMobileDate}
+           onDayTasksClick={(date) => setDayTaskDate(date)}
            onEventClick={openEventPreview}
-           onTaskClick={(task) => router.push(`/tasks?taskId=${encodeURIComponent(task.id)}`)}
-          onNextDay={() => shiftMobileDate(1)}
+           onNextDay={() => shiftMobileDate(1)}
           onPreviousDay={() => shiftMobileDate(-1)}
           onToday={() => setMobileDate(new Date())}
           onViewChange={setMobileView}

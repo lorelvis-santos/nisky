@@ -92,7 +92,6 @@ export const taskQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   projectId: z.uuid("El proyecto no es válido").optional(),
   assigneeId: z.union([z.uuid("El asignado no es válido"), z.literal("__unassigned__")]).optional(),
-  scheduled: z.enum(["ALL", "PLANNED", "UNPLANNED"]).default("ALL"),
   due: z.enum(["ALL", "SET", "UNSET"]).default("ALL"),
 });
 

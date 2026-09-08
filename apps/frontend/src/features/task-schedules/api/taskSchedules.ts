@@ -11,7 +11,7 @@ export type TaskScheduleQuery = {
 
 export type TaskSchedulePayload = {
   date: string;
-  timeBlockId?: string | null;
+  timeBlockId: string;
   order?: number;
 };
 
@@ -27,10 +27,6 @@ export async function saveTaskSchedule(taskId: string, payload: TaskSchedulePayl
 
 export async function removeTaskSchedule(taskId: string) {
   await api.delete(`/task-schedules/${taskId}`);
-}
-
-export async function reorderTaskSchedules(date: string, items: { taskId: string; order: number }[]) {
-  await api.patch("/task-schedules/reorder", { date, items });
 }
 
 export type TaskScheduleFilter = {

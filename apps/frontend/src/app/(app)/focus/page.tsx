@@ -102,7 +102,7 @@ function FocusPageContent() {
   const completionInFlight = useRef(false);
   const lastCompletedIdRef = useRef<string | null>(null);
   const initializedRef = useRef(false);
-  const scheduledTodayTasks = (schedulesQuery.data ?? [])
+  const assignedBlockTasks = (schedulesQuery.data ?? [])
     .filter((schedule) => schedule.occurrence?.occurs !== false)
     .filter(
       (schedule) =>
@@ -118,9 +118,9 @@ function FocusPageContent() {
     .map((schedule) => schedule.task);
   const fallbackTasks = tasksQuery.data?.data ?? [];
   const tasks = (
-    showAllTasks || scheduledTodayTasks.length === 0
+    showAllTasks || assignedBlockTasks.length === 0
       ? fallbackTasks
-      : scheduledTodayTasks
+      : assignedBlockTasks
   ).filter(
     (task) => task.status !== "COMPLETED" && task.status !== "CANCELLED",
   );
@@ -155,11 +155,11 @@ function FocusPageContent() {
     localStorage.setItem(FOCUS_PROJECT_KEY, selectedProjectId);
   }, [selectedProjectId]);
 
-  // Start with the first task scheduled in the selected block when available.
+  // Start with the first task assigned to the selected block when available.
   useEffect(() => {
     if (!timeBlockIdFromUrl) return;
     if (selectedTaskId) return;
-    const blockTask = scheduledTodayTasks.find(
+    const blockTask = assignedBlockTasks.find(
       (task) => task.status !== "COMPLETED" && task.status !== "CANCELLED",
     );
     if (blockTask) {
@@ -175,7 +175,7 @@ function FocusPageContent() {
   }, [
     timeBlockIdFromUrl,
     requestedScheduleDate,
-    scheduledTodayTasks,
+    assignedBlockTasks,
     selectedProjectId,
     selectedTaskId,
     router,
@@ -445,7 +445,7 @@ function FocusPageContent() {
             </select>
           </label>
           {tasksQuery.data &&
-            (showAllTasks || scheduledTodayTasks.length === 0) && (
+            (showAllTasks || assignedBlockTasks.length === 0) && (
               <TaskPagination
                 isFetching={tasksQuery.isFetching}
                 meta={tasksQuery.data.meta}

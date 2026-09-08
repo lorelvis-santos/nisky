@@ -15,7 +15,6 @@ function dayLabel(day: Date) {
 
 export function TaskList({
   tasks,
-  plannedTasks = [],
   onOpen,
   onEdit,
   previewedTaskId,
@@ -25,7 +24,6 @@ export function TaskList({
   onCreateOnDay,
 }: {
   tasks: Task[];
-  plannedTasks?: Task[];
   onOpen: (task: Task) => void;
   onEdit: (task: Task) => void;
   previewedTaskId?: string | null;
@@ -36,9 +34,8 @@ export function TaskList({
 }) {
   const today = dateKey(new Date());
   const visibleTasks = tasks;
-  const plannedIds = new Set(plannedTasks.map((task) => task.id));
 
-  const datedTasks = visibleTasks.filter((task) => task.dueDate && !plannedIds.has(task.id));
+  const datedTasks = visibleTasks.filter((task) => task.dueDate);
   const overdueTasks = datedTasks
     .filter((task) => task.status !== "COMPLETED" && task.status !== "CANCELLED")
     .filter((task) => dateKey(task.dueDate!) < today)
@@ -48,13 +45,13 @@ export function TaskList({
     .filter((task) => !overdueIds.has(task.id))
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.order - b.order);
   const todayDatedTasks = dateGroupedTasks.filter((task) => dateKey(task.dueDate!) === today);
-  const todayTasks = [...plannedTasks, ...todayDatedTasks];
+  const todayTasks = todayDatedTasks;
   const dayKeys = [
     ...(todayTasks.length > 0 ? [today] : []),
     ...Array.from(new Set(dateGroupedTasks.map((task) => dateKey(task.dueDate!)))).filter((key) => key !== today),
   ];
 
-  if (datedTasks.length === 0 && plannedTasks.length === 0) {
+  if (datedTasks.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center py-12">
         <div className="flex w-full max-w-md flex-col items-center gap-3 rounded-2xl bg-surface-container-lowest p-10 text-center shadow-sm">
@@ -66,7 +63,7 @@ export function TaskList({
               No hay tareas en la lista
             </p>
             <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
-              Todo al día. Puedes crear una tarea nueva o revisar las tareas por organizar.
+              Todo al día. Puedes crear una tarea nueva o revisar las tareas sin fecha límite.
             </p>
           </div>
         </div>

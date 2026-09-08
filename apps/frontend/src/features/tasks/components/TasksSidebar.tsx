@@ -10,7 +10,6 @@ import type { Task } from "@/types/entities";
 import { TaskModal, type TaskForm } from "@/features/tasks/components/TaskModal";
 import { TaskPreviewModal } from "@/features/tasks/components/TaskPreviewModal";
 import { useTaskMutations, useTasksQuery } from "@/features/tasks/hooks/useTasks";
-import { useTaskScheduleMutations } from "@/features/task-schedules/hooks/useTaskSchedules";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { useTasksSidebar } from "@/context/TasksSidebarContext";
 import {
@@ -110,7 +109,6 @@ function TasksSidebarContent({
     due: "UNSET",
     limit: 5,
     order: "desc",
-    scheduled: "UNPLANNED",
     sort: "createdAt",
     status: ["PENDING", "IN_PROGRESS"],
   });
@@ -120,7 +118,7 @@ function TasksSidebarContent({
   return (
     <div className="flex h-full flex-col overflow-y-auto">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-outline-variant p-3.5">
-        <h2 className="font-headline-xs text-headline-xs">Por organizar</h2>
+         <h2 className="font-headline-xs text-headline-xs">Sin fecha límite</h2>
         <button
            className="flex items-center gap-1.5 rounded-md bg-primary-container px-3.5 py-2 font-body-sm text-body-sm text-on-primary hover:bg-primary"
           onClick={onOpenCreate}
@@ -134,14 +132,14 @@ function TasksSidebarContent({
       {tasks.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-6 py-16 text-center sm:py-24">
           <p className="font-body-sm text-body-sm text-on-surface-variant">
-            No hay tareas por organizar.
+             No hay tareas sin fecha límite.
           </p>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
           <div className="border-b border-outline-variant px-3 py-2.5">
             <p className="font-label-caps text-label-caps text-on-surface-variant">
-              {total} {total === 1 ? "tarea por organizar" : "tareas por organizar"}
+               {total} {total === 1 ? "tarea sin fecha límite" : "tareas sin fecha límite"}
             </p>
           </div>
           <div className="divide-y divide-outline-variant/50">
@@ -180,8 +178,8 @@ function MobileSheet({
          <DrawerContent className="flex h-[min(85dvh,42rem)] min-h-0 max-h-[85dvh] overflow-hidden border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:hidden">
         <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
           <div>
-             <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Por organizar</DrawerTitle>
-             <DrawerDescription className="sr-only">Resumen de tareas pendientes por organizar.</DrawerDescription>
+              <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Sin fecha límite</DrawerTitle>
+              <DrawerDescription className="sr-only">Resumen de tareas sin fecha límite.</DrawerDescription>
           </div>
           <DrawerClose asChild>
              <button aria-label="Cerrar" className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
@@ -208,7 +206,6 @@ export function TasksSidebar({
 }) {
   const { isOpen } = useTasksSidebar();
   const mutations = useTaskMutations();
-  const scheduleMutations = useTaskScheduleMutations();
   const projectsQuery = useProjectsQuery();
   const projects = projectsQuery.data ?? [];
   const [modal, setModal] = useState<{ task: Task | null; creating: boolean } | null>(null);
@@ -227,9 +224,8 @@ export function TasksSidebar({
   };
 
   const onSave = async (form: TaskForm) => {
-    const { plannedDate, scheduleChanged, ...taskForm } = form;
     const payload = {
-      ...taskForm,
+      ...form,
       description: form.description || undefined,
       dueDate: form.dueDate || undefined,
       recurrence: {
@@ -242,29 +238,9 @@ export function TasksSidebar({
     };
     try {
       if (modal?.creating) {
-        const createdTask = await mutations.create.mutateAsync(payload);
-        if (plannedDate) {
-          try {
-            await scheduleMutations.save.mutateAsync({
-              taskId: createdTask.id,
-              payload: { date: plannedDate, timeBlockId: null },
-            });
-          } catch {
-            toast.warning("La tarea se creó, pero no pudimos planificarla.");
-          }
-        }
+        await mutations.create.mutateAsync(payload);
       } else if (modal?.task) {
         await mutations.update.mutateAsync({ id: modal.task.id, payload });
-        if (scheduleChanged) {
-          if (plannedDate) {
-            await scheduleMutations.save.mutateAsync({
-              taskId: modal.task.id,
-              payload: { date: plannedDate, timeBlockId: null },
-            });
-          } else {
-            await scheduleMutations.remove.mutateAsync(modal.task.id);
-          }
-        }
       }
       setModal(null);
       toast.success(modal?.creating ? "¡Listo, tarea creada!" : "¡Listo, tarea actualizada!");

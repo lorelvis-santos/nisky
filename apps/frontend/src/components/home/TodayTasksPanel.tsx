@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { localDateKey } from "@/lib/utils";
-import type { HomeScheduledTask, Task } from "@/types/entities";
+import type { HomeBlockTask, Task } from "@/types/entities";
 
 const priorityRank = { URGENT: 0, HIGH: 1, NORMAL: 2, LOW: 3 } as const;
 
@@ -72,7 +72,7 @@ function TodayTaskRow({
   task,
   onToggle,
 }: {
-  task: Task | HomeScheduledTask;
+  task: Task | HomeBlockTask;
   onToggle: (task: Task) => void;
 }) {
   return (
@@ -122,16 +122,16 @@ function TodayTaskRow({
 
 export function TodayTasksPanel({
   tasks,
-  plannedTasks = [],
+  blockTasks = [],
   onToggle,
   emptyMessage = "Nada pendiente. ¡Todo al día!",
 }: {
   tasks: Task[];
-  plannedTasks?: HomeScheduledTask[];
+  blockTasks?: HomeBlockTask[];
   onToggle: (task: Task) => void;
   emptyMessage?: string;
 }) {
-  const allTasks = [...plannedTasks, ...tasks];
+  const allTasks = [...blockTasks, ...tasks];
   const totalTasks = allTasks.length;
 
   return (

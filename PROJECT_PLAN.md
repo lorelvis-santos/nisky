@@ -9,7 +9,7 @@ Nisky es una plataforma multiusuario para gestión operativa, comercial y financ
 
 La implementación actual se concentra en la Fase 1, Gestión diaria. Esta fase debe permitir:
 
-1. Capturar y planificar tareas.
+1. Capturar tareas y asignarlas a bloques de tiempo cuando se necesite.
 2. Registrar hábitos diarios de forma persistente.
 3. Capturar imprevistos en una bandeja de entrada sin obligar a clasificarlos inmediatamente.
 4. Convertir una captura en tarea, sugiriendo automáticamente una fecha detectada en español.
@@ -50,11 +50,11 @@ Ya existe:
 - Prioridades `LOW`, `NORMAL`, `HIGH`, `URGENT`.
 - CRUD de tareas y subtareas.
 - Fecha límite con normalización a mediodía UTC.
-- Planificación semanal con drag-and-drop entre días y backlog.
+- Agenda con bloques de tiempo para asignaciones concretas.
 - Búsqueda, filtro por prioridad y orden por prioridad.
 - Modal controlado por `?taskId=` y `?modal=create`.
 
-Falta completar la interfaz y el orden manual. El backend de estados y eliminación ya existe.
+La gestión global usa listas y filtros; la asignación de tiempo se realiza desde Agenda.
 
 ## 5. Iteración 2a: completar tareas
 
@@ -827,7 +827,7 @@ Reglas acordadas:
 - Las notas del proyecto son compartidas con todos sus miembros y conservan filtros, categorías, etiquetas, fijado y Markdown.
 - Quick Notes, eventos, timeblocks y planificación personal no forman parte del workspace compartido.
 - Los recursos compartidos se incorporan por fases: enlaces primero, archivos y documentos después.
-- `/tasks` conserva todas las tareas de todos los proyectos como planner global.
+- `/tasks` conserva todas las tareas de todos los proyectos como vista global de gestión.
 
 ### 19.2 Arquitectura de navegación
 
@@ -843,14 +843,13 @@ La selección de sección debe ser enlazable por URL, por ejemplo `?tab=tasks`, 
 `/tasks` será la vista global:
 
 - `Lista`: cola global de tareas de todos los proyectos.
-- `Semana`: planificación por día de trabajo.
-- `Mes`: calendario y resumen de fechas.
+- `Sin fecha límite`: cola de tareas que todavía no tienen vencimiento.
 
-La fecha límite y el día planificado son conceptos distintos. El proyecto muestra fechas límite; la planificación semanal decide cuándo se trabajará cada tarea.
+La fecha límite indica cuándo vence una tarea. La Agenda reserva el tiempo de trabajo mediante bloques y permite asignarles tareas para cada ocurrencia.
 
 ### 19.3 Fase A: workspace frontend con APIs existentes (completada)
 
-Objetivo: convertir `/projects/:id` en un workspace usable sin duplicar el planner completo. El workspace ya consume endpoints reales y mantiene los recursos fuera de las pestañas principales.
+Objetivo: convertir `/projects/:id` en un workspace usable sin duplicar la gestión global de tareas. El workspace ya consume endpoints reales y mantiene los recursos fuera de las pestañas principales.
 
 Archivos principales:
 
@@ -870,7 +869,7 @@ Implementación:
 5. Crear una sección `Tareas` contextual con lista del proyecto, estados, prioridad, asignado, fecha límite y acciones rápidas.
 6. Crear tareas desde el proyecto con el proyecto preseleccionado, sin redirigir obligatoriamente a `/tasks`.
 7. Reutilizar `TaskModal`; no crear un segundo editor de tareas.
-8. Mantener una acción secundaria `Planificación` que abra `/tasks` con el proyecto seleccionado.
+8. Permitir acceder a la vista global de `Tareas` con el proyecto seleccionado.
 9. No mostrar datos inventados de milestones ni roles personalizados; los recursos y la fecha objetivo solo se muestran cuando vienen de persistencia.
 10. Adaptar la composición a desktop y móvil: tabla/lista en desktop, tarjetas y controles apilados en móvil.
 11. Mantener la navegación global y el flujo de Quick Notes sin mezclarlos con el workspace.
@@ -963,9 +962,10 @@ Implementación:
 
 - Mantener todas las tareas de todos los proyectos en `/tasks`.
 - Hacer `Lista` la vista principal para gestión global.
-- Renombrar el concepto visual de backlog a `Sin planificar`.
-- Usar `TaskSchedule` únicamente para el día planificado.
+- Renombrar el concepto visual de backlog a `Sin fecha límite`.
+- Usar `TaskSchedule` únicamente para asignar una tarea a una ocurrencia de `TimeBlock`.
 - Usar `Task.dueDate` únicamente para la fecha límite.
+- Retirar el planner global por día y sus acciones de planificación persistente.
 - Mantener el proyecto como filtro global y sincronizarlo con la URL.
 - Hacer que `view`, `projectId`, período y `taskId` sean estados URL confiables.
 - Unificar o retirar el DnD duplicado entre semana y las vistas antiguas.
@@ -975,10 +975,10 @@ Implementación:
 Criterios de aceptación:
 
 - Ninguna vista llama backlog a una tarea que simplemente no tiene fecha límite.
-- El usuario distingue fecha límite de día planificado.
-- Las tres vistas consultan y muestran el mismo conjunto coherente de tareas.
+- El usuario distingue fecha límite de asignación a un bloque.
+- La Agenda es la única vista que reserva tiempo concreto para una tarea.
 - Cambiar filtros o proyecto no deja selecciones obsoletas.
-- El planner global sigue permitiendo organizar tareas de todos los proyectos.
+- `/tasks` sigue permitiendo listar, filtrar y editar tareas de todos los proyectos.
 
 ### 19.8 Fase F: actividad, colaboración y calidad (en progreso)
 
@@ -999,7 +999,7 @@ Criterios de aceptación:
 5. Implementar la primera fase de recursos externos. Completado.
 6. Implementar actividad persistente y realtime. Completado; faltan pruebas específicas.
 7. Ejecutar QA visual, accesibilidad y smoke tests completos.
-8. Ejecutar Fase E para simplificar el planner global.
+8. Completar los pendientes de Fase E, especialmente estado URL y QA específico de Agenda/Tareas.
 9. Completar filtros de notas, documentos/archivos y actualizar `PROJECT_STATUS.md` con resultados finales.
 
 ### 19.10 Fuera de alcance inicial

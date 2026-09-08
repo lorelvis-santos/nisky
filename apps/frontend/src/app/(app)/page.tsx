@@ -31,9 +31,9 @@ export default function DashboardPage() {
 
   const overview = overviewQuery.data;
   const activeBlock = overview?.activeBlock ?? null;
-  const plannedTaskIds = new Set((overview?.todayTasks ?? []).map((task) => task.id));
+  const blockTaskIds = new Set((overview?.todayTasks ?? []).map((task) => task.id));
   const urgentTasks = getTodayUrgentTasks(overview?.urgentTasks ?? [], 10).filter(
-    (task) => !plannedTaskIds.has(task.id),
+    (task) => !blockTaskIds.has(task.id),
   );
   const todayLabel = new Intl.DateTimeFormat("es-DO", {
     day: "numeric",
@@ -121,9 +121,9 @@ export default function DashboardPage() {
                 tasks={overview?.blockTasks ?? []}
               />
               <TodayTasksPanel
-                emptyMessage="Nada planificado. ¡Todo al día!"
+                emptyMessage="Nada pendiente. ¡Todo al día!"
+                blockTasks={overview?.todayTasks ?? []}
                 onToggle={(task) => void toggleTask(task)}
-                plannedTasks={overview?.todayTasks ?? []}
                 tasks={urgentTasks}
               />
             </div>

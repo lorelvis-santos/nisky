@@ -135,16 +135,16 @@ export interface TaskSchedule {
   userId: string;
   taskId: string;
   date: string;
-  timeBlockId: string | null;
+  timeBlockId: string;
   order: number;
   createdAt: string;
   updatedAt: string;
   task: Task;
-  timeBlock: TimeBlockWithProject | null;
+  timeBlock: TimeBlockWithProject;
   occurrence: TaskScheduleOccurrence;
 }
 
-export type HomeScheduledTask = Task & { scheduleState: "PLANNED" | "REPLAN" };
+export type HomeBlockTask = Task & { scheduleState: "ASSIGNED" | "REPLAN" };
 
 export interface TimeBlockSettings {
   userId: string;
@@ -504,7 +504,7 @@ export interface HomeOverview {
   activeBlock: TimeBlockWithProject | null;
   activeEvent: CalendarEvent | null;
   blockTasks: Task[];
-  todayTasks: HomeScheduledTask[];
+  todayTasks: HomeBlockTask[];
   urgentTasks: Task[];
   futureTasks: (Task & { project: Project | null })[];
   futureBlocks: (TimeBlockWithProject & { date?: string })[];

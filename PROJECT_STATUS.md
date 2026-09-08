@@ -162,7 +162,7 @@
 ### Próximas fases
 
 - Completar filtros de notas, documentos/archivos y QA del workspace.
-- **Planificación global**: separar definitivamente fecha límite (`Task.dueDate`) y día planificado (`TaskSchedule.date`), manteniendo `/tasks` como planner global.
+- **Agenda de tareas**: `Task.dueDate` es la única fecha límite; `TaskSchedule` sólo vincula una tarea a una ocurrencia de `TimeBlock`. Se retiró el planner global por día de `/tasks`.
 - **Módulos activables por usuario**: cada cuenta activa o desactiva módulos desde Configuración; los desactivados no aparecen en la navegación.
 - **Gestión de clientes (freelance)** y seguimiento comercial.
 - **Finanzas** locales con integración opcional a SURE.

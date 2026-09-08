@@ -2,7 +2,7 @@
 
 import { Fragment } from "react";
 import { ChevronLeft, ChevronRight, ListChecks } from "lucide-react";
-import type { CalendarEvent, Project, Task, TaskSchedule, TimeBlock, TimeBlockException } from "@/types/entities";
+import type { CalendarEvent, Project, TaskSchedule, TimeBlock, TimeBlockException } from "@/types/entities";
 import { cn } from "@/lib/utils";
 import { FAB } from "@/components/ui/FAB";
 import { DAY_ORDER, hexToRgba, minToTime, parseDateOnly, toDateKey } from "../lib/time";
@@ -10,7 +10,7 @@ import { DAY_ORDER, hexToRgba, minToTime, parseDateOnly, toDateKey } from "../li
 type MobileAgendaView = "day" | "week";
 
 type AgendaItem = {
-  kind: "block" | "event" | "task";
+  kind: "block" | "event";
   id: string;
   title: string;
   subtitle: string;
@@ -19,7 +19,6 @@ type AgendaItem = {
   color: string;
   block?: TimeBlock;
   event?: CalendarEvent;
-  task?: Task;
   taskCount?: number;
 };
 
@@ -105,7 +104,6 @@ function buildAgendaItems(
   events: CalendarEvent[],
   exceptions: TimeBlockException[],
   taskCounts: Record<string, number>,
-  taskSchedules: TaskSchedule[],
 ) {
   const dateKey = toDateKey(date);
   const blockItems: AgendaItem[] = blocks.flatMap((block) => {
@@ -145,22 +143,7 @@ function buildAgendaItems(
       event,
     }));
 
-  const unassignedTaskItems: AgendaItem[] = taskSchedules.flatMap((schedule) => {
-    const occurrence = schedule.occurrence;
-    if (schedule.date.slice(0, 10) !== dateKey || schedule.timeBlockId || !occurrence || !occurrence.occurs) return [];
-    return [{
-      kind: "task" as const,
-      id: schedule.id,
-      title: schedule.task.title,
-      subtitle: schedule.task.project?.name ?? "Tarea planificada",
-      startMin: occurrence.startMin,
-      endMin: occurrence.endMin,
-       color: schedule.task.project?.color ?? "#7a8494",
-       task: schedule.task,
-     }];
-  });
-
-  return [...blockItems, ...eventItems, ...unassignedTaskItems].sort(
+  return [...blockItems, ...eventItems].sort(
     (a, b) => a.startMin - b.startMin || (a.kind === "event" ? -1 : 1),
   );
 }
@@ -220,15 +203,12 @@ function AgendaItemRow({
   date,
   onBlockClick,
   onEventClick,
-  onTaskClick,
 }: {
   item: AgendaItem;
   date: Date;
   onBlockClick: (block: TimeBlock, date: Date) => void;
   onEventClick: (event: CalendarEvent, date: Date) => void;
-  onTaskClick: (task: Task) => void;
 }) {
-  const isTask = item.kind === "task";
   return (
     <div className="grid grid-cols-[4rem_minmax(0,1fr)] items-start gap-x-4">
       <time className="pt-4 font-data-mono text-data-mono text-base text-on-surface-variant" dateTime={`${toDateKey(date)}T${minToTime(item.startMin)}`}>
@@ -237,35 +217,32 @@ function AgendaItemRow({
       <button
         className={cn(
           "w-full rounded-2xl border border-l-[3px] px-4 py-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
-          isTask
-            ? "min-h-16 border-outline-variant/70 bg-surface-container-low hover:border-secondary hover:bg-surface-container"
-            : "min-h-28 border-outline-variant/70 bg-surface-container-lowest shadow-sm hover:border-outline hover:bg-surface-container-low",
+          "min-h-28 border-outline-variant/70 bg-surface-container-lowest shadow-sm hover:border-outline hover:bg-surface-container-low",
         )}
          onClick={() => {
            if (item.block) onBlockClick(item.block, date);
            else if (item.event) onEventClick(item.event, date);
-           else if (item.task) onTaskClick(item.task);
          }}
         style={{
           borderLeftColor: item.color,
-          ...(isTask ? {} : { backgroundColor: hexToRgba(item.color, 0.035) }),
+          backgroundColor: hexToRgba(item.color, 0.035),
         }}
         type="button"
       >
         <div className="flex items-start justify-between gap-3">
-          <span className={cn("min-w-0 truncate text-on-surface", isTask ? "font-body-lg text-body-lg" : "font-headline-sm text-headline-sm font-semibold")}>
+          <span className="min-w-0 truncate font-headline-sm text-headline-sm font-semibold text-on-surface">
             {item.title}
           </span>
           <span className="shrink-0 font-data-mono text-data-mono text-sm text-on-surface-variant">
             {formatDuration(item.startMin, item.endMin)}
           </span>
         </div>
-        <p className={cn("mt-2 truncate text-on-surface-variant", isTask ? "font-body-sm text-body-sm" : "font-body-md text-body-md")}>
+        <p className="mt-2 truncate font-body-md text-body-md text-on-surface-variant">
           {item.subtitle}
         </p>
         {item.taskCount && item.taskCount > 0 ? (
           <p className="mt-2 font-label-caps text-label-caps text-on-surface-variant">
-            {item.taskCount} {item.taskCount === 1 ? "tarea planificada" : "tareas planificadas"}
+            {item.taskCount} {item.taskCount === 1 ? "tarea asignada" : "tareas asignadas"}
           </p>
         ) : null}
       </button>
@@ -282,7 +259,6 @@ function MobileDayAgenda({
   dayEndMin,
   onBlockClick,
   onEventClick,
-  onTaskClick,
   onDayTasksClick,
 }: {
   date: Date;
@@ -293,7 +269,6 @@ function MobileDayAgenda({
   dayEndMin: number;
   onBlockClick: (block: TimeBlock, date: Date) => void;
   onEventClick: (event: CalendarEvent, date: Date) => void;
-  onTaskClick: (task: Task) => void;
   onDayTasksClick: (date: string) => void;
 }) {
   const now = new Date();
@@ -314,7 +289,7 @@ function MobileDayAgenda({
       )}
       {dayTaskCount > 0 && (
         <button
-          aria-label={`Ver ${dayTaskCount} ${dayTaskCount === 1 ? "tarea planificada" : "tareas planificadas"}`}
+           aria-label={`Ver ${dayTaskCount} ${dayTaskCount === 1 ? "tarea asignada" : "tareas asignadas"}`}
           className="group flex min-h-16 w-full items-center justify-between gap-4 rounded-2xl border border-primary/25 bg-primary-fixed/30 px-4 py-3 text-left shadow-cadence-1 transition-colors hover:border-primary/45 hover:bg-primary-fixed/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           onClick={() => onDayTasksClick(toDateKey(date))}
           type="button"
@@ -325,7 +300,7 @@ function MobileDayAgenda({
             </span>
             <span className="min-w-0">
               <span className="block truncate font-body-md text-body-md font-semibold text-on-surface">
-                {dayTaskCount} {dayTaskCount === 1 ? "tarea planificada" : "tareas planificadas"}
+                 {dayTaskCount} {dayTaskCount === 1 ? "tarea asignada" : "tareas asignadas"}
               </span>
               <span className="mt-0.5 block font-body-sm text-body-sm text-on-surface-variant">
                 Revisar en Tareas
@@ -346,7 +321,7 @@ function MobileDayAgenda({
             return (
               <Fragment key={`${item.kind}-${item.id}`}>
                 {index === nowIndex && <NowDivider nowMin={nowMin} />}
-                 <AgendaItemRow date={date} item={item} onBlockClick={onBlockClick} onEventClick={onEventClick} onTaskClick={onTaskClick} />
+                 <AgendaItemRow date={date} item={item} onBlockClick={onBlockClick} onEventClick={onEventClick} />
               </Fragment>
             );
           })}
@@ -365,11 +340,9 @@ function MobileWeekAgenda({
   events,
   exceptions,
   taskCounts,
-  taskSchedules,
   onDateChange,
   onBlockClick,
   onEventClick,
-  onTaskClick,
 }: {
   days: Array<{ date: Date; dayOfWeek: number; key: string }>;
   selectedDate: Date;
@@ -378,17 +351,15 @@ function MobileWeekAgenda({
   events: CalendarEvent[];
   exceptions: TimeBlockException[];
   taskCounts: Record<string, number>;
-  taskSchedules: TaskSchedule[];
   onDateChange: (date: Date) => void;
   onBlockClick: (block: TimeBlock, date: Date) => void;
   onEventClick: (event: CalendarEvent, date: Date) => void;
-  onTaskClick: (task: Task) => void;
 }) {
   const selectedKey = toDateKey(selectedDate);
   return (
     <div className="mt-7 space-y-3">
       {days.map((day) => {
-        const items = buildAgendaItems(day.date, blocks, projects, events, exceptions, taskCounts, taskSchedules);
+         const items = buildAgendaItems(day.date, blocks, projects, events, exceptions, taskCounts);
         const selected = day.key === selectedKey;
         return (
           <section className={cn("overflow-hidden rounded-2xl border bg-surface-container-lowest", selected ? "border-secondary shadow-sm" : "border-outline-variant/70")} key={day.key}>
@@ -407,11 +378,10 @@ function MobileWeekAgenda({
                   <button
                     className="flex min-h-14 w-full items-center gap-3 px-4 text-left hover:bg-surface-container-low"
                     key={`${item.kind}-${item.id}`}
-                    onClick={() => {
-                       if (item.block) onBlockClick(item.block, day.date);
-                       else if (item.event) onEventClick(item.event, day.date);
-                       else if (item.task) onTaskClick(item.task);
-                    }}
+                     onClick={() => {
+                        if (item.block) onBlockClick(item.block, day.date);
+                        else if (item.event) onEventClick(item.event, day.date);
+                     }}
                     type="button"
                   >
                     <span className="w-12 shrink-0 font-data-mono text-data-mono text-xs text-on-surface-variant">{minToTime(item.startMin)}</span>
@@ -448,7 +418,6 @@ export function MobileAgenda({
   onToday,
   onBlockClick,
   onEventClick,
-  onTaskClick,
   onDayTasksClick,
   onAdd,
 }: {
@@ -470,12 +439,11 @@ export function MobileAgenda({
   onToday: () => void;
   onBlockClick: (block: TimeBlock, date?: Date) => void;
   onEventClick: (event: CalendarEvent, date: Date) => void;
-  onTaskClick: (task: Task) => void;
   onDayTasksClick: (date: string) => void;
   onAdd: () => void;
 }) {
   const days = buildDays(weekStart);
-  const items = buildAgendaItems(selectedDate, blocks, projects, events, exceptions, taskCounts, taskSchedules);
+  const items = buildAgendaItems(selectedDate, blocks, projects, events, exceptions, taskCounts);
   const selectedDateKey = toDateKey(selectedDate);
   const dayTaskCount = taskSchedules.filter((schedule) => schedule.date.slice(0, 10) === selectedDateKey).length;
 
@@ -537,8 +505,7 @@ export function MobileAgenda({
             onBlockClick={(block, date) => onBlockClick(block, date)}
              onDayTasksClick={onDayTasksClick}
              onEventClick={onEventClick}
-             onTaskClick={onTaskClick}
-          />
+           />
         ) : (
           <MobileWeekAgenda
             blocks={blocks}
@@ -548,11 +515,9 @@ export function MobileAgenda({
             onBlockClick={(block, date) => onBlockClick(block, date)}
             onDateChange={onDateChange}
              onEventClick={onEventClick}
-             onTaskClick={onTaskClick}
             projects={projects}
             selectedDate={selectedDate}
             taskCounts={taskCounts}
-            taskSchedules={taskSchedules}
           />
         )}
       </div>

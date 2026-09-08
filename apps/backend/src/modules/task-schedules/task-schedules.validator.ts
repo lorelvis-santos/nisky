@@ -16,18 +16,9 @@ export const taskScheduleQuerySchema = z.object({
 
 export const upsertTaskScheduleSchema = z.object({
   date: calendarDate,
-  timeBlockId: z.uuid("El bloque no es válido").nullable().default(null),
+  timeBlockId: z.uuid("El bloque no es válido"),
   order: z.number().int().min(0).max(10000).optional(),
-});
-
-export const reorderTaskSchedulesSchema = z.object({
-  date: calendarDate,
-  items: z.array(z.object({
-    taskId: z.uuid("El identificador de la tarea no es válido"),
-    order: z.number().int().min(0).max(10000),
-  })).min(1).max(100),
 });
 
 export type TaskScheduleQueryDto = z.infer<typeof taskScheduleQuerySchema>;
 export type UpsertTaskScheduleDto = z.infer<typeof upsertTaskScheduleSchema>;
-export type ReorderTaskSchedulesDto = z.infer<typeof reorderTaskSchedulesSchema>;

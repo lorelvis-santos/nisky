@@ -5,7 +5,7 @@ import { emitToUser } from "../../config/socket.emit";
 import { AppError } from "../../utils/errors/handler";
 import { assertTaskAccess, getAccessibleProjectIds } from "../projects/access";
 import { blockOccurrenceOn, TIME_BLOCKS_TZ, type TimeBlockExceptionRow } from "../timeblocks/timeblocks.util";
-import type { ReorderTaskSchedulesDto, TaskScheduleQueryDto, UpsertTaskScheduleDto } from "./task-schedules.validator";
+import type { TaskScheduleQueryDto, UpsertTaskScheduleDto } from "./task-schedules.validator";
 
 export const TASK_SCHEDULES_TZ = TIME_BLOCKS_TZ;
 
@@ -126,8 +126,7 @@ export class TaskScheduleService {
     return rows.map((row) => serializeSchedule(row, exceptions));
   }
 
-  private async validateBlock(userId: string, timeBlockId: string | null, date: Date) {
-    if (!timeBlockId) return;
+  private async validateBlock(userId: string, timeBlockId: string, date: Date) {
     const block = await prisma.timeBlock.findFirst({ where: { id: timeBlockId, userId } });
     if (!block) throw new AppError("NOT_FOUND", "Bloque no encontrado");
     if (!block.isActive) throw new AppError("BAD_REQUEST", "El bloque está inactivo");
@@ -146,13 +145,15 @@ export class TaskScheduleService {
 
     const existing = await prisma.taskSchedule.findUnique({
       where: { userId_taskId: { userId, taskId } },
-      select: { date: true, order: true },
+      select: { date: true, timeBlockId: true, order: true },
     });
-    const sameDate = existing && serializeDate(existing.date) === data.date;
-    const maxOrder = sameDate || data.order !== undefined
+    const sameAssignment = existing
+      && serializeDate(existing.date) === data.date
+      && existing.timeBlockId === data.timeBlockId;
+    const maxOrder = sameAssignment || data.order !== undefined
       ? null
-      : (await prisma.taskSchedule.aggregate({ where: { userId, date }, _max: { order: true } }))._max.order;
-    const order = data.order ?? (sameDate ? existing.order : (maxOrder ?? -1) + 1);
+      : (await prisma.taskSchedule.aggregate({ where: { userId, date, timeBlockId: data.timeBlockId }, _max: { order: true } }))._max.order;
+    const order = data.order ?? (sameAssignment ? existing.order : (maxOrder ?? -1) + 1);
 
     const row = await prisma.taskSchedule.upsert({
       where: { userId_taskId: { userId, taskId } },
@@ -171,24 +172,6 @@ export class TaskScheduleService {
     await assertTaskAccess(userId, taskId);
     await prisma.taskSchedule.deleteMany({ where: { userId, taskId } });
     emitToUser(userId, "tasks", { kind: "task", taskId });
-    return { success: true };
-  }
-
-  async reorder(userId: string, data: ReorderTaskSchedulesDto) {
-    const date = scheduleDate(data.date);
-    const taskIds = data.items.map((item) => item.taskId);
-    if (new Set(taskIds).size !== taskIds.length) throw new AppError("BAD_REQUEST", "No puedes repetir tareas en el orden");
-    await Promise.all(taskIds.map((taskId) => assertTaskAccess(userId, taskId)));
-    const schedules = await prisma.taskSchedule.findMany({
-      where: { userId, taskId: { in: taskIds }, date },
-      select: { taskId: true },
-    });
-    if (schedules.length !== taskIds.length) throw new AppError("NOT_FOUND", "Una tarea no está planificada para ese día");
-    await prisma.$transaction(data.items.map((item) => prisma.taskSchedule.update({
-      where: { userId_taskId: { userId, taskId: item.taskId } },
-      data: { order: item.order },
-    })));
-    emitToUser(userId, "tasks");
     return { success: true };
   }
 }

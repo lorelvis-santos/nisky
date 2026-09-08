@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +15,6 @@ import { loginSchema, type LoginFormData } from "@/features/auth/schemas/auth.sc
 import type { ApiError } from "@/types/api.types";
 
 export default function LoginPage() {
-  const router = useRouter();
   const { setAuth } = useAuth();
   const [isHydrated, setIsHydrated] = useState(false);
   const config = usePublicConfigQuery();
@@ -25,7 +23,9 @@ export default function LoginPage() {
     toast.success("¡Qué bueno verte de nuevo!");
     const requestedRedirect = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("redirect");
     const redirect = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//") ? requestedRedirect : "/";
-    router.replace(redirect);
+    // A full navigation makes the browser send the new refresh cookie and
+    // forces the protected tree to restore the session on its first render.
+    window.location.replace(redirect);
   });
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
 

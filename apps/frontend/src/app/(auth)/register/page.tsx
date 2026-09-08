@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,11 +14,10 @@ import { usePublicConfigQuery } from "@/features/auth/hooks/useAuthConfig";
 import { registerSchema, type RegisterFormData } from "@/features/auth/schemas/auth.schema";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { setAuth } = useAuth();
   const [isHydrated, setIsHydrated] = useState(false);
   const config = usePublicConfigQuery();
-  const { mutate, isPending, error } = useRegister((result) => { setAuth(result); toast.success("¡Tu cuenta está lista! Empecemos."); router.replace("/"); });
+  const { mutate, isPending, error } = useRegister((result) => { setAuth(result); toast.success("¡Tu cuenta está lista! Empecemos."); window.location.replace("/"); });
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) });
   useEffect(() => {
     // Do not allow the browser's native submit to run before React owns the form.

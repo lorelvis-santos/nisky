@@ -681,7 +681,7 @@ export function TaskPreviewModal({
             </PreviewDetail>
             <PreviewDetail icon={CalendarDays} label="Vencimiento">
               {isMobile ? (
-                <DrawerNestedRoot fixed open={dueDateOpen} onOpenChange={handleDueDateOpenChange}>
+                <DrawerNestedRoot fixed handleOnly open={dueDateOpen} onOpenChange={handleDueDateOpenChange}>
                   <DrawerTrigger asChild>{dueDateTrigger}</DrawerTrigger>
                   <DrawerContent className="flex h-auto min-h-0 max-h-[calc(100dvh-1rem)] w-full max-w-none flex-col rounded-t-2xl border-outline-variant bg-surface-bright p-0 shadow-cadence-3 data-[vaul-drawer-direction=bottom]:max-h-[calc(100dvh-1rem)]">
                     <DrawerHeader className="flex shrink-0 flex-row items-center justify-between gap-3 border-b border-outline-variant px-5 py-4 !text-left">
@@ -699,15 +699,7 @@ export function TaskPreviewModal({
                         </button>
                       </DrawerClose>
                     </DrawerHeader>
-                    <div
-                      className="w-full"
-                      onPointerDown={(event) => {
-                        const target = event.target;
-                        if (target instanceof Element && target.closest("button, input, [role='button']")) {
-                          event.stopPropagation();
-                        }
-                      }}
-                    >
+                    <div className="w-full">
                       {dueDateEditor}
                     </div>
                   </DrawerContent>

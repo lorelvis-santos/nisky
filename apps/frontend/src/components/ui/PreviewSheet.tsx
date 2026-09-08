@@ -152,6 +152,7 @@ function MobilePreviewSheet({
   return (
     <Drawer
       fixed
+      handleOnly
       onAnimationEnd={handleAnimationEnd}
       onOpenChange={handleOpenChange}
       open={open}

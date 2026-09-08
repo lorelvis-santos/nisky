@@ -87,7 +87,7 @@ function ProjectDetailPageContent() {
        sort: "dueDate",
        order: "asc",
     },
-    { enabled: activeTab === "tasks", pageSize: 20 },
+    { enabled: activeTab === "tasks", pageSize: 10 },
   );
 
   if (!project) {

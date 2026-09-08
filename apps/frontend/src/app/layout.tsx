@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   initialScale: 1,
-  interactiveWidget: "resizes-content",
+  interactiveWidget: "overlays-content",
   viewportFit: "cover",
   width: "device-width",
 };

@@ -54,9 +54,44 @@ function DrawerOverlay({
 function DrawerContent({
   className,
   children,
+  onPointerCancel,
+  onPointerOutCapture,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Content>) {
   const viewportRef = useKeyboardAwareViewport<HTMLDivElement>();
+  const handlePointerCancel = (event: React.PointerEvent<HTMLDivElement>) => {
+    onPointerCancel?.(event);
+
+    if (typeof PointerEvent === "undefined") return;
+
+    event.currentTarget.dispatchEvent(
+      new PointerEvent("pointerup", {
+        bubbles: true,
+        cancelable: true,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        isPrimary: event.isPrimary,
+        pointerId: event.pointerId,
+        pointerType: event.pointerType,
+        screenX: event.screenX,
+        screenY: event.screenY,
+      }),
+    );
+  };
+  const handlePointerOutCapture = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    onPointerOutCapture?.(event);
+    const relatedTarget = event.relatedTarget;
+
+    if (
+      !event.isPropagationStopped() &&
+      relatedTarget instanceof Node &&
+      event.currentTarget.contains(relatedTarget)
+    ) {
+      event.stopPropagation();
+    }
+  };
 
   return (
     <DrawerPortal data-slot="drawer-portal">
@@ -68,11 +103,13 @@ function DrawerContent({
           className
         )}
         {...props}
+        onPointerCancel={handlePointerCancel}
+        onPointerOutCapture={handlePointerOutCapture}
         ref={viewportRef}
       >
         <DrawerPrimitive.Handle
           data-slot="drawer-handle"
-          className="mx-auto mt-4 hidden h-1.5 w-12 shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block"
+          className="mx-auto mt-4 h-1.5 w-12 shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=left]/drawer-content:hidden group-data-[vaul-drawer-direction=right]/drawer-content:hidden group-data-[vaul-drawer-direction=top]/drawer-content:hidden"
         />
         {children}
       </DrawerPrimitive.Content>

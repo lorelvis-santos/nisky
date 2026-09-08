@@ -805,8 +805,8 @@ function TasksPageContent() {
       <div className="sm:hidden">
         <FAB
           ariaLabel="Nueva tarea"
+          loading={mutations.create.isPending}
           onClick={openCreate}
-          raised={mutations.create.isPending || previewOpen}
         />
       </div>
       {confirmBulkDelete && (

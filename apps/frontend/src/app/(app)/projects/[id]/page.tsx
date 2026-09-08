@@ -259,7 +259,7 @@ function ProjectDetailPageContent() {
 
       {activeTab === "tasks" && (
         <div className="sm:hidden">
-           <FAB ariaLabel="Nueva tarea" onClick={openCreateTask} raised={Boolean(previewingTask)} />
+           <FAB ariaLabel="Nueva tarea" loading={taskMutations.create.isPending} onClick={openCreateTask} />
          </div>
        )}
        {previewingTask && <TaskDetailsPanel key={previewingTask.id} onAddSubtask={async (taskId, title) => { await taskMutations.addSubtask.mutateAsync({ taskId, title }); }} onClose={() => setPreviewingTask(null)} onDelete={async (taskId) => { await taskMutations.remove.mutateAsync(taskId); }} onDeleteSubtask={async (taskId, subtaskId) => { await taskMutations.removeSubtask.mutateAsync({ taskId, subtaskId }); }} onStartPomodoro={() => router.push(`/focus?taskId=${encodeURIComponent(previewingTask.id)}&projectId=${encodeURIComponent(project.id)}`)} onToggleSubtask={async (taskId, subtaskId, completed) => { await taskMutations.toggleSubtask.mutateAsync({ taskId, subtaskId, completed }); }} onUpdateDescription={async (taskId, description) => { await taskMutations.update.mutateAsync({ id: taskId, payload: { description: description || null } }); }} onUpdateTask={async (taskId, payload) => { await taskMutations.update.mutateAsync({ id: taskId, payload }); }} onUpdateSubtask={async (taskId, subtaskId, title) => { await taskMutations.updateSubtask.mutateAsync({ taskId, subtaskId, payload: { title } }); }} task={previewingTask} />}

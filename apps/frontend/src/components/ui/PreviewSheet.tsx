@@ -34,6 +34,7 @@ type PreviewSheetProps = {
   eyebrowIcon?: LucideIcon;
   onClose: () => void;
   wide?: boolean;
+  tall?: boolean;
 };
 
 function useIsMobilePreview() {
@@ -134,6 +135,7 @@ function MobilePreviewSheet({
   headerExtra,
   eyebrowIcon,
   onClose,
+  tall = false,
 }: PreviewSheetProps) {
   const [open, setOpen] = useState(true);
   const closeNotifiedRef = useRef(false);
@@ -157,7 +159,14 @@ function MobilePreviewSheet({
       onOpenChange={handleOpenChange}
       open={open}
     >
-      <DrawerContent className="flex h-[min(88dvh,48rem)] min-h-0 max-h-[88dvh] w-full max-w-none rounded-t-[1.75rem] border-outline-variant bg-surface-bright p-0 shadow-cadence-3">
+      <DrawerContent
+        className={cn(
+          "flex min-h-0 w-full max-w-none rounded-t-[1.75rem] border-outline-variant bg-surface-bright p-0 shadow-cadence-3",
+          tall
+            ? "h-[min(94dvh,52rem)] !max-h-[94dvh]"
+            : "h-[min(88dvh,48rem)] max-h-[88dvh]",
+        )}
+      >
         <PreviewHeader
           description={description}
           eyebrow={eyebrow}

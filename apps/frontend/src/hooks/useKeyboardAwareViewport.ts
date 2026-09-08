@@ -46,11 +46,15 @@ export function useKeyboardAwareViewport<T extends HTMLElement>() {
 
     const viewport = window.visualViewport ?? null;
     const isDialog = root.dataset.slot === "dialog-content";
+    const isDrawer = root.dataset.slot === "drawer-content";
     const originalMaxHeight = root.style.maxHeight;
+    const originalHeight = root.style.height;
     const originalBottom = root.style.bottom;
     const originalTop = root.style.top;
     const originalTransform = root.style.transform;
     let repositioned = false;
+    let drawerKeyboardOpen = false;
+    let drawerRestoreFrame = 0;
     let focusFrame = 0;
 
     const scheduleFocusScroll = () => {
@@ -61,12 +65,36 @@ export function useKeyboardAwareViewport<T extends HTMLElement>() {
       });
     };
 
+    const restoreDrawerStyles = () => {
+      if (!isDrawer || drawerRestoreFrame) return;
+      drawerRestoreFrame = window.requestAnimationFrame(() => {
+        drawerRestoreFrame = 0;
+        if (drawerKeyboardOpen) return;
+        root.style.height = originalHeight;
+        root.style.bottom = originalBottom;
+      });
+    };
+
     const update = () => {
       const metrics = viewportMetrics(viewport);
       const isMobile = window.matchMedia?.(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches ?? window.innerWidth <= MOBILE_BREAKPOINT;
+      const keyboardVisible = isMobile && metrics.keyboardHeight > KEYBOARD_THRESHOLD;
       const keyboardOpen = isMobile
         && metrics.keyboardHeight > KEYBOARD_THRESHOLD
         && root.contains(document.activeElement);
+
+      if (isDrawer) {
+        if (keyboardVisible) {
+          drawerKeyboardOpen = true;
+          if (drawerRestoreFrame) {
+            window.cancelAnimationFrame(drawerRestoreFrame);
+            drawerRestoreFrame = 0;
+          }
+        } else if (drawerKeyboardOpen) {
+          drawerKeyboardOpen = false;
+          restoreDrawerStyles();
+        }
+      }
 
       if (isDialog && keyboardOpen) {
         const computedStyle = window.getComputedStyle(root);
@@ -103,11 +131,16 @@ export function useKeyboardAwareViewport<T extends HTMLElement>() {
       viewport?.removeEventListener("resize", update);
       viewport?.removeEventListener("scroll", update);
       if (focusFrame) window.cancelAnimationFrame(focusFrame);
+      if (drawerRestoreFrame) window.cancelAnimationFrame(drawerRestoreFrame);
       if (repositioned) {
         root.style.maxHeight = originalMaxHeight;
         root.style.bottom = originalBottom;
         root.style.top = originalTop;
         root.style.transform = originalTransform;
+      }
+      if (isDrawer && drawerKeyboardOpen) {
+        root.style.height = originalHeight;
+        root.style.bottom = originalBottom;
       }
     };
   }, [rootVersion]);

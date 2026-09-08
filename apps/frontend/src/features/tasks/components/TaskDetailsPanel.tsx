@@ -131,7 +131,7 @@ const recurrenceOptions = [
 ] as const;
 
 const taskBadgeClass =
-  "inline-flex min-h-7 max-w-full cursor-pointer items-center rounded-full border px-2.5 py-1 font-label-md text-label-md font-semibold leading-4 outline-none disabled:cursor-wait disabled:opacity-60";
+  "inline-flex h-7 max-w-full cursor-pointer items-center rounded-full border px-2.5 py-1 font-label-md text-label-md font-semibold leading-4 outline-none transition-colors disabled:cursor-wait disabled:opacity-60";
 
 const priorityBadgeClasses: Record<TaskPriority, string> = {
   URGENT: "border-error bg-error-container text-on-error-container",
@@ -1013,6 +1013,7 @@ export function TaskDetailsPanel({
           </div>
         }
         onClose={handleClose}
+        tall
         title={
           titleEditing ? (
             <input
@@ -1127,18 +1128,33 @@ export function TaskDetailsPanel({
                     <PopoverTrigger asChild>
                       <button
                         aria-label="Cambiar proyecto"
-                        className="inline-flex min-w-0 max-w-[13rem] items-center gap-1.5 rounded-md border border-transparent px-1 py-1 text-right font-body-sm text-body-sm font-medium text-on-surface outline-none hover:bg-surface-container-low hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-wait disabled:opacity-60"
+                        className={cn(
+                          taskBadgeClass,
+                          "max-w-[13rem] gap-1.5 pr-2 focus-visible:ring-2 focus-visible:ring-primary/20",
+                          selectedProject
+                            ? "border-transparent"
+                            : "border-outline-variant bg-surface-container-low text-on-surface-variant",
+                        )}
                         disabled={
                           pendingTaskField !== null ||
                           (projectsQuery.isLoading &&
                             accessibleProjectsQuery.isLoading)
+                        }
+                        style={
+                          selectedProject
+                            ? {
+                                backgroundColor: `color-mix(in srgb, ${selectedProject.color} 12%, transparent)`,
+                                borderColor: selectedProject.color,
+                                color: selectedProject.color,
+                              }
+                            : undefined
                         }
                         type="button"
                       >
                         {selectedProject && (
                           <span
                             aria-hidden="true"
-                            className="h-2 w-2 shrink-0 rounded-full"
+                            className="h-1.5 w-1.5 shrink-0 rounded-full"
                             style={{ backgroundColor: selectedProject.color }}
                           />
                         )}

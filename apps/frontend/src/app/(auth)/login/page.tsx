@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight } from "lucide-react";
@@ -17,14 +18,22 @@ import type { ApiError } from "@/types/api.types";
 export default function LoginPage() {
   const router = useRouter();
   const { setAuth } = useAuth();
+  const [isHydrated, setIsHydrated] = useState(false);
   const config = usePublicConfigQuery();
   const { mutate, isPending, error } = useLogin((result) => {
     setAuth(result);
     toast.success("¡Qué bueno verte de nuevo!");
-    const redirect = typeof window === "undefined" ? "/" : new URLSearchParams(window.location.search).get("redirect") || "/";
+    const requestedRedirect = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("redirect");
+    const redirect = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//") ? requestedRedirect : "/";
     router.replace(redirect);
   });
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
+
+  useEffect(() => {
+    // Do not allow the browser's native submit to run before React owns the form.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsHydrated(true);
+  }, []);
 
   return (
     <section className="w-full">
@@ -40,14 +49,14 @@ export default function LoginPage() {
           <p className="mt-2 font-body-md text-body-md text-on-surface-variant">Retoma tus tareas, tus notas y el plan del día.</p>
         </div>
 
-        <form className="space-y-5" onSubmit={handleSubmit((values) => mutate(values))}>
+        <form className="space-y-5" method="post" onSubmit={handleSubmit((values) => mutate(values))}>
           <Field label="Correo electrónico" error={errors.email?.message}>
             <input autoComplete="email" className="field" type="email" {...register("email")} />
           </Field>
           <Field label="Contraseña" error={errors.password?.message}>
             <PasswordInput autoComplete="current-password" {...register("password")} />
           </Field>
-           <Button className="w-full font-body-md text-body-md !text-white" disabled={isPending} type="submit">
+           <Button className="w-full font-body-md text-body-md !text-white" disabled={!isHydrated || isPending} type="submit">
             {isPending ? "Entrando..." : "Ingresar"}
             {!isPending && <ArrowRight aria-hidden="true" size={16} />}
           </Button>

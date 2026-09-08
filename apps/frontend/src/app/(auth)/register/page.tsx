@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight } from "lucide-react";
@@ -16,9 +17,15 @@ import { registerSchema, type RegisterFormData } from "@/features/auth/schemas/a
 export default function RegisterPage() {
   const router = useRouter();
   const { setAuth } = useAuth();
+  const [isHydrated, setIsHydrated] = useState(false);
   const config = usePublicConfigQuery();
   const { mutate, isPending, error } = useRegister((result) => { setAuth(result); toast.success("¡Tu cuenta está lista! Empecemos."); router.replace("/"); });
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) });
+  useEffect(() => {
+    // Do not allow the browser's native submit to run before React owns the form.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsHydrated(true);
+  }, []);
   return (
     <section className="w-full">
       <div className="mb-8 flex items-center gap-3 lg:hidden">
@@ -46,7 +53,7 @@ export default function RegisterPage() {
               <p className="mt-2 font-body-md text-body-md text-on-surface-variant">Empieza con una vista más clara de tu día.</p>
             </div>
 
-            <form className="space-y-5" onSubmit={handleSubmit((values) => mutate(values))}>
+            <form className="space-y-5" method="post" onSubmit={handleSubmit((values) => mutate(values))}>
               <Field label="Nombre" error={errors.name?.message}>
                 <input autoComplete="name" className="field" type="text" {...register("name")} />
               </Field>
@@ -59,7 +66,7 @@ export default function RegisterPage() {
               <Field label="Confirmar contraseña" error={errors.confirmPassword?.message}>
                 <PasswordInput autoComplete="new-password" {...register("confirmPassword")} />
               </Field>
-               <Button className="w-full font-body-md text-body-md !text-white" disabled={isPending} type="submit">
+               <Button className="w-full font-body-md text-body-md !text-white" disabled={!isHydrated || isPending} type="submit">
                 {isPending ? "Creando..." : "Crear cuenta"}
                 {!isPending && <ArrowRight aria-hidden="true" size={16} />}
               </Button>

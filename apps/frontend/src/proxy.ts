@@ -1,12 +1,30 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const authPaths = ["/login", "/register"];
+const protectedPaths = [
+  "/",
+  "/events",
+  "/focus",
+  "/journal",
+  "/knowledge",
+  "/projects",
+  "/quick-notes",
+  "/reminders",
+  "/settings",
+  "/support",
+  "/tasks",
+  "/timeblocks",
+];
+
+function matchesPath(pathname: string, path: string) {
+  return pathname === path || (path !== "/" && pathname.startsWith(`${path}/`));
+}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasRefreshCookie = request.cookies.has("refreshToken");
-  const isAuthPath = authPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-  const isProtectedPath = pathname === "/" || pathname === "/settings" || pathname.startsWith("/settings/");
+  const isAuthPath = authPaths.some((path) => matchesPath(pathname, path));
+  const isProtectedPath = protectedPaths.some((path) => matchesPath(pathname, path));
 
   // expired=1 marks an auto-logout after a failed token refresh: the cookie may
   // still be present client-side, so skip the bounce or /login would redirect

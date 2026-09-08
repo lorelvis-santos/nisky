@@ -92,16 +92,20 @@ export class TimeBlockService {
   ) {
     if (date) {
       const [blocks, events, exceptions] = await Promise.all([
-        prisma.timeBlock.findMany({ where: { userId, id: excludeId ? { not: excludeId } : undefined } }),
+        prisma.timeBlock.findMany({
+          where: { userId, id: excludeId ? { not: excludeId } : undefined },
+          include: { project: { select: { name: true } } },
+        }),
         prisma.calendarEvent.findMany({ where: { userId }, include: { exceptions: true } }),
         prisma.timeBlockException.findMany({ where: { userId, date } }),
       ]);
-      const blockClash = blocks.some((block) => {
+      const blockClash = blocks.find((block) => {
         const occurrence = blockOccurrenceOn(block, date, exceptions);
         return occurrence.occurs && occurrence.startMin < endMin && occurrence.endMin > startMin;
       });
       if (blockClash) {
-        throw new AppError("CONFLICT", "Ya tienes un bloque que se cruza con este horario");
+        const label = blockClash.name ?? blockClash.project?.name ?? "bloque sin nombre";
+        throw new AppError("CONFLICT", `Ya tienes un bloque que se cruza con «${label}»`);
       }
       const eventClash = events.some((event) => {
         const occurrence = eventOccurrenceOn(event, date, event.exceptions);
@@ -122,9 +126,11 @@ export class TimeBlockService {
         startMin: { lt: endMin },
         endMin: { gt: startMin },
       },
+      include: { project: { select: { name: true } } },
     });
     if (overlapping) {
-      throw new AppError("CONFLICT", "Ya tienes un bloque que se cruza con este horario");
+      const label = overlapping.name ?? overlapping.project?.name ?? "bloque sin nombre";
+      throw new AppError("CONFLICT", `Ya tienes un bloque que se cruza con «${label}»`);
     }
 
     const exceptions = await prisma.timeBlockException.findMany({
@@ -133,8 +139,16 @@ export class TimeBlockService {
         action: "move",
         blockId: excludeId ? { not: excludeId } : undefined,
       },
+      include: {
+        block: {
+          select: {
+            name: true,
+            project: { select: { name: true } },
+          },
+        },
+      },
     });
-    const exceptionClash = exceptions.some(
+    const exceptionClash = exceptions.find(
       (exc) =>
         daysOfWeek.includes(dayOfWeek(exc.date)) &&
         exc.startMin !== null &&
@@ -143,7 +157,8 @@ export class TimeBlockService {
         exc.endMin > startMin,
     );
     if (exceptionClash) {
-      throw new AppError("CONFLICT", "Ya tienes un bloque que se cruza con este horario");
+      const label = exceptionClash.block.name ?? exceptionClash.block.project?.name ?? "bloque sin nombre";
+      throw new AppError("CONFLICT", `Ya tienes un bloque que se cruza con «${label}»`);
     }
 
     const now = DateTime.now().setZone(TIME_BLOCKS_TZ).startOf("day").toJSDate();

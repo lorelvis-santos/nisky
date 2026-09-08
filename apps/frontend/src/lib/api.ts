@@ -2,7 +2,16 @@ import axios, { type AxiosError, type AxiosResponse, type InternalAxiosRequestCo
 import type { ApiError, ApiResponse } from "@/types/api.types";
 import type { AuthResponse } from "@/types/entities";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
+function resolveApiUrl() {
+  const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
+  // Auth cookies must belong to the panel origin so proxy.ts can protect pages.
+  // A public backend URL would scope the cookie to another origin and break the
+  // first session restore in a fresh browser.
+  if (!configured || !configured.startsWith("/") || configured.startsWith("//")) return "/api/v1";
+  return configured.replace(/\/+$/, "") || "/api/v1";
+}
+
+export const API_URL = resolveApiUrl();
 
 export const api = axios.create({
   baseURL: API_URL,

@@ -70,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const isAuthPath = pathname === "/login" || pathname === "/register";
     if (isAuthPath || hasSession.current) {
+      setIsLoading(false);
       return;
     }
 

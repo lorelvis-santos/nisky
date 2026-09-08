@@ -35,7 +35,7 @@ async function proxyHandler(request: NextRequest) {
   const target = `${backendUrl}${pathname}${search}`;
 
   const headers = new Headers();
-  const excluded = new Set(["host", ...HOP_BY_HOP_HEADERS]);
+  const excluded = new Set(["host", "origin", ...HOP_BY_HOP_HEADERS]);
   for (const [key, value] of request.headers.entries()) {
     if (!excluded.has(key.toLowerCase())) headers.set(key, value);
   }
@@ -62,6 +62,10 @@ async function proxyHandler(request: NextRequest) {
       }
     }
     const cookies = upstream.headers.getSetCookie?.() ?? [];
+    if (cookies.length === 0) {
+      const cookie = upstream.headers.get("set-cookie");
+      if (cookie) cookies.push(cookie);
+    }
     for (const cookie of cookies) responseHeaders.append("set-cookie", cookie);
 
     return new NextResponse(body, {

@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 
 type SlotPrefill = { dayOfWeek: number; startMin: number; endMin: number; date: string; oneOff?: boolean };
+type EventMoveScope = "single" | "all";
 
 function toISODateString(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -57,15 +58,15 @@ function EventMoveModal({
   onChangeStart: (value: string) => void;
   onChangeEnd: (value: string) => void;
   onCancel: () => void;
-  onSave: () => void;
+  onSave: (scope: EventMoveScope) => void;
 }) {
   return (
     <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onCancel(); }}>
       <DialogContent className="max-w-md rounded-lg border-outline-variant bg-surface shadow-cadence-3" showCloseButton={false}>
         <DialogHeader className="text-left">
-          <DialogTitle className="font-headline-xs text-headline-xs normal-case tracking-normal">Mover «{title}» solo hoy</DialogTitle>
+          <DialogTitle className="font-headline-xs text-headline-xs normal-case tracking-normal">Mover «{title}»</DialogTitle>
           <DialogDescription className="font-body-md text-body-md text-on-surface-variant">
-          Este cambio solo aplica a la ocurrencia del día seleccionado.
+          Elige si el nuevo horario aplica a este día o a todas las ocurrencias del evento.
           </DialogDescription>
         </DialogHeader>
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -88,17 +89,25 @@ function EventMoveModal({
             />
           </label>
         </div>
-        <div className="mt-5 flex justify-end gap-2">
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <DialogClose asChild>
             <button className="min-h-11 rounded-md border border-outline-variant bg-surface px-4 py-2 font-body-md text-body-md text-on-surface-variant transition-colors hover:bg-surface-container-low disabled:opacity-50" disabled={busy} type="button">Cancelar</button>
           </DialogClose>
           <button
-            className="min-h-11 rounded-md bg-primary px-4 py-2 font-body-md text-body-md text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="min-h-11 rounded-md border border-secondary px-4 py-2 font-body-md text-body-md text-secondary transition-colors hover:bg-secondary-container disabled:opacity-50"
             disabled={busy}
-            onClick={onSave}
+            onClick={() => onSave("single")}
             type="button"
           >
-            Guardar
+            Solo este día
+          </button>
+          <button
+            className="min-h-11 rounded-md bg-primary px-4 py-2 font-body-md text-body-md text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
+            disabled={busy}
+            onClick={() => onSave("all")}
+            type="button"
+          >
+            Todas las ocurrencias
           </button>
         </div>
       </DialogContent>
@@ -515,7 +524,7 @@ function TimeBlocksContent() {
     }
   };
 
-  const saveEventMove = async () => {
+  const saveEventMove = async (scope: EventMoveScope) => {
     if (!eventMoveDraft) return;
     const startMin = timeToMin(eventMoveStart);
     const endMin = timeToMin(eventMoveEnd);
@@ -524,11 +533,19 @@ function TimeBlocksContent() {
       return;
     }
     try {
-      await eventMutations.createException.mutateAsync({
-        eventId: eventMoveDraft.event.id,
-        payload: { date: toISODateString(eventMoveDraft.date), action: "move", startMin, endMin },
-      });
-      toast.success("Evento movido ese día");
+      if (scope === "all") {
+        await eventMutations.updateEvent.mutateAsync({
+          id: eventMoveDraft.event.id,
+          payload: { startMin, endMin },
+        });
+        toast.success("Evento movido en todas las ocurrencias");
+      } else {
+        await eventMutations.createException.mutateAsync({
+          eventId: eventMoveDraft.event.id,
+          payload: { date: toISODateString(eventMoveDraft.date), action: "move", startMin, endMin },
+        });
+        toast.success("Evento movido ese día");
+      }
       setEventMoveDraft(null);
     } catch (err) {
       toast.error((err as { message?: string })?.message ?? "Ups, no pudimos mover el evento.");
@@ -741,12 +758,12 @@ function TimeBlocksContent() {
 
       {eventMoveDraft && (
         <EventMoveModal
-          busy={eventMutations.createException.isPending}
+          busy={eventMutations.createException.isPending || eventMutations.updateEvent.isPending}
           endTime={eventMoveEnd}
           onChangeEnd={setEventMoveEnd}
           onChangeStart={setEventMoveStart}
           onCancel={() => setEventMoveDraft(null)}
-          onSave={() => void saveEventMove()}
+          onSave={(scope) => void saveEventMove(scope)}
           startTime={eventMoveStart}
           title={eventMoveDraft.event.title}
         />

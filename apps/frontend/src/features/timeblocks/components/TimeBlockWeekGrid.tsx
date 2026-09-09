@@ -802,7 +802,7 @@ export function TimeBlockWeekGrid({
                   }}
                   type="button"
                 >
-                  Mover solo hoy
+                   Mover...
                 </button>
               </div>
             )}

@@ -37,6 +37,11 @@ function formatDraftTime(value: string) {
   return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function resizeTitleInput(input: HTMLTextAreaElement) {
+  input.style.height = "auto";
+  input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
+}
+
 export function safeNoteReturnTo(value: string | null, fallback: string) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : fallback;
 }
@@ -92,6 +97,7 @@ export function NoteEditorScreen({
   const [saving, setSaving] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const restoredDraftRef = useRef(false);
   const skipDraftSyncRef = useRef(false);
 
@@ -143,6 +149,11 @@ export function NoteEditorScreen({
     // The draft hook intentionally tracks the complete controlled form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, isNew, tagsText]);
+
+  useEffect(() => {
+    if (!titleInputRef.current) return;
+    resizeTitleInput(titleInputRef.current);
+  }, [form.title]);
 
   const set = <K extends keyof NoteForm>(key: K, value: NoteForm[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -276,14 +287,23 @@ export function NoteEditorScreen({
 
           <div className="mb-6 flex items-start gap-3">
             <FileText className="mt-2 shrink-0 text-primary" size={22} />
-            <input
+            <textarea
               aria-label="Título de la nota"
               autoFocus
-              className="w-full min-w-0 border-0 bg-transparent p-0 text-3xl font-semibold leading-tight text-on-surface outline-none placeholder:text-on-surface-variant/60 focus:ring-0 sm:text-4xl"
+              className="block max-h-28 min-h-0 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words border-0 bg-transparent p-0 text-2xl font-semibold leading-8 text-on-surface outline-none placeholder:text-on-surface-variant/60 focus:ring-0 [overflow-wrap:anywhere] sm:text-3xl sm:leading-9"
               maxLength={200}
-              onChange={(event) => set("title", event.target.value)}
+              onChange={(event) => {
+                set("title", event.target.value);
+                resizeTitleInput(event.currentTarget);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.preventDefault();
+              }}
               placeholder="Título de la nota"
+              ref={titleInputRef}
+              rows={1}
               value={form.title}
+              wrap="soft"
             />
           </div>
 

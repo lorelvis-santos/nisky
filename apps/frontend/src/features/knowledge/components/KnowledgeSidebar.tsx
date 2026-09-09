@@ -84,20 +84,24 @@ export function KnowledgeSidebar({
               }}
               value={selectedProjectValue}
             >
-              <SelectTrigger aria-label="Filtrar notas por proyecto" className="mt-1 w-full">
+              <SelectTrigger
+                aria-label="Filtrar notas por proyecto"
+                className="mt-1 h-8 w-full rounded-md border-transparent bg-transparent px-2 font-body-sm text-body-sm text-on-surface-variant shadow-none hover:bg-surface-container-low focus-visible:border-primary/40 focus-visible:ring-1 focus-visible:ring-primary/15"
+                size="sm"
+              >
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_PROJECTS_VALUE}>Todos los proyectos</SelectItem>
+              <SelectContent className="rounded-lg border-outline-variant/70 p-1 shadow-cadence-1">
+                <SelectItem className="rounded-md py-1.5 text-body-sm" value={ALL_PROJECTS_VALUE}>Todos los proyectos</SelectItem>
                 {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
+                  <SelectItem className="rounded-md py-1.5 text-body-sm" key={project.id} value={project.id}>
                     <span className="flex min-w-0 items-center gap-2">
                       <span aria-hidden="true" className="size-2 shrink-0 rounded-full" style={{ backgroundColor: project.color }} />
                       <span className="truncate">{project.name}</span>
                     </span>
                   </SelectItem>
                 ))}
-                <SelectItem value={WITHOUT_PROJECT_VALUE}>Sin proyecto</SelectItem>
+                <SelectItem className="rounded-md py-1.5 text-body-sm" value={WITHOUT_PROJECT_VALUE}>Sin proyecto</SelectItem>
               </SelectContent>
             </Select>
           </section>

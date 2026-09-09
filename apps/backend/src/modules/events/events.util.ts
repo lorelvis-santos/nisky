@@ -53,7 +53,11 @@ export function eventOccurrenceOn(
 
     case "WEEKLY": {
       const targetDow = target.weekday % 7;
-      const dowMatch = (event.recurrenceDaysOfWeek ?? []).includes(targetDow);
+      // Recover weekly events saved without days by using their original weekday.
+      const recurrenceDays = event.recurrenceDaysOfWeek?.length
+        ? event.recurrenceDaysOfWeek
+        : [eventDate.weekday % 7];
+      const dowMatch = recurrenceDays.includes(targetDow);
       const weekDiff = Math.floor(diffDays / 7);
       return dowMatch && weekDiff % interval === 0
         ? { occurs: true, startMin: event.startMin, endMin: event.endMin, isException: false }

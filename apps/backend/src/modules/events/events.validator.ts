@@ -5,21 +5,25 @@ export const idParamSchema = z.object({
 });
 
 const dateValue = z.string().refine((value) => !Number.isNaN(Date.parse(value)), "La fecha no es válida");
+const allDayValue = z.boolean();
+const recurrenceIntervalValue = z.number().int().min(1).max(365);
+const recurrenceDaysOfWeekValue = z.array(z.number().int().min(0).max(6));
+const remindBeforeMinValue = z.number().int().min(0).max(10080);
 
 const eventBaseFields = {
   title: z.string().trim().min(1, "El título es requerido").max(200, "Máximo 200 caracteres"),
   date: dateValue,
-  allDay: z.boolean().default(false),
+  allDay: allDayValue.default(false),
   startMin: z.number().int().min(0).max(1439).optional(),
   endMin: z.number().int().min(1).max(1440).optional(),
   location: z.string().trim().max(200).optional(),
   color: z.string().trim().max(20).optional(),
   recurrenceType: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).nullable().optional(),
-  recurrenceInterval: z.number().int().min(1).max(365).default(1),
-  recurrenceDaysOfWeek: z.array(z.number().int().min(0).max(6)).default([]),
+  recurrenceInterval: recurrenceIntervalValue.default(1),
+  recurrenceDaysOfWeek: recurrenceDaysOfWeekValue.default([]),
   recurrenceDayOfMonth: z.number().int().min(1).max(31).nullable().optional(),
   recurrenceEndsAt: dateValue.nullable().optional(),
-  remindBeforeMin: z.number().int().min(0).max(10080).default(0),
+  remindBeforeMin: remindBeforeMinValue.default(0),
 };
 
 export const createEventSchema = z.object(eventBaseFields).superRefine((v, ctx) => {
@@ -53,17 +57,17 @@ export const updateEventSchema = z
   .object({
     title: eventBaseFields.title.optional(),
     date: eventBaseFields.date.optional(),
-    allDay: eventBaseFields.allDay.optional(),
+    allDay: allDayValue.optional(),
     startMin: eventBaseFields.startMin.optional(),
     endMin: eventBaseFields.endMin.optional(),
     location: eventBaseFields.location.optional(),
     color: eventBaseFields.color.optional(),
     recurrenceType: eventBaseFields.recurrenceType.optional(),
-    recurrenceInterval: eventBaseFields.recurrenceInterval.optional(),
-    recurrenceDaysOfWeek: eventBaseFields.recurrenceDaysOfWeek.optional(),
+    recurrenceInterval: recurrenceIntervalValue.optional(),
+    recurrenceDaysOfWeek: recurrenceDaysOfWeekValue.optional(),
     recurrenceDayOfMonth: eventBaseFields.recurrenceDayOfMonth.optional(),
     recurrenceEndsAt: eventBaseFields.recurrenceEndsAt.optional(),
-    remindBeforeMin: eventBaseFields.remindBeforeMin.optional(),
+    remindBeforeMin: remindBeforeMinValue.optional(),
   })
   .superRefine((v, ctx) => {
     if (v.allDay === false) {

@@ -27,10 +27,12 @@ export function useEventExceptionsQuery(eventId: string) {
 export function useEventMutations() {
   const queryClient = useQueryClient();
 
-  const invalidateEvents = () => {
-    queryClient.invalidateQueries({ queryKey: ["events"] });
-    queryClient.invalidateQueries({ queryKey: ["event-exceptions"] });
-    queryClient.invalidateQueries({ queryKey: ["home"] });
+  const invalidateEvents = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["events"] }),
+      queryClient.invalidateQueries({ queryKey: ["event-exceptions"] }),
+      queryClient.invalidateQueries({ queryKey: ["home"] }),
+    ]);
   };
 
   const createEvent = useMutation({

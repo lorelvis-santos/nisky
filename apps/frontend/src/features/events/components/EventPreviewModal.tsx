@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Bell, CalendarDays, ExternalLink, MapPin, Pencil, Repeat2, Video, X } from "lucide-react";
+import { Bell, CalendarDays, ExternalLink, MapPin, Pencil, Repeat2, Trash2, Video, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { CalendarEvent, EventRecurrenceType } from "@/types/entities";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { ColorPicker, PROJECT_COLORS } from "@/components/ui/ColorPicker";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import {
   DrawerClose,
   DrawerContent,
@@ -229,13 +230,11 @@ function EventScheduleEditor({
 export function EventPreviewModal({
   event,
   onClose,
-  onEdit,
 }: {
   event: CalendarEvent;
   onClose: () => void;
-  onEdit: (event: CalendarEvent) => void;
 }) {
-  const { updateEvent } = useEventMutations();
+  const { deleteEvent, updateEvent } = useEventMutations();
   const isMobile = useIsMobile(1023);
   const [currentEvent, setCurrentEvent] = useState(event);
   const [titleEditing, setTitleEditing] = useState(false);
@@ -246,6 +245,7 @@ export function EventPreviewModal({
   const [locationDraft, setLocationDraft] = useState(event.location ?? "");
   const [colorOpen, setColorOpen] = useState(false);
   const [pendingField, setPendingField] = useState<EventDraftField | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
   const locationCancelRef = useRef(false);
@@ -380,6 +380,16 @@ export function EventPreviewModal({
     await savePatch("reminder", { remindBeforeMin: value }, "Recordatorio actualizado");
   };
 
+  const handleDelete = async () => {
+    try {
+      await deleteEvent.mutateAsync(currentEvent.id);
+      toast.success("Evento eliminado");
+      onClose();
+    } catch (error) {
+      toast.error((error as { message?: string } | null)?.message ?? "No pudimos eliminar el evento.");
+    }
+  };
+
   const time = currentEvent.allDay || currentEvent.startMin === null || currentEvent.endMin === null
     ? "Todo el día"
     : `De ${minToTime(currentEvent.startMin)} a ${minToTime(currentEvent.endMin)}`;
@@ -407,7 +417,8 @@ export function EventPreviewModal({
   );
 
   return (
-    <PreviewSheet
+    <>
+      <PreviewSheet
       eyebrow="Evento"
       eyebrowBadge
       eyebrowClassName="border-secondary/20 bg-secondary-container text-secondary"
@@ -503,12 +514,13 @@ export function EventPreviewModal({
             </Button>
           )}
           <Button
-            className={cn("h-12 rounded-xl px-3 font-label-md text-label-md font-semibold", meetingUrl ? "flex-1" : "w-full")}
-            disabled={pendingField !== null}
-            onClick={() => onEdit(currentEvent)}
+            className={cn("h-12 rounded-xl border-error/40 px-3 font-label-md text-label-md font-semibold text-error hover:bg-error-container/30", meetingUrl ? "flex-1" : "w-full")}
+            disabled={pendingField !== null || deleteEvent.isPending}
+            onClick={() => setDeleteConfirmOpen(true)}
             type="button"
+            variant="outline"
           >
-            <Pencil aria-hidden="true" size={16} /> Editar evento
+            <Trash2 aria-hidden="true" size={16} /> Eliminar
           </Button>
         </div>
       }
@@ -659,6 +671,19 @@ export function EventPreviewModal({
           </div>
         </section>
       </div>
-    </PreviewSheet>
+      </PreviewSheet>
+      {deleteConfirmOpen && (
+        <ConfirmModal
+          cancelLabel="Cancelar"
+          confirmLabel="Eliminar evento"
+          danger
+          loading={deleteEvent.isPending}
+          message={<>¿Eliminar el evento «{currentEvent.title}»? Esta acción no se puede deshacer.</>}
+          onClose={() => setDeleteConfirmOpen(false)}
+          onConfirm={() => void handleDelete()}
+          title="¿Eliminar evento?"
+        />
+      )}
+    </>
   );
 }

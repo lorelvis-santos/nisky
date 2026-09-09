@@ -45,11 +45,11 @@ export function NoteCard({
       </button>
       <div className="flex items-end justify-between gap-2 px-5 pb-5 pt-0">
         <div className="min-w-0 flex-1">
-          {project !== undefined && (
+          {project && (
             <div className="mb-2 flex min-w-0">
-              <span className={`inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full border px-2 py-1 font-label-md text-label-md ${project ? "border-primary/20 bg-primary-fixed/50 text-primary" : "border-outline-variant bg-surface-container-low text-on-surface-variant"}`}>
+              <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary-fixed/50 px-2 py-1 font-label-md text-label-md text-primary">
                 <FolderKanban aria-hidden="true" className="shrink-0" size={13} />
-                <span className="min-w-0 truncate">{project?.name ?? "Sin proyecto"}</span>
+                <span className="min-w-0 truncate">{project.name}</span>
               </span>
             </div>
           )}

@@ -1,11 +1,15 @@
 "use client";
 
 import type { KnowledgeFacets, Project } from "@/types/entities";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type KnowledgeFilter =
   | { type: "category" | "tag"; name: string }
   | { type: "project"; id: string | null; name: string }
   | null;
+
+const ALL_PROJECTS_VALUE = "__all_projects__";
+const WITHOUT_PROJECT_VALUE = "__without_project__";
 
 export function KnowledgeSidebar({
   facets,
@@ -20,6 +24,10 @@ export function KnowledgeSidebar({
 }) {
   const categories = facets?.categories ?? [];
   const tags = facets?.tags ?? [];
+  const projectFilter = active?.type === "project" ? active : null;
+  const selectedProjectValue = projectFilter
+    ? projectFilter.id ?? WITHOUT_PROJECT_VALUE
+    : ALL_PROJECTS_VALUE;
 
   const chipClass = (selected: boolean) =>
     `flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left font-body-sm text-body-sm transition-colors hover:bg-surface-container-high ${selected ? "bg-secondary-fixed font-medium text-secondary" : "text-on-surface-variant"}`;
@@ -61,31 +69,37 @@ export function KnowledgeSidebar({
         {projects.length > 0 && (
           <section>
             <h2 className="font-label-caps text-label-caps text-on-surface-variant">PROYECTOS</h2>
-            <div className="mt-1 space-y-0.5">
-              {projects.map((project) => (
-                <button
-                  className={chipClass(active?.type === "project" && active.id === project.id)}
-                  key={project.id}
-                  onClick={() => onFilter(active?.type === "project" && active.id === project.id ? null : { type: "project", id: project.id, name: project.name })}
-                  type="button"
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <span aria-hidden="true" className="size-2 shrink-0 rounded-full" style={{ backgroundColor: project.color }} />
-                    <span className="truncate">{project.name}</span>
-                  </span>
-                </button>
-              ))}
-              <button
-                className={chipClass(active?.type === "project" && active.id === null)}
-                onClick={() => onFilter(active?.type === "project" && active.id === null ? null : { type: "project", id: null, name: "Sin proyecto" })}
-                type="button"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <span aria-hidden="true" className="size-2 shrink-0 rounded-full border border-outline-variant" />
-                  <span>Sin proyecto</span>
-                </span>
-              </button>
-            </div>
+            <Select
+              onValueChange={(value) => {
+                if (value === ALL_PROJECTS_VALUE) {
+                  if (active?.type === "project") onFilter(null);
+                  return;
+                }
+                if (value === WITHOUT_PROJECT_VALUE) {
+                  onFilter({ type: "project", id: null, name: "Sin proyecto" });
+                  return;
+                }
+                const project = projects.find((item) => item.id === value);
+                if (project) onFilter({ type: "project", id: project.id, name: project.name });
+              }}
+              value={selectedProjectValue}
+            >
+              <SelectTrigger aria-label="Filtrar notas por proyecto" className="mt-1 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_PROJECTS_VALUE}>Todos los proyectos</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span aria-hidden="true" className="size-2 shrink-0 rounded-full" style={{ backgroundColor: project.color }} />
+                      <span className="truncate">{project.name}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+                <SelectItem value={WITHOUT_PROJECT_VALUE}>Sin proyecto</SelectItem>
+              </SelectContent>
+            </Select>
           </section>
         )}
         <section>

@@ -9,8 +9,8 @@ import { TimeBlockWeekGrid } from "@/features/timeblocks/components/TimeBlockWee
 import { MobileAgenda } from "@/features/timeblocks/components/MobileAgenda";
 import { AgendaEntryChooser, type AgendaEntryKind } from "@/features/timeblocks/components/AgendaEntryChooser";
 import { AgendaDayTasksDialog } from "@/features/timeblocks/components/AgendaDayTasksDialog";
-import { EventEditorModal } from "@/features/events/components/EventEditorModal";
 import { EventPreviewModal } from "@/features/events/components/EventPreviewModal";
+import { PROJECT_COLORS } from "@/components/ui/ColorPicker";
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import {
   useTimeBlockMutations,
@@ -35,12 +35,6 @@ import {
 } from "@/components/ui/dialog";
 
 type SlotPrefill = { dayOfWeek: number; startMin: number; endMin: number; date: string; oneOff?: boolean };
-type EventEditorState = {
-  event: CalendarEvent | null;
-  initialDate?: string;
-  initialStartMin?: number;
-  initialEndMin?: number;
-};
 
 function toISODateString(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -176,9 +170,7 @@ function TimeBlocksContent() {
   const [previewBlockDate, setPreviewBlockDate] = useState<Date | null>(null);
   const [entryChooserOpen, setEntryChooserOpen] = useState(false);
   const [entrySlot, setEntrySlot] = useState<SlotPrefill | null>(null);
-  const [eventEditor, setEventEditor] = useState<EventEditorState | null>(null);
   const [previewingEvent, setPreviewingEvent] = useState<CalendarEvent | null>(null);
-  const [previewEventDate, setPreviewEventDate] = useState<Date | null>(null);
   const [dayTaskDate, setDayTaskDate] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const creatingEntryRef = useRef(false);
@@ -293,6 +285,35 @@ function TimeBlocksContent() {
     setEntryChooserOpen(true);
   };
 
+  const createEventAndOpen = async (slot: SlotPrefill) => {
+    if (creatingEntryRef.current) return;
+    creatingEntryRef.current = true;
+    try {
+      const created = await eventMutations.createEvent.mutateAsync({
+        title: "Nuevo evento",
+        date: slot.date,
+        allDay: false,
+        startMin: slot.startMin,
+        endMin: slot.endMin,
+        color: PROJECT_COLORS[0] ?? "#0f172a",
+        recurrenceType: null,
+        recurrenceInterval: 1,
+        recurrenceDaysOfWeek: [],
+        recurrenceDayOfMonth: null,
+        recurrenceEndsAt: null,
+        remindBeforeMin: 0,
+      });
+      setPreviewingBlock(null);
+      setPreviewBlockDate(null);
+      setPreviewingEvent(created);
+      toast.success("Evento creado");
+    } catch (error) {
+      toast.error((error as { message?: string } | null)?.message ?? "Ups, no pudimos crear el evento. Inténtalo de nuevo.");
+    } finally {
+      creatingEntryRef.current = false;
+    }
+  };
+
   const createBlockAndOpen = async (slot: SlotPrefill) => {
     if (creatingEntryRef.current) return;
     creatingEntryRef.current = true;
@@ -308,9 +329,7 @@ function TimeBlocksContent() {
         repeatEndsAt: null,
         remindBeforeMin: 0,
       });
-      setEventEditor(null);
       setPreviewingEvent(null);
-      setPreviewEventDate(null);
       setPreviewingBlock(created);
       setPreviewBlockDate(parseDateOnly(created.date ?? slot.date));
       toast.success("Bloque creado");
@@ -325,12 +344,7 @@ function TimeBlocksContent() {
     const slot = entrySlot ?? defaultAgendaSlot();
     setEntryChooserOpen(false);
     if (kind === "event") {
-      setEventEditor({
-        event: null,
-        initialDate: slot.date,
-        initialStartMin: slot.startMin,
-        initialEndMin: slot.endMin,
-      });
+      void createEventAndOpen(slot);
       return;
     }
     void createBlockAndOpen(slot);
@@ -338,7 +352,6 @@ function TimeBlocksContent() {
 
   const openBlockPreview = (block: TimeBlock, date?: Date) => {
     setPreviewingEvent(null);
-    setPreviewEventDate(null);
     setPreviewingBlock(block);
     setPreviewBlockDate(date ?? null);
   };
@@ -424,18 +437,10 @@ function TimeBlocksContent() {
     setResolveDraft(null);
   };
 
-  const openEventPreview = (event: CalendarEvent, date: Date) => {
+  const openEventPreview = (event: CalendarEvent) => {
     setPreviewingBlock(null);
     setPreviewBlockDate(null);
     setPreviewingEvent(event);
-    setPreviewEventDate(date);
-  };
-
-  const editPreviewedEvent = (event: CalendarEvent) => {
-    const date = previewEventDate;
-    setPreviewingEvent(null);
-    setPreviewEventDate(null);
-    setEventEditor({ event, initialDate: date ? toISODateString(date) : undefined });
   };
 
   const shiftMobileDate = (amount: number) => {
@@ -705,8 +710,7 @@ function TimeBlocksContent() {
         <EventPreviewModal
           event={previewingEvent}
           key={previewingEvent.id}
-          onClose={() => { setPreviewingEvent(null); setPreviewEventDate(null); }}
-          onEdit={editPreviewedEvent}
+          onClose={() => setPreviewingEvent(null)}
         />
       )}
 
@@ -732,17 +736,6 @@ function TimeBlocksContent() {
           date={dayTaskDate}
           onClose={() => setDayTaskDate(null)}
           tasks={dayTasks}
-        />
-      )}
-
-      {eventEditor && (
-        <EventEditorModal
-          event={eventEditor.event}
-          initialDate={eventEditor.initialDate}
-          initialEndMin={eventEditor.initialEndMin}
-          initialStartMin={eventEditor.initialStartMin}
-          key={eventEditor.event?.id ?? `new-${eventEditor.initialDate ?? ""}`}
-          onClose={() => setEventEditor(null)}
         />
       )}
 

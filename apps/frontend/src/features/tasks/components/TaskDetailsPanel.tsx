@@ -85,6 +85,11 @@ function resizeDescriptionInput(input: HTMLTextAreaElement) {
   input.style.height = `${input.scrollHeight}px`;
 }
 
+function resizeTitleInput(input: HTMLTextAreaElement) {
+  input.style.height = "auto";
+  input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
+}
+
 function dateFromDatetimeLocal(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
   if (!match) return undefined;
@@ -348,7 +353,7 @@ export function TaskDetailsPanel({
   const skipEditBlurRef = useRef(false);
   const editingSubtaskRef = useRef<HTMLSpanElement>(null);
   const editingSubtaskOriginalTitleRef = useRef("");
-  const titleInputRef = useRef<HTMLInputElement>(null);
+  const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const titleSavingRef = useRef(false);
   const cancelTitleRef = useRef(false);
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
@@ -729,8 +734,10 @@ export function TaskDetailsPanel({
 
   useEffect(() => {
     if (!titleEditing || !titleInputRef.current) return;
-    titleInputRef.current.focus();
-    titleInputRef.current.select();
+    const input = titleInputRef.current;
+    resizeTitleInput(input);
+    input.focus();
+    input.select();
   }, [titleEditing]);
 
   useEffect(() => {
@@ -1016,15 +1023,25 @@ export function TaskDetailsPanel({
         tall
         title={
           titleEditing ? (
-            <input
+            <textarea
               aria-busy={pendingTaskField === "title"}
               aria-label="Título de la tarea"
               autoComplete="off"
-              className="block w-full min-w-0 border-0 bg-transparent p-0 text-xl leading-7 text-on-surface outline-none focus:border-0 focus:outline-none focus:ring-0 disabled:cursor-wait disabled:opacity-60"
+              className="block max-h-28 min-h-14 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words border-0 bg-transparent p-0 text-xl leading-7 text-on-surface outline-none focus:border-0 focus:outline-none focus:ring-0 disabled:cursor-wait disabled:opacity-60"
+              data-vaul-no-drag
               disabled={pendingTaskField !== null}
               maxLength={200}
-              onBlur={() => void saveTitle()}
-              onChange={(event) => setTitleDraft(event.target.value)}
+              onBlur={() => {
+                window.requestAnimationFrame(() => {
+                  if (document.activeElement !== titleInputRef.current) {
+                    void saveTitle();
+                  }
+                });
+              }}
+              onChange={(event) => {
+                setTitleDraft(event.target.value);
+                resizeTitleInput(event.currentTarget);
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
@@ -1036,7 +1053,9 @@ export function TaskDetailsPanel({
                 }
               }}
               ref={titleInputRef}
+              rows={1}
               value={titleDraft}
+              wrap="soft"
             />
           ) : (
             <button

@@ -114,7 +114,7 @@ function PreviewHeader({
 function PreviewBody({ children, footer }: Pick<PreviewSheetProps, "children" | "footer">) {
   return (
     <>
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 lg:px-6" data-modal-scroll>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 lg:px-6" data-modal-scroll>
         {children}
       </div>
       {footer && (
@@ -163,9 +163,10 @@ function MobilePreviewSheet({
         className={cn(
           "flex min-h-0 w-full max-w-none rounded-t-[1.75rem] border-outline-variant bg-surface-bright p-0 shadow-cadence-3",
           tall
-            ? "h-[min(94dvh,52rem)] !max-h-[94dvh]"
-            : "h-[min(88dvh,48rem)] max-h-[88dvh]",
+            ? "h-[min(94svh,52rem)] !max-h-[94svh]"
+            : "h-[min(88svh,48rem)] max-h-[88svh]",
         )}
+        data-keyboard-stable
       >
         <PreviewHeader
           description={description}

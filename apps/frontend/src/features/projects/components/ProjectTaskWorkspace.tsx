@@ -101,7 +101,7 @@ export function ProjectTaskWorkspace({
   };
 
   return (
-    <section className="min-w-0">
+    <section className="min-w-0 max-w-full">
         <div className="mb-4 flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-1.5">
             {(["ACTIVE", "MINE", "ALL"] as const).map((value) => (
@@ -132,7 +132,7 @@ export function ProjectTaskWorkspace({
            </div>
         </div>
 
-        <div className="project-panel overflow-visible">
+        <div className="project-panel min-w-0 max-w-full overflow-visible">
            <div className="hidden rounded-t-lg grid-cols-[44px_minmax(0,1fr)_7.25rem_6.5rem_7.5rem_7rem_2.75rem] items-center gap-2 border-b border-[#e7e9e8] bg-[#fafaf8] px-3 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#858d91] md:grid lg:px-4">
             <span />
             <span>Tarea</span>

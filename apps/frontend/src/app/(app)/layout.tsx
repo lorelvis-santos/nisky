@@ -87,7 +87,7 @@ function AuthenticatedAppLayout({ children }: { children: React.ReactNode }) {
         <Sidebar user={user} open={menuOpen} onClose={() => setMenuOpen(false)} collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden pb-16 sm:pb-0">
           <TopAppBar onMenu={() => setMenuOpen(true)} onOpenCapture={() => capture.open("QUICK_NOTE")} />
-          <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+          <div className="min-h-0 min-w-0 flex-1 overflow-hidden">{children}</div>
         </main>
       </TasksSidebarProvider>
       <PendingRemindersGate />

@@ -42,9 +42,9 @@ export function ProjectSectionNav({
   return (
     <nav
       aria-label="Secciones del proyecto"
-       className="mt-7 border-b border-[#dde1e2]"
+      className="mt-7 min-w-0 max-w-full border-b border-[#dde1e2]"
     >
-      <div className="no-scrollbar flex gap-1 overflow-x-auto">
+      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto">
         {tabs.map(({ id, label, Icon }) => {
           const selected = activeTab === id;
           return (

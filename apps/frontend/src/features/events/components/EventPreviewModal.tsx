@@ -411,6 +411,7 @@ export function EventPreviewModal({
       eyebrow="Evento"
       eyebrowBadge
       eyebrowClassName="border-secondary/20 bg-secondary-container text-secondary"
+      eyebrowIcon={CalendarDays}
       bodyHeader={
         <div className="mb-5 min-w-0">
           <div className="flex min-w-0 items-start gap-3">

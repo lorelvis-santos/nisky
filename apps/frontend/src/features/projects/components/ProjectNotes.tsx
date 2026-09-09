@@ -99,7 +99,7 @@ export function ProjectNotes({ project }: { project: Project }) {
         </div>
       </header>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
+      <div className="mt-5 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <KnowledgeSidebar active={filter} facets={facetsQuery.data} onFilter={updateFilter} />
         <div className="min-w-0">
           {query.isLoading ? (

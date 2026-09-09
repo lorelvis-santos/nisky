@@ -113,20 +113,20 @@ export function ProjectHeader({
 
   return (
     <header className="shrink-0">
-       <div className="flex items-center gap-2 text-[12px] text-[#5f6872]">
+      <div className="flex min-w-0 items-center gap-2 text-[12px] text-[#5f6872]">
         <Link
-           className="transition-colors hover:text-[#1e3a5f]"
+           className="shrink-0 transition-colors hover:text-[#1e3a5f]"
           href="/projects"
         >
           Proyectos
         </Link>
         <span aria-hidden="true">/</span>
-         <span className="max-w-[min(60vw,32rem)] truncate font-medium text-[#1f2933]">
+         <span className="min-w-0 max-w-[min(60vw,32rem)] flex-1 truncate font-medium text-[#1f2933]">
           {project.name}
         </span>
         <button
           aria-label="Volver a proyectos"
-           className="ml-auto flex h-9 w-9 items-center justify-center rounded-md text-[#5f6872] hover:bg-white hover:text-[#1e3a5f] sm:hidden"
+          className="ml-auto flex h-9 w-9 items-center justify-center rounded-md text-[#5f6872] hover:bg-white hover:text-[#1e3a5f] sm:hidden"
           onClick={onBack}
           type="button"
         >
@@ -142,7 +142,7 @@ export function ProjectHeader({
               className="h-4 w-4 shrink-0 rounded-full ring-4 ring-white/70"
               style={{ backgroundColor: project.color }}
             />
-             <h1 className="min-w-0 break-words font-display-hero-mobile text-display-hero-mobile font-bold tracking-[-0.035em] text-[#1f2933] sm:font-display-hero sm:text-display-hero">
+            <h1 className="min-w-0 max-w-full break-words font-display-hero-mobile text-display-hero-mobile font-bold tracking-[-0.035em] text-[#1f2933] [overflow-wrap:anywhere] sm:font-display-hero sm:text-display-hero">
               {project.name}
             </h1>
             <span className="rounded-full border border-[#c9d0d4] bg-[#e7e9e8] px-2.5 py-1 text-[11px] font-semibold text-[#1e3a5f]">
@@ -187,11 +187,11 @@ export function ProjectHeader({
                 title="Editar descripción"
                 type="button"
               >
-                <span className="min-w-0 flex-1">{project.description}</span>
+                <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">{project.description}</span>
                 <Pencil aria-hidden="true" className="mt-1 shrink-0 opacity-0 transition-opacity group-hover:opacity-60" size={13} />
               </button>
             ) : (
-              <p className="mt-3 max-w-4xl text-[14px] leading-6 text-[#5f6872]">
+              <p className="mt-3 max-w-4xl break-words text-[14px] leading-6 text-[#5f6872] [overflow-wrap:anywhere]">
                 {project.description}
               </p>
             )

@@ -60,7 +60,7 @@ export default function ProjectsPage() {
         {emptyLabel}
       </p>
     ) : (
-      <div className="grid items-stretch grid-cols-1 gap-section-gap sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid min-w-0 items-stretch grid-cols-1 gap-section-gap sm:grid-cols-2 xl:grid-cols-3">
         {items.map((project) => {
           const isShared = project.userId !== user?.id;
           const memberUsers = project.members ?? [];
@@ -71,7 +71,7 @@ export default function ProjectsPage() {
           const taskCount = project._count?.tasks ?? 0;
           return (
             <Link
-              className="group flex h-full flex-col gap-3 rounded-lg border border-outline-variant bg-surface p-section-gap transition-colors hover:border-primary/60 hover:bg-surface-container-low"
+              className="group flex h-full min-w-0 flex-col gap-3 rounded-lg border border-outline-variant bg-surface p-section-gap transition-colors hover:border-primary/60 hover:bg-surface-container-low"
               href={`/projects/${project.id}`}
               key={project.id}
             >
@@ -93,7 +93,7 @@ export default function ProjectsPage() {
 
               <div className="min-h-[2.25rem]">
                 {project.description && (
-                  <p className="line-clamp-2 font-body-sm text-body-sm text-on-surface-variant">
+                  <p className="line-clamp-2 break-words font-body-sm text-body-sm text-on-surface-variant [overflow-wrap:anywhere]">
                     {project.description}
                   </p>
                 )}
@@ -112,7 +112,7 @@ export default function ProjectsPage() {
     );
 
   return (
-    <section className="flex h-full min-h-0 flex-col p-container-padding sm:p-section-gap">
+    <section className="flex h-full min-h-0 min-w-0 max-w-full flex-col p-container-padding sm:p-section-gap">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest">
         <div className="shrink-0 border-b border-outline-variant bg-surface-container-low px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -155,7 +155,7 @@ export default function ProjectsPage() {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-section-gap overflow-y-auto p-container-padding">
+        <div className="min-h-0 flex-1 space-y-section-gap overflow-x-hidden overflow-y-auto p-container-padding">
           {accessibleQuery.isLoading ? (
             <p className="py-10 text-center font-body-sm text-body-sm text-on-surface-variant">Cargando proyectos...</p>
           ) : projects.length === 0 ? (

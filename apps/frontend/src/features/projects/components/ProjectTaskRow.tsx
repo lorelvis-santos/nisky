@@ -184,7 +184,7 @@ export function ProjectTaskRow({
     <article
       aria-current={isPreviewed ? "true" : undefined}
       className={cn(
-        "first:rounded-t-lg last:rounded-b-lg grid grid-cols-[44px_minmax(0,1fr)] gap-2 px-2 py-2 transition-colors hover:bg-[#fafaf8] sm:px-3 md:grid-cols-[44px_minmax(0,1fr)_7.25rem_6.5rem_7.5rem_7rem_2.75rem] md:items-center lg:px-4",
+        "first:rounded-t-lg last:rounded-b-lg grid min-w-0 max-w-full grid-cols-[44px_minmax(0,1fr)] gap-2 px-2 py-2 transition-colors hover:bg-[#fafaf8] sm:px-3 md:grid-cols-[44px_minmax(0,1fr)_7.25rem_6.5rem_7.5rem_7rem_2.75rem] md:items-center lg:px-4",
         completed && "bg-[#fdfdfb]",
         isPreviewed && "bg-[#f0f5ff] ring-1 ring-inset ring-[#3b82f6]",
       )}

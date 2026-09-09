@@ -497,6 +497,7 @@ export function TimeBlockPreviewModal({
         eyebrow="Bloque de tiempo"
         eyebrowBadge
         eyebrowClassName="border-primary/20 bg-primary-fixed text-primary"
+        eyebrowIcon={Clock3}
         bodyHeader={
           <div className="mb-5 min-w-0 space-y-2.5">
           {nameEditing ? (

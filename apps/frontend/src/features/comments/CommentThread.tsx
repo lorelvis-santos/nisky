@@ -202,7 +202,7 @@ export function CommentThread({ kind, id, projectId }: { kind: "project" | "task
               const edited = comment.updatedAt !== comment.createdAt;
               return (
                 <article
-                  className="group flex cursor-default gap-3 py-1"
+                  className="group flex min-w-0 gap-3 py-1"
                   key={comment.id}
                   onClick={(event) => {
                     if (!event.shiftKey) return;

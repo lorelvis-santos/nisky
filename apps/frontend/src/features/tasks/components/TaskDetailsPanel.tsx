@@ -816,6 +816,7 @@ export function TaskDetailsPanel({
     <>
       <PreviewSheet
         eyebrow="Tarea"
+        eyebrowBadge
         eyebrowIcon={ListChecks}
         footer={
           <div className="flex w-full flex-wrap items-center gap-2">

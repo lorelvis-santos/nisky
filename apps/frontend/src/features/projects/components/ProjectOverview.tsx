@@ -10,8 +10,8 @@ export function ProjectOverview({ summary, onOpenTasks, onOpenTask, isError = fa
   if (isError && !summary) return <OverviewError onRetry={onRetry} />;
   if (!summary) return <OverviewSkeleton />;
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]">
-      <div className="space-y-5">
+    <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]">
+      <div className="min-w-0 space-y-5">
         <ProjectProgressCard summary={summary} />
 
         {summary.counts.overdue > 0 && (
@@ -55,5 +55,5 @@ function OverviewError({ onRetry }: { onRetry?: () => void }) {
 }
 
 function OverviewSkeleton() {
-  return <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]" aria-hidden="true"><div className="space-y-5"><div className="project-panel h-64 animate-pulse" /><div className="project-panel h-72 animate-pulse" /></div><div className="project-panel h-[26rem] animate-pulse" /></div>;
+  return <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]" aria-hidden="true"><div className="min-w-0 space-y-5"><div className="project-panel h-64 animate-pulse" /><div className="project-panel h-72 animate-pulse" /></div><div className="min-w-0 project-panel h-[26rem] animate-pulse" /></div>;
 }

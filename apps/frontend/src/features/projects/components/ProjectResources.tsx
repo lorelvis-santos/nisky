@@ -49,7 +49,7 @@ export function ProjectResources({ project }: { project: Project }) {
   };
 
   return (
-    <section className="max-w-3xl">
+    <section className="min-w-0 max-w-3xl">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="project-eyebrow">REFERENCIAS</p>
@@ -99,12 +99,12 @@ export function ProjectResources({ project }: { project: Project }) {
                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#e7e9e8] text-[#1e3a5f]"><Link2 size={17} /></span>
               <div className="min-w-0 flex-1">
                  <a className="inline-flex max-w-full items-center gap-1.5 text-[14px] font-semibold text-[#2f3b45] hover:text-[#1e3a5f]" href={resource.url} rel="noreferrer" target="_blank">
-                  <span className="truncate">{resource.title}</span>
+                  <span className="min-w-0 truncate break-words [overflow-wrap:anywhere]">{resource.title}</span>
                   <ExternalLink className="shrink-0" size={13} />
                 </a>
                  <p className="mt-1 break-all text-[12px] text-[#1e3a5f]">{resource.url}</p>
-                 {resource.description && <p className="mt-2 text-[13px] leading-5 text-[#5f6872]">{resource.description}</p>}
-                 <p className="mt-3 text-[11px] text-[#858d91]">Añadido por {resource.createdBy.name ?? resource.createdBy.email}</p>
+                 {resource.description && <p className="mt-2 break-words text-[13px] leading-5 text-[#5f6872] [overflow-wrap:anywhere]">{resource.description}</p>}
+                 <p className="mt-3 break-words text-[11px] text-[#858d91] [overflow-wrap:anywhere]">Añadido por {resource.createdBy.name ?? resource.createdBy.email}</p>
               </div>
               {(resource.createdById === user?.id || project.userId === user?.id) && (
                 <button aria-label={`Eliminar ${resource.title}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-[#8a95a8] hover:bg-[#fff1f3] hover:text-[#c73b52]" onClick={() => setDeleteTarget(resource)} type="button">

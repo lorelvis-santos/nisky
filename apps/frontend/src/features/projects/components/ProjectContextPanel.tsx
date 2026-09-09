@@ -14,7 +14,7 @@ export function ProjectContextPanel({ summary, onOpenTask, showProgress = true, 
   if (isError && !summary) return <ContextError onRetry={onRetry} />;
   if (!summary) return <ContextSkeleton />;
   return (
-    <aside className="space-y-4 lg:sticky lg:top-0 lg:self-start">
+    <aside className="min-w-0 space-y-4 lg:sticky lg:top-0 lg:self-start">
       {showProgress && <ProjectProgressCard summary={summary} />}
 
       {showUpcomingDates && <section className="project-panel p-5">

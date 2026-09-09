@@ -59,7 +59,7 @@ export function NoteCard({
           </div>
         </div>
         {canEdit && onEdit && <div className="flex shrink-0 items-center gap-1">
-            <button aria-label="Editar" className="rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => onEdit(note)} title="Editar" type="button">
+             <button aria-label="Abrir para editar" className="rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => onEdit(note)} title="Editar desde la vista previa" type="button">
               <Pencil size={14} />
             </button>
           </div>}

@@ -114,7 +114,7 @@ function PreviewHeader({
 function PreviewBody({ children, footer }: Pick<PreviewSheetProps, "children" | "footer">) {
   return (
     <>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 lg:px-6" data-modal-scroll>
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 lg:px-6" data-modal-scroll>
         {children}
       </div>
       {footer && (

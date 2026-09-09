@@ -1,10 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createNote, deleteNote, fetchKnowledgeFacets, fetchNotes, updateNote, type NotePayload, type NoteQueryParams } from "../api/knowledge";
+import { createNote, deleteNote, fetchKnowledgeFacets, fetchNote, fetchNotes, updateNote, type NotePayload, type NoteQueryParams } from "../api/knowledge";
 
 export function useNotesQuery(params: NoteQueryParams = {}) {
   return useQuery({
     queryKey: ["knowledge", params],
     queryFn: () => fetchNotes(params),
+  });
+}
+
+export function useNoteQuery(id: string | null) {
+  return useQuery({
+    queryKey: ["knowledge", id],
+    queryFn: () => fetchNote(id as string),
+    enabled: Boolean(id),
   });
 }
 

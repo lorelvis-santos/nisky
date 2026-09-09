@@ -1,26 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { BookOpen, Plus } from "lucide-react";
 import { FAB } from "@/components/ui/FAB";
 import { KnowledgeSidebar } from "@/features/knowledge/components/KnowledgeSidebar";
 import type { KnowledgeFilter } from "@/features/knowledge/components/KnowledgeSidebar";
 import { NoteCard } from "@/features/knowledge/components/NoteCard";
-import { NoteEditorModal } from "@/features/knowledge/components/NoteEditorModal";
 import { NotePreviewModal } from "@/features/knowledge/components/NotePreviewModal";
 import { NotePagination } from "@/features/knowledge/components/NotePagination";
 import { useFacetsQuery, useNoteMutations, useNotesQuery } from "@/features/knowledge/hooks/useKnowledge";
-import type { NoteForm } from "@/features/knowledge/schemas/knowledge.schema";
 import type { Note } from "@/types/entities";
 
 export default function KnowledgePage() {
+  const router = useRouter();
   const [filter, setFilter] = useState<KnowledgeFilter>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState<Note | null>(null);
   const [previewing, setPreviewing] = useState<Note | null>(null);
-  const [creating, setCreating] = useState(false);
 
   const query = useNotesQuery({
     page,
@@ -33,8 +31,6 @@ export default function KnowledgePage() {
   const mutations = useNoteMutations();
 
   const notes = query.data?.data ?? [];
-  const modalOpen = creating || Boolean(editing);
-
   const updateFilter = (nextFilter: KnowledgeFilter) => {
     setPage(1);
     setFilter(nextFilter);
@@ -45,57 +41,33 @@ export default function KnowledgePage() {
     setSearch(value);
   };
 
-  const save = async (form: NoteForm) => {
-    if (creating) {
-      await mutations.create.mutateAsync(form);
-      toast.success("¡Nota creada!");
-    } else if (editing) {
-      await mutations.update.mutateAsync({ id: editing.id, payload: form });
-      toast.success("¡Nota actualizada!");
-    }
-    setEditing(null);
-    setCreating(false);
-    setPreviewing(null);
-  };
-
-  const remove = async () => {
-    if (!editing) return;
-    await mutations.remove.mutateAsync(editing.id);
-    toast.success("¡Nota eliminada!");
-    setEditing(null);
-    setCreating(false);
-    setPreviewing(null);
-  };
-
-  const togglePin = async (note: Note) => {
+  const togglePin = async (note: Note, pinned = !note.pinned) => {
     try {
-      await mutations.togglePin.mutateAsync({ id: note.id, pinned: !note.pinned });
+      await mutations.togglePin.mutateAsync({ id: note.id, pinned });
+      return true;
     } catch {
       toast.error("Ups, no pudimos actualizar tu nota.");
+      return false;
     }
+  };
+
+  const removePreview = async () => {
+    if (!previewing) return;
+    await mutations.remove.mutateAsync(previewing.id);
+    toast.success("¡Nota eliminada!");
+    setPreviewing(null);
   };
 
   const openNew = () => {
-    setPreviewing(null);
-    setEditing(null);
-    setCreating(true);
+    router.push(`/knowledge/new?returnTo=${encodeURIComponent("/knowledge")}`);
   };
 
   const openPreview = (note: Note) => {
-    setCreating(false);
-    setEditing(null);
     setPreviewing(note);
   };
 
   const openEdit = (note: Note) => {
-    setPreviewing(null);
-    setCreating(false);
-    setEditing(note);
-  };
-
-  const closeModal = () => {
-    setEditing(null);
-    setCreating(false);
+    router.push(`/knowledge/${note.id}/edit?returnTo=${encodeURIComponent("/knowledge")}`);
   };
 
   const closePreview = () => setPreviewing(null);
@@ -140,7 +112,7 @@ export default function KnowledgePage() {
                <>
                  <div className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
                    {notes.map((note) => (
-                      <NoteCard key={note.id} note={note} onEdit={openEdit} onOpen={openPreview} onTogglePin={togglePin} />
+                       <NoteCard key={note.id} note={note} onEdit={openEdit} onOpen={openPreview} onTogglePin={async (item) => { await togglePin(item); }} />
                    ))}
                  </div>
                  <NotePagination isFetching={query.isFetching} meta={query.data?.meta} onPageChange={setPage} />
@@ -151,25 +123,18 @@ export default function KnowledgePage() {
         )}
       </div>
        <div className="sm:hidden">
-         <FAB ariaLabel="Nueva nota" onClick={openNew} raised={modalOpen || Boolean(previewing)} />
+          <FAB ariaLabel="Nueva nota" onClick={openNew} raised={Boolean(previewing)} />
         </div>
         {previewing && (
           <NotePreviewModal
-            note={previewing}
-            onClose={closePreview}
-            onEdit={() => openEdit(previewing)}
-            onTogglePin={() => void togglePin(previewing)}
-          />
-        )}
-        {modalOpen && (
-        <NoteEditorModal
-          key={editing?.id ?? "new"}
-          note={editing}
-          onClose={closeModal}
-          onDelete={editing ? remove : undefined}
-          onSave={save}
-        />
-      )}
-    </section>
+            key={previewing.id}
+             note={previewing}
+             onClose={closePreview}
+             onDelete={removePreview}
+             onEdit={() => openEdit(previewing)}
+             onTogglePin={(pinned) => togglePin(previewing, pinned)}
+           />
+         )}
+     </section>
   );
 }

@@ -44,6 +44,7 @@ type Props = {
   value: string;
   onChange: (value: string) => void;
   minHeight?: string;
+  maxHeight?: string;
   placeholder?: string;
 };
 
@@ -57,7 +58,7 @@ const toolbar: Array<{ label: string; icon: typeof Bold; snippet: string; title:
   { label: "Enlace", icon: Link, title: "Enlace", snippet: "[texto](https://)" },
 ];
 
-export function MarkdownEditor({ value, onChange, minHeight = "18rem", placeholder }: Props) {
+export function MarkdownEditor({ value, onChange, minHeight = "18rem", maxHeight, placeholder }: Props) {
   const extensions = useMemo(
     () => [markdown({ base: markdownLanguage, codeLanguages: languages }), steelEditorTheme, EditorView.lineWrapping],
     [],
@@ -108,7 +109,7 @@ export function MarkdownEditor({ value, onChange, minHeight = "18rem", placehold
       {preview ? (
         <MarkdownPreview content={value} />
       ) : (
-        <div className="px-3" style={{ minHeight }}>
+        <div className="overflow-y-auto px-3" style={{ minHeight, maxHeight }}>
           <CodeMirror
             extensions={extensions}
             onChange={onChange}

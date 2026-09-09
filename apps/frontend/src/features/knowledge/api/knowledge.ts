@@ -35,6 +35,11 @@ export async function fetchNotes(params: NoteQueryParams) {
   return data.data as Paginated<Note>;
 }
 
+export async function fetchNote(id: string) {
+  const { data } = await api.get<ApiResponse<Note>>(`/knowledge/${id}`);
+  return data.data as Note;
+}
+
 export async function fetchKnowledgeFacets(projectId?: string | null) {
   const { data } = await api.get<ApiResponse<KnowledgeFacets>>("/knowledge/facets", { params: projectId ? { projectId } : undefined });
   return data.data as KnowledgeFacets;

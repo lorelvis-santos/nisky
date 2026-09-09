@@ -38,7 +38,10 @@ export function useKeyboardAwareViewport<T extends HTMLElement>() {
   const ref = useCallback((node: T | null) => {
     if (rootRef.current === node) return;
     rootRef.current = node;
-    if (node?.dataset.slot === "dialog-content") {
+    if (
+      node?.dataset.slot === "dialog-content" ||
+      node?.dataset.slot === "drawer-content"
+    ) {
       setRootVersion((version) => version + 1);
     }
   }, []);
@@ -49,7 +52,8 @@ export function useKeyboardAwareViewport<T extends HTMLElement>() {
 
     const viewport = window.visualViewport ?? null;
     const isDialog = root.dataset.slot === "dialog-content";
-    if (!isDialog) return;
+    const isDrawer = root.dataset.slot === "drawer-content";
+    if (!isDialog && !isDrawer) return;
 
     const originalMaxHeight = root.style.maxHeight;
     const originalBottom = root.style.bottom;

@@ -223,8 +223,9 @@ function ProjectDetailPageContent() {
         {activeTab === "tasks" && (
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]">
             <ProjectTaskWorkspace
-              assigneeId={taskAssigneeId}
-              isError={tasksQuery.isError}
+                assigneeId={taskAssigneeId}
+               canEditTasks={permissions.canEditTasks}
+               isError={tasksQuery.isError}
               isFetching={tasksQuery.isFetching}
               isLoading={tasksQuery.isLoading}
               members={members}
@@ -232,7 +233,10 @@ function ProjectDetailPageContent() {
               mode={taskMode}
                 onAssigneeChange={(value) => { setTaskPage(1); setTaskAssigneeId(value); }}
                 onModeChange={(value) => { resetTaskPage(); setTaskMode(value); }}
-                onOpen={openTask}
+               onOpen={openTask}
+               onUpdateTask={async (taskId, payload) => {
+                 await taskMutations.update.mutateAsync({ id: taskId, payload });
+               }}
                onPageChange={setTaskPage}
                onPriorityChange={(value) => { resetTaskPage(); setTaskPriority(value); }}
                onCreateTask={openCreateTask}

@@ -72,7 +72,12 @@ function PreviewHeader({
   const content = (
     <div className="min-w-0 flex-1">
       {eyebrow && (eyebrowBadge || EyebrowIcon ? (
-        <span className={cn("inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary-fixed px-2.5 py-1 font-label-caps text-label-caps uppercase text-primary", eyebrowClassName)}>
+        <span className={cn(
+          eyebrowBadge
+            ? "inline-flex h-7 items-center gap-1.5 rounded-full border border-primary/15 bg-primary-fixed px-2.5 font-label-md text-label-md font-medium normal-case text-primary"
+            : "inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary-fixed px-2.5 py-0.5 font-label-caps text-label-caps uppercase text-primary",
+          eyebrowClassName,
+        )}>
           {EyebrowIcon && <EyebrowIcon aria-hidden="true" size={14} />}
           {eyebrow}
         </span>
@@ -105,7 +110,10 @@ function PreviewHeader({
   ) : (
     <DialogClose asChild>{closeButton}</DialogClose>
   );
-  const className = "flex shrink-0 flex-row items-start justify-between gap-4 border-b border-outline-variant px-5 py-4 !text-left lg:px-6";
+  const className = cn(
+    "flex shrink-0 flex-row justify-between gap-4 border-b border-outline-variant px-5 py-4 !text-left lg:px-6",
+    titlePlacement === "body" ? "items-center" : "items-start",
+  );
 
   return primitive === "drawer" ? (
     <DrawerHeader className={className}>

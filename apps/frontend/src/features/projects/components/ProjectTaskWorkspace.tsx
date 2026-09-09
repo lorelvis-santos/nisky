@@ -1,29 +1,14 @@
 "use client";
 
-import { Check, CheckCircle2, Circle, Filter, MoreHorizontal, Play, Plus, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
+import { Check, Circle, Filter, Plus, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
 import { useRef, useState } from "react";
-import { Avatar } from "@/components/ui/Avatar";
-import { PriorityChip } from "@/features/tasks/components/PriorityChip";
+import type { TaskUpdatePayload } from "@/features/tasks/api/tasks";
 import { TaskPagination } from "@/features/tasks/components/TaskPagination";
 import type { PaginationMeta, ProjectMember, Task, TaskPriority } from "@/types/entities";
 import { cn, isTaskOverdue } from "@/lib/utils";
-import { formatTaskDueDate } from "@/features/tasks/lib/task-utils";
+import { ProjectTaskRow } from "./ProjectTaskRow";
 
 export type ProjectTaskMode = "ACTIVE" | "MINE" | "ALL";
-
-const statusLabels: Record<Task["status"], string> = {
-  PENDING: "Pendiente",
-  IN_PROGRESS: "En progreso",
-  COMPLETED: "Completada",
-  CANCELLED: "Cancelada",
-};
-
-const statusStyles: Record<Task["status"], string> = {
-  PENDING: "bg-surface-container-low text-on-surface-variant",
-  IN_PROGRESS: "bg-info-container text-on-info-container",
-  COMPLETED: "bg-tertiary-container text-on-tertiary-container",
-  CANCELLED: "bg-surface-container-high text-on-surface-variant",
-};
 
 function isClosedTask(task: Task) {
   return task.status === "COMPLETED" || task.status === "CANCELLED";
@@ -63,7 +48,9 @@ export function ProjectTaskWorkspace({
   onRetry,
   onOpen,
   previewedTaskId,
+  canEditTasks,
   onToggle,
+  onUpdateTask,
   onStartPomodoro,
   onPageChange,
   onCreateTask,
@@ -87,7 +74,9 @@ export function ProjectTaskWorkspace({
   onRetry: () => void;
   onOpen: (task: Task) => void;
   previewedTaskId?: string | null;
+  canEditTasks: boolean;
   onToggle: (task: Task) => void;
+  onUpdateTask: (taskId: string, payload: TaskUpdatePayload) => Promise<void>;
   onStartPomodoro: (task: Task) => void;
   onPageChange: (page: number) => void;
   onCreateTask: () => void;
@@ -156,7 +145,7 @@ export function ProjectTaskWorkspace({
            {isLoading ? <TaskSkeleton /> : isError ? <TaskError onRetry={onRetry} /> : tasks.length === 0 ? <TaskEmpty hasFilters={mode === "MINE" || Boolean(search) || hasAdvancedFilters} mode={mode} onReset={onResetFilters} /> : (
              <>
                <div className="divide-y divide-[#e7e9e8]">
-                    {orderedTasks.map((task) => <ProjectTaskRow isPreviewed={previewedTaskId === task.id} key={task.id} onOpen={() => onOpen(task)} onStartPomodoro={() => onStartPomodoro(task)} onToggle={() => onToggle(task)} task={task} />)}
+                     {orderedTasks.map((task) => <ProjectTaskRow canEditTasks={canEditTasks} isPreviewed={previewedTaskId === task.id} key={task.id} members={members} onOpen={() => onOpen(task)} onStartPomodoro={() => onStartPomodoro(task)} onToggle={onToggle} onUpdateTask={onUpdateTask} task={task} />)}
               </div>
               {meta && <TaskPagination isFetching={isFetching} meta={meta} onPageChange={onPageChange} />}
             </>
@@ -176,43 +165,6 @@ function AdvancedFilters({ assigneeId, members, priority, onAssigneeChange, onPr
       <div className="mt-4 flex justify-between gap-2 border-t border-[#e7e9e8] pt-3"><button className="rounded-md px-2 py-1 text-[12px] font-semibold text-[#5f6872] hover:bg-[#eff1f0] hover:text-[#1e3a5f]" onClick={onReset} type="button">Limpiar</button><button className="rounded-md bg-[#1e3a5f] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#152c48]" onClick={onClose} type="button">Aplicar</button></div>
     </div>
   );
-}
-
-function ProjectTaskRow({ task, onOpen, onToggle, onStartPomodoro, isPreviewed }: { task: Task; onOpen: () => void; onToggle: () => void; onStartPomodoro: () => void; isPreviewed?: boolean }) {
-  const completed = task.status === "COMPLETED";
-  const overdue = isTaskOverdue(task);
-  return (
-    <article aria-current={isPreviewed ? "true" : undefined} className={cn("first:rounded-t-lg last:rounded-b-lg grid grid-cols-[44px_minmax(0,1fr)] gap-2 px-2 py-2 transition-colors hover:bg-[#fafaf8] sm:px-3 md:grid-cols-[44px_minmax(0,1fr)_7.25rem_6.5rem_7.5rem_7rem_2.75rem] md:items-center lg:px-4", completed && "bg-[#fdfdfb]", isPreviewed && "bg-[#f0f5ff] ring-1 ring-inset ring-[#3b82f6]")}>
-      <button aria-label={completed ? "Marcar tarea como pendiente" : "Marcar tarea como completada"} className="flex h-11 w-11 items-center justify-center rounded-full text-[#9aa2a5] hover:bg-[#e7e9e8] hover:text-[#1e3a5f]" onClick={onToggle} type="button">{completed ? <CheckCircle2 className="text-[#4a7c59]" size={20} /> : <Circle size={20} />}</button>
-      <div className="flex min-w-0 items-start gap-2 md:hidden">
-         <button className="min-w-0 flex-1 rounded-md text-left" onClick={onOpen} type="button">
-           <span className={cn("block truncate text-[13px] font-medium text-[#2f3b45]", completed && "text-[#858d91] line-through")}>{task.title}</span>
-           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#858d91]">
-            <StatusBadge status={task.status} />
-            <PriorityChip priority={task.priority} />
-             {task.dueDate && <span className={overdue ? "font-semibold text-[#c73b52]" : undefined}>{formatTaskDueDate(task.dueDate)}</span>}
-            {task.assignee ? <span className="inline-flex min-w-0 items-center gap-1.5"><Avatar avatarUrl={task.assignee.avatarUrl} email={task.assignee.email} name={task.assignee.name} size="xs" /><span className="max-w-[8rem] truncate">{task.assignee.name ?? task.assignee.email}</span></span> : <span>Sin asignar</span>}
-          </span>
-        </button>
-          <TaskRowActions taskTitle={task.title} onOpen={onOpen} onStartPomodoro={onStartPomodoro} />
-      </div>
-       <button className="hidden min-w-0 rounded-md text-left md:block" onClick={onOpen} type="button"><span className={cn("block truncate text-[13px] font-medium text-[#2f3b45]", completed && "text-[#858d91] line-through")}>{task.title}</span></button>
-      <span className="hidden md:inline-flex"><StatusBadge status={task.status} /></span>
-      <span className="hidden md:inline-flex"><PriorityChip priority={task.priority} /></span>
-        <span className={cn("hidden items-center gap-1 text-[11px] md:flex", overdue ? "font-semibold text-[#c73b52]" : "text-[#5f6872]")}>{task.dueDate ? <>{formatTaskDueDate(task.dueDate)}</> : <span className="text-[#9aa2a5]">Sin fecha</span>}</span>
-       <span className="hidden min-w-0 items-center gap-1.5 md:flex">{task.assignee ? <><Avatar avatarUrl={task.assignee.avatarUrl} email={task.assignee.email} name={task.assignee.name} size="xs" /><span className="truncate text-[11px] text-[#5f6872]">{task.assignee.name ?? task.assignee.email}</span></> : <span className="text-[11px] text-[#9aa2a5]">Sin asignar</span>}</span>
-        <div className="hidden justify-end md:flex"><TaskRowActions taskTitle={task.title} onOpen={onOpen} onStartPomodoro={onStartPomodoro} /></div>
-    </article>
-  );
-}
-
-function TaskRowActions({ taskTitle, onOpen, onStartPomodoro }: { taskTitle: string; onOpen: () => void; onStartPomodoro: () => void }) {
-  const [open, setOpen] = useState(false);
-  return <div className="relative flex shrink-0 justify-end"><button aria-expanded={open} aria-haspopup="menu" aria-label={`Acciones de ${taskTitle}`} className="flex h-11 w-11 items-center justify-center rounded-md text-[#858d91] hover:bg-[#e7e9e8] hover:text-[#1e3a5f]" onClick={() => setOpen((value) => !value)} type="button"><MoreHorizontal size={17} /></button>{open && <><button aria-label="Cerrar acciones" className="fixed inset-0 z-20 cursor-default" onClick={() => setOpen(false)} type="button" /><div className="absolute right-0 top-12 z-30 w-48 rounded-lg border border-[#dde1e2] bg-white p-1.5 shadow-[0_12px_32px_rgba(31,41,51,0.12)]" role="menu"><button className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]" onClick={() => { setOpen(false); onOpen(); }} role="menuitem" type="button">Ver tarea</button><button className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-[13px] text-[#4f5a63] hover:bg-[#eff1f0] hover:text-[#1e3a5f]" onClick={() => { setOpen(false); onStartPomodoro(); }} role="menuitem" type="button"><Play size={14} /> Iniciar Pomodoro</button></div></>}</div>;
-}
-
-function StatusBadge({ status }: { status: Task["status"] }) {
-  return <span className={cn("inline-flex w-fit rounded-full px-2 py-1 text-[10px] font-semibold", statusStyles[status])}>{statusLabels[status]}</span>;
 }
 
 function QuickAddInput({ inputRef, value, onChange, onSubmit }: { inputRef: React.RefObject<HTMLInputElement | null>; value: string; onChange: (value: string) => void; onSubmit: () => void }) {

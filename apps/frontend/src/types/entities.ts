@@ -249,6 +249,7 @@ export interface Task {
   order: number;
   pomodoroEstimate: number;
   pomodoroCount: number;
+  user?: { id: string; email: string; name: string | null; username: string | null; avatarUrl: string | null };
   assigneeId: string | null;
   assignee?: { id: string; email: string; name: string | null; avatarUrl: string | null } | null;
   recurrenceType: TaskRecurrenceType | null;

@@ -24,7 +24,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import type { Task, TaskPriority, TaskStatus } from "@/types/entities";
 import { Avatar } from "@/components/ui/Avatar";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Command,
   CommandEmpty,
@@ -66,6 +65,15 @@ import {
 } from "@/features/projects/hooks/useProjects";
 import { useTaskQuery } from "@/features/tasks/hooks/useTasks";
 import { TaskReminderPanel } from "./TaskReminderPanel";
+import {
+  TaskAssigneeSelect,
+  TaskDueDateEditor,
+  TaskPrioritySelect,
+  TaskStatusSelect,
+  datetimeWithDate,
+  datetimeWithTime,
+  taskBadgeClass,
+} from "./TaskFieldControls";
 import type { TaskUpdatePayload } from "../api/tasks";
 import { cn, isTaskOverdue, localDateKey, toDatetimeLocal } from "@/lib/utils";
 import { formatTaskDueDate } from "../lib/task-utils";
@@ -90,43 +98,11 @@ function resizeTitleInput(input: HTMLTextAreaElement) {
   input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
 }
 
-function dateFromDatetimeLocal(value: string) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-  if (!match) return undefined;
-  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-}
-
-function datetimeWithDate(value: string, date: Date) {
-  const time = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)
-    ? value.slice(11)
-    : "09:00";
-  return `${localDateKey(date)}T${time}`;
-}
-
-function datetimeWithTime(value: string, time: string) {
-  const date = value.slice(0, 10) || localDateKey(new Date());
-  return `${date}T${time}`;
-}
-
 const POMODORO_SAVE_DEBOUNCE_MS = 400;
 
 function normalizePomodoroEstimate(value: number) {
   return Math.min(100, Math.max(0, Math.trunc(value)));
 }
-
-const statusOptions: { value: TaskStatus; label: string }[] = [
-  { value: "PENDING", label: "Pendiente" },
-  { value: "IN_PROGRESS", label: "En progreso" },
-  { value: "COMPLETED", label: "Completada" },
-  { value: "CANCELLED", label: "Cancelada" },
-];
-
-const priorityOptions: { value: TaskPriority; label: string }[] = [
-  { value: "URGENT", label: "Urgente" },
-  { value: "HIGH", label: "Alta" },
-  { value: "NORMAL", label: "Normal" },
-  { value: "LOW", label: "Baja" },
-];
 
 const recurrenceOptions = [
   { value: "NONE", label: "No repetir" },
@@ -134,17 +110,6 @@ const recurrenceOptions = [
   { value: "WEEKLY", label: "Cada semana" },
   { value: "MONTHLY", label: "Cada mes" },
 ] as const;
-
-const taskBadgeClass =
-  "inline-flex h-7 max-w-full cursor-pointer items-center rounded-full border px-2.5 py-1 font-label-md text-label-md font-semibold leading-4 outline-none transition-colors disabled:cursor-wait disabled:opacity-60";
-
-const priorityBadgeClasses: Record<TaskPriority, string> = {
-  URGENT: "border-error bg-error-container text-on-error-container",
-  HIGH: "border-warning bg-warning-container text-on-warning-container",
-  NORMAL:
-    "border-outline-variant bg-secondary-container text-on-secondary-container",
-  LOW: "border-outline bg-surface-container-high text-on-surface-variant",
-};
 
 const weekdayOptions = [
   { value: "0", label: "D", fullLabel: "Domingo" },
@@ -191,92 +156,6 @@ function PreviewDetail({
         {children}
       </dd>
     </div>
-  );
-}
-
-function DueDateEditor({
-  dueDateDraft,
-  fullWidth = false,
-  onCancel,
-  onDateChange,
-  onRemove,
-  onSave,
-  onTimeChange,
-  pending,
-}: {
-  dueDateDraft: string;
-  fullWidth?: boolean;
-  onCancel: () => void;
-  onDateChange: (date: Date) => void;
-  onRemove: () => void;
-  onSave: () => void;
-  onTimeChange: (time: string) => void;
-  pending: boolean;
-}) {
-  return (
-    <>
-      <Calendar
-        aria-label="Seleccionar fecha de vencimiento"
-        className={fullWidth ? "w-full" : "mx-auto"}
-        classNames={
-          fullWidth
-            ? {
-                day: "relative flex-1 p-0 text-center text-sm",
-                day_button: "size-full min-h-9",
-                weekday:
-                  "h-8 flex-1 rounded-md text-center font-label-caps text-[10px] text-on-surface-variant",
-                weekdays: "flex w-full",
-              }
-            : undefined
-        }
-        defaultMonth={dateFromDatetimeLocal(dueDateDraft) ?? new Date()}
-        mode="single"
-        onSelect={(date) => {
-          if (date) onDateChange(date);
-        }}
-        selected={dateFromDatetimeLocal(dueDateDraft)}
-      />
-      <div className="border-t border-outline-variant p-3">
-        <label className="flex items-center justify-between gap-3 font-label-caps text-label-caps text-on-surface-variant">
-          Hora
-          <input
-            aria-label="Hora de vencimiento"
-            className="h-9 rounded-lg border border-outline-variant bg-surface-container-lowest px-2.5 font-data-mono text-data-mono text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-wait disabled:opacity-60"
-            disabled={pending}
-            onChange={(event) => onTimeChange(event.target.value)}
-            type="time"
-            value={dueDateDraft.slice(11, 16)}
-          />
-        </label>
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <button
-            className="min-h-11 rounded-lg px-3 py-2 font-label-md text-label-md font-semibold text-error hover:bg-error-container disabled:cursor-wait disabled:opacity-50"
-            disabled={pending}
-            onClick={onRemove}
-            type="button"
-          >
-            Quitar fecha
-          </button>
-          <span className="flex items-center gap-1.5">
-            <button
-              className="min-h-11 rounded-lg px-3 py-2 font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
-              onClick={onCancel}
-              type="button"
-            >
-              Cancelar
-            </button>
-            <button
-              className="min-h-11 rounded-lg bg-primary px-4 py-2 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
-              disabled={pending || !dueDateDraft}
-              onClick={onSave}
-              type="button"
-            >
-              Guardar
-            </button>
-          </span>
-        </div>
-      </div>
-    </>
   );
 }
 
@@ -338,7 +217,6 @@ export function TaskDetailsPanel({
     useState<EditableTaskField | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
-  const [assigneeOpen, setAssigneeOpen] = useState(false);
   const [dueDateOpen, setDueDateOpen] = useState(false);
   const [dueDateDraft, setDueDateDraft] = useState("");
   const [pomodoroEstimateDraft, setPomodoroEstimateDraft] = useState(
@@ -381,7 +259,6 @@ export function TaskDetailsPanel({
   const projectsQuery = useProjectsQuery();
   const accessibleProjectsQuery = useAccessibleProjects();
   const membersQuery = useProjectMembers(displayProjectId);
-  const completed = displayStatus === "COMPLETED";
   const overdue = isTaskOverdue({
     dueDate: displayDueDate,
     status: displayStatus,
@@ -436,8 +313,6 @@ export function TaskDetailsPanel({
       name: current.assignee.name,
     });
   }
-  const selectedAssignee =
-    assigneeOptions.find((member) => member.id === displayAssigneeId) ?? null;
   const subtasks = current.subtasks ?? [];
   const visibleSubtasks = subtasks
     .filter((subtask) => !deletedSubtaskIds.has(subtask.id))
@@ -453,13 +328,6 @@ export function TaskDetailsPanel({
     visibleSubtasks.length > 0
       ? Math.round((completedSubtasks / visibleSubtasks.length) * 100)
       : 0;
-  const statusClass = completed
-    ? "border-transparent bg-secondary-container text-on-secondary-container"
-    : displayStatus === "IN_PROGRESS"
-      ? "border-transparent bg-info-container text-on-info-container"
-      : displayStatus === "CANCELLED"
-        ? "border-transparent bg-error-container text-on-error-container"
-        : "border-transparent bg-primary-fixed text-on-primary-fixed";
   const updateTaskField = async (
     field: EditableTaskField,
     payload: TaskUpdatePayload,
@@ -674,16 +542,6 @@ export function TaskDetailsPanel({
     );
   };
 
-  const selectAssignee = (assigneeId: string | null) => {
-    setAssigneeOpen(false);
-    void updateTaskField(
-      "assigneeId",
-      { assigneeId },
-      { assigneeId },
-      "No pudimos actualizar el responsable.",
-    );
-  };
-
   const openDueDateEditor = () => {
     setDueDateDraft(
       displayDueDate
@@ -700,11 +558,13 @@ export function TaskDetailsPanel({
 
   const dueDateTrigger = (
     <button
+      aria-label="Seleccionar fecha de vencimiento"
       className={cn(
         "max-w-[14rem] truncate rounded-md px-1 py-1 text-right font-medium outline-none hover:bg-surface-container-low hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/20",
         !displayDueDate && "text-on-surface-variant",
         overdue && "font-semibold text-error",
       )}
+      disabled={pendingTaskField !== null}
       type="button"
     >
       {displayDueDate ? formatTaskDueDate(displayDueDate) : "Sin fecha límite"}
@@ -712,7 +572,7 @@ export function TaskDetailsPanel({
   );
 
   const dueDateEditor = (
-    <DueDateEditor
+    <TaskDueDateEditor
       dueDateDraft={dueDateDraft}
       fullWidth={isMobile}
       onCancel={() => setDueDateOpen(false)}
@@ -1079,68 +939,32 @@ export function TaskDetailsPanel({
             <section className="rounded-2xl border border-outline-variant/70 bg-surface-container-low/70 p-4">
               <dl className="space-y-3">
                 <PreviewDetail icon={Circle} label="Estado">
-                  <Select
-                    onValueChange={(value) =>
+                  <TaskStatusSelect
+                    disabled={pendingTaskField !== null}
+                    onChange={(status) =>
                       void updateTaskField(
                         "status",
-                        { status: value as TaskStatus },
-                        { status: value as TaskStatus },
+                        { status },
+                        { status },
                         "No pudimos actualizar el estado.",
                       )
                     }
                     value={displayStatus}
-                  >
-                    <SelectTrigger
-                      aria-label="Cambiar estado"
-                      className={cn(
-                        taskBadgeClass,
-                        statusClass,
-                        "gap-1.5 pr-2 text-right",
-                      )}
-                      disabled={pendingTaskField !== null}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent align="end">
-                      {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 </PreviewDetail>
                 <PreviewDetail icon={Flag} label="Prioridad">
-                  <Select
-                    onValueChange={(value) =>
+                  <TaskPrioritySelect
+                    disabled={pendingTaskField !== null}
+                    onChange={(priority) =>
                       void updateTaskField(
                         "priority",
-                        { priority: value as TaskPriority },
-                        { priority: value as TaskPriority },
+                        { priority },
+                        { priority },
                         "No pudimos actualizar la prioridad.",
                       )
                     }
                     value={displayPriority}
-                  >
-                    <SelectTrigger
-                      aria-label="Cambiar prioridad"
-                      className={cn(
-                        taskBadgeClass,
-                        priorityBadgeClasses[displayPriority],
-                        "gap-1.5 pr-2 text-right",
-                      )}
-                      disabled={pendingTaskField !== null}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent align="end">
-                      {priorityOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 </PreviewDetail>
                 <PreviewDetail icon={ListChecks} label="Proyecto">
                   <Popover open={projectOpen} onOpenChange={setProjectOpen}>
@@ -1269,7 +1093,9 @@ export function TaskDetailsPanel({
                             </button>
                           </DrawerClose>
                         </DrawerHeader>
-                        <div className="w-full">{dueDateEditor}</div>
+                        <div className="min-h-0 w-full flex-1 overflow-y-auto overscroll-contain">
+                          {dueDateEditor}
+                        </div>
                       </DrawerContent>
                     </DrawerNestedRoot>
                   ) : (
@@ -1281,7 +1107,7 @@ export function TaskDetailsPanel({
                       <PopoverContent
                         align="end"
                         avoidCollisions
-                        className="w-auto max-w-[var(--radix-popover-content-available-width)] overflow-hidden p-0"
+                        className="max-h-[calc(100dvh-2rem)] w-auto max-w-[var(--radix-popover-content-available-width)] overflow-y-auto p-0"
                         collisionPadding={{
                           bottom: 16,
                           left: 16,
@@ -1329,94 +1155,23 @@ export function TaskDetailsPanel({
               {detailsOpen && (
                 <dl className="mt-3 space-y-3" id="task-preview-extra-details">
                   <PreviewDetail icon={UserRound} label="Responsable">
-                    <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
-                      <PopoverTrigger asChild>
-                        <button
-                          aria-label="Cambiar responsable"
-                          className="inline-flex min-w-0 max-w-[13rem] items-center gap-1.5 rounded-md border border-transparent px-1 py-1 text-right font-body-sm text-body-sm font-medium text-on-surface outline-none hover:bg-surface-container-low hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-wait disabled:opacity-60"
-                          disabled={
-                            pendingTaskField !== null ||
-                            !displayProjectId ||
-                            membersQuery.isLoading
-                          }
-                          type="button"
-                        >
-                          {selectedAssignee ? (
-                            <Avatar
-                              avatarUrl={selectedAssignee.avatarUrl}
-                              email={selectedAssignee.email}
-                              name={selectedAssignee.name}
-                              size="xs"
-                            />
-                          ) : (
-                            <UserRound
-                              aria-hidden="true"
-                              className="size-4 shrink-0 text-on-surface-variant"
-                            />
-                          )}
-                          <span className="min-w-0 truncate">
-                            {selectedAssignee?.label ?? "Sin asignar"}
-                          </span>
-                          <ChevronDown
-                            aria-hidden="true"
-                            className="size-3.5 shrink-0 text-on-surface-variant"
-                          />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent align="end" className="w-64 p-0">
-                        <Command>
-                          <CommandInput placeholder="Buscar responsable..." />
-                          <CommandList>
-                            <CommandEmpty>
-                              {membersQuery.isLoading
-                                ? "Cargando miembros..."
-                                : "No hay miembros disponibles."}
-                            </CommandEmpty>
-                            <CommandGroup heading="Responsables">
-                              <CommandItem
-                                onSelect={() => selectAssignee(null)}
-                                value="sin asignar"
-                              >
-                                <Check
-                                  className={cn(
-                                    "size-4",
-                                    displayAssigneeId === null
-                                      ? "opacity-100"
-                                      : "opacity-0",
-                                  )}
-                                />
-                                <span>Sin asignar</span>
-                              </CommandItem>
-                              {assigneeOptions.map((member) => (
-                                <CommandItem
-                                  key={member.id}
-                                  onSelect={() => selectAssignee(member.id)}
-                                  value={`${member.label} ${member.id}`}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "size-4",
-                                      displayAssigneeId === member.id
-                                        ? "opacity-100"
-                                        : "opacity-0",
-                                    )}
-                                  />
-                                  <Avatar
-                                    avatarUrl={member.avatarUrl}
-                                    email={member.email}
-                                    name={member.name}
-                                    size="xs"
-                                  />
-                                  <span className="min-w-0 truncate">
-                                    {member.label}
-                                  </span>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                    <TaskAssigneeSelect
+                      disabled={
+                        pendingTaskField !== null ||
+                        !displayProjectId ||
+                        membersQuery.isLoading
+                      }
+                      onChange={(assigneeId) =>
+                        void updateTaskField(
+                          "assigneeId",
+                          { assigneeId },
+                          { assigneeId },
+                          "No pudimos actualizar el responsable.",
+                        )
+                      }
+                      options={assigneeOptions}
+                      value={displayAssigneeId}
+                    />
                   </PreviewDetail>
                   <PreviewDetail icon={Repeat2} label="Recurrencia">
                     <span className="flex flex-col items-end gap-2">
@@ -1464,19 +1219,19 @@ export function TaskDetailsPanel({
                     </span>
                   </PreviewDetail>
                   <PreviewDetail icon={Timer} label="Pomodoros">
-                    <span className="inline-flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest">
+                    <span className="inline-flex items-center rounded-md border border-outline-variant/70 bg-surface-container-high px-0.5">
                       <span
                         aria-label={`${current.pomodoroCount} pomodoros completados`}
-                        className="px-2.5 font-data-mono text-data-mono text-sm font-semibold text-error"
+                        className="px-1.5 font-data-mono text-data-mono text-xs font-semibold text-on-surface-variant"
                       >
                         {current.pomodoroCount}
                       </span>
-                      <span aria-hidden="true" className="text-on-surface-variant">
+                      <span aria-hidden="true" className="px-0.5 text-on-surface-variant">
                         /
                       </span>
                       <input
                         aria-label="Pomodoros estimados"
-                        className="number-input-no-spinner h-10 w-12 border-0 bg-transparent px-1 text-center font-data-mono text-data-mono text-sm font-semibold text-on-surface outline-none focus:bg-surface-container-low focus:ring-0"
+                        className="number-input-no-spinner h-7 w-8 border-0 bg-transparent px-0 text-center font-data-mono text-data-mono text-xs font-semibold text-on-surface outline-none focus:bg-surface-container-low focus:ring-0"
                         disabled={pendingTaskField !== null}
                         max={100}
                         min={0}
@@ -1499,10 +1254,10 @@ export function TaskDetailsPanel({
                         type="number"
                         value={pomodoroEstimateDraft}
                       />
-                      <span aria-hidden="true" className="mx-1 h-5 w-px bg-outline-variant" />
+                      <span aria-hidden="true" className="mx-0.5 h-4 w-px bg-outline-variant" />
                       <button
                         aria-label="Disminuir pomodoros estimados"
-                        className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:cursor-wait disabled:opacity-50"
+                        className="flex h-7 w-7 items-center justify-center rounded-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:cursor-wait disabled:opacity-50"
                         disabled={pendingTaskField !== null || pomodoroEstimateDraft === 0}
                         onClick={() => adjustPomodoroEstimate(-1)}
                         onPointerDown={(event) => event.preventDefault()}
@@ -1512,7 +1267,7 @@ export function TaskDetailsPanel({
                       </button>
                       <button
                         aria-label="Aumentar pomodoros estimados"
-                        className="flex h-10 w-10 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:cursor-wait disabled:opacity-50"
+                        className="flex h-7 w-7 items-center justify-center rounded-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary disabled:cursor-wait disabled:opacity-50"
                         disabled={pendingTaskField !== null || pomodoroEstimateDraft === 100}
                         onClick={() => adjustPomodoroEstimate(1)}
                         onPointerDown={(event) => event.preventDefault()}
@@ -1521,6 +1276,23 @@ export function TaskDetailsPanel({
                         <Plus aria-hidden="true" size={15} />
                       </button>
                     </span>
+                  </PreviewDetail>
+                  <PreviewDetail icon={UserRound} label="Creada por">
+                    {current.user ? (
+                      <span className="inline-flex min-w-0 max-w-[13rem] items-center gap-1.5 text-left">
+                        <Avatar
+                          avatarUrl={current.user.avatarUrl}
+                          email={current.user.email}
+                          name={current.user.name}
+                          size="sm"
+                        />
+                        <span className="min-w-0 truncate">
+                          {current.user.name ?? current.user.email}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-on-surface-variant">Sin información</span>
+                    )}
                   </PreviewDetail>
                   <PreviewDetail icon={CalendarPlus} label="Creada el">
                     <span>{createdAtLabel(current.createdAt)}</span>

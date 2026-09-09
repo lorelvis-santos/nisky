@@ -55,6 +55,7 @@ export class ProjectService {
         orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
         take: 5,
         include: {
+          user: { select: PROJECT_MEMBER_USER_SELECT },
           assignee: { select: PROJECT_MEMBER_USER_SELECT },
           _count: { select: { comments: true } },
         },

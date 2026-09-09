@@ -11,16 +11,17 @@ export const PROJECT_COLORS = [
   "#4a4a2a",
 ];
 
-export function ColorPicker({ value, onChange, name }: { value: string; onChange: (color: string) => void; name?: string }) {
+export function ColorPicker({ value, onChange, name, disabled = false }: { value: string; onChange: (color: string) => void; name?: string; disabled?: boolean }) {
   return (
-    <div className="flex flex-wrap gap-2" role="radiogroup">
+    <div aria-label="Colores disponibles" className="flex flex-wrap gap-2" role="radiogroup">
       {PROJECT_COLORS.map((color) => {
         const selected = color === value;
         return (
           <button
             aria-checked={selected}
             aria-label={`Color ${color}`}
-            className={`h-8 w-8 rounded-full border-2 transition-transform ${selected ? "scale-110 border-on-surface" : "border-outline-variant hover:scale-105"}`}
+            className={`h-8 w-8 rounded-full border-2 transition-transform disabled:cursor-wait disabled:opacity-50 ${selected ? "scale-110 border-on-surface" : "border-outline-variant hover:scale-105"}`}
+            disabled={disabled}
             key={color}
             name={name}
             onClick={() => onChange(color)}

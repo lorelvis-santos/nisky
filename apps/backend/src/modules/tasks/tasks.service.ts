@@ -12,8 +12,11 @@ import type { CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, Up
 
 const TASKS_TZ = "America/Santo_Domingo";
 
+const TASK_CREATOR_SELECT = { id: true, email: true, name: true, username: true, avatarUrl: true };
+
 const taskInclude = {
   subtasks: { orderBy: { order: "asc" } },
+  user: { select: TASK_CREATOR_SELECT },
   assignee: { select: { id: true, email: true, name: true, avatarUrl: true } },
   project: { select: { id: true, name: true, color: true } },
   _count: { select: { comments: true } },
@@ -191,7 +194,7 @@ export class TaskService {
         completedAt: data.status === "COMPLETED" ? new Date() : null,
         ...recurrenceData(data),
       },
-      include: { subtasks: true },
+      include: { subtasks: true, user: { select: TASK_CREATOR_SELECT } },
     });
     await projectActivityService.record({
       projectId,
@@ -285,7 +288,10 @@ export class TaskService {
           recurrenceEndsAt: recurrence.repeatEndsAt ? new Date(recurrence.repeatEndsAt) : null,
         } : {}),
       },
-      include: { subtasks: { orderBy: { order: "asc" } } },
+      include: {
+        subtasks: { orderBy: { order: "asc" } },
+        user: { select: TASK_CREATOR_SELECT },
+      },
     });
 
     const newProjectId = data.projectId !== undefined ? data.projectId : existing.projectId;

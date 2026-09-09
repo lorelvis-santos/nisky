@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Plus, SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import { TimeBlockEditor } from "@/features/timeblocks/components/TimeBlockEditor";
@@ -13,6 +13,7 @@ import { AgendaEntryChooser, type AgendaEntryKind } from "@/features/timeblocks/
 import { AgendaDayTasksDialog } from "@/features/timeblocks/components/AgendaDayTasksDialog";
 import { EventEditorModal } from "@/features/events/components/EventEditorModal";
 import { EventPreviewModal } from "@/features/events/components/EventPreviewModal";
+import { PROJECT_COLORS } from "@/components/ui/ColorPicker";
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import {
   useTimeBlockMutations,
@@ -23,6 +24,7 @@ import {
 } from "@/features/timeblocks/hooks/useTimeBlocks";
 import { useEventsQuery, useEventMutations } from "@/features/events/hooks/useEvents";
 import { minToTime, parseDateOnly, timeToMin } from "@/features/timeblocks/lib/time";
+import { findAvailableStartMin } from "@/features/timeblocks/lib/availability";
 import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { localDateKey } from "@/lib/utils";
@@ -248,16 +250,15 @@ function TimeBlocksContent() {
   const [previewingBlock, setPreviewingBlock] = useState<TimeBlock | null>(null);
   const [previewBlockDate, setPreviewBlockDate] = useState<Date | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
-  const [prefill, setPrefill] = useState<SlotPrefill | null>(null);
   const [entryChooserOpen, setEntryChooserOpen] = useState(false);
   const [entrySlot, setEntrySlot] = useState<SlotPrefill | null>(null);
   const [eventEditor, setEventEditor] = useState<EventEditorState | null>(null);
   const [previewingEvent, setPreviewingEvent] = useState<CalendarEvent | null>(null);
   const [previewEventDate, setPreviewEventDate] = useState<Date | null>(null);
-  const [formKey, setFormKey] = useState(0);
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
   const [dayTaskDate, setDayTaskDate] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const creatingEntryRef = useRef(false);
   const [resolveDraft, setResolveDraft] = useState<{
     block: TimeBlock;
     startMin: number;
@@ -349,15 +350,23 @@ function TimeBlocksContent() {
     mutations.update.isPending ||
     mutations.remove.isPending;
 
-  const defaultAgendaSlot = (): SlotPrefill => {
+  const defaultAgendaSlot = (date = new Date()): SlotPrefill => {
     const now = new Date();
-    const currentMin = now.getHours() * 60 + now.getMinutes();
-    const startMin = Math.min(Math.max(Math.ceil(currentMin / 15) * 15, 9 * 60), 22 * 60);
+    const dateKey = toISODateString(date);
+    const currentMin = dateKey === toISODateString(now) ? now.getHours() * 60 + now.getMinutes() : 9 * 60;
+    const preferredStartMin = Math.min(Math.max(Math.ceil(currentMin / 15) * 15, 6 * 60), 22 * 60);
+    const startMin = findAvailableStartMin({
+      blocks,
+      dateKey,
+      dayOfWeek: date.getDay(),
+      events,
+      preferredStartMin,
+    }) ?? preferredStartMin;
     return {
-      dayOfWeek: now.getDay(),
+      dayOfWeek: date.getDay(),
       startMin,
       endMin: startMin + 60,
-      date: toISODateString(now),
+      date: dateKey,
     };
   };
 
@@ -366,32 +375,87 @@ function TimeBlocksContent() {
     setEntryChooserOpen(true);
   };
 
+  const createEventAndOpen = async (slot: SlotPrefill) => {
+    if (creatingEntryRef.current) return;
+    creatingEntryRef.current = true;
+    try {
+      const created = await eventMutations.createEvent.mutateAsync({
+        title: "Nuevo evento",
+        date: slot.date,
+        allDay: false,
+        startMin: slot.startMin,
+        endMin: slot.endMin,
+        color: PROJECT_COLORS[0] ?? "#0f172a",
+        recurrenceType: null,
+        recurrenceInterval: 1,
+        recurrenceDaysOfWeek: [],
+        recurrenceDayOfMonth: null,
+        recurrenceEndsAt: null,
+        remindBeforeMin: 0,
+      });
+      setEventEditor(null);
+      setPreviewingBlock(null);
+      setPreviewBlockDate(null);
+      setPreviewingEvent(created);
+      setPreviewEventDate(parseDateOnly(created.date));
+      toast.success("Evento creado");
+    } catch (error) {
+      toast.error((error as { message?: string } | null)?.message ?? "Ups, no pudimos crear el evento. Inténtalo de nuevo.");
+    } finally {
+      creatingEntryRef.current = false;
+    }
+  };
+
+  const createBlockAndOpen = async (slot: SlotPrefill) => {
+    if (creatingEntryRef.current) return;
+    creatingEntryRef.current = true;
+    try {
+      const created = await mutations.create.mutateAsync({
+        projectId: null,
+        date: slot.date,
+        name: "Nuevo bloque",
+        daysOfWeek: [slot.dayOfWeek],
+        startMin: slot.startMin,
+        endMin: slot.endMin,
+        repeatEveryWeeks: 1,
+        repeatEndsAt: null,
+        remindBeforeMin: 0,
+      });
+      setEventEditor(null);
+      setPreviewingEvent(null);
+      setPreviewEventDate(null);
+      setEditing(null);
+      setEditDate(null);
+      setMobileFormOpen(false);
+      setPreviewingBlock(created);
+      setPreviewBlockDate(parseDateOnly(created.date ?? slot.date));
+      toast.success("Bloque creado");
+    } catch (error) {
+      toast.error((error as { message?: string } | null)?.message ?? "Ups, no pudimos crear el bloque. Inténtalo de nuevo.");
+    } finally {
+      creatingEntryRef.current = false;
+    }
+  };
+
   const selectAgendaEntry = (kind: AgendaEntryKind) => {
     const slot = entrySlot ?? defaultAgendaSlot();
     setEntryChooserOpen(false);
     if (kind === "event") {
-      setEventEditor({
-        event: null,
-        initialDate: slot.date,
-        initialStartMin: slot.startMin,
-        initialEndMin: slot.endMin,
-      });
+      void createEventAndOpen(slot);
       return;
     }
-    setEditing(null);
-    setEditDate(null);
-    setPrefill({ ...slot, oneOff: true });
-    setMobileFormOpen(isMobile);
+    void createBlockAndOpen(slot);
   };
 
   const openBlockEdit = (block: TimeBlock, date?: Date) => {
     setEditing(block);
-    setPrefill(null);
     setEditDate(date ? toISODateString(date) : null);
     if (isMobile) setMobileFormOpen(true);
   };
 
   const openBlockPreview = (block: TimeBlock, date?: Date) => {
+    setPreviewingEvent(null);
+    setPreviewEventDate(null);
     setPreviewingBlock(block);
     setPreviewBlockDate(date ?? null);
   };
@@ -464,7 +528,6 @@ function TimeBlocksContent() {
       });
       toast.success("Excepción guardada para este día");
       setEditing(null);
-      setPrefill(null);
       setEditDate(null);
       setMobileFormOpen(false);
       setResolveDraft(null);
@@ -490,11 +553,12 @@ function TimeBlocksContent() {
 
   const closeEditor = () => {
     setEditing(null);
-    setPrefill(null);
     setMobileFormOpen(false);
   };
 
   const openEventPreview = (event: CalendarEvent, date: Date) => {
+    setPreviewingBlock(null);
+    setPreviewBlockDate(null);
     setPreviewingEvent(event);
     setPreviewEventDate(date);
   };
@@ -529,13 +593,7 @@ function TimeBlocksContent() {
         setEditing({ ...editing, ...data, daysOfWeek: data.daysOfWeek });
         setEditDate(null);
         toast.success("¡Listo, bloque actualizado!");
-        return;
       }
-      await mutations.create.mutateAsync(data);
-      setPrefill(null);
-      setFormKey((key) => key + 1);
-      toast.success("¡Bloque creado!");
-      setMobileFormOpen(false);
     } catch {
       toast.error("Ups, no pudimos guardar el bloque. Inténtalo de nuevo.");
     }
@@ -574,12 +632,7 @@ function TimeBlocksContent() {
   };
 
   const openMobileCreate = () => {
-    const slot = defaultAgendaSlot();
-    openEntryChooser({
-      ...slot,
-      dayOfWeek: mobileDate.getDay(),
-      date: toISODateString(mobileDate),
-    });
+    openEntryChooser(defaultAgendaSlot(mobileDate));
   };
 
   const skipToday = async (date?: string) => {
@@ -597,6 +650,21 @@ function TimeBlocksContent() {
       toast.success("Bloque saltado ese día");
     } catch (err) {
       toast.error((err as { message?: string })?.message ?? "Ups, no pudimos saltar el bloque.");
+    }
+  };
+
+  const skipPreviewedBlockDay = async (date: string) => {
+    if (!previewingBlock) return;
+    try {
+      await mutations.createException.mutateAsync({
+        id: previewingBlock.id,
+        date,
+        action: "skip",
+      });
+      toast.success("Bloque saltado ese día");
+    } catch (err) {
+      toast.error((err as { message?: string })?.message ?? "Ups, no pudimos saltar el bloque.");
+      throw err;
     }
   };
 
@@ -668,13 +736,12 @@ function TimeBlocksContent() {
   const editor = (
     <TimeBlockEditor
       busy={busy}
-      key={editing?.id ?? `create-${formKey}-${prefill?.date ?? ""}-${prefill?.dayOfWeek ?? ""}-${prefill?.startMin ?? ""}-${prefill?.endMin ?? ""}`}
+      key={editing?.id ?? "edit-block"}
       onDelete={remove}
       onSave={save}
       onSkipToday={skipToday}
       initialSkipDate={editDate ?? undefined}
       onToggleActive={toggleActive}
-      prefill={prefill ?? undefined}
       projects={projects}
       target={editing}
     />
@@ -845,10 +912,11 @@ function TimeBlocksContent() {
           block={previewingBlock}
           key={previewingBlock.id}
           occurrenceDate={previewBlockDate ?? undefined}
-          onClose={() => { setPreviewingBlock(null); setPreviewBlockDate(null); }}
-          onEdit={editPreviewedBlock}
-          project={projects.find((project) => project.id === previewingBlock.projectId)}
-        />
+           onClose={() => { setPreviewingBlock(null); setPreviewBlockDate(null); }}
+           onEdit={editPreviewedBlock}
+           onSkipDay={skipPreviewedBlockDay}
+           project={projects.find((project) => project.id === previewingBlock.projectId)}
+         />
       )}
 
       {previewingEvent && (
@@ -860,10 +928,10 @@ function TimeBlocksContent() {
         />
       )}
 
-      {!isMobile && (editing || prefill) && (
+      {!isMobile && editing && (
         <DesktopEditorModal
           onClose={closeEditor}
-          title={editing ? "Editar bloque" : "Tiempo para trabajar"}
+          title="Editar bloque"
         >
           {editor}
           {editing && editDate && <TaskAssignmentPanel block={editing} date={editDate} />}
@@ -873,7 +941,7 @@ function TimeBlocksContent() {
       {isMobile && mobileFormOpen && (
         <MobileEditorModal
           onClose={closeEditor}
-          title={editing ? "Editar bloque" : "Tiempo para trabajar"}
+          title="Editar bloque"
         >
           {editor}
           {editing && editDate && <TaskAssignmentPanel block={editing} date={editDate} />}

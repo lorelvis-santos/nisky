@@ -64,9 +64,11 @@ export function useTimeBlockMutations() {
   const client = useQueryClient();
   const invalidateHome = () => client.invalidateQueries({ queryKey: ["home"] });
   const invalidateBlocks = () => client.invalidateQueries({ queryKey: ["timeblocks"] });
+  const invalidateSchedules = () => client.invalidateQueries({ queryKey: ["task-schedules"] });
   const invalidate = () => {
     void invalidateBlocks();
     void invalidateHome();
+    void invalidateSchedules();
   };
 
   const create = useMutation({
@@ -105,6 +107,7 @@ export function useTimeBlockMutations() {
     onSuccess: () => {
       void invalidateBlocks();
       void invalidateHome();
+      void invalidateSchedules();
     },
   });
 
@@ -122,6 +125,7 @@ export function useTimeBlockMutations() {
     onSuccess: () => {
       void invalidateBlocks();
       void invalidateHome();
+      void invalidateSchedules();
     },
   });
 

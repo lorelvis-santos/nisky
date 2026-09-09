@@ -3,10 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Clock, MapPin, Plus } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEventsQuery } from "@/features/events/hooks/useEvents";
+import { toast } from "sonner";
+import { useEventMutations, useEventsQuery } from "@/features/events/hooks/useEvents";
 import { EventEditorModal } from "@/features/events/components/EventEditorModal";
 import { EventPreviewModal } from "@/features/events/components/EventPreviewModal";
-import type { CalendarEvent } from "@/types/entities";
+import { useTimeBlocksQuery } from "@/features/timeblocks/hooks/useTimeBlocks";
+import type { CalendarEvent, TimeBlock } from "@/types/entities";
+import { PROJECT_COLORS } from "@/components/ui/ColorPicker";
+import { findAvailableStartMin } from "@/features/timeblocks/lib/availability";
 import { hexToRgba, parseDateOnly } from "@/features/timeblocks/lib/time";
 
 function toLocalISODate(date: Date) {
@@ -32,6 +36,26 @@ function formatMin(value: number) {
   return `${hours}:${minutes}`;
 }
 
+function defaultEventSchedule(events: CalendarEvent[], blocks: TimeBlock[]) {
+  const now = new Date();
+  const currentMin = now.getHours() * 60 + now.getMinutes();
+  const preferredStartMin = Math.min(Math.max(Math.ceil(currentMin / 15) * 15, 6 * 60), 22 * 60);
+  const date = toLocalISODate(now);
+  const startMin = findAvailableStartMin({
+    blocks,
+    dateKey: date,
+    dayOfWeek: now.getDay(),
+    events,
+    preferredStartMin,
+  });
+  return {
+    allDay: startMin === null,
+    date,
+    endMin: startMin === null ? undefined : startMin + 60,
+    startMin,
+  };
+}
+
 export default function EventsPage() {
   const searchParams = useSearchParams();
   const [currentMonth, setCurrentMonth] = useState(() => initialMonth(searchParams.get("month")));
@@ -41,11 +65,14 @@ export default function EventsPage() {
   toDate.setDate(0);
   const to = toLocalISODate(toDate);
   const { data: events = [], isLoading } = useEventsQuery(from, to);
+  const { data: blocks = [] } = useTimeBlocksQuery();
+  const { createEvent } = useEventMutations();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [previewingEvent, setPreviewingEvent] = useState<CalendarEvent | null>(null);
   const eventIdParam = searchParams.get("eventId");
   const handledEventIdRef = useRef<string | null>(null);
+  const creatingEventRef = useRef(false);
 
   useEffect(() => {
     if (!eventIdParam || handledEventIdRef.current === eventIdParam || isModalOpen || previewingEvent || isLoading) return;
@@ -70,10 +97,34 @@ export default function EventsPage() {
     return next;
   });
 
-  const openCreate = () => {
-    setPreviewingEvent(null);
-    setEditingEvent(null);
-    setIsModalOpen(true);
+  const openCreate = async () => {
+    if (creatingEventRef.current) return;
+    creatingEventRef.current = true;
+    const schedule = defaultEventSchedule(events, blocks);
+    try {
+      const created = await createEvent.mutateAsync({
+        title: "Nuevo evento",
+        date: schedule.date,
+        allDay: schedule.allDay,
+        startMin: schedule.allDay ? undefined : schedule.startMin ?? undefined,
+        endMin: schedule.endMin,
+        color: PROJECT_COLORS[0] ?? "#0f172a",
+        recurrenceType: null,
+        recurrenceInterval: 1,
+        recurrenceDaysOfWeek: [],
+        recurrenceDayOfMonth: null,
+        recurrenceEndsAt: null,
+        remindBeforeMin: 0,
+      });
+      setIsModalOpen(false);
+      setEditingEvent(null);
+      setPreviewingEvent(created);
+      toast.success("Evento creado");
+    } catch (error) {
+      toast.error((error as { message?: string } | null)?.message ?? "Ups, no pudimos crear el evento. Inténtalo de nuevo.");
+    } finally {
+      creatingEventRef.current = false;
+    }
   };
 
   const openPreview = (event: CalendarEvent) => {
@@ -107,7 +158,8 @@ export default function EventsPage() {
           <button onClick={nextMonth} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-outline-variant bg-surface text-on-surface-variant transition-colors hover:border-outline hover:bg-surface-container-low hover:text-on-surface sm:h-10 sm:w-10" type="button" aria-label="Mes siguiente">&gt;</button>
         </div>
         <button
-          onClick={openCreate}
+          disabled={createEvent.isPending}
+          onClick={() => void openCreate()}
           className="flex min-h-11 items-center gap-2 rounded-md bg-primary px-3 py-2 font-body-sm text-body-sm text-on-primary shadow-cadence-1 transition-colors hover:bg-primary/90 disabled:opacity-50 sm:px-4"
           type="button"
         >

@@ -2,14 +2,33 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Bell, CalendarDays, ExternalLink, MapPin, Pencil, Repeat2, Video } from "lucide-react";
+import { Bell, CalendarDays, ExternalLink, MapPin, Pencil, Repeat2, Video, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
-import type { CalendarEvent } from "@/types/entities";
+import type { CalendarEvent, EventRecurrenceType } from "@/types/entities";
 import type { CalendarEventPayload } from "@/features/events/api/events";
 import { useEventMutations } from "@/features/events/hooks/useEvents";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { ColorPicker, PROJECT_COLORS } from "@/components/ui/ColorPicker";
+import {
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerNestedRoot,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PreviewSheet } from "@/components/ui/PreviewSheet";
-import { DAY_NAMES, DAY_NAMES_SHORT, DAY_ORDER, minToTime, parseDateOnly, timeToMin } from "@/features/timeblocks/lib/time";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { minToTime, parseDateOnly, timeToMin, toDateKey } from "@/features/timeblocks/lib/time";
 import { cn } from "@/lib/utils";
 
 const REMIND_OPTIONS = [
@@ -23,7 +42,15 @@ const REMIND_OPTIONS = [
   { value: 10080, label: "1 semana antes" },
 ] as const;
 
-type EventDraftField = "title" | "schedule" | "location" | "reminder";
+const RECURRENCE_OPTIONS = [
+  { value: "NONE", label: "No repetir" },
+  { value: "DAILY", label: "Cada día" },
+  { value: "WEEKLY", label: "Cada semana" },
+  { value: "MONTHLY", label: "Cada mes" },
+  { value: "YEARLY", label: "Cada año" },
+] as const;
+
+type EventDraftField = "title" | "schedule" | "location" | "color" | "recurrence" | "reminder";
 
 function eventDate(value: string) {
   return parseDateOnly(value).toLocaleDateString("es-DO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -50,25 +77,6 @@ function reminderOptions(currentValue: number) {
   return [...REMIND_OPTIONS, { value: currentValue, label: reminderLabel(currentValue) }].sort((a, b) => a.value - b.value);
 }
 
-function recurrenceLabel(event: CalendarEvent) {
-  if (!event.recurrenceType) return "";
-  const interval = Math.max(event.recurrenceInterval, 1);
-  if (event.recurrenceType === "DAILY") return interval === 1 ? "Cada día" : `Cada ${interval} días`;
-  if (event.recurrenceType === "MONTHLY") {
-    const cadence = interval === 1 ? "Cada mes" : `Cada ${interval} meses`;
-    return event.recurrenceDayOfMonth ? `${cadence} · día ${event.recurrenceDayOfMonth}` : cadence;
-  }
-  if (event.recurrenceType === "YEARLY") return interval === 1 ? "Cada año" : `Cada ${interval} años`;
-
-  const days = event.recurrenceDaysOfWeek
-    .slice()
-    .sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b))
-    .map((day) => DAY_NAMES_SHORT[day] ?? DAY_NAMES[day])
-    .join(", ");
-  const cadence = interval === 1 ? "Cada semana" : `Cada ${interval} semanas`;
-  return days ? `${cadence} · ${days}` : cadence;
-}
-
 function externalUrl(value: string | null) {
   if (!value) return null;
   try {
@@ -84,13 +92,24 @@ function resizeTitleInput(input: HTMLTextAreaElement) {
   input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
 }
 
-function scheduleDraftFrom(event: CalendarEvent) {
+type EventScheduleDraft = {
+  allDay: boolean;
+  date: string;
+  endTime: string;
+  startTime: string;
+};
+
+function scheduleDraftFrom(event: CalendarEvent): EventScheduleDraft {
   return {
     allDay: event.allDay,
     date: event.date.slice(0, 10),
     endTime: event.endMin === null ? "10:00" : minToTime(event.endMin),
     startTime: event.startMin === null ? "09:00" : minToTime(event.startMin),
   };
+}
+
+function scheduleDraftLabel(draft: EventScheduleDraft) {
+  return `${eventDate(draft.date)} · ${draft.allDay ? "Todo el día" : `De ${draft.startTime} a ${draft.endTime}`}`;
 }
 
 function DetailRow({ icon: Icon, children, divided = false }: { icon: LucideIcon; children: ReactNode; divided?: boolean }) {
@@ -104,6 +123,109 @@ function DetailRow({ icon: Icon, children, divided = false }: { icon: LucideIcon
   );
 }
 
+function EventScheduleEditor({
+  draft,
+  fullWidth = false,
+  onCancel,
+  onChange,
+  onSave,
+  pending,
+}: {
+  draft: EventScheduleDraft;
+  fullWidth?: boolean;
+  onCancel: () => void;
+  onChange: (draft: EventScheduleDraft) => void;
+  onSave: () => void;
+  pending: boolean;
+}) {
+  return (
+    <>
+      <Calendar
+        aria-label="Seleccionar fecha del evento"
+        className={fullWidth ? "w-full" : "mx-auto"}
+        classNames={
+          fullWidth
+            ? {
+                month: "relative w-full space-y-4",
+                month_grid: "w-full border-collapse",
+                months: "flex w-full flex-col gap-4",
+                day: "relative flex-1 p-0 text-center text-sm",
+                day_button: "size-full min-h-9",
+                weekday:
+                  "h-8 flex-1 rounded-md text-center font-label-caps text-[10px] text-on-surface-variant",
+                weekdays: "flex w-full",
+                week: "mt-1 flex w-full",
+              }
+            : undefined
+        }
+        defaultMonth={parseDateOnly(draft.date)}
+        mode="single"
+        onSelect={(date) => {
+          if (date) onChange({ ...draft, date: toDateKey(date) });
+        }}
+        selected={parseDateOnly(draft.date)}
+      />
+      <div className="border-t border-outline-variant p-3">
+        <label className="flex min-h-11 items-center gap-2 font-body-sm text-body-sm text-on-surface">
+          <input
+            checked={draft.allDay}
+            className="size-5 accent-tertiary"
+            disabled={pending}
+            onChange={(event) => onChange({ ...draft, allDay: event.target.checked })}
+            type="checkbox"
+          />
+          Todo el día
+        </label>
+        {!draft.allDay && (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <div>
+              <Label className="block" htmlFor="event-preview-start">Inicio</Label>
+              <Input
+                className="mt-1"
+                data-vaul-no-drag
+                disabled={pending}
+                id="event-preview-start"
+                onChange={(event) => onChange({ ...draft, startTime: event.target.value })}
+                type="time"
+                value={draft.startTime}
+              />
+            </div>
+            <div>
+              <Label className="block" htmlFor="event-preview-end">Fin</Label>
+              <Input
+                className="mt-1"
+                data-vaul-no-drag
+                disabled={pending}
+                id="event-preview-end"
+                onChange={(event) => onChange({ ...draft, endTime: event.target.value })}
+                type="time"
+                value={draft.endTime}
+              />
+            </div>
+          </div>
+        )}
+        <div className="mt-3 flex justify-end gap-2">
+          <button
+            className="min-h-11 rounded-lg px-3 py-2 font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+            onClick={onCancel}
+            type="button"
+          >
+            Cancelar
+          </button>
+          <button
+            className="min-h-11 rounded-lg bg-primary px-4 py-2 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
+            disabled={pending || !draft.date}
+            onClick={onSave}
+            type="button"
+          >
+            Guardar
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function EventPreviewModal({
   event,
   onClose,
@@ -114,6 +236,7 @@ export function EventPreviewModal({
   onEdit: (event: CalendarEvent) => void;
 }) {
   const { updateEvent } = useEventMutations();
+  const isMobile = useIsMobile(1023);
   const [currentEvent, setCurrentEvent] = useState(event);
   const [titleEditing, setTitleEditing] = useState(false);
   const [titleDraft, setTitleDraft] = useState(event.title);
@@ -121,8 +244,11 @@ export function EventPreviewModal({
   const [scheduleDraft, setScheduleDraft] = useState(() => scheduleDraftFrom(event));
   const [locationEditing, setLocationEditing] = useState(false);
   const [locationDraft, setLocationDraft] = useState(event.location ?? "");
+  const [colorOpen, setColorOpen] = useState(false);
   const [pendingField, setPendingField] = useState<EventDraftField | null>(null);
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
+  const locationInputRef = useRef<HTMLInputElement>(null);
+  const locationCancelRef = useRef(false);
 
   useEffect(() => {
     if (!titleEditing || !titleInputRef.current) return;
@@ -197,19 +323,56 @@ export function EventPreviewModal({
     }
   };
 
+  const handleScheduleOpenChange = (open: boolean) => {
+    if (open) openScheduleEditor();
+    else if (scheduleEditing) cancelScheduleEditor();
+  };
+
+  const saveRecurrenceType = async (value: string) => {
+    const type = value === "NONE" ? null : value as EventRecurrenceType;
+    const eventDateValue = parseDateOnly(currentEvent.date);
+    await savePatch("recurrence", {
+      recurrenceType: type,
+      recurrenceInterval: Math.max(currentEvent.recurrenceInterval, 1),
+      recurrenceDaysOfWeek: type === "WEEKLY"
+        ? currentEvent.recurrenceDaysOfWeek.length > 0 ? currentEvent.recurrenceDaysOfWeek : [eventDateValue.getDay()]
+        : [],
+      recurrenceDayOfMonth: type === "MONTHLY"
+        ? currentEvent.recurrenceDayOfMonth ?? eventDateValue.getDate()
+        : null,
+      recurrenceEndsAt: type ? currentEvent.recurrenceEndsAt : null,
+    }, "Recurrencia actualizada");
+  };
+
   const openLocationEditor = () => {
+    locationCancelRef.current = false;
     setLocationDraft(currentEvent.location ?? "");
     setLocationEditing(true);
   };
 
   const cancelLocationEditor = () => {
+    locationCancelRef.current = true;
     setLocationDraft(currentEvent.location ?? "");
     setLocationEditing(false);
   };
 
   const saveLocation = async () => {
-    const updated = await savePatch("location", { location: locationDraft.trim() }, "Ubicación actualizada");
+    const location = locationDraft.trim();
+    if (location === (currentEvent.location ?? "")) {
+      cancelLocationEditor();
+      return;
+    }
+    const updated = await savePatch("location", { location }, "Ubicación actualizada");
     if (updated) setLocationEditing(false);
+  };
+
+  const saveColor = async (color: string) => {
+    if (color === currentEvent.color) {
+      setColorOpen(false);
+      return;
+    }
+    const updated = await savePatch("color", { color }, "Color actualizado");
+    if (updated) setColorOpen(false);
   };
 
   const saveReminder = async (value: number) => {
@@ -219,9 +382,29 @@ export function EventPreviewModal({
 
   const time = currentEvent.allDay || currentEvent.startMin === null || currentEvent.endMin === null
     ? "Todo el día"
-    : `${minToTime(currentEvent.startMin)} – ${minToTime(currentEvent.endMin)}`;
+    : `De ${minToTime(currentEvent.startMin)} a ${minToTime(currentEvent.endMin)}`;
   const duration = eventDuration(currentEvent);
   const meetingUrl = externalUrl(currentEvent.location);
+  const eventColor = currentEvent.color ?? PROJECT_COLORS[0] ?? "#303e51";
+  const scheduleTrigger = (
+    <button aria-label="Editar fecha y horario" className="min-w-0 flex-1 text-left" disabled={pendingField !== null} type="button">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-body-md text-body-md font-semibold capitalize text-on-surface">{eventDate(currentEvent.date)}</p>
+        {duration && <Badge variant="neutral">{duration}</Badge>}
+      </div>
+      <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">{time}</p>
+    </button>
+  );
+  const scheduleEditor = (
+    <EventScheduleEditor
+      draft={scheduleDraft}
+      fullWidth={isMobile}
+      onCancel={cancelScheduleEditor}
+      onChange={setScheduleDraft}
+      onSave={() => void saveSchedule()}
+      pending={pendingField !== null}
+    />
+  );
 
   return (
     <PreviewSheet
@@ -231,9 +414,25 @@ export function EventPreviewModal({
       bodyHeader={
         <div className="mb-5 min-w-0">
           <div className="flex min-w-0 items-start gap-3">
-            <span aria-hidden="true" className="mt-2.5 size-3.5 shrink-0 rounded-full shadow-sm" style={{ backgroundColor: currentEvent.color ?? "#303e51" }} />
+            <Popover onOpenChange={setColorOpen} open={colorOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  aria-expanded={colorOpen}
+                  aria-label="Cambiar color del evento"
+                  className="group -ml-1 flex size-8 shrink-0 items-center justify-center self-center rounded-full outline-none hover:bg-surface-container-low focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-wait disabled:opacity-60"
+                  disabled={pendingField !== null}
+                  type="button"
+                >
+                  <span aria-hidden="true" className="size-3.5 rounded-full shadow-sm transition-transform group-hover:scale-110" style={{ backgroundColor: eventColor }} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto min-w-[15rem]">
+                <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Color del evento</p>
+                <ColorPicker disabled={pendingField !== null} onChange={(color) => void saveColor(color)} value={eventColor} />
+              </PopoverContent>
+            </Popover>
             {titleEditing ? (
-              <textarea
+              <Textarea
                 aria-busy={pendingField === "title"}
                 aria-label="Título del evento"
                 autoComplete="off"
@@ -262,6 +461,7 @@ export function EventPreviewModal({
                 }}
                 ref={titleInputRef}
                 rows={1}
+                variant="plain"
                 value={titleDraft}
                 wrap="soft"
               />
@@ -286,23 +486,29 @@ export function EventPreviewModal({
       footer={
         <div className="flex w-full gap-2.5">
           {meetingUrl && (
-            <a
-              className="inline-flex min-h-12 flex-1 items-center justify-center gap-1.5 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+            <Button
+              asChild
+              className="h-12 flex-1 rounded-xl px-3 font-label-md text-label-md font-semibold text-on-surface-variant hover:text-on-surface"
+              size="default"
+              variant="outline"
+            >
+              <a
               href={meetingUrl}
               rel="noreferrer"
               target="_blank"
-            >
-              <Video aria-hidden="true" size={16} /> Unirse
-            </a>
+              >
+                <Video aria-hidden="true" size={16} /> Unirse
+              </a>
+            </Button>
           )}
-          <button
-            className={cn("inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container", meetingUrl ? "flex-1" : "w-full")}
+          <Button
+            className={cn("h-12 rounded-xl px-3 font-label-md text-label-md font-semibold", meetingUrl ? "flex-1" : "w-full")}
             disabled={pendingField !== null}
             onClick={() => onEdit(currentEvent)}
             type="button"
           >
             <Pencil aria-hidden="true" size={16} /> Editar evento
-          </button>
+          </Button>
         </div>
       }
       onClose={onClose}
@@ -313,59 +519,95 @@ export function EventPreviewModal({
         <section className="overflow-hidden rounded-2xl border border-outline-variant/70 bg-surface-container-low/70 p-4 sm:p-5">
           <div className="space-y-4">
             <DetailRow icon={CalendarDays}>
-              {scheduleEditing ? (
-                <div className="space-y-3">
-                  <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Fecha y horario</p>
-                  <label className="block">
-                    <span className="font-label-md text-label-md text-on-surface-variant">Fecha</span>
-                    <input className="field mt-1" disabled={pendingField !== null} onChange={(event) => setScheduleDraft((current) => ({ ...current, date: event.target.value }))} type="date" value={scheduleDraft.date} />
-                  </label>
-                  <label className="flex min-h-11 items-center gap-2 font-body-sm text-body-sm text-on-surface">
-                    <input checked={scheduleDraft.allDay} className="size-5 accent-tertiary" disabled={pendingField !== null} onChange={(event) => setScheduleDraft((current) => ({ ...current, allDay: event.target.checked }))} type="checkbox" />
-                    Todo el día
-                  </label>
-                  {!scheduleDraft.allDay && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <label className="block">
-                        <span className="font-label-md text-label-md text-on-surface-variant">Inicio</span>
-                        <input className="field mt-1" disabled={pendingField !== null} onChange={(event) => setScheduleDraft((current) => ({ ...current, startTime: event.target.value }))} type="time" value={scheduleDraft.startTime} />
-                      </label>
-                      <label className="block">
-                        <span className="font-label-md text-label-md text-on-surface-variant">Fin</span>
-                        <input className="field mt-1" disabled={pendingField !== null} onChange={(event) => setScheduleDraft((current) => ({ ...current, endTime: event.target.value }))} type="time" value={scheduleDraft.endTime} />
-                      </label>
-                    </div>
-                  )}
-                  <div className="flex justify-end gap-2">
-                    <button className="min-h-10 rounded-lg px-3 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low" disabled={pendingField !== null} onClick={cancelScheduleEditor} type="button">Cancelar</button>
-                    <button className="min-h-10 rounded-lg bg-primary px-3 font-label-md text-label-md font-semibold text-on-primary disabled:opacity-60" disabled={pendingField !== null} onClick={() => void saveSchedule()} type="button">Guardar</button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start justify-between gap-2">
-                  <button aria-label="Editar fecha y horario" className="min-w-0 flex-1 text-left" disabled={pendingField !== null} onClick={openScheduleEditor} type="button">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-body-md text-body-md font-semibold capitalize text-on-surface">{eventDate(currentEvent.date)}</p>
-                      {duration && <span className="rounded-full bg-surface-container px-2.5 py-1 font-label-md text-label-md font-semibold text-on-surface-variant">{duration}</span>}
-                    </div>
-                    <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">{time}{!currentEvent.allDay && " · hora local"}</p>
-                  </button>
-                  <Pencil aria-hidden="true" className="mt-1 shrink-0 text-on-surface-variant" size={14} />
-                </div>
-              )}
+              <div className="flex items-start justify-between gap-2">
+                {isMobile ? (
+                  <DrawerNestedRoot
+                    fixed
+                    handleOnly
+                    onOpenChange={handleScheduleOpenChange}
+                    open={scheduleEditing}
+                  >
+                    <DrawerTrigger asChild>{scheduleTrigger}</DrawerTrigger>
+                    <DrawerContent className="flex h-auto min-h-0 max-h-[calc(100dvh-1rem)] w-full max-w-none flex-col rounded-t-2xl border-outline-variant bg-surface-bright p-0 shadow-cadence-3 data-[vaul-drawer-direction=bottom]:max-h-[calc(100dvh-1rem)]">
+                      <DrawerHeader className="flex shrink-0 flex-row items-center justify-between gap-3 border-b border-outline-variant px-5 py-4 !text-left">
+                        <div className="min-w-0">
+                          <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">
+                            Fecha y hora
+                          </DrawerTitle>
+                          <DrawerDescription className="!text-left">
+                            {scheduleDraftLabel(scheduleDraft)}
+                          </DrawerDescription>
+                        </div>
+                        <DrawerClose asChild>
+                          <button
+                            aria-label="Cerrar selector de fecha y hora"
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+                            type="button"
+                          >
+                            <X size={19} />
+                          </button>
+                        </DrawerClose>
+                      </DrawerHeader>
+                      <div className="w-full">{scheduleEditor}</div>
+                    </DrawerContent>
+                  </DrawerNestedRoot>
+                ) : (
+                  <Popover onOpenChange={handleScheduleOpenChange} open={scheduleEditing}>
+                    <PopoverTrigger asChild>{scheduleTrigger}</PopoverTrigger>
+                    <PopoverContent
+                      align="end"
+                      avoidCollisions
+                      className="w-auto max-w-[var(--radix-popover-content-available-width)] overflow-hidden p-0"
+                      collisionPadding={{ bottom: 16, left: 16, right: 16, top: 16 }}
+                      sideOffset={8}
+                    >
+                      <div className="border-b border-outline-variant px-4 py-3">
+                        <p className="font-label-caps text-label-caps text-on-surface-variant">Fecha y hora</p>
+                        <p className="mt-0.5 max-w-[20rem] font-body-sm text-body-sm font-semibold capitalize text-on-surface">
+                          {scheduleDraftLabel(scheduleDraft)}
+                        </p>
+                      </div>
+                      {scheduleEditor}
+                    </PopoverContent>
+                  </Popover>
+                )}
+                <Pencil aria-hidden="true" className="mt-1 shrink-0 text-on-surface-variant" size={14} />
+              </div>
             </DetailRow>
 
             <DetailRow divided icon={MapPin}>
               {locationEditing ? (
-                <div className="space-y-2">
-                  <label className="block">
-                    <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Ubicación o enlace</span>
-                    <input autoFocus className="field mt-1" disabled={pendingField !== null} onChange={(event) => setLocationDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void saveLocation(); if (event.key === "Escape") cancelLocationEditor(); }} placeholder="Ej. Sala A o https://meet.google.com/..." value={locationDraft} />
-                  </label>
-                  <div className="flex justify-end gap-2">
-                    <button className="min-h-10 rounded-lg px-3 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low" disabled={pendingField !== null} onClick={cancelLocationEditor} type="button">Cancelar</button>
-                    <button className="min-h-10 rounded-lg bg-primary px-3 font-label-md text-label-md font-semibold text-on-primary disabled:opacity-60" disabled={pendingField !== null} onClick={() => void saveLocation()} type="button">Guardar</button>
-                  </div>
+                <div className="min-w-0">
+                  <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Ubicación</p>
+                  <Input
+                    aria-busy={pendingField === "location"}
+                    aria-label="Ubicación o enlace"
+                    autoFocus
+                    className="mt-1 block min-w-0 w-full font-body-md text-body-md font-semibold text-on-surface placeholder:text-on-surface-variant/70"
+                    data-vaul-no-drag
+                    disabled={pendingField !== null}
+                    id="event-preview-location"
+                    onBlur={() => {
+                      window.requestAnimationFrame(() => {
+                        if (!locationCancelRef.current && document.activeElement !== locationInputRef.current && pendingField !== "location") void saveLocation();
+                      });
+                    }}
+                    onChange={(event) => setLocationDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void saveLocation();
+                      }
+                      if (event.key === "Escape") {
+                        event.preventDefault();
+                        cancelLocationEditor();
+                      }
+                    }}
+                    placeholder="Añadir ubicación o enlace"
+                    ref={locationInputRef}
+                    variant="plain"
+                    value={locationDraft}
+                  />
                 </div>
               ) : (
                 <div className="flex items-start justify-between gap-2">
@@ -386,21 +628,33 @@ export function EventPreviewModal({
               )}
             </DetailRow>
 
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-outline-variant/70 pt-4 font-body-sm text-body-sm text-on-surface-variant">
-              {currentEvent.recurrenceType && (
-                <div className="flex min-w-0 items-start gap-1.5">
-                  <Repeat2 aria-hidden="true" className="mt-0.5 shrink-0" size={15} />
-                  <span className="break-words [overflow-wrap:anywhere]">{recurrenceLabel(currentEvent)}{currentEvent.recurrenceEndsAt ? ` · hasta ${eventDate(currentEvent.recurrenceEndsAt)}` : ""}</span>
-                </div>
-              )}
-              <label className="flex min-w-0 items-center gap-1.5">
-                <Bell aria-hidden="true" className="shrink-0 text-tertiary" size={15} />
-                <span className="sr-only">Recordatorio</span>
-                <select aria-label="Cambiar recordatorio" className="max-w-[11rem] cursor-pointer rounded-lg border border-transparent bg-transparent px-1 py-1 font-body-sm text-body-sm font-medium text-on-surface-variant hover:bg-surface-container-low focus:border-outline focus:outline-none disabled:cursor-wait disabled:opacity-60" disabled={pendingField !== null} onChange={(event) => void saveReminder(Number(event.target.value))} value={currentEvent.remindBeforeMin}>
-                  {reminderOptions(currentEvent.remindBeforeMin).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-              </label>
-            </div>
+            <DetailRow divided icon={Repeat2}>
+              <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Recurrencia</p>
+              <Select disabled={pendingField !== null} onValueChange={(value) => void saveRecurrenceType(value)} value={currentEvent.recurrenceType ?? "NONE"}>
+                <SelectTrigger aria-label="Cambiar recurrencia" className="h-9 max-w-[12rem] border-transparent bg-transparent px-1 font-body-md text-body-md font-semibold text-on-surface shadow-none hover:bg-surface-container-low" size="sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {RECURRENCE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </DetailRow>
+
+            <DetailRow divided icon={Bell}>
+              <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Recordatorio</p>
+              <Select disabled={pendingField !== null} onValueChange={(value) => void saveReminder(Number(value))} value={String(currentEvent.remindBeforeMin)}>
+                <SelectTrigger aria-label="Cambiar recordatorio" className="h-9 max-w-[12rem] border-transparent bg-transparent px-1 font-body-md text-body-md font-semibold text-on-surface shadow-none hover:bg-surface-container-low" size="sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {reminderOptions(currentEvent.remindBeforeMin).map((option) => (
+                    <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </DetailRow>
           </div>
         </section>
       </div>

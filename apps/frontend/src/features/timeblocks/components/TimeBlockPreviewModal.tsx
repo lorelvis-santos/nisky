@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Bell, CalendarDays, CalendarX, Check, CheckCircle2, ChevronDown, Clock3, PauseCircle, Pencil, PlayCircle, Repeat2, RotateCcw, Trash2 } from "lucide-react";
+import { Bell, CalendarDays, CalendarX, Check, CheckCircle2, ChevronDown, Clock3, PauseCircle, Pencil, PlayCircle, Repeat2, RotateCcw, Trash2, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { Project, TimeBlock, TimeBlockException } from "@/types/entities";
@@ -17,7 +17,9 @@ import { PreviewSheet } from "@/components/ui/PreviewSheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerNestedRoot, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import type { UpdateTimeBlockPayload } from "../api/timeblocks";
 import { useBlockExceptionsQuery, useTimeBlockMutations } from "../hooks/useTimeBlocks";
 import { DAY_NAMES, DAY_NAMES_SHORT, DAY_ORDER, minToTime, parseDateOnly, timeToMin, toDateKey } from "../lib/time";
@@ -90,6 +92,13 @@ function scheduleDetailsFrom(block: TimeBlock, occurrenceDate?: Date): ScheduleD
 
 function exceptionDate(value: string) {
   return parseDateOnly(value).toLocaleDateString("es-DO", { weekday: "short", day: "numeric", month: "short", year: "numeric" }).replaceAll(".", "");
+}
+
+function scheduleDetailsLabel(draft: ScheduleDetailsDraft) {
+  if (draft.mode === "oneOff") return draft.date ? `${blockDate(draft.date)} · Solo este día` : "Selecciona una fecha";
+  const days = orderedDays(draft.daysOfWeek).map((day) => DAY_NAMES_SHORT[day]).join(" · ");
+  const repeat = draft.repeatEveryWeeks === 1 ? "Cada semana" : `Cada ${draft.repeatEveryWeeks} semanas`;
+  return `${days || "Selecciona los días"} · ${repeat}${draft.repeatEndsAt ? ` · Hasta ${blockDate(draft.repeatEndsAt)}` : ""}`;
 }
 
 function scheduleDraftFrom(block: TimeBlock) {
@@ -311,6 +320,177 @@ export function TimeBlockPreviewModal({
     }
   };
 
+  const isMobile = useIsMobile(1023);
+  const handleScheduleOpenChange = (open: boolean) => {
+    if (open) openScheduleEditor();
+    else if (scheduleEditing) cancelScheduleEditor();
+  };
+  const handleScheduleDetailsOpenChange = (open: boolean) => {
+    if (open) openScheduleDetailsEditor();
+    else if (scheduleDetailsEditing) cancelScheduleDetailsEditor();
+  };
+
+  const timeTrigger = (
+    <button aria-label="Editar horario del bloque" className="min-w-0 flex-1 text-left" disabled={pendingField !== null} type="button">
+      <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{recurring ? "Horario habitual" : "Horario"}</p>
+      <div className="mt-0.5 flex flex-wrap items-center gap-2">
+        <span className="font-headline-md text-headline-md text-on-surface">{minToTime(currentBlock.startMin)} – {minToTime(currentBlock.endMin)}</span>
+        <Badge className="bg-primary-fixed text-primary" variant="neutral">{blockDuration(currentBlock)}</Badge>
+      </div>
+    </button>
+  );
+
+  const timeEditor = (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="block" htmlFor="time-block-preview-start">Inicio</Label>
+          <Input className="mt-1" data-vaul-no-drag disabled={pendingField !== null} id="time-block-preview-start" onChange={(event) => setScheduleDraft((current) => ({ ...current, startTime: event.target.value }))} type="time" value={scheduleDraft.startTime} />
+        </div>
+        <div>
+          <Label className="block" htmlFor="time-block-preview-end">Fin</Label>
+          <Input className="mt-1" data-vaul-no-drag disabled={pendingField !== null} id="time-block-preview-end" onChange={(event) => setScheduleDraft((current) => ({ ...current, endTime: event.target.value }))} type="time" value={scheduleDraft.endTime} />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 border-t border-outline-variant pt-4">
+        <Button className="h-10 min-h-0 rounded-lg px-3 font-label-md text-label-md text-on-surface-variant" disabled={pendingField !== null} onClick={cancelScheduleEditor} size="sm" type="button" variant="ghost">Cancelar</Button>
+        <Button className="h-10 min-h-0 rounded-lg px-3 font-label-md text-label-md font-semibold text-on-primary" disabled={pendingField !== null} onClick={() => void saveSchedule()} size="sm" type="button">Guardar</Button>
+      </div>
+    </div>
+  );
+
+  const frequencyTrigger = (
+    <button aria-label="Editar frecuencia del bloque" className="min-w-0 flex-1 text-left" disabled={pendingField !== null} type="button">
+      <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{recurring ? "Frecuencia" : "Fecha del bloque"}</p>
+      {recurring ? (
+        <>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {orderedDays(currentBlock.daysOfWeek).map((day) => (
+              <span className="inline-flex h-7 min-w-10 items-center justify-center rounded-lg border border-primary/20 bg-primary-fixed px-2 font-label-caps text-label-caps font-semibold text-primary" key={day}>
+                {DAY_NAMES_SHORT[day]}
+              </span>
+            ))}
+          </div>
+          <p className="mt-1.5 font-body-sm text-body-sm text-on-surface-variant">
+            {currentBlock.repeatEveryWeeks === 1 ? "Cada semana" : `Cada ${currentBlock.repeatEveryWeeks} semanas`}
+            {currentBlock.repeatEndsAt ? ` · Hasta ${blockDate(currentBlock.repeatEndsAt)}` : " · Sin fecha final"}
+          </p>
+        </>
+      ) : (
+        <p className="mt-0.5 capitalize font-body-md text-body-md font-semibold text-on-surface">{blockDate(currentBlock.date ?? "")}</p>
+      )}
+    </button>
+  );
+
+  const frequencyEditor = (
+    <div className="space-y-5">
+      <fieldset className="space-y-2">
+        <legend className="font-label-caps text-label-caps uppercase text-on-surface-variant">Tipo de bloque</legend>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            aria-pressed={scheduleDetailsDraft.mode === "oneOff"}
+            className={cn(
+              "flex min-h-16 flex-col items-start justify-center gap-1 rounded-xl border px-3 py-2 text-left transition-colors",
+              scheduleDetailsDraft.mode === "oneOff"
+                ? "border-primary bg-primary-container text-on-primary"
+                : "border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-container-low",
+            )}
+            disabled={pendingField !== null}
+            onClick={() => setScheduleDetailsDraft((current) => ({ ...current, mode: "oneOff" }))}
+            type="button"
+          >
+            <span className="flex items-center gap-2 font-label-md text-label-md font-semibold"><CalendarDays aria-hidden="true" size={15} /> Fecha única</span>
+            <span className="font-body-sm text-body-sm opacity-80">Solo este día</span>
+          </button>
+          <button
+            aria-pressed={scheduleDetailsDraft.mode === "recurring"}
+            className={cn(
+              "flex min-h-16 flex-col items-start justify-center gap-1 rounded-xl border px-3 py-2 text-left transition-colors",
+              scheduleDetailsDraft.mode === "recurring"
+                ? "border-primary bg-primary-container text-on-primary"
+                : "border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-container-low",
+            )}
+            disabled={pendingField !== null}
+            onClick={() => setScheduleDetailsDraft((current) => ({ ...current, mode: "recurring" }))}
+            type="button"
+          >
+            <span className="flex items-center gap-2 font-label-md text-label-md font-semibold"><Repeat2 aria-hidden="true" size={15} /> Recurrente</span>
+            <span className="font-body-sm text-body-sm opacity-80">Se repite cada semana</span>
+          </button>
+        </div>
+      </fieldset>
+
+      {scheduleDetailsDraft.mode === "oneOff" ? (
+        <div>
+          <Label htmlFor="time-block-preview-date">Fecha</Label>
+          <Input
+            className="mt-1"
+            data-vaul-no-drag
+            id="time-block-preview-date"
+            onChange={(event) => setScheduleDetailsDraft((current) => ({ ...current, date: event.target.value }))}
+            type="date"
+            value={scheduleDetailsDraft.date}
+          />
+          <p className="mt-1.5 font-body-sm text-body-sm text-on-surface-variant">El bloque aparecerá únicamente en esta fecha.</p>
+        </div>
+      ) : (
+        <>
+          <fieldset className="space-y-2">
+            <legend className="font-label-caps text-label-caps uppercase text-on-surface-variant">Días de repetición</legend>
+            <ToggleGroup
+              aria-label="Días de repetición"
+              className="grid grid-cols-4 gap-2 sm:grid-cols-7"
+              disabled={pendingField !== null}
+              onValueChange={(values) => setScheduleDetailsDraft((current) => ({ ...current, daysOfWeek: values.map(Number) }))}
+              type="multiple"
+              value={scheduleDetailsDraft.daysOfWeek.map(String)}
+            >
+              {DAY_ORDER.map((day) => (
+                <ToggleGroupItem aria-label={`Repetir los ${DAY_NAMES[day]}`} className="h-10 w-full rounded-lg px-1 font-label-caps text-[10px]" key={day} value={String(day)}>
+                  {DAY_NAMES_SHORT[day]}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">Selecciona uno o más días.</p>
+          </fieldset>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="time-block-preview-repeat">Intervalo</Label>
+              <Select
+                onValueChange={(value) => setScheduleDetailsDraft((current) => ({ ...current, repeatEveryWeeks: Number(value) }))}
+                value={String(scheduleDetailsDraft.repeatEveryWeeks)}
+              >
+                <SelectTrigger className="mt-1 w-full" id="time-block-preview-repeat">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {REPEAT_OPTIONS.map((option) => <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="time-block-preview-repeat-end">Fecha final</Label>
+              <Input
+                className="mt-1"
+                data-vaul-no-drag
+                id="time-block-preview-repeat-end"
+                onChange={(event) => setScheduleDetailsDraft((current) => ({ ...current, repeatEndsAt: event.target.value }))}
+                type="date"
+                value={scheduleDetailsDraft.repeatEndsAt}
+              />
+            </div>
+          </div>
+          <p className="-mt-2 font-body-sm text-body-sm text-on-surface-variant">Deja la fecha final vacía para repetir indefinidamente.</p>
+        </>
+      )}
+
+      <div className="flex justify-end gap-2 border-t border-outline-variant pt-4">
+        <Button className="h-10 min-h-0 rounded-lg px-3 font-label-md text-label-md text-on-surface-variant" disabled={pendingField !== null} onClick={cancelScheduleDetailsEditor} size="sm" type="button" variant="ghost">Cancelar</Button>
+        <Button className="h-10 min-h-0 rounded-lg px-3 font-label-md text-label-md font-semibold text-on-primary" disabled={pendingField !== null} onClick={() => void saveScheduleDetails()} size="sm" type="button">Guardar</Button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <PreviewSheet
@@ -444,171 +624,84 @@ export function TimeBlockPreviewModal({
           </div>
         }
         onClose={onClose}
+        tall
         title={title}
         titlePlacement="body"
       >
         <div className="space-y-5">
           <section className="overflow-hidden rounded-2xl border border-outline-variant/70 bg-surface-container-low/70 p-4 sm:p-5">
             <div className="space-y-4">
-            <DetailRow icon={Clock3}>
-              <div className="flex items-start justify-between gap-2">
-                <Popover
-                  onOpenChange={(open) => {
-                    if (open) openScheduleEditor();
-                    else if (scheduleEditing) cancelScheduleEditor();
-                  }}
-                  open={scheduleEditing}
-                >
-                  <PopoverTrigger asChild>
-                    <button aria-label="Editar horario del bloque" className="min-w-0 flex-1 text-left" disabled={pendingField !== null} type="button">
-                      <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{recurring ? "Horario habitual" : "Horario"}</p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                        <span className="font-headline-md text-headline-md text-on-surface">{minToTime(currentBlock.startMin)} – {minToTime(currentBlock.endMin)}</span>
-                        <Badge className="bg-primary-fixed text-primary" variant="neutral">{blockDuration(currentBlock)}</Badge>
-                      </div>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="w-[min(20rem,calc(100vw-2rem))]">
-                    <div className="space-y-3">
-                      <div>
-                        <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Editar horario</p>
-                        <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Ajusta el bloque sin salir de la agenda.</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label className="block" htmlFor="time-block-preview-start">Inicio</Label>
-                          <Input className="mt-1" data-vaul-no-drag disabled={pendingField !== null} id="time-block-preview-start" onChange={(event) => setScheduleDraft((current) => ({ ...current, startTime: event.target.value }))} type="time" value={scheduleDraft.startTime} />
+              <DetailRow icon={Clock3}>
+                <div className="flex items-start justify-between gap-2">
+                  {isMobile ? (
+                    <DrawerNestedRoot fixed handleOnly onOpenChange={handleScheduleOpenChange} open={scheduleEditing}>
+                      <DrawerTrigger asChild>{timeTrigger}</DrawerTrigger>
+                      <DrawerContent className="flex h-auto min-h-0 max-h-[calc(100dvh-1rem)] w-full max-w-none flex-col rounded-t-2xl border-outline-variant bg-surface-bright p-0 shadow-cadence-3 data-[vaul-drawer-direction=bottom]:max-h-[calc(100dvh-1rem)]">
+                        <DrawerHeader className="flex shrink-0 flex-row items-center justify-between gap-3 border-b border-outline-variant px-5 py-4 !text-left">
+                          <div className="min-w-0">
+                            <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">Horario</DrawerTitle>
+                            <DrawerDescription className="!text-left">{minToTime(currentBlock.startMin)} – {minToTime(currentBlock.endMin)}</DrawerDescription>
+                          </div>
+                          <DrawerClose asChild>
+                            <button aria-label="Cerrar editor de horario" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
+                              <X aria-hidden="true" size={19} />
+                            </button>
+                          </DrawerClose>
+                        </DrawerHeader>
+                        <div className="min-h-0 w-full flex-1 overflow-y-auto p-5">{timeEditor}</div>
+                      </DrawerContent>
+                    </DrawerNestedRoot>
+                  ) : (
+                    <Popover onOpenChange={handleScheduleOpenChange} open={scheduleEditing}>
+                      <PopoverTrigger asChild>{timeTrigger}</PopoverTrigger>
+                      <PopoverContent align="end" className="w-[min(20rem,calc(100vw-2rem))] p-4">
+                        <div className="mb-4">
+                          <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Horario</p>
+                          <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Ajusta el bloque sin salir de la agenda.</p>
                         </div>
-                        <div>
-                          <Label className="block" htmlFor="time-block-preview-end">Fin</Label>
-                          <Input className="mt-1" data-vaul-no-drag disabled={pendingField !== null} id="time-block-preview-end" onChange={(event) => setScheduleDraft((current) => ({ ...current, endTime: event.target.value }))} type="time" value={scheduleDraft.endTime} />
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button className="h-10 min-h-0 rounded-lg px-3 font-label-md text-label-md text-on-surface-variant" disabled={pendingField !== null} onClick={cancelScheduleEditor} size="sm" type="button" variant="ghost">Cancelar</Button>
-                        <Button className="h-10 min-h-0 rounded-lg px-3 font-label-md text-label-md font-semibold text-on-primary" disabled={pendingField !== null} onClick={() => void saveSchedule()} size="sm" type="button">Guardar</Button>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <Pencil aria-hidden="true" className="mt-1 shrink-0 text-on-surface-variant" size={14} />
-              </div>
-            </DetailRow>
+                        {timeEditor}
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                  <Pencil aria-hidden="true" className="mt-1 shrink-0 text-on-surface-variant" size={14} />
+                </div>
+              </DetailRow>
 
-            <DetailRow divided icon={recurring ? Repeat2 : CalendarDays}>
-              <Popover
-                onOpenChange={(open) => {
-                  if (open) openScheduleDetailsEditor();
-                  else if (scheduleDetailsEditing) cancelScheduleDetailsEditor();
-                }}
-                open={scheduleDetailsEditing}
-              >
-                <PopoverTrigger asChild>
-                  <button aria-label="Editar programación del bloque" className="min-w-0 flex-1 text-left" disabled={pendingField !== null} type="button">
-                    <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{recurring ? "Frecuencia" : "Fecha del bloque"}</p>
-                    {recurring ? (
-                      <>
-                        <p className="mt-0.5 font-body-sm text-body-sm font-semibold text-on-surface">
-                          {orderedDays(currentBlock.daysOfWeek).map((day) => DAY_NAMES[day]).join(", ")}
-                        </p>
-                        <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">
-                          {currentBlock.repeatEveryWeeks === 1 ? "Cada semana" : `Cada ${currentBlock.repeatEveryWeeks} semanas`}
-                          {currentBlock.repeatEndsAt ? ` · Hasta ${blockDate(currentBlock.repeatEndsAt)}` : ""}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="mt-0.5 capitalize font-body-md text-body-md font-semibold text-on-surface">{blockDate(currentBlock.date ?? "")}</p>
-                    )}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))]">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Programación</p>
-                      <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Cambia cuándo aparece este bloque en tu agenda.</p>
-                    </div>
-                    <div>
-                      <Label htmlFor="time-block-preview-mode">Tipo de bloque</Label>
-                      <Select
-                        onValueChange={(value) => setScheduleDetailsDraft((current) => ({ ...current, mode: value as BlockScheduleMode }))}
-                        value={scheduleDetailsDraft.mode}
-                      >
-                        <SelectTrigger className="mt-1 w-full" id="time-block-preview-mode">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="oneOff">Solo este día</SelectItem>
-                          <SelectItem value="recurring">Repetir</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {scheduleDetailsDraft.mode === "oneOff" ? (
-                      <div>
-                        <Label htmlFor="time-block-preview-date">Fecha</Label>
-                        <Input
-                          className="mt-1"
-                          data-vaul-no-drag
-                          id="time-block-preview-date"
-                          onChange={(event) => setScheduleDetailsDraft((current) => ({ ...current, date: event.target.value }))}
-                          type="date"
-                          value={scheduleDetailsDraft.date}
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <div>
-                          <Label>Días</Label>
-                          <ToggleGroup
-                            aria-label="Días de repetición"
-                            className="mt-2 w-full"
-                            disabled={pendingField !== null}
-                            onValueChange={(values) => setScheduleDetailsDraft((current) => ({ ...current, daysOfWeek: values.map(Number) }))}
-                            type="multiple"
-                            value={scheduleDetailsDraft.daysOfWeek.map(String)}
-                          >
-                            {DAY_ORDER.map((day) => (
-                              <ToggleGroupItem aria-label={`Repetir los ${DAY_NAMES[day]}`} className="min-w-0 flex-1 px-1 font-label-caps text-[10px]" key={day} value={String(day)}>
-                                {DAY_NAMES_SHORT[day]}
-                              </ToggleGroupItem>
-                            ))}
-                          </ToggleGroup>
+              <DetailRow divided icon={recurring ? Repeat2 : CalendarDays}>
+                <div className="flex items-start justify-between gap-2">
+                  {isMobile ? (
+                    <DrawerNestedRoot fixed handleOnly onOpenChange={handleScheduleDetailsOpenChange} open={scheduleDetailsEditing}>
+                      <DrawerTrigger asChild>{frequencyTrigger}</DrawerTrigger>
+                      <DrawerContent className="flex h-auto min-h-0 max-h-[calc(100dvh-1rem)] w-full max-w-none flex-col rounded-t-2xl border-outline-variant bg-surface-bright p-0 shadow-cadence-3 data-[vaul-drawer-direction=bottom]:max-h-[calc(100dvh-1rem)]">
+                        <DrawerHeader className="flex shrink-0 flex-row items-center justify-between gap-3 border-b border-outline-variant px-5 py-4 !text-left">
+                          <div className="min-w-0">
+                            <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{recurring ? "Frecuencia" : "Fecha del bloque"}</DrawerTitle>
+                            <DrawerDescription className="!text-left">{scheduleDetailsLabel(scheduleDetailsDraft)}</DrawerDescription>
+                          </div>
+                          <DrawerClose asChild>
+                            <button aria-label="Cerrar editor de frecuencia" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" type="button">
+                              <X aria-hidden="true" size={19} />
+                            </button>
+                          </DrawerClose>
+                        </DrawerHeader>
+                        <div className="min-h-0 w-full flex-1 overflow-y-auto p-5">{frequencyEditor}</div>
+                      </DrawerContent>
+                    </DrawerNestedRoot>
+                  ) : (
+                    <Popover onOpenChange={handleScheduleDetailsOpenChange} open={scheduleDetailsEditing}>
+                      <PopoverTrigger asChild>{frequencyTrigger}</PopoverTrigger>
+                      <PopoverContent align="end" className="w-[min(24rem,calc(100vw-2rem))] p-4">
+                        <div className="mb-4">
+                          <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{recurring ? "Frecuencia" : "Fecha del bloque"}</p>
+                          <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Organiza cuándo aparece este bloque.</p>
                         </div>
-                        <div>
-                          <Label htmlFor="time-block-preview-repeat">Repetir cada</Label>
-                          <Select
-                            onValueChange={(value) => setScheduleDetailsDraft((current) => ({ ...current, repeatEveryWeeks: Number(value) }))}
-                            value={String(scheduleDetailsDraft.repeatEveryWeeks)}
-                          >
-                            <SelectTrigger className="mt-1 w-full" id="time-block-preview-repeat">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {REPEAT_OPTIONS.map((option) => <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="time-block-preview-repeat-end">Hasta (opcional)</Label>
-                          <Input
-                            className="mt-1"
-                            data-vaul-no-drag
-                            id="time-block-preview-repeat-end"
-                            onChange={(event) => setScheduleDetailsDraft((current) => ({ ...current, repeatEndsAt: event.target.value }))}
-                            type="date"
-                            value={scheduleDetailsDraft.repeatEndsAt}
-                          />
-                        </div>
-                      </>
-                    )}
-                    <div className="flex justify-end gap-2">
-                      <Button className="h-10 min-h-0 rounded-lg px-3 font-label-md text-label-md text-on-surface-variant" disabled={pendingField !== null} onClick={cancelScheduleDetailsEditor} size="sm" type="button" variant="ghost">Cancelar</Button>
-                      <Button className="h-10 min-h-0 rounded-lg px-3 font-label-md text-label-md font-semibold text-on-primary" disabled={pendingField !== null} onClick={() => void saveScheduleDetails()} size="sm" type="button">Guardar</Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <Pencil aria-hidden="true" className="mt-1 shrink-0 text-on-surface-variant" size={14} />
-            </DetailRow>
+                        {frequencyEditor}
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                  <Pencil aria-hidden="true" className="mt-1 shrink-0 text-on-surface-variant" size={14} />
+                </div>
+              </DetailRow>
 
             <DetailRow divided icon={Bell}>
               <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Recordatorio</p>

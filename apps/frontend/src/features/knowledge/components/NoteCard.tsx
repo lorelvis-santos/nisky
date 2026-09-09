@@ -27,7 +27,7 @@ export function NoteCard({
     <article className="group flex min-w-0 flex-col rounded-lg border border-outline-variant/70 bg-surface-container-lowest shadow-sm transition-shadow hover:shadow-md">
       <div className="flex min-w-0 items-start justify-between gap-2 p-5 pb-0">
         <button aria-label={`Vista previa de ${note.title}`} className="min-w-0 rounded-md text-left" onClick={() => onOpen(note)} type="button">
-          <h2 className="line-clamp-2 min-w-0 break-words font-headline-xs text-headline-xs font-semibold text-on-surface">{note.title}</h2>
+          <h2 className="line-clamp-2 min-w-0 break-words font-headline-xs text-headline-xs font-semibold text-on-surface [overflow-wrap:anywhere]">{note.title}</h2>
         </button>
         {canEdit && <button
             aria-label={note.pinned ? "Desfijar" : "Fijar"}

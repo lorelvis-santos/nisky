@@ -33,6 +33,7 @@ type PreviewSheetProps = {
   headerExtra?: ReactNode;
   eyebrowIcon?: LucideIcon;
   onClose: () => void;
+  titleClassName?: string;
   wide?: boolean;
   tall?: boolean;
 };
@@ -57,11 +58,12 @@ function PreviewHeader({
   eyebrow,
   description,
   eyebrowIcon: EyebrowIcon,
-}: Pick<PreviewSheetProps, "title" | "eyebrow" | "description" | "eyebrowIcon"> & {
+  titleClassName,
+}: Pick<PreviewSheetProps, "title" | "eyebrow" | "description" | "eyebrowIcon" | "titleClassName"> & {
   primitive: "dialog" | "drawer";
 }) {
   const content = (
-    <div className="min-w-0">
+    <div className="min-w-0 flex-1">
       {eyebrow && (EyebrowIcon ? (
         <span className="inline-flex items-center gap-1.5 rounded-md bg-primary-fixed px-2.5 py-1 font-label-caps text-label-caps uppercase text-primary">
           <EyebrowIcon aria-hidden="true" size={14} />
@@ -71,9 +73,9 @@ function PreviewHeader({
         <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{eyebrow}</p>
       ))}
       {primitive === "drawer" ? (
-        <DrawerTitle className="mt-1 break-words text-xl leading-7">{title}</DrawerTitle>
+        <DrawerTitle className={cn("mt-1 min-w-0 break-words text-xl leading-7 [overflow-wrap:anywhere]", titleClassName)}>{title}</DrawerTitle>
       ) : (
-        <DialogTitle className="mt-1 break-words text-xl leading-7">{title}</DialogTitle>
+        <DialogTitle className={cn("mt-1 min-w-0 break-words text-xl leading-7 [overflow-wrap:anywhere]", titleClassName)}>{title}</DialogTitle>
       )}
       {description && (primitive === "drawer" ? (
         <DrawerDescription className="mt-1 line-clamp-2">{description}</DrawerDescription>
@@ -135,6 +137,7 @@ function MobilePreviewSheet({
   headerExtra,
   eyebrowIcon,
   onClose,
+  titleClassName,
   tall = false,
 }: PreviewSheetProps) {
   const [open, setOpen] = useState(true);
@@ -174,6 +177,7 @@ function MobilePreviewSheet({
           eyebrowIcon={eyebrowIcon}
           primitive="drawer"
           title={title}
+          titleClassName={titleClassName}
         />
         {headerExtra}
         <PreviewBody footer={footer}>{children}</PreviewBody>
@@ -191,6 +195,7 @@ function DesktopPreviewSheet({
   headerExtra,
   eyebrowIcon,
   onClose,
+  titleClassName,
   wide = false,
 }: PreviewSheetProps) {
   return (
@@ -215,6 +220,7 @@ function DesktopPreviewSheet({
           eyebrowIcon={eyebrowIcon}
           primitive="dialog"
           title={title}
+          titleClassName={titleClassName}
         />
         {headerExtra}
         <PreviewBody footer={footer}>{children}</PreviewBody>

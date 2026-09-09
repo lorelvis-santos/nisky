@@ -77,9 +77,9 @@ function FullNoteView({
         showCloseButton={false}
       >
         <DialogHeader className="flex shrink-0 flex-row items-start justify-between gap-4 border-b border-outline-variant bg-surface-bright px-5 py-4 text-left sm:px-7">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">NOTA COMPLETA</p>
-            <DialogTitle className="mt-1 break-words text-xl leading-7">{note.title}</DialogTitle>
+            <DialogTitle className="mt-1 min-w-0 break-words text-lg leading-6 [overflow-wrap:anywhere] sm:text-xl sm:leading-7">{note.title}</DialogTitle>
             <DialogDescription className="sr-only">Lectura completa de la nota.</DialogDescription>
           </div>
           <DialogClose asChild>
@@ -203,6 +203,7 @@ export function NotePreviewModal({
       }
       onClose={onClose}
       title={currentNote.title}
+      titleClassName="text-lg leading-6 sm:text-xl sm:leading-7"
       tall
       wide
     >

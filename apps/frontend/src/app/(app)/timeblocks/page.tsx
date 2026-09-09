@@ -396,9 +396,7 @@ function TimeBlocksContent() {
     setPreviewBlockDate(date ?? null);
   };
 
-  const editPreviewedBlock = () => {
-    if (!previewingBlock) return;
-    const block = previewingBlock;
+  const editPreviewedBlock = (block: TimeBlock) => {
     const date = previewBlockDate;
     setPreviewingBlock(null);
     setPreviewBlockDate(null);
@@ -501,9 +499,7 @@ function TimeBlocksContent() {
     setPreviewEventDate(date);
   };
 
-  const editPreviewedEvent = () => {
-    if (!previewingEvent) return;
-    const event = previewingEvent;
+  const editPreviewedEvent = (event: CalendarEvent) => {
     const date = previewEventDate;
     setPreviewingEvent(null);
     setPreviewEventDate(null);
@@ -847,6 +843,7 @@ function TimeBlocksContent() {
       {previewingBlock && (
         <TimeBlockPreviewModal
           block={previewingBlock}
+          key={previewingBlock.id}
           occurrenceDate={previewBlockDate ?? undefined}
           onClose={() => { setPreviewingBlock(null); setPreviewBlockDate(null); }}
           onEdit={editPreviewedBlock}
@@ -857,6 +854,7 @@ function TimeBlocksContent() {
       {previewingEvent && (
         <EventPreviewModal
           event={previewingEvent}
+          key={previewingEvent.id}
           onClose={() => { setPreviewingEvent(null); setPreviewEventDate(null); }}
           onEdit={editPreviewedEvent}
         />

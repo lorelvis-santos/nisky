@@ -171,8 +171,9 @@ export default function EventsPage() {
       {previewingEvent && (
         <EventPreviewModal
           event={previewingEvent}
+          key={previewingEvent.id}
           onClose={() => setPreviewingEvent(null)}
-          onEdit={() => openEdit(previewingEvent)}
+          onEdit={openEdit}
         />
       )}
       {isModalOpen && (

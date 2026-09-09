@@ -27,13 +27,17 @@ const MOBILE_PREVIEW_QUERY = "(max-width: 1023px)";
 type PreviewSheetProps = {
   title: ReactNode;
   eyebrow?: string;
+  eyebrowBadge?: boolean;
+  eyebrowClassName?: string;
   description?: string;
   children: ReactNode;
   footer?: ReactNode;
   headerExtra?: ReactNode;
+  bodyHeader?: ReactNode;
   eyebrowIcon?: LucideIcon;
   onClose: () => void;
   titleClassName?: string;
+  titlePlacement?: "header" | "body";
   wide?: boolean;
   tall?: boolean;
 };
@@ -56,26 +60,29 @@ function PreviewHeader({
   primitive,
   title,
   eyebrow,
+  eyebrowBadge = false,
+  eyebrowClassName,
   description,
   eyebrowIcon: EyebrowIcon,
   titleClassName,
-}: Pick<PreviewSheetProps, "title" | "eyebrow" | "description" | "eyebrowIcon" | "titleClassName"> & {
+  titlePlacement = "header",
+}: Pick<PreviewSheetProps, "title" | "eyebrow" | "eyebrowBadge" | "eyebrowClassName" | "description" | "eyebrowIcon" | "titleClassName" | "titlePlacement"> & {
   primitive: "dialog" | "drawer";
 }) {
   const content = (
     <div className="min-w-0 flex-1">
-      {eyebrow && (EyebrowIcon ? (
-        <span className="inline-flex items-center gap-1.5 rounded-md bg-primary-fixed px-2.5 py-1 font-label-caps text-label-caps uppercase text-primary">
-          <EyebrowIcon aria-hidden="true" size={14} />
+      {eyebrow && (eyebrowBadge || EyebrowIcon ? (
+        <span className={cn("inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary-fixed px-2.5 py-1 font-label-caps text-label-caps uppercase text-primary", eyebrowClassName)}>
+          {EyebrowIcon && <EyebrowIcon aria-hidden="true" size={14} />}
           {eyebrow}
         </span>
       ) : (
         <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{eyebrow}</p>
       ))}
       {primitive === "drawer" ? (
-        <DrawerTitle className={cn("mt-1 min-w-0 break-words text-xl leading-7 [overflow-wrap:anywhere]", titleClassName)}>{title}</DrawerTitle>
+        <DrawerTitle className={titlePlacement === "body" ? "sr-only" : cn("mt-1 min-w-0 break-words text-xl leading-7 [overflow-wrap:anywhere]", titleClassName)}>{title}</DrawerTitle>
       ) : (
-        <DialogTitle className={cn("mt-1 min-w-0 break-words text-xl leading-7 [overflow-wrap:anywhere]", titleClassName)}>{title}</DialogTitle>
+        <DialogTitle className={titlePlacement === "body" ? "sr-only" : cn("mt-1 min-w-0 break-words text-xl leading-7 [overflow-wrap:anywhere]", titleClassName)}>{title}</DialogTitle>
       )}
       {description && (primitive === "drawer" ? (
         <DrawerDescription className="mt-1 line-clamp-2">{description}</DrawerDescription>
@@ -113,10 +120,11 @@ function PreviewHeader({
   );
 }
 
-function PreviewBody({ children, footer }: Pick<PreviewSheetProps, "children" | "footer">) {
+function PreviewBody({ bodyHeader, children, footer }: Pick<PreviewSheetProps, "bodyHeader" | "children" | "footer">) {
   return (
     <>
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 lg:px-6" data-modal-scroll>
+        {bodyHeader}
         {children}
       </div>
       {footer && (
@@ -135,9 +143,13 @@ function MobilePreviewSheet({
   children,
   footer,
   headerExtra,
+  bodyHeader,
+  eyebrowBadge,
+  eyebrowClassName,
   eyebrowIcon,
   onClose,
   titleClassName,
+  titlePlacement,
   tall = false,
 }: PreviewSheetProps) {
   const [open, setOpen] = useState(true);
@@ -174,13 +186,16 @@ function MobilePreviewSheet({
         <PreviewHeader
           description={description}
           eyebrow={eyebrow}
+          eyebrowBadge={eyebrowBadge}
+          eyebrowClassName={eyebrowClassName}
           eyebrowIcon={eyebrowIcon}
           primitive="drawer"
           title={title}
           titleClassName={titleClassName}
+          titlePlacement={titlePlacement}
         />
         {headerExtra}
-        <PreviewBody footer={footer}>{children}</PreviewBody>
+        <PreviewBody bodyHeader={bodyHeader} footer={footer}>{children}</PreviewBody>
       </DrawerContent>
     </Drawer>
   );
@@ -193,9 +208,13 @@ function DesktopPreviewSheet({
   children,
   footer,
   headerExtra,
+  bodyHeader,
+  eyebrowBadge,
+  eyebrowClassName,
   eyebrowIcon,
   onClose,
   titleClassName,
+  titlePlacement,
   wide = false,
 }: PreviewSheetProps) {
   return (
@@ -217,13 +236,16 @@ function DesktopPreviewSheet({
         <PreviewHeader
           description={description}
           eyebrow={eyebrow}
+          eyebrowBadge={eyebrowBadge}
+          eyebrowClassName={eyebrowClassName}
           eyebrowIcon={eyebrowIcon}
           primitive="dialog"
           title={title}
           titleClassName={titleClassName}
+          titlePlacement={titlePlacement}
         />
         {headerExtra}
-        <PreviewBody footer={footer}>{children}</PreviewBody>
+        <PreviewBody bodyHeader={bodyHeader} footer={footer}>{children}</PreviewBody>
       </DialogContent>
     </Dialog>
   );

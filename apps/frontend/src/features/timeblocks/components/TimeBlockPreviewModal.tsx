@@ -2,10 +2,10 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Bell, CalendarDays, CalendarX, Check, CheckCircle2, ChevronDown, Clock3, PauseCircle, Pencil, PlayCircle, Repeat2 } from "lucide-react";
+import { Bell, CalendarDays, CalendarX, Check, CheckCircle2, ChevronDown, Clock3, PauseCircle, Pencil, PlayCircle, Repeat2, RotateCcw, Trash2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
-import type { Project, TimeBlock } from "@/types/entities";
+import type { Project, TimeBlock, TimeBlockException } from "@/types/entities";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -18,9 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
-import { TaskAssignmentPanel } from "./TaskAssignmentPanel";
 import type { UpdateTimeBlockPayload } from "../api/timeblocks";
-import { useTimeBlockMutations } from "../hooks/useTimeBlocks";
+import { useBlockExceptionsQuery, useTimeBlockMutations } from "../hooks/useTimeBlocks";
 import { DAY_NAMES, DAY_NAMES_SHORT, DAY_ORDER, minToTime, parseDateOnly, timeToMin, toDateKey } from "../lib/time";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +32,22 @@ const REMIND_OPTIONS = [
   { value: 60, label: "1 hora antes" },
 ] as const;
 
-type BlockDraftField = "name" | "project" | "schedule" | "days" | "reminder" | "active";
+const REPEAT_OPTIONS = [
+  { value: 1, label: "Cada semana" },
+  { value: 2, label: "Cada 2 semanas" },
+  { value: 3, label: "Cada 3 semanas" },
+  { value: 4, label: "Cada 4 semanas" },
+] as const;
+
+type BlockDraftField = "name" | "project" | "schedule" | "reminder" | "active";
+type BlockScheduleMode = "oneOff" | "recurring";
+type ScheduleDetailsDraft = {
+  date: string;
+  daysOfWeek: number[];
+  mode: BlockScheduleMode;
+  repeatEveryWeeks: number;
+  repeatEndsAt: string;
+};
 
 function blockDate(value: string | Date) {
   const date = typeof value === "string" ? parseDateOnly(value) : value;
@@ -64,6 +78,20 @@ function orderedDays(days: number[]) {
   return days.slice().sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
 }
 
+function scheduleDetailsFrom(block: TimeBlock, occurrenceDate?: Date): ScheduleDetailsDraft {
+  return {
+    date: block.date?.slice(0, 10) ?? (occurrenceDate ? toDateKey(occurrenceDate) : toDateKey(new Date())),
+    daysOfWeek: orderedDays(block.daysOfWeek),
+    mode: block.date ? "oneOff" : "recurring",
+    repeatEveryWeeks: block.repeatEveryWeeks,
+    repeatEndsAt: block.repeatEndsAt?.slice(0, 10) ?? "",
+  };
+}
+
+function exceptionDate(value: string) {
+  return parseDateOnly(value).toLocaleDateString("es-DO", { weekday: "short", day: "numeric", month: "short", year: "numeric" }).replaceAll(".", "");
+}
+
 function scheduleDraftFrom(block: TimeBlock) {
   return {
     endTime: minToTime(block.endMin),
@@ -92,28 +120,34 @@ export function TimeBlockPreviewModal({
   project,
   occurrenceDate,
   onClose,
-  onEdit,
   onSkipDay,
 }: {
   block: TimeBlock;
   project?: Project | null;
   occurrenceDate?: Date;
   onClose: () => void;
-  onEdit: (block: TimeBlock) => void;
   onSkipDay?: (date: string) => Promise<void>;
 }) {
-  const { update } = useTimeBlockMutations();
+  const { deleteException, remove, update } = useTimeBlockMutations();
   const [currentBlock, setCurrentBlock] = useState(block);
   const [nameEditing, setNameEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(block.name ?? "");
   const [projectOpen, setProjectOpen] = useState(false);
   const [scheduleEditing, setScheduleEditing] = useState(false);
   const [scheduleDraft, setScheduleDraft] = useState(() => scheduleDraftFrom(block));
+  const [scheduleDetailsEditing, setScheduleDetailsEditing] = useState(false);
+  const [scheduleDetailsDraft, setScheduleDetailsDraft] = useState(() => scheduleDetailsFrom(block, occurrenceDate));
   const [pendingField, setPendingField] = useState<BlockDraftField | null>(null);
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
   const [skipPending, setSkipPending] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+  const [pendingExceptionId, setPendingExceptionId] = useState<string | null>(null);
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const projectsQuery = useProjectsQuery();
+  const recurring = !currentBlock.date;
+  const exceptionsQuery = useBlockExceptionsQuery(recurring ? currentBlock.id : null);
+  const exceptions = exceptionsQuery.data ?? [];
 
   useEffect(() => {
     if (!nameEditing || !titleInputRef.current) return;
@@ -177,13 +211,41 @@ export function TimeBlockPreviewModal({
     }
   };
 
-  const saveDays = async (values: string[]) => {
-    const days = values.map(Number).filter(Number.isInteger);
+  const openScheduleDetailsEditor = () => {
+    setScheduleDetailsDraft(scheduleDetailsFrom(currentBlock, occurrenceDate));
+    setScheduleDetailsEditing(true);
+  };
+
+  const cancelScheduleDetailsEditor = () => {
+    setScheduleDetailsDraft(scheduleDetailsFrom(currentBlock, occurrenceDate));
+    setScheduleDetailsEditing(false);
+  };
+
+  const saveScheduleDetails = async () => {
+    const isOneOff = scheduleDetailsDraft.mode === "oneOff";
+    const oneOffDate = scheduleDetailsDraft.date;
+    if (isOneOff && (!oneOffDate || Number.isNaN(parseDateOnly(oneOffDate).getTime()))) {
+      toast.error("Selecciona una fecha válida para el bloque.");
+      return;
+    }
+    const date = isOneOff ? oneOffDate : null;
+    const days = isOneOff
+      ? [parseDateOnly(oneOffDate).getDay()]
+      : orderedDays(scheduleDetailsDraft.daysOfWeek);
     if (days.length === 0) {
       toast.error("Selecciona al menos un día.");
       return;
     }
-    await savePatch("days", { daysOfWeek: orderedDays(days) }, "Frecuencia actualizada");
+    const updated = await savePatch("schedule", {
+      date,
+      daysOfWeek: days,
+      repeatEveryWeeks: isOneOff ? 1 : scheduleDetailsDraft.repeatEveryWeeks,
+      repeatEndsAt: isOneOff ? null : scheduleDetailsDraft.repeatEndsAt || null,
+    }, "Programación actualizada");
+    if (updated) {
+      setScheduleDetailsDraft(scheduleDetailsFrom(updated, occurrenceDate));
+      setScheduleDetailsEditing(false);
+    }
   };
 
   const saveReminder = async (value: number) => {
@@ -207,7 +269,6 @@ export function TimeBlockPreviewModal({
   };
 
   const title = currentBlock.name ?? selectedProject?.name ?? "Tiempo libre";
-  const recurring = !currentBlock.date;
   const occurrenceKey = occurrenceDate ? toDateKey(occurrenceDate) : null;
 
   const confirmSkip = async () => {
@@ -219,6 +280,34 @@ export function TimeBlockPreviewModal({
       onClose();
     } finally {
       setSkipPending(false);
+    }
+  };
+
+  const deleteBlock = async () => {
+    if (deletePending) return;
+    setDeletePending(true);
+    try {
+      await remove.mutateAsync(currentBlock.id);
+      toast.success("Bloque eliminado");
+      setDeleteConfirmOpen(false);
+      onClose();
+    } catch (error) {
+      toast.error((error as { message?: string } | null)?.message ?? "No pudimos eliminar el bloque.");
+    } finally {
+      setDeletePending(false);
+    }
+  };
+
+  const restoreException = async (exception: TimeBlockException) => {
+    if (pendingExceptionId) return;
+    setPendingExceptionId(exception.id);
+    try {
+      await deleteException.mutateAsync({ blockId: currentBlock.id, exceptionId: exception.id });
+      toast.success("Excepción eliminada; día restaurado");
+    } catch (error) {
+      toast.error((error as { message?: string } | null)?.message ?? "No pudimos restaurar el día.");
+    } finally {
+      setPendingExceptionId(null);
     }
   };
 
@@ -335,7 +424,7 @@ export function TimeBlockPreviewModal({
           <div className="flex w-full gap-2.5">
             <Button
               className="h-12 flex-1 rounded-xl px-3 font-label-md text-label-md font-semibold text-on-surface-variant hover:text-on-surface"
-              disabled={pendingField !== null || skipPending}
+              disabled={pendingField !== null || skipPending || deletePending}
               onClick={() => void toggleActive()}
               type="button"
               variant="outline"
@@ -344,12 +433,13 @@ export function TimeBlockPreviewModal({
               {currentBlock.isActive ? "Pausar" : "Activar"}
             </Button>
             <Button
-              className="h-12 flex-1 rounded-xl px-3 font-label-md text-label-md font-semibold"
-              disabled={pendingField !== null || skipPending}
-              onClick={() => onEdit(currentBlock)}
+              className="h-12 flex-1 rounded-xl border-error/40 px-3 font-label-md text-label-md font-semibold text-error hover:bg-error-container/30"
+              disabled={pendingField !== null || skipPending || deletePending}
+              onClick={() => setDeleteConfirmOpen(true)}
               type="button"
+              variant="outline"
             >
-              <Pencil aria-hidden="true" size={16} /> Editar bloque
+              <Trash2 aria-hidden="true" size={16} /> Eliminar
             </Button>
           </div>
         }
@@ -405,32 +495,120 @@ export function TimeBlockPreviewModal({
               </div>
             </DetailRow>
 
-            {recurring ? (
-              <DetailRow divided icon={Repeat2}>
-                <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Frecuencia</p>
-                <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">{currentBlock.repeatEveryWeeks === 1 ? "Cada semana" : `Cada ${currentBlock.repeatEveryWeeks} semanas`}</p>
-                <ToggleGroup
-                  aria-label="Días de repetición"
-                  className="mt-3 w-full"
-                  disabled={pendingField !== null}
-                  onValueChange={(values) => void saveDays(values)}
-                  type="multiple"
-                  value={orderedDays(currentBlock.daysOfWeek).map(String)}
-                >
-                  {DAY_ORDER.map((day) => (
-                    <ToggleGroupItem aria-label={`Repetir los ${DAY_NAMES[day]}`} className="min-w-0 flex-1 px-1 font-label-caps text-[10px]" key={day} value={String(day)}>
-                      {DAY_NAMES_SHORT[day]}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-                {currentBlock.repeatEndsAt && <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Hasta {blockDate(currentBlock.repeatEndsAt)}</p>}
-              </DetailRow>
-            ) : (
-              <DetailRow divided icon={CalendarDays}>
-                <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Fecha del bloque</p>
-                <p className="mt-0.5 capitalize font-body-md text-body-md font-semibold text-on-surface">{blockDate(currentBlock.date ?? "")}</p>
-              </DetailRow>
-            )}
+            <DetailRow divided icon={recurring ? Repeat2 : CalendarDays}>
+              <Popover
+                onOpenChange={(open) => {
+                  if (open) openScheduleDetailsEditor();
+                  else if (scheduleDetailsEditing) cancelScheduleDetailsEditor();
+                }}
+                open={scheduleDetailsEditing}
+              >
+                <PopoverTrigger asChild>
+                  <button aria-label="Editar programación del bloque" className="min-w-0 flex-1 text-left" disabled={pendingField !== null} type="button">
+                    <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">{recurring ? "Frecuencia" : "Fecha del bloque"}</p>
+                    {recurring ? (
+                      <>
+                        <p className="mt-0.5 font-body-sm text-body-sm font-semibold text-on-surface">
+                          {orderedDays(currentBlock.daysOfWeek).map((day) => DAY_NAMES[day]).join(", ")}
+                        </p>
+                        <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">
+                          {currentBlock.repeatEveryWeeks === 1 ? "Cada semana" : `Cada ${currentBlock.repeatEveryWeeks} semanas`}
+                          {currentBlock.repeatEndsAt ? ` · Hasta ${blockDate(currentBlock.repeatEndsAt)}` : ""}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="mt-0.5 capitalize font-body-md text-body-md font-semibold text-on-surface">{blockDate(currentBlock.date ?? "")}</p>
+                    )}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))]">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Programación</p>
+                      <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Cambia cuándo aparece este bloque en tu agenda.</p>
+                    </div>
+                    <div>
+                      <Label htmlFor="time-block-preview-mode">Tipo de bloque</Label>
+                      <Select
+                        onValueChange={(value) => setScheduleDetailsDraft((current) => ({ ...current, mode: value as BlockScheduleMode }))}
+                        value={scheduleDetailsDraft.mode}
+                      >
+                        <SelectTrigger className="mt-1 w-full" id="time-block-preview-mode">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="oneOff">Solo este día</SelectItem>
+                          <SelectItem value="recurring">Repetir</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {scheduleDetailsDraft.mode === "oneOff" ? (
+                      <div>
+                        <Label htmlFor="time-block-preview-date">Fecha</Label>
+                        <Input
+                          className="mt-1"
+                          data-vaul-no-drag
+                          id="time-block-preview-date"
+                          onChange={(event) => setScheduleDetailsDraft((current) => ({ ...current, date: event.target.value }))}
+                          type="date"
+                          value={scheduleDetailsDraft.date}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <Label>Días</Label>
+                          <ToggleGroup
+                            aria-label="Días de repetición"
+                            className="mt-2 w-full"
+                            disabled={pendingField !== null}
+                            onValueChange={(values) => setScheduleDetailsDraft((current) => ({ ...current, daysOfWeek: values.map(Number) }))}
+                            type="multiple"
+                            value={scheduleDetailsDraft.daysOfWeek.map(String)}
+                          >
+                            {DAY_ORDER.map((day) => (
+                              <ToggleGroupItem aria-label={`Repetir los ${DAY_NAMES[day]}`} className="min-w-0 flex-1 px-1 font-label-caps text-[10px]" key={day} value={String(day)}>
+                                {DAY_NAMES_SHORT[day]}
+                              </ToggleGroupItem>
+                            ))}
+                          </ToggleGroup>
+                        </div>
+                        <div>
+                          <Label htmlFor="time-block-preview-repeat">Repetir cada</Label>
+                          <Select
+                            onValueChange={(value) => setScheduleDetailsDraft((current) => ({ ...current, repeatEveryWeeks: Number(value) }))}
+                            value={String(scheduleDetailsDraft.repeatEveryWeeks)}
+                          >
+                            <SelectTrigger className="mt-1 w-full" id="time-block-preview-repeat">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {REPEAT_OPTIONS.map((option) => <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="time-block-preview-repeat-end">Hasta (opcional)</Label>
+                          <Input
+                            className="mt-1"
+                            data-vaul-no-drag
+                            id="time-block-preview-repeat-end"
+                            onChange={(event) => setScheduleDetailsDraft((current) => ({ ...current, repeatEndsAt: event.target.value }))}
+                            type="date"
+                            value={scheduleDetailsDraft.repeatEndsAt}
+                          />
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-end gap-2">
+                      <Button className="h-10 min-h-0 rounded-lg px-3 font-label-md text-label-md text-on-surface-variant" disabled={pendingField !== null} onClick={cancelScheduleDetailsEditor} size="sm" type="button" variant="ghost">Cancelar</Button>
+                      <Button className="h-10 min-h-0 rounded-lg px-3 font-label-md text-label-md font-semibold text-on-primary" disabled={pendingField !== null} onClick={() => void saveScheduleDetails()} size="sm" type="button">Guardar</Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Pencil aria-hidden="true" className="mt-1 shrink-0 text-on-surface-variant" size={14} />
+            </DetailRow>
 
             <DetailRow divided icon={Bell}>
               <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Recordatorio</p>
@@ -455,9 +633,42 @@ export function TimeBlockPreviewModal({
             </div>
           </section>
 
-          {occurrenceKey && <TaskAssignmentPanel block={currentBlock} date={occurrenceKey} />}
+          {recurring && exceptions.length > 0 && (
+            <section className="overflow-hidden rounded-2xl border border-outline-variant/70 bg-surface-container-low/70 p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">Excepciones</p>
+                  <p className="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">Restaura los días que quitaste de este bloque.</p>
+                </div>
+                <Badge variant="neutral">{exceptions.length}</Badge>
+              </div>
+              <ul className="mt-3 divide-y divide-outline-variant/70">
+                {exceptions.map((exception) => (
+                  <li className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0" key={exception.id}>
+                    <div className="min-w-0">
+                      <p className="truncate font-body-sm text-body-sm font-semibold capitalize text-on-surface">{exceptionDate(exception.date)}</p>
+                      <p className="font-body-sm text-body-sm text-on-surface-variant">
+                        {exception.action === "skip" ? "Día saltado" : "Horario cambiado ese día"}
+                      </p>
+                    </div>
+                    <Button
+                      aria-label={`Restaurar ${exceptionDate(exception.date)}`}
+                      className="shrink-0 rounded-lg px-3 font-label-md text-label-md text-on-surface-variant"
+                      disabled={pendingExceptionId !== null}
+                      onClick={() => void restoreException(exception)}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <RotateCcw aria-hidden="true" size={14} /> Restaurar
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-          {occurrenceKey && onSkipDay && currentBlock.isActive && (
+          {occurrenceKey && recurring && onSkipDay && currentBlock.isActive && (
             <section className="border-t border-outline-variant pt-4">
               <Button
                 className="min-h-11 w-full justify-center rounded-xl border-error/40 font-label-md text-label-md font-semibold text-error hover:bg-error-container/30"
@@ -486,6 +697,23 @@ export function TimeBlockPreviewModal({
           onClose={() => setSkipConfirmOpen(false)}
           onConfirm={() => void confirmSkip()}
           title="¿Saltar bloque este día?"
+        />
+      )}
+
+      {deleteConfirmOpen && (
+        <ConfirmModal
+          cancelLabel="Cancelar"
+          confirmLabel="Eliminar bloque"
+          danger
+          loading={deletePending}
+          message={
+            recurring
+              ? "Se eliminará este bloque y todas sus ocurrencias futuras. Esta acción no se puede deshacer."
+              : "Se eliminará este bloque de tu agenda. Esta acción no se puede deshacer."
+          }
+          onClose={() => setDeleteConfirmOpen(false)}
+          onConfirm={() => void deleteBlock()}
+          title="¿Eliminar bloque?"
         />
       )}
     </>

@@ -1,14 +1,12 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Plus, SlidersHorizontal, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, SlidersHorizontal } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
-import { TimeBlockEditor } from "@/features/timeblocks/components/TimeBlockEditor";
 import { TimeBlockPreviewModal } from "@/features/timeblocks/components/TimeBlockPreviewModal";
 import { TimeBlockWeekGrid } from "@/features/timeblocks/components/TimeBlockWeekGrid";
 import { MobileAgenda } from "@/features/timeblocks/components/MobileAgenda";
-import { TaskAssignmentPanel } from "@/features/timeblocks/components/TaskAssignmentPanel";
 import { AgendaEntryChooser, type AgendaEntryKind } from "@/features/timeblocks/components/AgendaEntryChooser";
 import { AgendaDayTasksDialog } from "@/features/timeblocks/components/AgendaDayTasksDialog";
 import { EventEditorModal } from "@/features/events/components/EventEditorModal";
@@ -25,7 +23,6 @@ import {
 import { useEventsQuery, useEventMutations } from "@/features/events/hooks/useEvents";
 import { minToTime, parseDateOnly, timeToMin } from "@/features/timeblocks/lib/time";
 import { findAvailableStartMin } from "@/features/timeblocks/lib/availability";
-import type { CreateTimeBlockPayload } from "@/features/timeblocks/api/timeblocks";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { localDateKey } from "@/lib/utils";
 import type { CalendarEvent, TimeBlock } from "@/types/entities";
@@ -37,14 +34,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
 
 type SlotPrefill = { dayOfWeek: number; startMin: number; endMin: number; date: string; oneOff?: boolean };
 type EventEditorState = {
@@ -172,68 +161,6 @@ function ResizeResolveModal({
   );
 }
 
-function MobileEditorModal({
-  children,
-  title,
-  onClose,
-}: {
-  children: React.ReactNode;
-  title: string;
-  onClose: () => void;
-}) {
-  return (
-    <Drawer fixed open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }} repositionInputs>
-       <DrawerContent className="flex h-[min(85dvh,42rem)] min-h-0 max-h-[85dvh] overflow-hidden rounded-t-lg border-outline-variant bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-cadence-3 lg:hidden">
-        <DrawerHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface px-5 py-4 text-left">
-          <div>
-            <DrawerTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{title}</DrawerTitle>
-            <DrawerDescription className="sr-only">Editor de bloque de tiempo.</DrawerDescription>
-          </div>
-          <DrawerClose asChild>
-            <button aria-label="Cerrar" className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface" type="button">
-              <X size={19} />
-            </button>
-          </DrawerClose>
-        </DrawerHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto p-5" data-modal-scroll>
-          {children}
-        </div>
-      </DrawerContent>
-    </Drawer>
-  );
-}
-
-function DesktopEditorModal({
-  children,
-  title,
-  onClose,
-}: {
-  children: React.ReactNode;
-  title: string;
-  onClose: () => void;
-}) {
-  return (
-    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 overflow-hidden rounded-lg border-outline-variant bg-surface p-0 shadow-cadence-3" showCloseButton={false}>
-        <DialogHeader className="flex shrink-0 flex-row items-center justify-between border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
-          <div>
-            <DialogTitle className="font-headline-xs text-headline-xs font-bold normal-case tracking-normal text-primary">{title}</DialogTitle>
-            <DialogDescription className="sr-only">Editor de bloque de tiempo.</DialogDescription>
-          </div>
-          <DialogClose asChild>
-            <button aria-label="Cerrar" className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface" type="button">
-              <X size={19} />
-            </button>
-          </DialogClose>
-        </DialogHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto p-5" data-modal-scroll>
-          {children}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function TimeBlocksContent() {
   const query = useTimeBlocksQuery();
   const mutations = useTimeBlockMutations();
@@ -246,16 +173,13 @@ function TimeBlocksContent() {
   const blocks = query.data ?? [];
   const [mobileDate, setMobileDate] = useState(() => new Date());
   const [mobileView, setMobileView] = useState<"day" | "week">("day");
-  const [editing, setEditing] = useState<TimeBlock | null>(null);
   const [previewingBlock, setPreviewingBlock] = useState<TimeBlock | null>(null);
   const [previewBlockDate, setPreviewBlockDate] = useState<Date | null>(null);
-  const [editDate, setEditDate] = useState<string | null>(null);
   const [entryChooserOpen, setEntryChooserOpen] = useState(false);
   const [entrySlot, setEntrySlot] = useState<SlotPrefill | null>(null);
   const [eventEditor, setEventEditor] = useState<EventEditorState | null>(null);
   const [previewingEvent, setPreviewingEvent] = useState<CalendarEvent | null>(null);
   const [previewEventDate, setPreviewEventDate] = useState<Date | null>(null);
-  const [mobileFormOpen, setMobileFormOpen] = useState(false);
   const [dayTaskDate, setDayTaskDate] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const creatingEntryRef = useRef(false);
@@ -345,11 +269,6 @@ function TimeBlocksContent() {
     }
   };
 
-  const busy =
-    mutations.create.isPending ||
-    mutations.update.isPending ||
-    mutations.remove.isPending;
-
   const defaultAgendaSlot = (date = new Date()): SlotPrefill => {
     const now = new Date();
     const dateKey = toISODateString(date);
@@ -424,9 +343,6 @@ function TimeBlocksContent() {
       setEventEditor(null);
       setPreviewingEvent(null);
       setPreviewEventDate(null);
-      setEditing(null);
-      setEditDate(null);
-      setMobileFormOpen(false);
       setPreviewingBlock(created);
       setPreviewBlockDate(parseDateOnly(created.date ?? slot.date));
       toast.success("Bloque creado");
@@ -447,24 +363,11 @@ function TimeBlocksContent() {
     void createBlockAndOpen(slot);
   };
 
-  const openBlockEdit = (block: TimeBlock, date?: Date) => {
-    setEditing(block);
-    setEditDate(date ? toISODateString(date) : null);
-    if (isMobile) setMobileFormOpen(true);
-  };
-
   const openBlockPreview = (block: TimeBlock, date?: Date) => {
     setPreviewingEvent(null);
     setPreviewEventDate(null);
     setPreviewingBlock(block);
     setPreviewBlockDate(date ?? null);
-  };
-
-  const editPreviewedBlock = (block: TimeBlock) => {
-    const date = previewBlockDate;
-    setPreviewingBlock(null);
-    setPreviewBlockDate(null);
-    openBlockEdit(block, date ?? undefined);
   };
 
   const resizeBlock = async (block: TimeBlock, startMin: number, endMin: number, days: number[], draggedDate?: string) => {
@@ -527,9 +430,6 @@ function TimeBlocksContent() {
         endMin,
       });
       toast.success("Excepción guardada para este día");
-      setEditing(null);
-      setEditDate(null);
-      setMobileFormOpen(false);
       setResolveDraft(null);
     } catch (err) {
       toast.error((err as { message?: string })?.message ?? "Ups, no pudimos crear la excepción.");
@@ -551,11 +451,6 @@ function TimeBlocksContent() {
     setResolveDraft(null);
   };
 
-  const closeEditor = () => {
-    setEditing(null);
-    setMobileFormOpen(false);
-  };
-
   const openEventPreview = (event: CalendarEvent, date: Date) => {
     setPreviewingBlock(null);
     setPreviewBlockDate(null);
@@ -570,59 +465,6 @@ function TimeBlocksContent() {
     setEventEditor({ event, initialDate: date ? toISODateString(date) : undefined });
   };
 
-  const save = async (data: CreateTimeBlockPayload) => {
-    try {
-      if (editing) {
-        const daysChanged =
-          data.daysOfWeek.length !== editing.daysOfWeek.length ||
-          data.daysOfWeek.some((day, index) => day !== editing.daysOfWeek[index]);
-        const timeChanged =
-          data.startMin !== editing.startMin || data.endMin !== editing.endMin;
-        const repeats = editing.daysOfWeek.length > 1 || editing.repeatEveryWeeks > 1;
-        if (!daysChanged && timeChanged && repeats && editDate) {
-          setResolveDraft({
-            block: editing,
-            startMin: data.startMin,
-            endMin: data.endMin,
-            days: data.daysOfWeek,
-            draggedDate: editDate,
-          });
-          return;
-        }
-        await mutations.update.mutateAsync({ id: editing.id, payload: data });
-        setEditing({ ...editing, ...data, daysOfWeek: data.daysOfWeek });
-        setEditDate(null);
-        toast.success("¡Listo, bloque actualizado!");
-      }
-    } catch {
-      toast.error("Ups, no pudimos guardar el bloque. Inténtalo de nuevo.");
-    }
-  };
-
-  const toggleActive = async () => {
-    if (!editing) return;
-    try {
-      await mutations.update.mutateAsync({
-        id: editing.id,
-        payload: { isActive: !editing.isActive },
-      });
-      setEditing({ ...editing, isActive: !editing.isActive });
-    } catch {
-      toast.error("Ups, no pudimos actualizar el bloque.");
-    }
-  };
-
-  const remove = async () => {
-    if (!editing) return;
-    try {
-      await mutations.remove.mutateAsync(editing.id);
-      closeEditor();
-      toast.success("Bloque eliminado");
-    } catch {
-      toast.error("Ups, no pudimos eliminar el bloque. Inténtalo de nuevo.");
-    }
-  };
-
   const shiftMobileDate = (amount: number) => {
     setMobileDate((current) => {
       const next = new Date(current);
@@ -633,24 +475,6 @@ function TimeBlocksContent() {
 
   const openMobileCreate = () => {
     openEntryChooser(defaultAgendaSlot(mobileDate));
-  };
-
-  const skipToday = async (date?: string) => {
-    if (!editing) return;
-    const dateStr = date ?? (() => {
-      const now = new Date();
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    })();
-    try {
-      await mutations.createException.mutateAsync({
-        id: editing.id,
-        date: dateStr,
-        action: "skip",
-      });
-      toast.success("Bloque saltado ese día");
-    } catch (err) {
-      toast.error((err as { message?: string })?.message ?? "Ups, no pudimos saltar el bloque.");
-    }
   };
 
   const skipPreviewedBlockDay = async (date: string) => {
@@ -732,20 +556,6 @@ function TimeBlocksContent() {
       toast.error((err as { message?: string })?.message ?? "Ups, no pudimos mover el evento.");
     }
   };
-
-  const editor = (
-    <TimeBlockEditor
-      busy={busy}
-      key={editing?.id ?? "edit-block"}
-      onDelete={remove}
-      onSave={save}
-      onSkipToday={skipToday}
-      initialSkipDate={editDate ?? undefined}
-      onToggleActive={toggleActive}
-      projects={projects}
-      target={editing}
-    />
-  );
 
   return (
     <section className="h-full overflow-y-auto bg-background lg:flex lg:flex-col lg:overflow-hidden">
@@ -912,11 +722,10 @@ function TimeBlocksContent() {
           block={previewingBlock}
           key={previewingBlock.id}
           occurrenceDate={previewBlockDate ?? undefined}
-           onClose={() => { setPreviewingBlock(null); setPreviewBlockDate(null); }}
-           onEdit={editPreviewedBlock}
-           onSkipDay={skipPreviewedBlockDay}
-           project={projects.find((project) => project.id === previewingBlock.projectId)}
-         />
+            onClose={() => { setPreviewingBlock(null); setPreviewBlockDate(null); }}
+            onSkipDay={skipPreviewedBlockDay}
+            project={projects.find((project) => project.id === previewingBlock.projectId)}
+          />
       )}
 
       {previewingEvent && (
@@ -926,26 +735,6 @@ function TimeBlocksContent() {
           onClose={() => { setPreviewingEvent(null); setPreviewEventDate(null); }}
           onEdit={editPreviewedEvent}
         />
-      )}
-
-      {!isMobile && editing && (
-        <DesktopEditorModal
-          onClose={closeEditor}
-          title="Editar bloque"
-        >
-          {editor}
-          {editing && editDate && <TaskAssignmentPanel block={editing} date={editDate} />}
-        </DesktopEditorModal>
-      )}
-
-      {isMobile && mobileFormOpen && (
-        <MobileEditorModal
-          onClose={closeEditor}
-          title="Editar bloque"
-        >
-          {editor}
-          {editing && editDate && <TaskAssignmentPanel block={editing} date={editDate} />}
-        </MobileEditorModal>
       )}
 
       {resolveDraft && (

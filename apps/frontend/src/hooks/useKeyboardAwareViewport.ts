@@ -17,18 +17,21 @@ function scrollFocusedElement(root: HTMLElement, viewport: VisualViewport | null
   const focused = document.activeElement;
   if (!(focused instanceof HTMLElement) || !root.contains(focused)) return;
 
-  const scrollContainer = focused.closest<HTMLElement>("[data-modal-scroll]") ?? root;
+  const scrollContainer = focused.closest<HTMLElement>("[data-modal-scroll]");
+  // Vaul owns the drawer position for inputs in fixed headers and footers.
+  if (!scrollContainer && root.dataset.slot === "drawer-content") return;
+  const target = scrollContainer ?? root;
   const metrics = viewportMetrics(viewport);
-  const rootRect = scrollContainer.getBoundingClientRect();
+  const rootRect = target.getBoundingClientRect();
   const visibleTop = Math.max(rootRect.top, metrics.offsetTop) + FOCUS_GAP;
   const visibleBottom = Math.min(rootRect.bottom, metrics.offsetTop + metrics.height) - FOCUS_GAP;
   const focusedRect = focused.getBoundingClientRect();
 
   if (visibleBottom <= visibleTop) return;
   if (focusedRect.bottom > visibleBottom) {
-    scrollContainer.scrollTop += focusedRect.bottom - visibleBottom;
+    target.scrollTop += focusedRect.bottom - visibleBottom;
   } else if (focusedRect.top < visibleTop) {
-    scrollContainer.scrollTop -= visibleTop - focusedRect.top;
+    target.scrollTop -= visibleTop - focusedRect.top;
   }
 }
 

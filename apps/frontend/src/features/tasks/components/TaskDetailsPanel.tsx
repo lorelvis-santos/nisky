@@ -1136,6 +1136,26 @@ export function TaskDetailsPanel({
                     </Popover>
                   )}
                 </PreviewDetail>
+                <PreviewDetail icon={UserRound} label="Creado por">
+                  {current.user ? (
+                    <span className="inline-flex min-w-0 max-w-[13rem] items-center gap-1.5 text-left">
+                      <Avatar
+                        avatarUrl={current.user.avatarUrl}
+                        email={current.user.email}
+                        name={current.user.name}
+                        size="sm"
+                      />
+                      <span className="min-w-0 truncate">
+                        {current.user.name ?? current.user.email}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-on-surface-variant">Sin información</span>
+                  )}
+                </PreviewDetail>
+                <PreviewDetail icon={CalendarPlus} label="Creada el">
+                  <span>{createdAtLabel(current.createdAt)}</span>
+                </PreviewDetail>
               </dl>
               <button
                 aria-controls="task-preview-extra-details"
@@ -1277,26 +1297,6 @@ export function TaskDetailsPanel({
                         <Plus aria-hidden="true" size={15} />
                       </button>
                     </span>
-                  </PreviewDetail>
-                  <PreviewDetail icon={UserRound} label="Creada por">
-                    {current.user ? (
-                      <span className="inline-flex min-w-0 max-w-[13rem] items-center gap-1.5 text-left">
-                        <Avatar
-                          avatarUrl={current.user.avatarUrl}
-                          email={current.user.email}
-                          name={current.user.name}
-                          size="sm"
-                        />
-                        <span className="min-w-0 truncate">
-                          {current.user.name ?? current.user.email}
-                        </span>
-                      </span>
-                    ) : (
-                      <span className="text-on-surface-variant">Sin información</span>
-                    )}
-                  </PreviewDetail>
-                  <PreviewDetail icon={CalendarPlus} label="Creada el">
-                    <span>{createdAtLabel(current.createdAt)}</span>
                   </PreviewDetail>
                 </dl>
               )}

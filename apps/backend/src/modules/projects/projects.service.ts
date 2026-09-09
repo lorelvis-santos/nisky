@@ -60,7 +60,7 @@ export class ProjectService {
           _count: { select: { comments: true } },
         },
       }),
-      prisma.task.groupBy({ where: taskWhere, by: ["assigneeId"], _count: { _all: true } }),
+      prisma.task.groupBy({ where: { ...taskWhere, status: { notIn: ["COMPLETED", "CANCELLED"] } }, by: ["assigneeId"], _count: { _all: true } }),
       getUserRoleInProject(userId, projectId),
     ]);
 

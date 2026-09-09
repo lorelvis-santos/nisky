@@ -11,7 +11,6 @@ import { AgendaEntryChooser, type AgendaEntryKind } from "@/features/timeblocks/
 import { AgendaDayTasksDialog } from "@/features/timeblocks/components/AgendaDayTasksDialog";
 import { EventEditorModal } from "@/features/events/components/EventEditorModal";
 import { EventPreviewModal } from "@/features/events/components/EventPreviewModal";
-import { PROJECT_COLORS } from "@/components/ui/ColorPicker";
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import {
   useTimeBlockMutations,
@@ -294,37 +293,6 @@ function TimeBlocksContent() {
     setEntryChooserOpen(true);
   };
 
-  const createEventAndOpen = async (slot: SlotPrefill) => {
-    if (creatingEntryRef.current) return;
-    creatingEntryRef.current = true;
-    try {
-      const created = await eventMutations.createEvent.mutateAsync({
-        title: "Nuevo evento",
-        date: slot.date,
-        allDay: false,
-        startMin: slot.startMin,
-        endMin: slot.endMin,
-        color: PROJECT_COLORS[0] ?? "#0f172a",
-        recurrenceType: null,
-        recurrenceInterval: 1,
-        recurrenceDaysOfWeek: [],
-        recurrenceDayOfMonth: null,
-        recurrenceEndsAt: null,
-        remindBeforeMin: 0,
-      });
-      setEventEditor(null);
-      setPreviewingBlock(null);
-      setPreviewBlockDate(null);
-      setPreviewingEvent(created);
-      setPreviewEventDate(parseDateOnly(created.date));
-      toast.success("Evento creado");
-    } catch (error) {
-      toast.error((error as { message?: string } | null)?.message ?? "Ups, no pudimos crear el evento. Inténtalo de nuevo.");
-    } finally {
-      creatingEntryRef.current = false;
-    }
-  };
-
   const createBlockAndOpen = async (slot: SlotPrefill) => {
     if (creatingEntryRef.current) return;
     creatingEntryRef.current = true;
@@ -357,7 +325,12 @@ function TimeBlocksContent() {
     const slot = entrySlot ?? defaultAgendaSlot();
     setEntryChooserOpen(false);
     if (kind === "event") {
-      void createEventAndOpen(slot);
+      setEventEditor({
+        event: null,
+        initialDate: slot.date,
+        initialStartMin: slot.startMin,
+        initialEndMin: slot.endMin,
+      });
       return;
     }
     void createBlockAndOpen(slot);

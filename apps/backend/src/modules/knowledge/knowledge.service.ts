@@ -6,6 +6,9 @@ import { projectActivityService } from "../projects/project-activity.service";
 import { emitToUsers } from "../../config/socket.emit";
 import type { CreateNoteDto, NoteQueryDto, SaveNoteDraftDto, UpdateNoteDto } from "./knowledge.validator";
 
+const NOTE_PROJECT_SELECT = { id: true, name: true, color: true };
+const NOTE_USER_SELECT = { id: true, email: true, name: true, username: true, avatarUrl: true };
+
 function countByName(items: Array<{ name: string }>) {
   const counts = new Map<string, number>();
   for (const item of items) counts.set(item.name, (counts.get(item.name) ?? 0) + 1);
@@ -24,7 +27,9 @@ export class KnowledgeService {
       if (!accessible.includes(query.projectId)) throw new AppError("FORBIDDEN", "No tienes acceso a este proyecto");
     }
     const where = {
-      ...(query.projectId ? { projectId: query.projectId } : { userId }),
+      ...(query.projectId
+        ? { projectId: query.projectId, ...(query.ownerOnly ? { userId } : {}) }
+        : { userId, ...(query.withoutProject ? { projectId: null } : {}) }),
       ...(query.category ? { category: query.category } : {}),
       ...(query.tag ? { tags: { has: query.tag } } : {}),
       ...(query.pinned !== undefined ? { pinned: query.pinned } : {}),
@@ -37,7 +42,10 @@ export class KnowledgeService {
         skip,
         take,
         orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
-        include: { user: { select: { id: true, email: true, name: true, username: true, avatarUrl: true } } },
+        include: {
+          user: { select: NOTE_USER_SELECT },
+          project: { select: NOTE_PROJECT_SELECT },
+        },
       }),
       prisma.note.count({ where }),
     ]);
@@ -48,7 +56,10 @@ export class KnowledgeService {
     await assertNoteAccess(userId, id);
     const note = await prisma.note.findFirst({
       where: { id },
-      include: { user: { select: { id: true, email: true, name: true, username: true, avatarUrl: true } } },
+      include: {
+        user: { select: NOTE_USER_SELECT },
+        project: { select: NOTE_PROJECT_SELECT },
+      },
     });
     if (!note) throw new AppError("NOT_FOUND", "Nota no encontrada");
     return note;

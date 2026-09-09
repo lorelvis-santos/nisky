@@ -411,6 +411,7 @@ export interface Note {
   createdAt: string;
   updatedAt: string;
   user?: { id: string; email: string; name: string | null; username: string | null; avatarUrl: string | null };
+  project?: Pick<Project, "id" | "name" | "color"> | null;
 }
 
 export interface NoteDraft {

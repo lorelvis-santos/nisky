@@ -1,6 +1,6 @@
 "use client";
 
-import { Pin, Pencil } from "lucide-react";
+import { FolderKanban, Pin, Pencil } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import type { Note } from "@/types/entities";
 
@@ -15,6 +15,7 @@ export function NoteCard({
   onTogglePin,
   canEdit = true,
   showAuthor = false,
+  project,
 }: {
   note: Note;
   onOpen: (note: Note) => void;
@@ -22,6 +23,7 @@ export function NoteCard({
   onTogglePin: (note: Note) => Promise<void>;
   canEdit?: boolean;
   showAuthor?: boolean;
+  project?: { id: string; name: string; color: string } | null;
 }) {
   return (
     <article className="group flex min-w-0 flex-col rounded-lg border border-outline-variant/70 bg-surface-container-lowest shadow-sm transition-shadow hover:shadow-md">
@@ -43,6 +45,14 @@ export function NoteCard({
       </button>
       <div className="flex items-end justify-between gap-2 px-5 pb-5 pt-0">
         <div className="min-w-0 flex-1">
+          {project !== undefined && (
+            <div className="mb-2 flex min-w-0">
+              <span className={`inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full border px-2 py-1 font-label-md text-label-md ${project ? "border-primary/20 bg-primary-fixed/50 text-primary" : "border-outline-variant bg-surface-container-low text-on-surface-variant"}`}>
+                <FolderKanban aria-hidden="true" className="shrink-0" size={13} />
+                <span className="min-w-0 truncate">{project?.name ?? "Sin proyecto"}</span>
+              </span>
+            </div>
+          )}
           {note.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {note.tags.map((tag, index) => (

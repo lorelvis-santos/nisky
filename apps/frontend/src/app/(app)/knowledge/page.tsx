@@ -11,6 +11,7 @@ import { NoteCard } from "@/features/knowledge/components/NoteCard";
 import { NotePreviewModal } from "@/features/knowledge/components/NotePreviewModal";
 import { NotePagination } from "@/features/knowledge/components/NotePagination";
 import { useFacetsQuery, useNoteMutations, useNotesQuery } from "@/features/knowledge/hooks/useKnowledge";
+import { useProjectsQuery } from "@/features/projects/hooks/useProjects";
 import type { Note } from "@/types/entities";
 
 export default function KnowledgePage() {
@@ -19,12 +20,17 @@ export default function KnowledgePage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [previewing, setPreviewing] = useState<Note | null>(null);
+  const projectsQuery = useProjectsQuery();
+  const projectFilter = filter?.type === "project" ? filter : null;
 
   const query = useNotesQuery({
     page,
     q: search || undefined,
     category: filter?.type === "category" ? filter.name : undefined,
     tag: filter?.type === "tag" ? filter.name : undefined,
+    ownerOnly: true,
+    projectId: projectFilter?.id ?? undefined,
+    withoutProject: projectFilter?.id === null ? true : undefined,
     limit: 20,
   });
   const facetsQuery = useFacetsQuery();
@@ -98,7 +104,7 @@ export default function KnowledgePage() {
           <div className="flex h-full items-center justify-center font-body-sm text-body-sm text-error">Ups, no pudimos cargar tus notas. Inténtalo de nuevo.</div>
         ) : (
           <div className="grid grid-cols-1 gap-4 p-container-padding sm:gap-6 sm:px-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:px-10">
-             <KnowledgeSidebar active={filter} facets={facetsQuery.data} onFilter={updateFilter} />
+             <KnowledgeSidebar active={filter} facets={facetsQuery.data} onFilter={updateFilter} projects={projectsQuery.data} />
              <div className="min-w-0">
              {notes.length === 0 ? (
                <div className="flex min-h-[16rem] flex-col items-center justify-center gap-2 rounded-lg border border-outline-variant/70 bg-surface-container-lowest p-section-gap text-center shadow-sm">
@@ -112,7 +118,7 @@ export default function KnowledgePage() {
                <>
                  <div className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
                    {notes.map((note) => (
-                       <NoteCard key={note.id} note={note} onEdit={openEdit} onOpen={openPreview} onTogglePin={async (item) => { await togglePin(item); }} />
+                        <NoteCard key={note.id} note={note} onEdit={openEdit} onOpen={openPreview} onTogglePin={async (item) => { await togglePin(item); }} project={note.project} />
                    ))}
                  </div>
                  <NotePagination isFetching={query.isFetching} meta={query.data?.meta} onPageChange={setPage} />

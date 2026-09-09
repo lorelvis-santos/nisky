@@ -44,6 +44,8 @@ export const noteQuerySchema = z.object({
   pinned: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
   q: z.string().trim().min(1).max(100).optional(),
   projectId: z.uuid("El proyecto no es válido").optional(),
+  withoutProject: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
+  ownerOnly: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
 });
 
 export type CreateNoteDto = z.infer<typeof createNoteSchema>;

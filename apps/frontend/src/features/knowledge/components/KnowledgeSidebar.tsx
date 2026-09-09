@@ -1,15 +1,20 @@
 "use client";
 
-import type { KnowledgeFacets } from "@/types/entities";
+import type { KnowledgeFacets, Project } from "@/types/entities";
 
-export type KnowledgeFilter = { type: "category" | "tag"; name: string } | null;
+export type KnowledgeFilter =
+  | { type: "category" | "tag"; name: string }
+  | { type: "project"; id: string | null; name: string }
+  | null;
 
 export function KnowledgeSidebar({
   facets,
+  projects = [],
   active,
   onFilter,
 }: {
   facets: KnowledgeFacets | undefined;
+  projects?: Project[];
   active: KnowledgeFilter;
   onFilter: (filter: KnowledgeFilter) => void;
 }) {
@@ -53,6 +58,36 @@ export function KnowledgeSidebar({
             {categories.length === 0 && <p className="px-3 py-2 font-body-sm text-body-sm text-on-surface-variant">Sin categorías aún.</p>}
           </div>
         </section>
+        {projects.length > 0 && (
+          <section>
+            <h2 className="font-label-caps text-label-caps text-on-surface-variant">PROYECTOS</h2>
+            <div className="mt-1 space-y-0.5">
+              {projects.map((project) => (
+                <button
+                  className={chipClass(active?.type === "project" && active.id === project.id)}
+                  key={project.id}
+                  onClick={() => onFilter(active?.type === "project" && active.id === project.id ? null : { type: "project", id: project.id, name: project.name })}
+                  type="button"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span aria-hidden="true" className="size-2 shrink-0 rounded-full" style={{ backgroundColor: project.color }} />
+                    <span className="truncate">{project.name}</span>
+                  </span>
+                </button>
+              ))}
+              <button
+                className={chipClass(active?.type === "project" && active.id === null)}
+                onClick={() => onFilter(active?.type === "project" && active.id === null ? null : { type: "project", id: null, name: "Sin proyecto" })}
+                type="button"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span aria-hidden="true" className="size-2 shrink-0 rounded-full border border-outline-variant" />
+                  <span>Sin proyecto</span>
+                </span>
+              </button>
+            </div>
+          </section>
+        )}
         <section>
           <h2 className="font-label-caps text-label-caps text-on-surface-variant">ETIQUETAS</h2>
           <div className="mt-1 space-y-0.5">

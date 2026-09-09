@@ -39,6 +39,7 @@ type PreviewSheetProps = {
   titleClassName?: string;
   titlePlacement?: "header" | "body";
   wide?: boolean;
+  extraWide?: boolean;
   tall?: boolean;
 };
 
@@ -224,13 +225,18 @@ function DesktopPreviewSheet({
   titleClassName,
   titlePlacement,
   wide = false,
+  extraWide = false,
 }: PreviewSheetProps) {
   return (
     <Dialog modal={false} open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent
         className={cn(
           "fixed inset-x-0 bottom-0 left-0 right-0 top-auto z-50 flex h-[min(88dvh,48rem)] max-h-[88dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-b-none rounded-t-[1.75rem] border-outline-variant bg-surface-bright p-0 shadow-cadence-3 outline-none transition-transform duration-200 sm:max-w-none lg:inset-y-0 lg:bottom-0 lg:left-auto lg:right-0 lg:top-0 lg:h-full lg:max-h-full lg:rounded-l-2xl lg:rounded-r-none lg:rounded-t-none lg:shadow-[-8px_0_24px_-4px_rgba(15,23,42,0.06)]",
-          wide ? "lg:w-[min(42rem,100vw)]" : "lg:w-[min(29rem,100vw)]",
+           wide
+             ? extraWide
+               ? "lg:w-[min(46rem,100vw)]"
+               : "lg:w-[min(42rem,100vw)]"
+             : "lg:w-[min(29rem,100vw)]",
         )}
         data-preview-sheet="true"
         onInteractOutside={(event) => {

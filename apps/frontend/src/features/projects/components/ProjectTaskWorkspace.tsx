@@ -5,29 +5,10 @@ import { useRef, useState } from "react";
 import type { TaskUpdatePayload } from "@/features/tasks/api/tasks";
 import { TaskPagination } from "@/features/tasks/components/TaskPagination";
 import type { PaginationMeta, ProjectMember, Task, TaskPriority } from "@/types/entities";
-import { cn, isTaskOverdue } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { ProjectTaskRow } from "./ProjectTaskRow";
 
 export type ProjectTaskMode = "ACTIVE" | "MINE" | "ALL";
-
-function isClosedTask(task: Task) {
-  return task.status === "COMPLETED" || task.status === "CANCELLED";
-}
-
-function projectTaskOrderGroup(task: Task) {
-  if (!isClosedTask(task) && isTaskOverdue(task)) return 0;
-  if (!isClosedTask(task) && task.dueDate) return 1;
-  if (!isClosedTask(task)) return 2;
-  if (task.dueDate) return 3;
-  return 4;
-}
-
-function compareProjectTasks(a: Task, b: Task) {
-  return projectTaskOrderGroup(a) - projectTaskOrderGroup(b)
-    || (a.dueDate ?? "").localeCompare(b.dueDate ?? "")
-    || a.order - b.order
-    || a.createdAt.localeCompare(b.createdAt);
-}
 
 export function ProjectTaskWorkspace({
   tasks,
@@ -86,8 +67,6 @@ export function ProjectTaskWorkspace({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [quickTitle, setQuickTitle] = useState("");
   const hasAdvancedFilters = priority !== "ALL" || Boolean(assigneeId);
-  const orderedTasks = [...tasks].sort(compareProjectTasks);
-
   const submitQuickAdd = async () => {
     const title = quickTitle.trim();
     if (!title) return;
@@ -145,7 +124,7 @@ export function ProjectTaskWorkspace({
            {isLoading ? <TaskSkeleton /> : isError ? <TaskError onRetry={onRetry} /> : tasks.length === 0 ? <TaskEmpty hasFilters={mode === "MINE" || Boolean(search) || hasAdvancedFilters} mode={mode} onReset={onResetFilters} /> : (
              <>
                <div className="divide-y divide-[#e7e9e8]">
-                     {orderedTasks.map((task) => <ProjectTaskRow canEditTasks={canEditTasks} isPreviewed={previewedTaskId === task.id} key={task.id} members={members} onOpen={() => onOpen(task)} onStartPomodoro={() => onStartPomodoro(task)} onToggle={onToggle} onUpdateTask={onUpdateTask} task={task} />)}
+                      {tasks.map((task) => <ProjectTaskRow canEditTasks={canEditTasks} isPreviewed={previewedTaskId === task.id} key={task.id} members={members} onOpen={() => onOpen(task)} onStartPomodoro={() => onStartPomodoro(task)} onToggle={onToggle} onUpdateTask={onUpdateTask} task={task} />)}
               </div>
               {meta && <TaskPagination isFetching={isFetching} meta={meta} onPageChange={onPageChange} />}
             </>

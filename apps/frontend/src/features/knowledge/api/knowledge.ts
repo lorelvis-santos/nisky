@@ -10,6 +10,8 @@ export interface NoteQueryParams {
   pinned?: boolean;
   q?: string;
   projectId?: string;
+  withoutProject?: boolean;
+  ownerOnly?: boolean;
 }
 
 export interface NotePayload {

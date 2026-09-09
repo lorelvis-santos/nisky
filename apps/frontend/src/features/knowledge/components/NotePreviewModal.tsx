@@ -73,10 +73,10 @@ function FullNoteView({
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent
-        className="fixed inset-0 bottom-auto right-auto top-0 left-0 flex h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-surface-bright p-0 outline-none sm:left-1/2 sm:top-1/2 sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100%-2rem)] sm:max-w-5xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border sm:border-outline-variant"
+        className="fixed inset-0 bottom-auto right-auto top-0 left-0 flex h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 bg-surface-bright p-0 outline-none sm:left-1/2 sm:top-1/2 sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100%-2rem)] sm:max-w-6xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border sm:border-outline-variant"
         showCloseButton={false}
       >
-        <DialogHeader className="flex shrink-0 flex-row items-start justify-between gap-4 border-b border-outline-variant bg-surface-bright px-5 py-4 text-left sm:px-7">
+        <DialogHeader className="flex shrink-0 flex-row items-start justify-between gap-4 rounded-none border-b border-outline-variant bg-surface-bright px-5 py-4 text-left sm:rounded-t-2xl sm:px-7">
           <div className="min-w-0 flex-1">
             <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">NOTA COMPLETA</p>
             <DialogTitle className="mt-1 min-w-0 break-words text-lg leading-6 [overflow-wrap:anywhere] sm:text-xl sm:leading-7">{note.title}</DialogTitle>
@@ -90,7 +90,7 @@ function FullNoteView({
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-surface-container-low/40 px-4 py-5 sm:px-7 sm:py-7" data-modal-scroll>
-          <div className="mx-auto min-w-0 max-w-3xl space-y-5">
+          <div className="mx-auto min-w-0 max-w-5xl space-y-5">
             <NoteMeta note={note} />
             <article className="min-w-0 overflow-visible rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm">
               {note.content.trim() ? (
@@ -102,8 +102,8 @@ function FullNoteView({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-variant bg-surface-bright px-5 py-4 sm:px-7">
-          <button className="min-h-11 rounded-xl border border-outline-variant px-3 py-2 font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" onClick={onBack} type="button">Volver al preview</button>
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-none border-t border-outline-variant bg-surface-bright px-5 py-4 sm:rounded-b-2xl sm:px-7">
+          <button className="min-h-11 rounded-xl border border-outline-variant px-3 py-2 font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface" onClick={onBack} type="button">Volver</button>
           <div className="flex flex-wrap items-center justify-end gap-2">
             {onTogglePin && (
               <button className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-outline-variant px-3 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => void onTogglePin(!note.pinned)} type="button">
@@ -205,6 +205,7 @@ export function NotePreviewModal({
       title={currentNote.title}
       titleClassName="text-lg leading-6 sm:text-xl sm:leading-7"
       tall
+      extraWide
       wide
     >
       <div className="min-w-0 space-y-5">

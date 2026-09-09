@@ -51,12 +51,14 @@ const ALL_DAY_REMIND_VALUES: readonly number[] = [0, 1440, 10080];
 export function EventEditorModal({
   event,
   initialDate,
+  initialAllDay,
   initialStartMin,
   initialEndMin,
   onClose,
 }: {
   event: CalendarEvent | null;
   initialDate?: string;
+  initialAllDay?: boolean;
   initialStartMin?: number;
   initialEndMin?: number;
   onClose: () => void;
@@ -67,7 +69,7 @@ export function EventEditorModal({
   const eventEndMin = event?.baseEndMin !== undefined ? event.baseEndMin : event?.endMin;
   const [title, setTitle] = useState(event?.title ?? "");
   const [date, setDate] = useState(eventDate ? toLocalISODate(parseDateOnly(eventDate)) : initialDate ?? toLocalISODate(new Date()));
-  const [allDay, setAllDay] = useState(event?.allDay ?? false);
+  const [allDay, setAllDay] = useState(event?.allDay ?? initialAllDay ?? false);
   const [startMin, setStartMin] = useState(formatMin(eventStartMin ?? initialStartMin ?? 9 * 60));
   const [endMin, setEndMin] = useState(formatMin(eventEndMin ?? initialEndMin ?? 10 * 60));
   const [location, setLocation] = useState(event?.location ?? "");

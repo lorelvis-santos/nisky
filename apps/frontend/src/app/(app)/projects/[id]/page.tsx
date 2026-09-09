@@ -82,8 +82,8 @@ function ProjectDetailPageContent() {
       assigneeId: taskMode === "MINE" ? user?.id : taskAssigneeId || undefined,
       priority: taskPriority === "ALL" ? undefined : taskPriority,
       q: deferredSearch.trim() || undefined,
-       sort: "dueDate",
-       order: "asc",
+       sort: "createdAt",
+       order: "desc",
     },
     { enabled: activeTab === "tasks", pageSize: 10 },
   );

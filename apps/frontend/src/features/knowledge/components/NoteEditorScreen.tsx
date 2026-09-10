@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, FileText, FolderOpen, Pin, Save, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, FileText, FolderOpen, Pin, Save, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useDraftAutosave } from "@/hooks/useDraftAutosave";
 import { useAccessibleProjects } from "@/features/projects/hooks/useProjects";
-import { useNoteMutations } from "../hooks/useKnowledge";
+import { useFacetsQuery, useNoteMutations } from "../hooks/useKnowledge";
 import { deleteNoteDraft, fetchNoteDraft, saveNoteDraft, type NoteDraftPayload } from "../api/knowledge";
 import { noteFormSchema, type NoteForm } from "../schemas/knowledge.schema";
 import type { Note, NoteDraft } from "@/types/entities";
@@ -29,6 +37,7 @@ function emptyForm(defaultProjectId?: string | null): NoteForm {
     category: undefined,
     tags: [],
     pinned: false,
+    collaboratorsCanEdit: false,
     projectId: defaultProjectId ?? undefined,
   };
 }
@@ -42,6 +51,26 @@ function resizeTitleInput(input: HTMLTextAreaElement) {
   input.style.height = `${Math.min(input.scrollHeight, 112)}px`;
 }
 
+function FacetSuggestions({ id, items, onSelect }: { id: string; items: string[]; onSelect: (value: string) => void }) {
+  return (
+    <div className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest p-1 shadow-lg" id={id} role="listbox">
+      {items.map((item) => (
+        <button
+          className="flex min-h-10 w-full items-center rounded-lg px-3 text-left font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+          key={item}
+          onClick={() => onSelect(item)}
+          onMouseDown={(event) => event.preventDefault()}
+          aria-selected="false"
+          role="option"
+          type="button"
+        >
+          {item}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function safeNoteReturnTo(value: string | null, fallback: string) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : fallback;
 }
@@ -50,21 +79,28 @@ export function EditorLoading() {
   return <section className="flex h-full min-h-0 items-center justify-center bg-background font-body-sm text-body-sm text-on-surface-variant">Cargando editor...</section>;
 }
 
-export function EditorMessage({ message, onBack }: { message: string; onBack: () => void }) {
+export function EditorMessage({ title = "Editar nota", message, onBack }: { title?: string; message: string; onBack: () => void }) {
   return (
-    <section className="flex h-full min-h-0 items-center justify-center overflow-y-auto bg-background p-6">
-      <div className="w-full max-w-md rounded-2xl border border-outline-variant bg-surface-container-lowest p-8 text-center shadow-sm">
-        <FileText className="mx-auto text-primary" size={28} />
-        <p className="mt-4 font-body-md text-body-md text-on-surface-variant">{message}</p>
-        <button
-          className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 font-label-md text-label-md font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container"
-          onClick={onBack}
-          type="button"
-        >
-          <ArrowLeft size={16} /> Volver
-        </button>
-      </div>
-    </section>
+    <Dialog open onOpenChange={(nextOpen) => { if (!nextOpen) onBack(); }}>
+      <DialogContent className="max-w-md overflow-hidden rounded-lg border-outline-variant bg-surface p-0" showCloseButton={false}>
+        <DialogHeader className="border-b border-outline-variant bg-surface-bright px-5 py-4 text-left">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-error-container text-error">
+              <AlertCircle aria-hidden="true" size={19} />
+            </span>
+            <div className="min-w-0">
+              <DialogTitle className="font-headline-xs text-headline-xs normal-case tracking-normal">{title}</DialogTitle>
+              <DialogDescription className="mt-2 font-body-md text-body-md text-on-surface-variant">{message}</DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+        <DialogFooter className="mt-0 flex-row justify-end border-t-0 bg-surface-container-low px-5 py-4">
+          <button className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 font-body-md text-body-md font-semibold text-on-primary hover:bg-primary-container hover:text-on-primary-container" onClick={onBack} type="button">
+            <ArrowLeft aria-hidden="true" size={16} /> Volver
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -88,8 +124,10 @@ export function NoteEditorScreen({
     category: note.category ?? undefined,
     tags: note.tags,
     pinned: note.pinned,
+    collaboratorsCanEdit: note.collaboratorsCanEdit,
     projectId: note.projectId,
   } : emptyForm(defaultProjectId));
+  const facetsQuery = useFacetsQuery(form.projectId);
   const [tagsText, setTagsText] = useState(() => (note?.tags ?? []).join(", "));
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -97,9 +135,12 @@ export function NoteEditorScreen({
   const [saving, setSaving] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [autocompleteOpen, setAutocompleteOpen] = useState<"category" | "tags" | null>(null);
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const restoredDraftRef = useRef(false);
   const skipDraftSyncRef = useRef(false);
+  const isOwner = !note || note.userId === user?.id;
+  const collaboratorEditing = Boolean(note && user && note.userId !== user.id);
 
   const draft = useDraftAutosave<NoteDraft, NoteDraftPayload>({
     load: isNew ? fetchNoteDraft : async () => null,
@@ -126,6 +167,7 @@ export function NoteEditorScreen({
       category: draft.restored.category ?? undefined,
       tags: draft.restored.tags ?? [],
       pinned: draft.restored.pinned ?? false,
+      collaboratorsCanEdit: false,
       projectId: draft.restored.projectId ?? (defaultProjectId ?? undefined),
     });
     setTagsText((draft.restored.tags ?? []).join(", "));
@@ -171,7 +213,15 @@ export function NoteEditorScreen({
     setSaving(true);
     try {
       if (note) {
-        await mutations.update.mutateAsync({ id: note.id, payload: result.data });
+        const payload = collaboratorEditing
+          ? {
+              title: result.data.title,
+              content: result.data.content,
+              category: result.data.category,
+              tags: result.data.tags,
+            }
+          : result.data;
+        await mutations.update.mutateAsync({ id: note.id, payload });
         toast.success("Nota actualizada");
       } else {
         await mutations.create.mutateAsync(result.data);
@@ -187,7 +237,7 @@ export function NoteEditorScreen({
   };
 
   const remove = async () => {
-    if (!note || saving) return;
+    if (!note || saving || collaboratorEditing) return;
     setSaving(true);
     try {
       await mutations.remove.mutateAsync(note.id);
@@ -201,6 +251,16 @@ export function NoteEditorScreen({
 
   const projects = projectsQuery.data ?? [];
   const selectedProject = projects.find((project) => project.id === form.projectId);
+  const categorySuggestions = (facetsQuery.data?.categories ?? [])
+    .map((facet) => facet.name)
+    .filter((category) => category.includes((form.category ?? "").trim().toLowerCase()))
+    .slice(0, 6);
+  const currentTagDraft = tagsText.split(",").at(-1)?.trim().toLowerCase() ?? "";
+  const selectedTags = new Set(parseTags(tagsText));
+  const tagSuggestions = (facetsQuery.data?.tags ?? [])
+    .map((facet) => facet.name)
+    .filter((tag) => !selectedTags.has(tag) && tag.includes(currentTagDraft))
+    .slice(0, 6);
   const contentLength = form.content.length;
   const hasChanges = isNew
     ? Boolean(form.title || form.content || form.category || tagsText || form.pinned || form.projectId)
@@ -208,8 +268,9 @@ export function NoteEditorScreen({
       form.content !== note.content ||
       (form.category ?? "") !== (note.category ?? "") ||
       tagsText !== note.tags.join(", ") ||
-      form.pinned !== note.pinned ||
-      form.projectId !== note.projectId;
+       form.pinned !== note.pinned ||
+       form.collaboratorsCanEdit !== note.collaboratorsCanEdit ||
+       form.projectId !== note.projectId;
   const goBack = () => {
     if (!isNew && hasChanges) {
       setConfirmLeave(true);
@@ -218,8 +279,8 @@ export function NoteEditorScreen({
     router.push(returnTo);
   };
 
-  if (note && user && note.userId !== user.id) {
-    return <EditorMessage message="Solo la persona propietaria puede editar esta nota." onBack={goBack} />;
+  if (note && user && !isOwner && !note.collaboratorsCanEdit) {
+    return <EditorMessage message="Solo la persona propietaria puede editar esta nota." onBack={goBack} title="Edición no disponible" />;
   }
 
   return (
@@ -331,7 +392,7 @@ export function NoteEditorScreen({
               <span className="font-label-caps text-label-caps text-on-surface-variant">PROYECTO</span>
               <select
                 className="field mt-1"
-                disabled={projectsQuery.isLoading}
+                 disabled={projectsQuery.isLoading || !isOwner}
                 onChange={(event) => set("projectId", event.target.value || null)}
                 value={form.projectId ?? ""}
               >
@@ -342,17 +403,62 @@ export function NoteEditorScreen({
             </label>
             <label className="mt-4 block">
               <span className="font-label-caps text-label-caps text-on-surface-variant">CATEGORÍA</span>
-              <input className="field mt-1" maxLength={60} onChange={(event) => set("category", event.target.value || undefined)} placeholder="Ej: investigación" value={form.category ?? ""} />
+              <div className="relative">
+                <input
+                  aria-autocomplete="list"
+                  aria-controls="note-category-suggestions"
+                  aria-expanded={autocompleteOpen === "category" && categorySuggestions.length > 0}
+                  className="field mt-1"
+                  maxLength={60}
+                  onBlur={() => window.setTimeout(() => setAutocompleteOpen(null), 100)}
+                onChange={(event) => {
+                    set("category", event.target.value || undefined);
+                    setAutocompleteOpen("category");
+                  }}
+                  onFocus={() => setAutocompleteOpen("category")}
+                  placeholder="Ej: investigación"
+                  role="combobox"
+                  value={form.category ?? ""}
+                />
+                {autocompleteOpen === "category" && categorySuggestions.length > 0 && (
+                  <FacetSuggestions id="note-category-suggestions" items={categorySuggestions} onSelect={(category) => { set("category", category); setAutocompleteOpen(null); }} />
+                )}
+              </div>
             </label>
             <label className="mt-4 block">
               <span className="font-label-caps text-label-caps text-on-surface-variant">ETIQUETAS</span>
-              <input className="field mt-1" onChange={(event) => { setTagsText(event.target.value); setError(""); }} placeholder="ideas, recursos" value={tagsText} />
+              <div className="relative">
+                <input
+                  aria-autocomplete="list"
+                  aria-controls="note-tag-suggestions"
+                  aria-expanded={autocompleteOpen === "tags" && tagSuggestions.length > 0}
+                  className="field mt-1"
+                  onBlur={() => window.setTimeout(() => setAutocompleteOpen(null), 100)}
+                  onChange={(event) => { setTagsText(event.target.value); setError(""); setAutocompleteOpen("tags"); }}
+                  onFocus={() => setAutocompleteOpen("tags")}
+                  placeholder="ideas, recursos"
+                  role="combobox"
+                  value={tagsText}
+                />
+                {autocompleteOpen === "tags" && tagSuggestions.length > 0 && (
+                  <FacetSuggestions
+                    id="note-tag-suggestions"
+                    items={tagSuggestions}
+                    onSelect={(tag) => {
+                      const previous = tagsText.split(",").slice(0, -1).map((item) => item.trim()).filter(Boolean);
+                      setTagsText(`${[...previous, tag].join(", ")}, `);
+                      setError("");
+                    }}
+                  />
+                )}
+              </div>
               <span className="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Sepáralas con comas.</span>
             </label>
-            <button
-              aria-checked={Boolean(form.pinned)}
-              className="mt-5 flex w-full items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-low px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary-fixed/40"
-              onClick={() => set("pinned", !form.pinned)}
+              <button
+                aria-checked={Boolean(form.pinned)}
+                className="mt-5 flex w-full items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-low px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary-fixed/40 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!isOwner}
+                onClick={() => set("pinned", !form.pinned)}
               role="switch"
               type="button"
             >
@@ -366,10 +472,30 @@ export function NoteEditorScreen({
               <span aria-hidden="true" className={`relative h-6 w-11 shrink-0 rounded-full p-1 transition-colors ${form.pinned ? "bg-primary" : "bg-surface-container-highest"}`}>
                 <span className={`block h-4 w-4 rounded-full bg-surface-container-lowest shadow-sm transition-transform ${form.pinned ? "translate-x-5" : "translate-x-0"}`} />
               </span>
-            </button>
+              </button>
+              {isOwner && (
+                <button
+                  aria-checked={Boolean(form.collaboratorsCanEdit)}
+                  className="mt-3 flex w-full items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-low px-3 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary-fixed/40"
+                  onClick={() => set("collaboratorsCanEdit", !form.collaboratorsCanEdit)}
+                  role="switch"
+                  type="button"
+                >
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${form.collaboratorsCanEdit ? "bg-primary text-on-primary" : "bg-surface-container-high text-on-surface-variant"}`}>
+                    <FolderOpen size={17} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-label-md text-label-md font-semibold text-on-surface">Permitir edición colaborativa</span>
+                    <span className="mt-0.5 block font-body-sm text-body-sm text-on-surface-variant">{form.collaboratorsCanEdit ? "Los miembros del proyecto pueden editar el contenido." : "Solo tú puedes editar esta nota."}</span>
+                  </span>
+                  <span aria-hidden="true" className={`relative h-6 w-11 shrink-0 rounded-full p-1 transition-colors ${form.collaboratorsCanEdit ? "bg-primary" : "bg-surface-container-highest"}`}>
+                    <span className={`block h-4 w-4 rounded-full bg-surface-container-lowest shadow-sm transition-transform ${form.collaboratorsCanEdit ? "translate-x-5" : "translate-x-0"}`} />
+                  </span>
+                </button>
+              )}
           </section>
 
-          {note && (
+           {note && isOwner && (
             <section className="rounded-2xl border border-error/25 bg-surface-container-lowest p-4 shadow-sm sm:p-5">
               <div className="flex items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-error-container text-error">

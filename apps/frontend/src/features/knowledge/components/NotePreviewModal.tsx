@@ -32,27 +32,29 @@ function isLongNote(note: Note) {
 
 function NoteMeta({ note }: { note: Note }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {note.category && (
-        <span className="rounded-full bg-secondary-container px-2.5 py-1 font-label-md text-label-md text-on-secondary-container">
-          {note.category}
-        </span>
-      )}
+    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+        {note.category && (
+          <span className="rounded-full bg-secondary-container px-2.5 py-1 font-label-md text-label-md text-on-secondary-container">
+            {note.category}
+          </span>
+        )}
+        {note.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {note.tags.map((tag, index) => (
+              <span className="rounded-full bg-surface-container-low px-2 py-0.5 font-label-md text-label-md text-on-surface-variant" key={`${tag}-${index}`}>
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
       {note.pinned && (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-2.5 py-1 font-label-md text-label-md text-on-tertiary-container">
-          <Pin size={13} /> Fijada
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-tertiary-container px-2.5 py-1 font-label-md text-label-md text-on-tertiary-container">
+          <Pin aria-hidden="true" size={13} /> Fijada
         </span>
       )}
-      {note.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {note.tags.map((tag, index) => (
-            <span className="rounded-full bg-surface-container-low px-2 py-0.5 font-label-md text-label-md text-on-surface-variant" key={`${tag}-${index}`}>
-              #{tag}
-            </span>
-          ))}
-        </div>
-      )}
-      <span className="font-data-mono text-data-mono text-[11px] text-on-surface-variant">Actualizada {noteDate(note.updatedAt)}</span>
+      <span className="w-full font-data-mono text-data-mono text-[11px] text-on-surface-variant">Actualizada {noteDate(note.updatedAt)}</span>
     </div>
   );
 }

@@ -12,8 +12,8 @@ function EditNoteRoute() {
   const noteQuery = useNoteQuery(params.id);
   const returnTo = safeNoteReturnTo(searchParams.get("returnTo"), "/knowledge");
 
-  if (noteQuery.isLoading) return <EditorMessage message="Cargando nota..." onBack={() => router.push(returnTo)} />;
-  if (noteQuery.isError || !noteQuery.data) return <EditorMessage message="No pudimos cargar esta nota." onBack={() => router.push(returnTo)} />;
+  if (noteQuery.isLoading) return <EditorLoading />;
+  if (noteQuery.isError || !noteQuery.data) return <EditorMessage message="No pudimos cargar esta nota." onBack={() => router.push(returnTo)} title="No pudimos abrir esta nota" />;
 
   return <NoteEditorScreen note={noteQuery.data} returnTo={returnTo} />;
 }

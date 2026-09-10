@@ -1,9 +1,10 @@
 "use client";
 
-import { Pause, Play, Square, Timer } from "lucide-react";
+import { Pause, PictureInPicture, Play, Square, Timer } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatPomodoroTime, usePomodoro } from "@/context/PomodoroProvider";
+import { openPomodoroWindow, supportsDocumentPictureInPicture } from "@/features/pomodoro/lib/window";
 
 export function FloatingPomodoro() {
   const pathname = usePathname();
@@ -40,6 +41,16 @@ export function FloatingPomodoro() {
     router.push(`/focus${query}`);
   };
 
+  const openWindow = () => {
+    if (supportsDocumentPictureInPicture()) {
+      void pomodoro.openPictureInPicture().then((opened) => {
+        if (!opened) toast.error("No se pudo abrir Picture-in-Picture en este navegador.");
+      });
+      return;
+    }
+    if (!openPomodoroWindow()) toast.error("El navegador bloqueó la ventana del Pomodoro.");
+  };
+
   return (
     <aside
       aria-label="Pomodoro en curso"
@@ -56,14 +67,25 @@ export function FloatingPomodoro() {
               <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
                 {paused ? "Pomodoro pausado" : "Pomodoro en curso"}
               </p>
-              <button
-                aria-label="Abrir modo enfoque"
-                className="shrink-0 rounded-md px-1.5 py-1 font-data-mono text-data-mono text-lg font-semibold tabular-nums text-primary hover:bg-primary-fixed"
-                onClick={openFocus}
-                type="button"
-              >
-                {formatPomodoroTime(pomodoro.remainingSec)}
-              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  aria-label="Abrir Pomodoro en Picture-in-Picture"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-on-surface-variant hover:bg-primary-fixed hover:text-primary"
+                  onClick={openWindow}
+                  title="Abrir en Picture-in-Picture"
+                  type="button"
+                >
+                  <PictureInPicture aria-hidden="true" size={15} />
+                </button>
+                <button
+                  aria-label="Abrir modo enfoque"
+                  className="rounded-md px-1.5 py-1 font-data-mono text-data-mono text-lg font-semibold tabular-nums text-primary hover:bg-primary-fixed"
+                  onClick={openFocus}
+                  type="button"
+                >
+                  {formatPomodoroTime(pomodoro.remainingSec)}
+                </button>
+              </div>
             </div>
             <p className="mt-0.5 truncate font-body-sm text-body-sm text-on-surface" title={taskLabel}>
               {taskLabel}

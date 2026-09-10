@@ -888,7 +888,7 @@ export function TaskDetailsPanel({
               aria-busy={pendingTaskField === "title"}
               aria-label="Título de la tarea"
               autoComplete="off"
-              className="block max-h-28 min-h-14 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words border-0 bg-transparent p-0 text-xl leading-7 text-on-surface outline-none focus:border-0 focus:outline-none focus:ring-0 disabled:cursor-wait disabled:opacity-60"
+              className="block max-h-28 min-h-0 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words border-0 bg-transparent p-0 text-xl leading-7 text-on-surface outline-none focus:border-0 focus:outline-none focus:ring-0 disabled:cursor-wait disabled:opacity-60"
               data-vaul-no-drag
               disabled={pendingTaskField !== null}
               maxLength={200}

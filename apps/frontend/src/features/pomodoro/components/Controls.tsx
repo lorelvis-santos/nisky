@@ -9,7 +9,7 @@ const PRIMARY: Record<PomodoroPhase, string> = {
 
 const SECONDARY = "rounded-lg border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high";
 
-export function Controls({ running, paused, phase, onStart, onPause, onResume, onStop, onCompletePomodoro }: { running: boolean; paused: boolean; phase: PomodoroPhase; onStart: () => void; onPause: () => void; onResume: () => void; onStop: () => void; onCompletePomodoro: () => void }) {
+export function Controls({ running, paused, phase, onStart, onPause, onResume, onStop, onSkipBreak, onCompletePomodoro }: { running: boolean; paused: boolean; phase: PomodoroPhase; onStart: () => void; onPause: () => void; onResume: () => void; onStop: () => void; onSkipBreak: () => void; onCompletePomodoro: () => void }) {
   const breakPhase = phase !== "WORK";
   if (!running) {
     const startLabel = phase === "SHORT_BREAK" ? "Iniciar descanso corto" : phase === "LONG_BREAK" ? "Iniciar descanso largo" : "Iniciar Pomodoro";
@@ -25,7 +25,7 @@ export function Controls({ running, paused, phase, onStart, onPause, onResume, o
   }
   const pauseResumeLabel = paused ? (breakPhase ? "Reanudar descanso" : "Reanudar") : (breakPhase ? "Pausar descanso" : "Pausar");
   const cancelLabel = breakPhase ? "Saltar descanso" : "Cancelar Pomodoro";
-  const cancelTitle = breakPhase ? "Saltar este descanso; pasar al siguiente" : "Cancelar este Pomodoro; no contará como completado";
+  const cancelTitle = breakPhase ? "Saltar este descanso y comenzar el siguiente Pomodoro" : "Cancelar este Pomodoro; no contará como completado";
   const completeLabel = breakPhase ? "Empezar a trabajar" : "Completar Pomodoro";
   const CompleteIcon = breakPhase ? SkipForward : CheckCircle2;
   return (
@@ -42,11 +42,11 @@ export function Controls({ running, paused, phase, onStart, onPause, onResume, o
       <button
         aria-label={cancelLabel}
         className={`flex min-w-[130px] flex-1 items-center justify-center gap-2 border px-5 py-4 font-body-md text-body-md ${SECONDARY}`}
-        onClick={onStop}
+        onClick={breakPhase ? onSkipBreak : onStop}
         title={cancelTitle}
         type="button"
       >
-        <Square size={18} /> {cancelLabel}
+        {breakPhase ? <SkipForward size={18} /> : <Square size={18} />} {cancelLabel}
       </button>
       <button
         className={`flex w-full items-center justify-center gap-2 px-5 py-4 font-body-md text-body-md ${PRIMARY[phase]}`}

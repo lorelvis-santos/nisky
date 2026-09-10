@@ -32,6 +32,7 @@ import {
   usePomodoroSettingsQuery,
 } from "@/features/pomodoro/hooks/usePomodoro";
 import { playCompletionSound } from "@/features/pomodoro/lib/sound";
+import { openPomodoroWindow, supportsDocumentPictureInPicture } from "@/features/pomodoro/lib/window";
 import { usePomodoro } from "@/context/PomodoroProvider";
 import { localDateKey } from "@/lib/utils";
 
@@ -100,6 +101,7 @@ function FocusPageContent() {
   const [now, setNow] = useState(() => Date.now());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const completionInFlight = useRef(false);
+  const skipInFlight = useRef(false);
   const lastCompletedIdRef = useRef<string | null>(null);
   const initializedRef = useRef(false);
   const assignedBlockTasks = (schedulesQuery.data ?? [])
@@ -235,6 +237,8 @@ function FocusPageContent() {
 
   const startPhase = useCallback(
     async (nextPhase: PomodoroPhase, nextCycleIndex: number) => {
+      if (supportsDocumentPictureInPicture()) void globalPomodoro.openPictureInPicture();
+      else openPomodoroWindow();
       try {
         const started = await mutations.start.mutateAsync({
           phase: nextPhase,
@@ -246,8 +250,10 @@ function FocusPageContent() {
         setSession(started);
         globalPomodoro.setActiveSession(started);
         setNow(Date.now());
+        return true;
       } catch {
         toast.error("Ups, no pudimos iniciar el Pomodoro.");
+        return false;
       }
     },
     [globalPomodoro, mutations.start, selectedTaskId],
@@ -327,6 +333,29 @@ function FocusPageContent() {
       toast.success("¡Listo, detuvimos el Pomodoro!");
     } catch {
       toast.error("Ups, no pudimos detener el Pomodoro.");
+    }
+  };
+
+  const skipBreak = async () => {
+    if (!currentSession || currentSession.phase === "WORK" || skipInFlight.current) return;
+    skipInFlight.current = true;
+    const nextCycle = currentSession.phase === "SHORT_BREAK" ? currentSession.cycleIndex + 1 : 1;
+    try {
+      await mutations.action.mutateAsync({
+        id: currentSession.id,
+        action: "CANCEL",
+      });
+      setPhase("WORK");
+      setCycleIndex(nextCycle);
+      setSession(null);
+      globalPomodoro.clearActiveSession();
+      if (await startPhase("WORK", nextCycle)) {
+        toast.success("Descanso omitido. Comenzamos el siguiente Pomodoro.");
+      }
+    } catch {
+      toast.error("Ups, no pudimos saltar el descanso. Inténtalo de nuevo.");
+    } finally {
+      skipInFlight.current = false;
     }
   };
 
@@ -471,6 +500,7 @@ function FocusPageContent() {
           onCompletePomodoro={() => void completeSession()}
           onPause={() => void pauseResume()}
           onResume={() => void pauseResume()}
+          onSkipBreak={() => void skipBreak()}
           onStart={() => void startPhase(phase, cycleIndex)}
           onStop={() => void stop()}
           paused={Boolean(paused)}

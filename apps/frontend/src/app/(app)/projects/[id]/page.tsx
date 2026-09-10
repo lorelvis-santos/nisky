@@ -58,6 +58,8 @@ function ProjectDetailPageContent() {
   const [taskSearch, setTaskSearch] = useState("");
   const [taskPriority, setTaskPriority] = useState<TaskPriority | "ALL">("ALL");
   const [taskAssigneeId, setTaskAssigneeId] = useState("");
+  const [taskDueFrom, setTaskDueFrom] = useState("");
+  const [taskDueTo, setTaskDueTo] = useState("");
   const [previewingTask, setPreviewingTask] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
@@ -80,9 +82,11 @@ function ProjectDetailPageContent() {
       page: taskPage,
       status: taskMode === "ALL" ? undefined : ["PENDING", "IN_PROGRESS"],
       assigneeId: taskMode === "MINE" ? user?.id : taskAssigneeId || undefined,
-      priority: taskPriority === "ALL" ? undefined : taskPriority,
-      q: deferredSearch.trim() || undefined,
-       sort: "createdAt",
+       priority: taskPriority === "ALL" ? undefined : taskPriority,
+       q: deferredSearch.trim() || undefined,
+       dueFrom: taskDueFrom || undefined,
+       dueTo: taskDueTo || undefined,
+        sort: "createdAt",
        order: "desc",
     },
     { enabled: activeTab === "tasks", pageSize: 10 },
@@ -223,8 +227,10 @@ function ProjectDetailPageContent() {
         {activeTab === "tasks" && (
           <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]">
             <ProjectTaskWorkspace
-                assigneeId={taskAssigneeId}
-               canEditTasks={permissions.canEditTasks}
+                 assigneeId={taskAssigneeId}
+                dueFrom={taskDueFrom}
+                dueTo={taskDueTo}
+                canEditTasks={permissions.canEditTasks}
                isError={tasksQuery.isError}
               isFetching={tasksQuery.isFetching}
               isLoading={tasksQuery.isLoading}
@@ -232,6 +238,8 @@ function ProjectDetailPageContent() {
               meta={tasksQuery.data?.meta}
               mode={taskMode}
                 onAssigneeChange={(value) => { setTaskPage(1); setTaskAssigneeId(value); }}
+                onDueFromChange={(value) => { resetTaskPage(); setTaskDueFrom(value); }}
+                onDueToChange={(value) => { resetTaskPage(); setTaskDueTo(value); }}
                 onModeChange={(value) => { resetTaskPage(); setTaskMode(value); }}
                onOpen={openTask}
                onUpdateTask={async (taskId, payload) => {
@@ -241,7 +249,7 @@ function ProjectDetailPageContent() {
                onPriorityChange={(value) => { resetTaskPage(); setTaskPriority(value); }}
                onCreateTask={openCreateTask}
                onQuickAdd={quickAdd}
-              onResetFilters={() => { resetTaskPage(); setTaskMode("ACTIVE"); setTaskSearch(""); setTaskPriority("ALL"); setTaskAssigneeId(""); }}
+               onResetFilters={() => { resetTaskPage(); setTaskMode("ACTIVE"); setTaskSearch(""); setTaskPriority("ALL"); setTaskAssigneeId(""); setTaskDueFrom(""); setTaskDueTo(""); }}
               onRetry={() => void tasksQuery.refetch()}
               onSearchChange={(value) => { resetTaskPage(); setTaskSearch(value); }}
               onStartPomodoro={(task) => router.push(`/focus?taskId=${encodeURIComponent(task.id)}&projectId=${encodeURIComponent(project.id)}`)}

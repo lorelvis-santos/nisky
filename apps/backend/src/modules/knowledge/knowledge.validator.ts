@@ -15,6 +15,8 @@ export const createNoteSchema = z.object({
   content: z.string("El contenido es requerido").min(1, "El contenido es requerido").max(50_000),
   category: categorySchema,
   tags: tagsSchema,
+  pinned: z.boolean().optional(),
+  collaboratorsCanEdit: z.boolean().optional(),
   projectId: z.uuid("El proyecto no es válido").nullable().optional(),
 });
 
@@ -24,6 +26,7 @@ export const updateNoteSchema = z.object({
   category: categorySchema,
   tags: tagsSchema,
   pinned: z.boolean().optional(),
+  collaboratorsCanEdit: z.boolean().optional(),
   projectId: z.uuid("El proyecto no es válido").nullable().optional(),
 });
 

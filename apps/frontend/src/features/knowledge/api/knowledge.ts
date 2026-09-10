@@ -20,6 +20,7 @@ export interface NotePayload {
   category?: string;
   tags?: string[];
   pinned?: boolean;
+  collaboratorsCanEdit?: boolean;
   projectId?: string | null;
 }
 

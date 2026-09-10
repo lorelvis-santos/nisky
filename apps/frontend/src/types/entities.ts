@@ -407,6 +407,7 @@ export interface Note {
   category: string | null;
   tags: string[];
   pinned: boolean;
+  collaboratorsCanEdit: boolean;
   projectId: string | null;
   createdAt: string;
   updatedAt: string;

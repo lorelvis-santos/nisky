@@ -119,7 +119,7 @@ export function ProjectNotes({ project }: { project: Project }) {
             <>
               <div className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {notes.map((note) => (
-                   <NoteCard canEdit={note.user?.id === user?.id} key={note.id} note={note} onEdit={openEdit} onOpen={openPreview} onTogglePin={async (item) => { await togglePin(item); }} showAuthor />
+                    <NoteCard canEdit={note.user?.id === user?.id} canEditContent={note.user?.id === user?.id || note.collaboratorsCanEdit} key={note.id} note={note} onEdit={openEdit} onOpen={openPreview} onTogglePin={async (item) => { await togglePin(item); }} showAuthor />
                 ))}
               </div>
               <NotePagination isFetching={query.isFetching} meta={query.data?.meta} onPageChange={setPage} />
@@ -137,7 +137,7 @@ export function ProjectNotes({ project }: { project: Project }) {
             note={previewing}
             onClose={() => setPreviewing(null)}
             onDelete={previewing.user?.id === user?.id ? removePreview : undefined}
-            onEdit={() => openEdit(previewing)}
+             onEdit={previewing.user?.id === user?.id || previewing.collaboratorsCanEdit ? () => openEdit(previewing) : undefined}
             onTogglePin={previewing.user?.id === user?.id ? (pinned) => togglePin(previewing, pinned) : undefined}
           />
         )}

@@ -5,6 +5,7 @@ const protectedPaths = [
   "/",
   "/events",
   "/focus",
+  "/pomodoro-window",
   "/journal",
   "/knowledge",
   "/projects",

@@ -18,13 +18,17 @@ export function ProjectTaskWorkspace({
   isError,
   isFetching,
   mode,
-  search,
-  priority,
-  assigneeId,
-  onModeChange,
-  onSearchChange,
-  onPriorityChange,
-  onAssigneeChange,
+   search,
+   priority,
+   assigneeId,
+   dueFrom,
+   dueTo,
+   onModeChange,
+   onSearchChange,
+   onPriorityChange,
+   onAssigneeChange,
+   onDueFromChange,
+   onDueToChange,
   onResetFilters,
   onRetry,
   onOpen,
@@ -47,10 +51,14 @@ export function ProjectTaskWorkspace({
   search: string;
   priority: TaskPriority | "ALL";
   assigneeId: string;
+  dueFrom: string;
+  dueTo: string;
   onModeChange: (mode: ProjectTaskMode) => void;
   onSearchChange: (value: string) => void;
   onPriorityChange: (value: TaskPriority | "ALL") => void;
   onAssigneeChange: (value: string) => void;
+  onDueFromChange: (value: string) => void;
+  onDueToChange: (value: string) => void;
   onResetFilters: () => void;
   onRetry: () => void;
   onOpen: (task: Task) => void;
@@ -66,7 +74,7 @@ export function ProjectTaskWorkspace({
   const quickAddRef = useRef<HTMLInputElement>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [quickTitle, setQuickTitle] = useState("");
-  const hasAdvancedFilters = priority !== "ALL" || Boolean(assigneeId);
+  const hasAdvancedFilters = priority !== "ALL" || Boolean(assigneeId) || Boolean(dueFrom) || Boolean(dueTo);
   const submitQuickAdd = async () => {
     const title = quickTitle.trim();
     if (!title) return;
@@ -102,7 +110,7 @@ export function ProjectTaskWorkspace({
                  <button aria-expanded={filtersOpen} className={cn("flex h-10 items-center gap-1.5 rounded-md border bg-white px-3 text-[13px] font-semibold transition-colors", filtersOpen || hasAdvancedFilters ? "border-[#1e3a5f] text-[#1e3a5f]" : "border-[#dde1e2] text-[#5f6872] hover:border-[#b8c0c4] hover:text-[#1e3a5f]")} onClick={() => setFiltersOpen((open) => !open)} type="button">
                     <SlidersHorizontal size={15} /> Filtros {hasAdvancedFilters && <span className="h-1.5 w-1.5 rounded-full bg-[#1e3a5f]" />}
                  </button>
-                 {filtersOpen && <AdvancedFilters assigneeId={assigneeId} members={members} onAssigneeChange={onAssigneeChange} onClose={() => setFiltersOpen(false)} onPriorityChange={onPriorityChange} priority={priority} onReset={onResetFilters} />}
+                  {filtersOpen && <AdvancedFilters assigneeId={assigneeId} dueFrom={dueFrom} dueTo={dueTo} members={members} onAssigneeChange={onAssigneeChange} onClose={() => setFiltersOpen(false)} onDueFromChange={onDueFromChange} onDueToChange={onDueToChange} onPriorityChange={onPriorityChange} priority={priority} onReset={onResetFilters} />}
                </div>
                <button className="hidden h-10 shrink-0 items-center gap-1.5 rounded-md bg-[#1e3a5f] px-3.5 text-[13px] font-semibold text-white shadow-[0_2px_6px_rgba(30,58,95,0.18)] hover:bg-[#152c48] sm:inline-flex" onClick={onCreateTask} type="button">
                  <Plus size={16} /> Nueva tarea
@@ -135,12 +143,16 @@ export function ProjectTaskWorkspace({
   );
 }
 
-function AdvancedFilters({ assigneeId, members, priority, onAssigneeChange, onPriorityChange, onClose, onReset }: { assigneeId: string; members: ProjectMember[]; priority: TaskPriority | "ALL"; onAssigneeChange: (value: string) => void; onPriorityChange: (value: TaskPriority | "ALL") => void; onClose: () => void; onReset: () => void }) {
+function AdvancedFilters({ assigneeId, dueFrom, dueTo, members, priority, onAssigneeChange, onDueFromChange, onDueToChange, onPriorityChange, onClose, onReset }: { assigneeId: string; dueFrom: string; dueTo: string; members: ProjectMember[]; priority: TaskPriority | "ALL"; onAssigneeChange: (value: string) => void; onDueFromChange: (value: string) => void; onDueToChange: (value: string) => void; onPriorityChange: (value: TaskPriority | "ALL") => void; onClose: () => void; onReset: () => void }) {
   return (
     <div className="absolute right-0 top-12 z-30 w-[min(19rem,calc(100vw-2.5rem))] rounded-lg border border-[#dde1e2] bg-white p-4 shadow-[0_12px_32px_rgba(31,41,51,0.12)]">
       <div className="flex items-center justify-between gap-3"><p className="text-[13px] font-semibold text-[#1f2933]">Filtros avanzados</p><Filter className="text-[#778186]" size={15} /></div>
       <label className="mt-4 block"><span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#858d91]">Prioridad</span><select aria-label="Filtrar por prioridad" className="mt-1 h-10 w-full rounded-sm border border-[#dde1e2] bg-white px-3 text-[13px] text-[#2f3b45] outline-none focus:border-[#1e3a5f]" onChange={(event) => onPriorityChange(event.target.value as TaskPriority | "ALL")} value={priority}><option value="ALL">Todas las prioridades</option><option value="URGENT">Urgente</option><option value="HIGH">Alta</option><option value="NORMAL">Normal</option><option value="LOW">Baja</option></select></label>
       <label className="mt-3 block"><span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#858d91]">Asignado</span><select aria-label="Filtrar por asignado" className="mt-1 h-10 w-full rounded-sm border border-[#dde1e2] bg-white px-3 text-[13px] text-[#2f3b45] outline-none focus:border-[#1e3a5f]" onChange={(event) => onAssigneeChange(event.target.value)} value={assigneeId}><option value="">Todas las personas</option><option value="__unassigned__">Sin asignar</option>{members.map((member) => <option key={member.userId} value={member.userId}>{member.user.name ?? member.user.email}</option>)}</select></label>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <label className="block"><span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#858d91]">Entrega desde</span><input aria-label="Filtrar entrega desde" className="mt-1 h-10 w-full rounded-sm border border-[#dde1e2] bg-white px-2.5 text-[12px] text-[#2f3b45] outline-none focus:border-[#1e3a5f]" max={dueTo || undefined} onChange={(event) => onDueFromChange(event.target.value)} type="date" value={dueFrom} /></label>
+        <label className="block"><span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#858d91]">Entrega hasta</span><input aria-label="Filtrar entrega hasta" className="mt-1 h-10 w-full rounded-sm border border-[#dde1e2] bg-white px-2.5 text-[12px] text-[#2f3b45] outline-none focus:border-[#1e3a5f]" min={dueFrom || undefined} onChange={(event) => onDueToChange(event.target.value)} type="date" value={dueTo} /></label>
+      </div>
       <div className="mt-4 flex justify-between gap-2 border-t border-[#e7e9e8] pt-3"><button className="rounded-md px-2 py-1 text-[12px] font-semibold text-[#5f6872] hover:bg-[#eff1f0] hover:text-[#1e3a5f]" onClick={onReset} type="button">Limpiar</button><button className="rounded-md bg-[#1e3a5f] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#152c48]" onClick={onClose} type="button">Aplicar</button></div>
     </div>
   );

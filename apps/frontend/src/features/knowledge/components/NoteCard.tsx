@@ -14,6 +14,7 @@ export function NoteCard({
   onEdit,
   onTogglePin,
   canEdit = true,
+  canEditContent = canEdit,
   showAuthor = false,
   project,
 }: {
@@ -22,6 +23,7 @@ export function NoteCard({
   onEdit?: (note: Note) => void;
   onTogglePin: (note: Note) => Promise<void>;
   canEdit?: boolean;
+  canEditContent?: boolean;
   showAuthor?: boolean;
   project?: { id: string; name: string; color: string } | null;
 }) {
@@ -68,7 +70,7 @@ export function NoteCard({
             <span>{note.category ? `${note.category} · ` : ""}{noteDate(note.updatedAt)}</span>
           </div>
         </div>
-        {canEdit && onEdit && <div className="flex shrink-0 items-center gap-1">
+         {canEditContent && onEdit && <div className="flex shrink-0 items-center gap-1">
              <button aria-label="Abrir para editar" className="rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => onEdit(note)} title="Editar desde la vista previa" type="button">
               <Pencil size={14} />
             </button>

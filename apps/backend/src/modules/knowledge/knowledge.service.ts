@@ -77,6 +77,8 @@ export class KnowledgeService {
         content: data.content,
         category: data.category ?? null,
         tags: data.tags ?? [],
+        pinned: data.pinned ?? false,
+        collaboratorsCanEdit: data.collaboratorsCanEdit ?? false,
         projectId: data.projectId ?? null,
       },
     });
@@ -86,8 +88,18 @@ export class KnowledgeService {
   }
 
   async update(userId: string, id: string, data: UpdateNoteDto) {
-    const note = await prisma.note.findFirst({ where: { id, userId } });
+    const note = await prisma.note.findUnique({ where: { id } });
     if (!note) throw new AppError("NOT_FOUND", "Nota no encontrada");
+    const isOwner = note.userId === userId;
+    if (!isOwner) {
+      const accessible = note.projectId ? await getAccessibleProjectIds(userId) : [];
+      if (!note.projectId || !note.collaboratorsCanEdit || !accessible.includes(note.projectId)) {
+        throw new AppError("FORBIDDEN", "No tienes permiso para editar esta nota");
+      }
+      if (data.pinned !== undefined || data.projectId !== undefined || data.collaboratorsCanEdit !== undefined) {
+        throw new AppError("FORBIDDEN", "Solo la persona propietaria puede cambiar la configuración de esta nota");
+      }
+    }
     if (data.projectId !== undefined && data.projectId) {
       const accessible = await getAccessibleProjectIds(userId);
       if (!accessible.includes(data.projectId)) throw new AppError("FORBIDDEN", "No tienes acceso a este proyecto");
@@ -100,6 +112,7 @@ export class KnowledgeService {
         ...(data.category !== undefined ? { category: data.category } : {}),
         ...(data.tags !== undefined ? { tags: data.tags } : {}),
         ...(data.pinned !== undefined ? { pinned: data.pinned } : {}),
+        ...(data.collaboratorsCanEdit !== undefined ? { collaboratorsCanEdit: data.collaboratorsCanEdit } : {}),
         ...(data.projectId !== undefined ? { projectId: data.projectId } : {}),
       },
     });

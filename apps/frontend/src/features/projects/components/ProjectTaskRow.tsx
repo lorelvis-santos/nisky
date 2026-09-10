@@ -210,7 +210,7 @@ export function ProjectTaskRow({
       <div className="flex min-w-0 items-start gap-2 md:hidden">
         <div className="min-w-0 flex-1">
           <button
-            className="min-w-0 rounded-md text-left"
+            className="block w-full min-w-0 max-w-full overflow-hidden rounded-md text-left"
             onClick={onOpen}
             type="button"
           >
@@ -266,7 +266,7 @@ export function ProjectTaskRow({
       </div>
 
       <button
-        className="hidden min-w-0 rounded-md text-left md:block"
+        className="hidden w-full min-w-0 max-w-full overflow-hidden rounded-md text-left md:block"
         onClick={onOpen}
         type="button"
       >

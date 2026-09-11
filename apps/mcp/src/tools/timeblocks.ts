@@ -2,20 +2,22 @@ import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/server";
 import { nisky, textResult } from "../client";
 
+const dateValue = z.string().trim().refine((value) => !Number.isNaN(Date.parse(value)), "La fecha no es válida");
 const timeBlockFields = {
   projectId: z.uuid().nullable().optional(),
+  date: dateValue.nullable().optional(),
   name: z.string().trim().max(100).nullable().optional(),
   daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1, "Elige al menos un día"),
   startMin: z.number().int().min(0).max(1439),
   endMin: z.number().int().min(1).max(1440),
-  repeatEveryWeeks: z.number().int().min(0).max(52).optional(),
-  repeatEndsAt: z.string().datetime().nullable().optional(),
+  repeatEveryWeeks: z.number().int().min(1).max(52).optional(),
+  repeatEndsAt: dateValue.nullable().optional(),
   remindBeforeMin: z.number().int().min(0).max(1440).optional(),
 };
 
 const createTimeBlockSchema = z
   .object(timeBlockFields)
-  .refine((value) => value.endMin > value.startMin, { message: "endMin debe ser mayor que startMin", path: ["endMin"] });
+  .refine((value) => value.endMin - value.startMin >= 5, { message: "El bloque debe durar al menos 5 minutos", path: ["endMin"] });
 
 export function registerTimeBlockTools(server: McpServer, auth: string) {
   server.registerTool(
@@ -61,7 +63,7 @@ export function registerTimeBlockTools(server: McpServer, auth: string) {
     "create-timeblock",
     {
       title: "Crear bloque de tiempo",
-      description: "Crea un bloque de tiempo semanal. Se valida que no se solape con otros bloques del usuario.",
+      description: "Crea un bloque de tiempo semanal o puntual. Se valida que no se solape con otros bloques del usuario.",
       inputSchema: createTimeBlockSchema,
     },
     async (args) => {
@@ -74,23 +76,24 @@ export function registerTimeBlockTools(server: McpServer, auth: string) {
     "update-timeblock",
     {
       title: "Actualizar bloque de tiempo",
-      description: "Actualiza un bloque de tiempo existente. EndMin debe ser mayor que startMin.",
+      description: "Actualiza un bloque de tiempo existente. El bloque debe durar al menos 5 minutos.",
       inputSchema: z
         .object({
           id: z.uuid(),
           projectId: z.uuid().nullable().optional(),
+          date: dateValue.nullable().optional(),
           name: z.string().trim().max(100).nullable().optional(),
           daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1).optional(),
           startMin: z.number().int().min(0).max(1439).optional(),
           endMin: z.number().int().min(1).max(1440).optional(),
-          repeatEveryWeeks: z.number().int().min(0).max(52).optional(),
-          repeatEndsAt: z.string().datetime().nullable().optional(),
+          repeatEveryWeeks: z.number().int().min(1).max(52).optional(),
+          repeatEndsAt: dateValue.nullable().optional(),
           remindBeforeMin: z.number().int().min(0).max(1440).optional(),
           isActive: z.boolean().optional(),
         })
         .refine(
-          (value) => value.startMin === undefined || value.endMin === undefined || value.endMin > value.startMin,
-          { message: "endMin debe ser mayor que startMin", path: ["endMin"] },
+          (value) => value.startMin === undefined || value.endMin === undefined || value.endMin - value.startMin >= 5,
+          { message: "El bloque debe durar al menos 5 minutos", path: ["endMin"] },
         ),
     },
     async ({ id, ...body }) => {

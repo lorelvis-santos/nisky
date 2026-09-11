@@ -11,6 +11,9 @@ Pues eso es exactamente lo que hace esta guía. Y lo mejor: **toma menos de 5 mi
 Con esto, tu asistente de IA (opencode, Claude Desktop u otro) podrá:
 
 - Ver tus tareas, proyectos y bloques de tiempo
+- Ver tu resumen diario y asignar tareas a bloques
+- Capturar notas rápidas y archivarlas
+- Buscar, crear y actualizar notas de knowledge
 - Crear tareas y actualizarlas (ej: marcar una como hecha)
 - Ver si tienes un bloque activo ahora mismo
 

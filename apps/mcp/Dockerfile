@@ -1,16 +1,16 @@
-FROM oven/bun:1 AS deps
+FROM oven/bun:1.3.4 AS deps
 WORKDIR /app
 COPY apps/mcp/package.json apps/mcp/bun.lock ./
 RUN bun install --frozen-lockfile --production
 
-FROM oven/bun:1 AS build
+FROM oven/bun:1.3.4 AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY apps/mcp/package.json apps/mcp/tsconfig.json ./
 COPY apps/mcp/src ./src
 RUN bun build --target=bun src/index.ts --outdir=dist
 
-FROM oven/bun:1 AS runtime
+FROM oven/bun:1.3.4 AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/dist ./dist

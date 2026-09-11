@@ -4,8 +4,10 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build": "bun build --target=bun src/index.ts --outdir=dist",
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

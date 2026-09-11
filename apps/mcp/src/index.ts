@@ -1,10 +1,29 @@
-import express from "express";
+import { createMcpExpressApp } from "@modelcontextprotocol/express";
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { toNodeHandler } from "@modelcontextprotocol/node";
+import type { NextFunction, Request, Response } from "express";
 import { rateLimit } from "./ratelimit";
 import { registerAllTools } from "./tools";
 
 const PORT = Number(process.env.MCP_PORT ?? 8787);
+const HOST = process.env.MCP_HOST ?? "0.0.0.0";
+const LOCAL_HOSTS = "localhost,127.0.0.1,[::1]";
+
+function hostList(value: string | undefined) {
+  return (value ?? LOCAL_HOSTS).split(",").map((host) => host.trim()).filter(Boolean);
+}
+
+function requireBearer(req: Request, res: Response, next: NextFunction) {
+  const authorization = req.headers.authorization;
+  if (!authorization?.startsWith("Bearer ") || !authorization.slice("Bearer ".length).trim()) {
+    res.status(401).header("WWW-Authenticate", "Bearer").json({
+      ok: false,
+      error: { code: "UNAUTHORIZED", message: "Falta el token de acceso" },
+    });
+    return;
+  }
+  next();
+}
 
 const handler = createMcpHandler((ctx) => {
   const auth = ctx.requestInfo?.headers.get("authorization") ?? "";
@@ -12,10 +31,15 @@ const handler = createMcpHandler((ctx) => {
   registerAllTools(server, auth);
   return server;
 });
+const nodeHandler = toNodeHandler(handler);
 
-const app = express();
+const app = createMcpExpressApp({
+  allowedHosts: hostList(process.env.MCP_ALLOWED_HOSTS),
+  allowedOrigins: hostList(process.env.MCP_ALLOWED_ORIGINS),
+  host: HOST,
+  jsonLimit: "1mb",
+});
 app.disable("x-powered-by");
-app.use(express.json({ limit: "1mb" }));
-app.all("/mcp", rateLimit, (req, res) => void toNodeHandler(handler)(req, res, req.body));
+app.all("/mcp", requireBearer, rateLimit, (req, res) => void nodeHandler(req, res, req.body));
 
-app.listen(PORT, () => console.log(`nisky-mcp listening on :${PORT}`));
+app.listen(PORT, HOST, () => console.log(`nisky-mcp listening on ${HOST}:${PORT}`));

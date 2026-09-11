@@ -1,6 +1,6 @@
 # Nisky MCP Server
 
-Servidor MCP (Model Context Protocol) que expone los proyectos, bloques de tiempo y tareas de Nisky a asistentes de IA (opencode, Claude Desktop, etc.).
+Servidor MCP (Model Context Protocol) que expone la agenda, proyectos, tareas, notas rápidas y knowledge de Nisky a asistentes de IA (opencode, Claude Desktop, etc.).
 
 ```
 [Cliente MCP] --HTTPS + PAT--> [este servidor] --HTTPS + PAT--> [Nisky backend]
@@ -8,24 +8,34 @@ Servidor MCP (Model Context Protocol) que expone los proyectos, bloques de tiemp
 
 El servidor es stateless: no guarda tokens, no guarda estado de sesión. Cada petición lleva el Personal Access Token (PAT) del usuario en el header `Authorization`, y el servidor lo reenvía al backend, que valida y aísla los datos por `userId`.
 
-## Tools disponibles (12)
+## Tools disponibles (22)
 
 | Tool | Descripción |
 |---|---|
+| `get-home-overview` | Resumen del día y progreso semanal |
+| `list-task-schedule` | Lista tareas asignadas a bloques en un intervalo |
+| `schedule-task` | Asigna una tarea a un bloque y fecha |
 | `list-projects` | Lista los proyectos del usuario |
 | `create-project` | Crea un proyecto (máx. 20, nombre único) |
-| `update-project` | Actualiza nombre/color |
+| `update-project` | Actualiza los datos del proyecto |
 | `list-timeblocks` | Lista bloques de tiempo |
 | `get-timeblock-active` | Bloque activo ahora |
 | `get-timeblocks-today` | Bloques que aplican hoy |
-| `create-timeblock` | Crea un bloque semanal (valida solapes) |
+| `create-timeblock` | Crea un bloque semanal o puntual (valida solapes) |
 | `update-timeblock` | Actualiza un bloque |
 | `list-tasks` | Lista tareas con filtros y paginación |
 | `get-task` | Obtiene una tarea por id |
 | `create-task` | Crea una tarea |
 | `update-task` | Actualiza una tarea |
+| `list-quick-notes` | Lista notas rápidas |
+| `create-quick-note` | Captura una nota rápida |
+| `update-quick-note` | Edita o archiva una nota rápida |
+| `search-knowledge` | Busca notas de knowledge |
+| `get-knowledge-note` | Obtiene una nota de knowledge |
+| `create-knowledge-note` | Crea una nota de knowledge |
+| `update-knowledge-note` | Actualiza una nota de knowledge |
 
-Sin tools de borrado por diseño.
+Sin tools de borrado por diseño. Por ahora no se exponen diario, Pomodoro ni hábitos. Las notas rápidas se archivan en lugar de eliminarse.
 
 ## Despliegue
 
@@ -37,9 +47,12 @@ Sin tools de borrado por diseño.
 ### Opción 1: Docker
 
 ```bash
-docker build -t nisky-mcp apps/mcp
+docker build -f apps/mcp/Dockerfile -t nisky-mcp .
 docker run -d -p 8787:8787 \
   -e NISKY_API_URL=https://api.tu-nisky.com/api/v1 \
+  -e MCP_HOST=0.0.0.0 \
+  -e MCP_ALLOWED_HOSTS=mcp.tu-dominio.com \
+  -e MCP_ALLOWED_ORIGINS=mcp.tu-dominio.com \
   --name nisky-mcp nisky-mcp
 ```
 
@@ -55,9 +68,13 @@ NISKY_API_URL=http://localhost:4000/api/v1 bun run dev
 
 | Variable | Default | Descripción |
 |---|---|---|
-| `NISKY_API_URL` | `http://localhost:3000/api/v1` | URL base del backend de Nisky |
+| `NISKY_API_URL` | `http://localhost:4000/api/v1` | URL base del backend de Nisky |
 | `MCP_PORT` | `8787` | Puerto HTTP del servidor |
-| `RATE_LIMIT_PER_MIN` | `60` | Máximo de peticiones por minuto por usuario |
+| `MCP_HOST` | `0.0.0.0` | Interfaz donde escucha el servidor |
+| `MCP_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]` | Hostnames permitidos en `Host`, separados por comas |
+| `MCP_ALLOWED_ORIGINS` | `localhost,127.0.0.1,[::1]` | Hostnames permitidos en `Origin`, separados por comas |
+| `MCP_UPSTREAM_TIMEOUT_MS` | `10000` | Tiempo máximo de espera del backend en milisegundos |
+| `RATE_LIMIT_PER_MIN` | `60` | Máximo de peticiones por minuto por credencial en cada instancia |
 
 Después del despliegue el endpoint MCP queda en `https://<tu-host>/mcp`.
 
@@ -130,7 +147,9 @@ curl -X POST https://<tu-host>/mcp \
 
 - El servidor no almacena ningún token ni dato de usuario: el PAT viaja de cliente → servidor → backend y se descarta.
 - Cada usuario usa su propio PAT; el backend solo devuelve sus datos (`userId` isolation).
-- Rate limit por usuario: `RATE_LIMIT_PER_MIN` (default 60) con respuesta `429` y header `Retry-After`.
+- Rate limit por credencial y proceso: `RATE_LIMIT_PER_MIN` (default 60) con respuesta `429` y header `Retry-After`.
+- El endpoint requiere `Authorization: Bearer <PAT>` en cada petición; la validez del PAT la confirma el backend.
+- Validación de `Host` y `Origin` para reducir ataques de DNS rebinding y CSRF; en producción configura los hostnames públicos permitidos.
 - Revocar el PAT en la web invalida el acceso de inmediato, sin tocar el servidor MCP.
 - Cambiar la contraseña revoca todos los PATs del usuario.
 
@@ -140,6 +159,8 @@ curl -X POST https://<tu-host>/mcp \
 cd apps/mcp
 bun install
 bun run typecheck   # tsc --noEmit
+bun run test        # bun test
+bun run build       # bundle para producción
 bun run dev         # bun --watch src/index.ts
 ```
 
@@ -151,10 +172,13 @@ apps/mcp/
 ├── src/
 │   ├── index.ts        # entrypoint HTTP + transporte Streamable HTTP
 │   ├── client.ts       # forwarding de peticiones al backend con el PAT
-│   ├── ratelimit.ts    # rate limiting in-memory por prefix de PAT
+│   ├── ratelimit.ts    # rate limiting in-memory por huella de PAT
 │   └── tools/
 │       ├── index.ts    # registro de todas las tools
+│       ├── agenda.ts
+│       ├── knowledge.ts
 │       ├── projects.ts
+│       ├── quicknotes.ts
 │       ├── timeblocks.ts
 │       └── tasks.ts
 ```

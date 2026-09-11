@@ -3,7 +3,9 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { nisky, textResult } from "../client";
 
 const taskStatus = z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"]);
+const taskStatuses = z.union([taskStatus, z.array(taskStatus).min(1).max(4)]);
 const taskPriority = z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]);
+const dateValue = z.string().trim().refine((value) => !Number.isNaN(Date.parse(value)), "La fecha no es válida");
 
 const taskRecurrenceSchema = z
   .object({
@@ -11,7 +13,7 @@ const taskRecurrenceSchema = z
     repeatInterval: z.number().int().min(1).max(365).default(1),
     repeatDaysOfWeek: z.array(z.number().int().min(0).max(6)).max(7).default([]),
     repeatDayOfMonth: z.number().int().min(1).max(31).optional(),
-    repeatEndsAt: z.string().datetime().nullable().optional(),
+    repeatEndsAt: dateValue.nullable().optional(),
   })
   .superRefine((value, context) => {
     if (value.repeatType === "WEEKLY" && value.repeatDaysOfWeek.length === 0) {
@@ -28,18 +30,26 @@ export function registerTaskTools(server: McpServer, auth: string) {
       inputSchema: z.object({
         page: z.number().int().min(1).default(1),
         limit: z.number().int().min(1).max(100).default(20),
-        status: taskStatus.optional(),
+        status: taskStatuses.optional(),
         priority: taskPriority.optional(),
         sort: z.enum(["priority", "dueDate", "createdAt", "title"]).default("priority"),
         order: z.enum(["asc", "desc"]).default("desc"),
         q: z.string().trim().max(100).optional(),
         projectId: z.uuid().optional(),
+        assigneeId: z.union([z.uuid(), z.literal("__unassigned__")]).optional(),
+        due: z.enum(["ALL", "SET", "UNSET"]).default("ALL"),
+        dueFrom: dateValue.optional(),
+        dueTo: dateValue.optional(),
       }),
     },
     async (args) => {
       const query = new URLSearchParams();
       for (const [key, value] of Object.entries(args)) {
-        if (value !== undefined) query.set(key, String(value));
+        if (Array.isArray(value)) {
+          for (const item of value) query.append(key, String(item));
+        } else if (value !== undefined) {
+          query.set(key, String(value));
+        }
       }
       const result = await nisky(auth, `/tasks?${query.toString()}`);
       return { content: [{ type: "text", text: textResult(result) }] };
@@ -70,9 +80,10 @@ export function registerTaskTools(server: McpServer, auth: string) {
           description: z.string().trim().max(2000).optional(),
           status: taskStatus.optional(),
           priority: taskPriority.optional(),
-          dueDate: z.string().datetime().optional(),
+          dueDate: dateValue.optional(),
           pomodoroEstimate: z.number().int().min(0).max(100).optional(),
           projectId: z.uuid().nullable().optional(),
+          assigneeId: z.uuid().nullable().optional(),
           recurrence: taskRecurrenceSchema.optional(),
         })
         .superRefine((value, context) => {
@@ -99,15 +110,11 @@ export function registerTaskTools(server: McpServer, auth: string) {
           description: z.string().trim().max(2000).nullable().optional(),
           status: taskStatus.optional(),
           priority: taskPriority.optional(),
-          dueDate: z.string().datetime().nullable().optional(),
+          dueDate: dateValue.nullable().optional(),
           pomodoroEstimate: z.number().int().min(0).max(100).optional(),
           projectId: z.uuid().nullable().optional(),
+          assigneeId: z.uuid().nullable().optional(),
           recurrence: taskRecurrenceSchema.nullable().optional(),
-        })
-        .superRefine((value, context) => {
-          if (value.recurrence?.repeatType && !value.dueDate) {
-            context.addIssue({ code: "custom", path: ["dueDate"], message: "Necesita fecha para repetirse" });
-          }
         }),
     },
     async ({ id, ...body }) => {

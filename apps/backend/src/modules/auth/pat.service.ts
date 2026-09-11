@@ -7,7 +7,8 @@ import type { CreatePatDto } from "./pat.validator";
 const MAX_ACTIVE_PATS = 10;
 const PAT_PREFIX = "nisky_pat_";
 const RAW_BYTES = 32;
-const PREFIX_LEN = 10;
+const LEGACY_PREFIX_LEN = PAT_PREFIX.length;
+const PREFIX_LEN = PAT_PREFIX.length + 8;
 
 export class PatService {
   async create(userId: string, dto: CreatePatDto) {
@@ -82,10 +83,17 @@ export class PatService {
   async verify(raw: string) {
     if (!raw.startsWith(PAT_PREFIX)) throw new AppError("UNAUTHORIZED", "Token inválido");
     const prefix = raw.slice(0, PREFIX_LEN);
-    const candidates = await prisma.personalAccessToken.findMany({
+    let candidates = await prisma.personalAccessToken.findMany({
       where: { prefix, revokedAt: null },
       include: { user: true },
     });
+    // Tokens created before the discriminating prefix was introduced all share `nisky_pat_`.
+    if (candidates.length === 0) {
+      candidates = await prisma.personalAccessToken.findMany({
+        where: { prefix: raw.slice(0, LEGACY_PREFIX_LEN), revokedAt: null },
+        include: { user: true },
+      });
+    }
     if (candidates.length === 0) throw new AppError("UNAUTHORIZED", "Token inválido");
 
     for (const pat of candidates) {

@@ -197,7 +197,7 @@ export class OAuthService {
   async decide(request: AuthorizeRequest, userId: string, decision: "approve" | "deny") {
     const { client, scopes, resource } = await this.authorizationContext(request);
     if (decision === "deny") {
-      return { error: "access_denied", error_description: "El usuario rechazó la autorización", state: request.state ?? null };
+      return { error: "access_denied", error_description: "El usuario rechazó la autorización", state: request.state ?? null, iss: oauthConfig().issuer };
     }
 
     const code = newOpaque(CODE_PREFIX);
@@ -215,7 +215,7 @@ export class OAuthService {
         expiresAt: oauthDate(oauthConfig().authorizationCodeTtlSeconds),
       },
     });
-    return { redirect_uri: request.redirect_uri, code: code.raw, state: request.state ?? null, expires_in: oauthConfig().authorizationCodeTtlSeconds };
+    return { redirect_uri: request.redirect_uri, code: code.raw, state: request.state ?? null, iss: oauthConfig().issuer, expires_in: oauthConfig().authorizationCodeTtlSeconds };
   }
 
   private async issuePair(clientId: string, userId: string, scope: string, resource: string, familyId: string = randomUUID()) {
@@ -309,6 +309,7 @@ export class OAuthService {
       if (!(await bcrypt.compare(request.code as string, code.codeHash)) || !sameString(hashPkce(request.code_verifier as string), code.codeChallenge)) {
         throw new OAuthError("invalid_grant", "Código de autorización o code_verifier inválido");
       }
+      if (request.resource && request.resource !== code.resource) throw new OAuthError("invalid_target", "El resource no es compatible con este servidor");
       const consumed = await prisma.oAuthAuthorizationCode.updateMany({ where: { id: code.id, consumedAt: null, expiresAt: { gt: new Date() } }, data: { consumedAt: new Date() } });
       if (consumed.count !== 1) throw new OAuthError("invalid_grant", "Código de autorización ya utilizado");
       return this.issuePair(client.id, code.userId, code.scope, code.resource);
@@ -324,6 +325,7 @@ export class OAuthService {
       await this.revokeFamily(stored.familyId);
       throw new OAuthError("invalid_grant", "Refresh token revocado o expirado");
     }
+    if (request.resource && request.resource !== stored.resource) throw new OAuthError("invalid_target", "El resource no es compatible con este servidor");
     const requestedScopes = splitScopes(request.scope || stored.scope);
     if (requestedScopes.some((item) => !splitScopes(stored.scope).includes(item))) throw new OAuthError("invalid_scope", "No se puede ampliar el scope");
     const revoked = await prisma.oAuthRefreshToken.updateMany({ where: { id: stored.id, revokedAt: null, expiresAt: { gt: new Date() } }, data: { revokedAt: new Date() } });

@@ -70,6 +70,7 @@ export function oauthMetadata() {
   const config = oauthConfig();
   return {
     issuer: config.issuer,
+    authorization_response_iss_parameter_supported: true,
     authorization_endpoint: `${config.issuer}/oauth/authorize`,
     token_endpoint: `${config.issuer}/oauth/token`,
     registration_endpoint: `${config.issuer}/oauth/register`,

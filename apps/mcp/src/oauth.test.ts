@@ -18,6 +18,6 @@ describe("MCP OAuth metadata", () => {
   });
 
   test("builds the OAuth resource metadata challenge", () => {
-    expect(oauthChallenge(env)).toBe('Bearer resource_metadata="https://mcp.example.test/.well-known/oauth-protected-resource"');
+    expect(oauthChallenge(env)).toBe('Bearer resource_metadata="https://mcp.example.test/.well-known/oauth-protected-resource", scope="tasks:read tasks:write"');
   });
 });

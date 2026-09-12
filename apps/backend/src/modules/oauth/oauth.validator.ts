@@ -28,6 +28,7 @@ export const tokenSchema = z.object({
   refresh_token: z.string().trim().min(1).max(1000).optional(),
   client_assertion_type: z.literal("urn:ietf:params:oauth:client-assertion-type:jwt-bearer").optional(),
   client_assertion: z.string().trim().min(1).max(10000).optional(),
+  resource: z.url().max(2048).optional(),
   scope,
 }).superRefine((data, ctx) => {
   if (data.grant_type === "authorization_code" && (!data.code || !data.redirect_uri || !data.code_verifier)) {

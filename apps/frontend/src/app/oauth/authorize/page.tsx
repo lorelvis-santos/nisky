@@ -22,7 +22,7 @@ type Consent = {
   };
 };
 
-type Decision = { redirect_uri: string; code?: string; state: string | null; error?: string; error_description?: string };
+type Decision = { redirect_uri: string; code?: string; state: string | null; iss?: string; error?: string; error_description?: string };
 
 const scopeLabels: Record<string, string> = {
   profile: "Tu perfil básico",
@@ -70,6 +70,7 @@ export default function OAuthAuthorizePage() {
         if (result.error_description) callback.searchParams.set("error_description", result.error_description);
       }
       if (result.state) callback.searchParams.set("state", result.state);
+      if (result.iss) callback.searchParams.set("iss", result.iss);
       window.location.assign(callback.toString());
     } catch (reason) {
       setPending(false);

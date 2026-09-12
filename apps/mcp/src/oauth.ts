@@ -18,5 +18,6 @@ export function protectedResourceMetadata(env: NodeJS.ProcessEnv = process.env) 
 }
 
 export function oauthChallenge(env: NodeJS.ProcessEnv = process.env) {
-  return `Bearer resource_metadata="${oauthSettings(env).publicUrl}/.well-known/oauth-protected-resource"`;
+  const settings = oauthSettings(env);
+  return `Bearer resource_metadata="${settings.publicUrl}/.well-known/oauth-protected-resource", scope="${settings.scopes.join(" ")}"`;
 }

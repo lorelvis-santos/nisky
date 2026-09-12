@@ -41,6 +41,16 @@ export const UNIVERSITY_CATALOG: UniversityCatalogEntry[] = [
     helpHint: "Ingresa al enlace, regenera el token «Moodle mobile web service» y pégalo aquí.",
   },
   {
+    slug: "uteco",
+    name: "UTECO",
+    logoUrl: "/universities/uteco.jpg",
+    domain: "https://campusvirtual.uteco.edu.do",
+    provider: "MOODLE",
+    credentialsMode: "token-only",
+    helpUrl: "https://campusvirtual.uteco.edu.do/user/managetoken.php",
+    helpHint: "Ingresa al enlace, regenera el token «Moodle mobile web service» y pégalo aquí.",
+  },
+  {
     slug: "pucmm",
     name: "PUCMM",
     logoUrl: "/universities/pucmm.png",

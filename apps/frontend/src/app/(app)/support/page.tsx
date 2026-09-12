@@ -34,7 +34,7 @@ const FAQS: Array<{ question: string; answer: string }> = [
   {
     question: "¿Cómo conecto mi universidad?",
     answer:
-      "Ve a Ajustes › Integraciones y elige tu universidad de la lista (ITLA, INTEC, PUCMM, UNAPEC, UCNE u otra). Con tus credenciales o un token, Nisky conecta la plataforma de tu institución y trae tus tareas y entregas próximas.",
+      "Ve a Ajustes › Integraciones y elige tu universidad de la lista (ITLA, INTEC, UTECO, PUCMM, UNAPEC, UNPHU, UCNE u otra). Con tus credenciales o un token, Nisky conecta la plataforma de tu institución y trae tus tareas y entregas próximas.",
   },
   {
     question: "¿Mis notas y mi diario son privados?",

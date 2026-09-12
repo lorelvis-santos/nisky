@@ -6,6 +6,7 @@ export interface UniversityCatalogEntry {
 export const UNIVERSITY_CATALOG: UniversityCatalogEntry[] = [
   { name: "ITLA", domain: "https://aulavirtual.itla.edu.do" },
   { name: "INTEC", domain: "https://campusvirtual.intec.edu.do" },
+  { name: "UTECO", domain: "https://campusvirtual.uteco.edu.do" },
   { name: "PUCMM", domain: "https://campusvirtual.pucmm.edu.do/moodle" },
   { name: "UNAPEC", domain: "https://canvas.unapec.edu.do" },
   { name: "UNPHU", domain: "https://virtual.unphu.edu.do" },

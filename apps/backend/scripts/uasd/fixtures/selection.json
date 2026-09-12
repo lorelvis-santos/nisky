@@ -1,0 +1,38 @@
+{
+  "d": [
+    {
+      "MATRICULA": "STUDENT_FIXTURE",
+      "MATRICULA2": "STUDENT_FIXTURE_2",
+      "CLAVE": "FIX100",
+      "CLAVE2": "FIX-100",
+      "ASIGNATURA": "Materia Fixture Uno",
+      "MODALIDAD": "VIRTU",
+      "FACULTAD": "CI",
+      "ESCUELA": "FIX",
+      "CRN": "10001",
+      "SECCION": "W01",
+      "PERIODO": "202610",
+      "URL": "https://aulavirtual.uasd.edu.do/login/wsuasd.php",
+      "URL2": "https://ciencias.uasd.edu.do/login/wsuasd.php",
+      "TOKEN": "TOKEN_FIXTURE",
+      "response": 777
+    },
+    {
+      "MATRICULA": "STUDENT_FIXTURE",
+      "MATRICULA2": "STUDENT_FIXTURE_2",
+      "CLAVE": "FIX200",
+      "CLAVE2": "FIX-200",
+      "ASIGNATURA": "Materia Fixture Dos",
+      "MODALIDAD": "TR",
+      "FACULTAD": "HU",
+      "ESCUELA": "FIX",
+      "CRN": "10002",
+      "SECCION": "05",
+      "PERIODO": "202610",
+      "URL": "https://humanidades.uasd.edu.do/login/wsuasd.php",
+      "URL2": "https://humanidades.uasd.edu.do/login/wsuasd.php",
+      "TOKEN": "TOKEN_FIXTURE",
+      "response": 777
+    }
+  ]
+}

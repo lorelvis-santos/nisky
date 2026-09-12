@@ -1,0 +1,24 @@
+{
+  "d": [
+    {
+      "MATRICULA": "STUDENT_FIXTURE",
+      "MATRICULA2": "STUDENT_FIXTURE_2",
+      "TOKEN": "TOKEN_FIXTURE",
+      "ASIGNATURAS": [
+        {
+          "ASIGNATURA": "Materia Fixture",
+          "CLAVE": "FIX100",
+          "CLAVE2": "FIX-100",
+          "CRN": "10001",
+          "ESCUELA": "FIX",
+          "FACULTAD": "CI",
+          "MODALIDAD": "VIRTU",
+          "PERIODO": "202610",
+          "SECCION": "W01",
+          "URL": "https://aulavirtual.uasd.edu.do/login/wsuasd.php",
+          "response": 777
+        }
+      ]
+    }
+  ]
+}

@@ -3,12 +3,13 @@ import { AppError } from "../../utils/errors/handler";
 import { DateTime } from "luxon";
 import { decryptSecret, encryptSecret } from "../../utils/secrets";
 import { getStrategy } from "./strategies";
-import type { IntegrationProvider } from "./strategies";
+import type { IntegrationProvider, StandardIntegrationProvider } from "./strategies";
 import type { ConnectMoodleDto, IntegrationTaskQueryDto } from "./integration.validator";
 import { projectService } from "../projects/projects.service";
 import { pushService } from "../push/push.service";
 import { defaultNotificationSettings } from "../../utils/notifications/notification-settings";
 import { hostOf, universityNameFor } from "./university-catalog";
+import { uasdIntegrationService } from "./uasd/uasd.service";
 
 async function ensureUniversityProject(userId: string, domain: string) {
   const displayName = universityNameFor(domain) ?? hostOf(domain);
@@ -19,7 +20,7 @@ async function ensureUniversityProject(userId: string, domain: string) {
 
 type Delegate = typeof prisma.moodleAccount;
 
-function delegateFor(provider: IntegrationProvider): Delegate {
+function delegateFor(provider: StandardIntegrationProvider): Delegate {
   return provider === "MOODLE" ? prisma.moodleAccount : (prisma.canvasAccount as unknown as Delegate);
 }
 
@@ -33,7 +34,7 @@ function accountRow(account: {
   syncError: string | null;
   createdAt: Date;
   updatedAt: Date;
-}, provider: IntegrationProvider) {
+}, provider: StandardIntegrationProvider) {
   return {
     id: account.id,
     provider,
@@ -49,7 +50,7 @@ function accountRow(account: {
 }
 
 export class IntegrationService {
-  async connect(userId: string, provider: IntegrationProvider, rawData: ConnectMoodleDto) {
+  async connect(userId: string, provider: StandardIntegrationProvider, rawData: ConnectMoodleDto) {
     const strategy = getStrategy(provider);
     const { domain, username, token } = await strategy.connect(rawData);
     const secret = encryptSecret(token);
@@ -82,7 +83,7 @@ export class IntegrationService {
     return accountRow(account, provider);
   }
 
-  async disconnect(userId: string, provider: IntegrationProvider, id: string) {
+  async disconnect(userId: string, provider: StandardIntegrationProvider, id: string) {
     const delegate = delegateFor(provider);
     const strategy = getStrategy(provider);
     const account = await delegate.findFirst({ where: { id, userId } });
@@ -102,7 +103,8 @@ export class IntegrationService {
     if (account.projectId) {
       const otherRefs =
         (await prisma.moodleAccount.count({ where: { userId, projectId: account.projectId } })) +
-        (await prisma.canvasAccount.count({ where: { userId, projectId: account.projectId } }));
+        (await prisma.canvasAccount.count({ where: { userId, projectId: account.projectId } })) +
+        (await prisma.uasdAccount.count({ where: { userId, projectId: account.projectId } }));
       if (otherRefs === 0) {
         const project = await prisma.project.findFirst({
           where: { id: account.projectId, userId, isDefault: false },
@@ -123,7 +125,7 @@ export class IntegrationService {
     const result = await prisma.task.deleteMany({
       where: {
         userId,
-        source: source ? source : { in: ["MOODLE", "CANVAS"] },
+        source: source ? source : { in: ["MOODLE", "CANVAS", "UASD"] },
         status: { in: ["PENDING", "IN_PROGRESS"] },
       },
     });
@@ -131,17 +133,19 @@ export class IntegrationService {
   }
 
   async list(userId: string) {
-    const [moodleAccounts, canvasAccounts] = await Promise.all([
+    const [moodleAccounts, canvasAccounts, uasdAccounts] = await Promise.all([
       prisma.moodleAccount.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
       prisma.canvasAccount.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
+      uasdIntegrationService.list(userId),
     ]);
     return [
       ...moodleAccounts.map((account) => accountRow(account, "MOODLE")),
       ...canvasAccounts.map((account) => accountRow(account, "CANVAS")),
+      ...uasdAccounts,
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  async setEnabled(userId: string, provider: IntegrationProvider, id: string, enabled: boolean) {
+  async setEnabled(userId: string, provider: StandardIntegrationProvider, id: string, enabled: boolean) {
     const delegate = delegateFor(provider);
     const account = await delegate.findFirst({ where: { id, userId } });
     if (!account) throw new AppError("NOT_FOUND", `Cuenta de ${provider} no encontrada`);
@@ -152,14 +156,17 @@ export class IntegrationService {
   async getTasks(userId: string, query: IntegrationTaskQueryDto) {
     const now = new Date();
     const limit = Math.min(100, Math.max(1, Number(query.limit) || 50));
-    if (query.source) {
+    if (query.source === "UASD") {
+      const accounts = await prisma.uasdAccount.findMany({ where: { userId } });
+      if (accounts.length === 0) return [];
+    } else if (query.source) {
       const accounts = await delegateFor(query.source).findMany({ where: { userId } });
       if (accounts.length === 0) return [];
     }
     return prisma.task.findMany({
       where: {
         userId,
-        source: query.source ? query.source : { in: ["MOODLE", "CANVAS"] },
+        source: query.source ? query.source : { in: ["MOODLE", "CANVAS", "UASD"] },
         archivedAt: null,
         ...(query.status === "overdue"
           ? { status: { in: ["PENDING", "IN_PROGRESS"] }, dueDate: { lt: now } }
@@ -172,7 +179,7 @@ export class IntegrationService {
     });
   }
 
-  async syncAccount(provider: IntegrationProvider, accountId: string): Promise<number> {
+  async syncAccount(provider: StandardIntegrationProvider, accountId: string): Promise<number> {
     const delegate = delegateFor(provider);
     const strategy = getStrategy(provider);
     const account = await delegate.findUnique({ where: { id: accountId } });
@@ -278,7 +285,7 @@ export class IntegrationService {
     }
   }
 
-  async sync(userId: string, provider: IntegrationProvider, id: string) {
+  async sync(userId: string, provider: StandardIntegrationProvider, id: string) {
     const account = await delegateFor(provider).findFirst({ where: { id, userId } });
     if (!account) throw new AppError("NOT_FOUND", `Cuenta de ${provider} no encontrada`);
     try {
@@ -289,8 +296,8 @@ export class IntegrationService {
     }
   }
 
-  async syncAll(provider?: IntegrationProvider) {
-    const providers = (provider ? [provider] : ["MOODLE", "CANVAS"]) as IntegrationProvider[];
+  async syncAll(provider?: StandardIntegrationProvider) {
+    const providers = (provider ? [provider] : ["MOODLE", "CANVAS"]) as StandardIntegrationProvider[];
     const results: Record<string, number | string> = {};
     for (const p of providers) {
       const accounts = await delegateFor(p).findMany({ where: { enabled: true } });

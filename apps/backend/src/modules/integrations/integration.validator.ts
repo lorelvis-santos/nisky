@@ -10,8 +10,10 @@ const domainSchema = z.string().trim().min(1).max(255).refine((value) => {
 }, "El dominio debe ser una URL válida (ej: https://canvas.instancia.edu.do)");
 
 export const providerParamSchema = z.object({ provider: z.enum(["MOODLE", "CANVAS"]) });
+export const uasdProviderParamSchema = z.object({ provider: z.literal("UASD") });
 export const idParamSchema = z.object({ id: z.uuid("El identificador no es válido") });
 export const providerIdParamSchema = providerParamSchema.extend({ id: idParamSchema.shape.id });
+export const uasdIdParamSchema = uasdProviderParamSchema.extend({ id: idParamSchema.shape.id });
 
 export const connectMoodleSchema = z.object({
   domain: domainSchema,
@@ -30,8 +32,13 @@ export const connectCanvasSchema = z.object({
   token: z.string().min(10).max(500),
 });
 
+export const connectUasdSchema = z.object({
+  username: z.string().trim().min(1).max(100),
+  password: z.string().min(1).max(200),
+});
+
 export const integrationTaskQuerySchema = z.object({
-  source: z.enum(["MOODLE", "CANVAS"]).optional(),
+  source: z.enum(["MOODLE", "CANVAS", "UASD"]).optional(),
   status: z.enum(["pending", "overdue", "all"]).default("pending"),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
@@ -45,4 +52,5 @@ export function connectSchemaFor(providerValue: string) {
 export type ProviderParamDto = z.infer<typeof providerParamSchema>;
 export type ConnectMoodleDto = z.infer<typeof connectMoodleSchema>;
 export type ConnectCanvasDto = z.infer<typeof connectCanvasSchema>;
+export type ConnectUasdDto = z.infer<typeof connectUasdSchema>;
 export type IntegrationTaskQueryDto = z.infer<typeof integrationTaskQuerySchema>;

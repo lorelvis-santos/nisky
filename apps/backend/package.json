@@ -13,7 +13,8 @@
     "db:backfill-personal": "bun scripts/backfill-personal-projects.ts",
     "db:studio": "bunx prisma studio",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "worker:uasd": "bun scripts/uasd_worker.ts"
   },
   "prisma": {
     "seed": "bun src/infra/prisma/seed.ts"

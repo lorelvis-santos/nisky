@@ -19,6 +19,7 @@ type TaskEvent = {
   due_utc?: string | null;
   url?: string | null;
   viewurl?: string | null;
+  actionable?: boolean | null;
   overdue?: boolean;
 };
 
@@ -56,7 +57,7 @@ export const moodleStrategy: IntegrationStrategy = {
   async fetchItems(domain, token, window) {
     const result = await moodleEvents(domain, token, window.daysPast, window.daysAhead);
     if (!result.ok) throw new Error(result.error);
-    const events = (result.events ?? []) as TaskEvent[];
+    const events = ((result.events ?? []) as TaskEvent[]).filter((event) => event.actionable !== false);
     return events.map(eventToRemoteItem);
   },
 };

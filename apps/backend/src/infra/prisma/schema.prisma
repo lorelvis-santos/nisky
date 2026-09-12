@@ -49,6 +49,7 @@ model User {
   reminders      Reminder[]
   moodleAccounts MoodleAccount[]
   canvasAccounts CanvasAccount[]
+  uasdAccounts UasdAccount[]
   projects       Project[]
   timeBlocks     TimeBlock[]
   taskSchedules  TaskSchedule[]
@@ -81,6 +82,7 @@ model Project {
   timeBlocks TimeBlock[]
   moodleAccounts MoodleAccount[]
   canvasAccounts CanvasAccount[]
+  uasdAccounts UasdAccount[]
   members    ProjectMember[]
   invitations ProjectInvitation[]
   notes      Note[]
@@ -338,6 +340,7 @@ enum TaskSource {
   MANUAL
   MOODLE
   CANVAS
+  UASD
 }
 
 model Subtask {
@@ -749,4 +752,62 @@ model CanvasAccount {
 
   @@unique([userId, domain])
   @@index([userId])
+}
+
+enum UasdSyncJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model UasdAccount {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain          String   @default("https://app.uasd.edu.do")
+  username        String
+  passwordCipher  String
+  passwordIv      String
+  passwordAuthTag String
+  period          String
+  configurationVersion Int      @default(1)
+  enabled         Boolean  @default(true)
+  lastSyncAt      DateTime?
+  nextSyncAt      DateTime @default(now())
+  syncError       String?
+  projectId       String?
+  project         Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  syncJobs        UasdSyncJob[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, domain])
+  @@index([userId])
+  @@index([enabled, nextSyncAt])
+}
+
+model UasdSyncJob {
+  id             String           @id @default(uuid())
+  accountId      String
+  account        UasdAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  configurationVersion Int
+  status         UasdSyncJobStatus @default(PENDING)
+  reason         String           @default("scheduled")
+  attempts       Int              @default(0)
+  maxAttempts    Int              @default(5)
+  availableAt    DateTime         @default(now())
+  claimedAt      DateTime?
+  claimedBy      String?
+  leaseExpiresAt DateTime?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  lastError      String?
+  dedupeKey      String?          @unique
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([status, availableAt])
+  @@index([accountId, status])
 }

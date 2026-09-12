@@ -1,4 +1,5 @@
-export type IntegrationProvider = "MOODLE" | "CANVAS";
+export type IntegrationProvider = "MOODLE" | "CANVAS" | "UASD";
+export type StandardIntegrationProvider = Exclude<IntegrationProvider, "UASD">;
 
 export interface RemoteItem {
   key: string;
@@ -30,7 +31,7 @@ export interface ConnectInput {
 }
 
 export interface IntegrationStrategy {
-  provider: IntegrationProvider;
+  provider: StandardIntegrationProvider;
   source: "MOODLE" | "CANVAS";
   prefix: string;
   connect(data: ConnectInput): Promise<{ domain: string; username: string; token: string }>;

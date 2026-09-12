@@ -6,12 +6,21 @@ export interface UniversityCatalogEntry {
   logoUrl?: string;
   domain?: string;
   provider?: IntegrationProvider;
-  credentialsMode?: "both" | "token-only";
+  credentialsMode?: "both" | "token-only" | "uasd";
   helpUrl?: string;
   helpHint: string;
 }
 
 export const UNIVERSITY_CATALOG: UniversityCatalogEntry[] = [
+  {
+    slug: "uasd",
+    name: "UASD",
+    logoUrl: "/universities/uasd.jpeg",
+    domain: "https://app.uasd.edu.do",
+    provider: "UASD",
+    credentialsMode: "uasd",
+    helpHint: "Usuario y contraseña de UASD. El período se selecciona automáticamente y la primera sincronización puede tardar unos segundos.",
+  },
   {
     slug: "itla",
     name: "ITLA",

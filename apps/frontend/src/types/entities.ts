@@ -30,9 +30,9 @@ export interface Subtask {
   updatedAt: string;
 }
 
-export type TaskSource = "MANUAL" | "MOODLE" | "CANVAS";
+export type TaskSource = "MANUAL" | "MOODLE" | "CANVAS" | "UASD";
 
-export type IntegrationProvider = "MOODLE" | "CANVAS";
+export type IntegrationProvider = "MOODLE" | "CANVAS" | "UASD";
 
 export interface Project {
   id: string;
@@ -224,9 +224,30 @@ export interface IntegrationAccount {
   domain: string;
   username: string | null;
   service: string | null;
+  period?: string | null;
+  nextSyncAt?: string | null;
   enabled: boolean;
   lastSyncAt: string | null;
   syncError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type UasdSyncJobStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+
+export interface UasdSyncJob {
+  id: string;
+  accountId: string;
+  status: UasdSyncJobStatus;
+  reason: string;
+  attempts: number;
+  maxAttempts: number;
+  availableAt: string;
+  claimedAt: string | null;
+  leaseExpiresAt: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  lastError: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -9,6 +9,7 @@ import type { IntegrationProvider, Task, TaskSource } from "@/types/entities";
 const PROVIDER_LABEL: Record<IntegrationProvider, string> = {
   MOODLE: "Moodle",
   CANVAS: "Canvas",
+  UASD: "UASD",
 };
 
 const KIND_LABEL: Record<string, string> = {
@@ -112,5 +113,6 @@ function kindFromSourceRef(source: TaskSource, sourceRef: string | null): string
   const segments = sourceRef.split(":");
   if (source === "CANVAS") return segments[2] ?? "todo";
   if (source === "MOODLE") return segments[4] ?? segments[1] ?? "task";
+  if (source === "UASD") return segments[4] ?? "task";
   return "task";
 }

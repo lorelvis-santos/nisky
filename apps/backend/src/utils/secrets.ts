@@ -3,7 +3,10 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 const IV_LENGTH = 12;
 
 function key() {
-  const secret = process.env.APP_ENCRYPTION_KEY ?? process.env.JWT_ACCESS_SECRET ?? "dev-insecure-key";
+  const secret = process.env.APP_ENCRYPTION_KEY?.trim();
+  if (!secret || secret === "replace-with-a-stable-encryption-secret" || secret === process.env.JWT_ACCESS_SECRET?.trim() || secret.length < 32) {
+    throw new Error("APP_ENCRYPTION_KEY debe estar configurada con al menos 32 caracteres");
+  }
   return createHash("sha256").update(secret).digest();
 }
 

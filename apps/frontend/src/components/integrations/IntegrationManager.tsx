@@ -2,11 +2,11 @@
 
 import { CheckCircle2, ExternalLink, GraduationCap, Loader2, Network, RefreshCw, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { cleanIntegrationTasks, connectIntegration, disconnectIntegration, getIntegrations, syncIntegration } from "@/features/integrations/api/integrations";
+import { cleanIntegrationTasks, connectIntegration, disconnectIntegration, getIntegrations, getUasdSyncStatus, syncIntegration, type ConnectIntegrationPayload } from "@/features/integrations/api/integrations";
 import { UNIVERSITY_CATALOG, type UniversityCatalogEntry } from "@/features/integrations/universities";
 import type { IntegrationAccount, IntegrationProvider } from "@/types/entities";
 
@@ -16,10 +16,11 @@ type ConfirmTarget = { kind: "clean" } | { kind: "disconnect"; account: Integrat
 const PROVIDER_LABEL: Record<IntegrationProvider, string> = {
   MOODLE: "Moodle",
   CANVAS: "Canvas",
+  UASD: "UASD",
 };
 
 function providerIcon(provider: IntegrationProvider) {
-  return provider === "MOODLE" ? GraduationCap : Network;
+  return provider === "CANVAS" ? Network : GraduationCap;
 }
 
 export function IntegrationManager() {
@@ -30,11 +31,29 @@ export function IntegrationManager() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
+  const [trackedUasdJobId, setTrackedUasdJobId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ConfirmTarget | null>(null);
   const queryClient = useQueryClient();
 
   const accountQuery = useQuery({ queryKey: ["integrations"], queryFn: () => getIntegrations() });
   const accounts = accountQuery.data ?? [];
+  const uasdJobQuery = useQuery({
+    queryKey: ["uasd-sync-job", trackedUasdJobId],
+    queryFn: () => getUasdSyncStatus(trackedUasdJobId!),
+    enabled: trackedUasdJobId !== null,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "PENDING" || status === "RUNNING" ? 2_000 : false;
+    },
+  });
+
+  useEffect(() => {
+    const status = uasdJobQuery.data?.status;
+    if (status !== "SUCCEEDED" && status !== "FAILED" && status !== "CANCELLED") return;
+    void queryClient.invalidateQueries({ queryKey: ["integrations"] });
+    void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    void queryClient.invalidateQueries({ queryKey: ["integration-tasks"] });
+  }, [queryClient, uasdJobQuery.data?.status]);
 
   function invalidateAll() {
     void queryClient.invalidateQueries({ queryKey: ["integrations"] });
@@ -43,7 +62,7 @@ export function IntegrationManager() {
   }
 
   const connectMutation = useMutation({
-    mutationFn: ({ provider, payload }: { provider: IntegrationProvider; payload: { domain: string; username?: string; password?: string; token?: string } }) =>
+    mutationFn: ({ provider, payload }: { provider: IntegrationProvider; payload: ConnectIntegrationPayload }) =>
       connectIntegration(provider, payload),
     onSuccess: async (account) => {
       setDomain("");
@@ -52,14 +71,27 @@ export function IntegrationManager() {
       setToken("");
       setSelected(null);
       invalidateAll();
-      await syncMutation.mutateAsync({ provider: account.provider, id: account.id });
+      if (account.provider === "UASD") {
+        setTrackedUasdJobId(null);
+        toast.success("Cuenta UASD conectada y sincronizada.");
+      } else {
+        await syncMutation.mutateAsync({ provider: account.provider, id: account.id });
+      }
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "No se pudo conectar con el proveedor."),
+    onError: (error) => {
+      invalidateAll();
+      toast.error(error instanceof Error ? error.message : "No se pudo conectar con el proveedor.");
+    },
   });
 
   const syncMutation = useMutation({
     mutationFn: ({ provider, id }: { provider: IntegrationProvider; id: string }) => syncIntegration(provider, id),
-    onSuccess: () => invalidateAll(),
+    onSuccess: (result, variables) => {
+      invalidateAll();
+      if (variables.provider === "UASD") {
+        setTrackedUasdJobId(result.job?.id ?? null);
+      }
+    },
     onError: (error) => toast.error(error instanceof Error ? error.message : "No se pudo sincronizar."),
   });
 
@@ -67,6 +99,7 @@ export function IntegrationManager() {
     mutationFn: ({ provider, id }: { provider: IntegrationProvider; id: string }) => disconnectIntegration(provider, id),
     onSuccess: () => {
       setConfirm(null);
+      setTrackedUasdJobId(null);
       invalidateAll();
       toast.success("Cuenta desconectada y sus tareas pendientes eliminadas.");
     },
@@ -87,14 +120,16 @@ export function IntegrationManager() {
     e.preventDefault();
     if (!selected) return;
     const provider = selected.provider ?? otherProvider;
-    const payload = {
-      domain: selected.domain ?? domain,
-      ...(provider === "CANVAS" || selected.credentialsMode === "token-only"
-        ? { token }
-        : connectMode === "credentials"
-          ? { username, password }
-          : { token }),
-    };
+    const payload: ConnectIntegrationPayload = provider === "UASD"
+      ? { username, password }
+      : {
+          domain: selected.domain ?? domain,
+          ...(provider === "CANVAS" || selected.credentialsMode === "token-only"
+            ? { token }
+            : connectMode === "credentials"
+              ? { username, password }
+              : { token }),
+        };
     connectMutation.mutate({ provider, payload });
   }
 
@@ -105,7 +140,7 @@ export function IntegrationManager() {
       <div>
         <h2 className="font-headline-xs text-headline-xs">Selecciona tu universidad</h2>
         <p className="mt-1 max-w-2xl font-body-sm text-body-sm text-on-surface-variant">
-          Elige la institución para conectar su plataforma educativa (Moodle o Canvas), o selecciona «Otra institución» si no está en la lista.
+           Elige la institución para conectar su plataforma educativa, o selecciona «Otra institución» si no está en la lista.
         </p>
         <div className="mt-3 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
           {UNIVERSITY_CATALOG.map((entry) => (
@@ -180,7 +215,31 @@ export function IntegrationManager() {
               </label>
             )}
 
-            {selected.slug === "otra" || selected.provider === "MOODLE" ? (
+            {selected.provider === "UASD" ? (
+              <>
+                <label className="block">
+                  <span className="font-label-md text-label-md text-on-surface-variant">Usuario</span>
+                  <input
+                    className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Tu usuario UASD"
+                    required
+                    value={username}
+                  />
+                </label>
+                <label className="block">
+                  <span className="font-label-md text-label-md text-on-surface-variant">Contraseña</span>
+                  <input
+                    autoComplete="current-password"
+                    className="mt-1 min-h-11 w-full rounded-md border border-outline-variant bg-surface px-3 py-2 font-body-md text-body-md outline-none transition-colors focus:border-secondary"
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    type="password"
+                    value={password}
+                  />
+                </label>
+              </>
+            ) : selected.slug === "otra" || selected.provider === "MOODLE" ? (
               selected.credentialsMode !== "token-only" ? (
                 <>
                   <div className="flex gap-2">
@@ -309,7 +368,8 @@ export function IntegrationManager() {
                     </span>
                     {account.enabled ? <CheckCircle2 className="text-primary" size={16} /> : null}
                   </div>
-                  {account.username ? <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Usuario: {account.username}</p> : null}
+                   {account.username ? <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Usuario: {account.username}</p> : null}
+                   {account.provider === "UASD" && account.period ? <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Período: {account.period}</p> : null}
                   <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
                     {account.lastSyncAt ? `Última sincronización: ${new Date(account.lastSyncAt).toLocaleString()}` : "Sin sincronizar"}
                   </p>

@@ -21,7 +21,25 @@ Con esto, tu asistente de IA (opencode, Claude Desktop u otro) podrá:
 
 ---
 
-## Paso 1: Obtén tu llave de acceso
+## Paso 1: Elige cómo conectar
+
+### ChatGPT: conexión OAuth
+
+Si usas ChatGPT con Developer Mode, crea una conexión a:
+
+```text
+https://mcp-nisky.las.do/mcp
+```
+
+ChatGPT detectará el challenge OAuth, abrirá el login de Nisky y mostrará la pantalla de consentimiento. No copies un PAT en ChatGPT.
+
+OAuth concede acceso con scopes y permite revocar la conexión sin exponer una llave permanente al cliente.
+
+### OpenCode, Claude y otros clientes: PAT
+
+Para clientes que todavía requieren headers manuales, continúa con el siguiente paso.
+
+## Paso 2: Obtén tu llave de acceso
 
 Piensa en esto como una llave especial que le das a tu asistente para que entre a *tu* espacio de Nisky.
 
@@ -38,7 +56,7 @@ Aparecerá una llave larga que empieza con `nisky_pat_...` — **cópiala y guá
 
 ---
 
-## Paso 2: Conecta a tu asistente
+## Paso 3: Conecta a tu asistente
 
 Aquí depende de qué herramienta uses. Elige la tuya:
 
@@ -94,7 +112,7 @@ Casi todas las que soportan "servidores MCP por HTTP" funcionan igual: solo nece
 
 ---
 
-## Paso 3: Pruébalo
+## Paso 4: Pruébalo
 
 Ya conectado, intenta pedirle algo así a tu asistente:
 

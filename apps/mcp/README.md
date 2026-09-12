@@ -3,10 +3,25 @@
 Servidor MCP (Model Context Protocol) que expone la agenda, proyectos, tareas, notas rápidas y knowledge de Nisky a asistentes de IA (opencode, Claude Desktop, etc.).
 
 ```
-[Cliente MCP] --HTTPS + PAT--> [este servidor] --HTTPS + PAT--> [Nisky backend]
+[ChatGPT] --OAuth 2.1 + PKCE--> [Nisky Authorization Server]
+    |                                  |
+    +--Bearer OAuth token--> [este servidor] --Bearer OAuth token--> [Nisky backend]
+[OpenCode/Claude] --Bearer PAT--> [este servidor] --Bearer PAT--> [Nisky backend]
 ```
 
-El servidor es stateless: no guarda tokens, no guarda estado de sesión. Cada petición lleva el Personal Access Token (PAT) del usuario en el header `Authorization`, y el servidor lo reenvía al backend, que valida y aísla los datos por `userId`.
+El servidor es stateless: no guarda tokens ni estado de sesión. Acepta PAT para clientes manuales y access tokens OAuth opacos para clientes con login, y reenvía la credencial al backend, que valida, aplica scopes y aísla los datos por `userId`.
+
+## OAuth para ChatGPT
+
+El endpoint publica `/.well-known/oauth-protected-resource` y devuelve un challenge OAuth cuando falta el bearer token. Configura el Authorization Server con `OAUTH_ISSUER_URL`; su discovery debe estar disponible en `/.well-known/oauth-authorization-server`. El flujo usa Authorization Code, PKCE `S256`, CIMD o Dynamic Client Registration, códigos de un solo uso y refresh-token rotation.
+
+ChatGPT debe conectarse solamente a:
+
+```text
+https://<tu-host>/mcp
+```
+
+No introduzcas un PAT en ChatGPT. Al detectar el challenge, ChatGPT abrirá el login y consentimiento de Nisky.
 
 ## Tools disponibles (22)
 
@@ -75,12 +90,15 @@ NISKY_API_URL=http://localhost:4000/api/v1 bun run dev
 | `MCP_ALLOWED_ORIGINS` | `localhost,127.0.0.1,[::1]` | Hostnames permitidos en `Origin`, separados por comas |
 | `MCP_UPSTREAM_TIMEOUT_MS` | `10000` | Tiempo máximo de espera del backend en milisegundos |
 | `RATE_LIMIT_PER_MIN` | `60` | Máximo de peticiones por minuto por credencial en cada instancia |
+| `MCP_PUBLIC_URL` | `http://localhost:8787` | URL pública del servidor MCP, sin `/mcp` |
+| `OAUTH_ISSUER_URL` | `http://localhost:4000` | URL pública del Authorization Server |
+| `OAUTH_SCOPES` | scopes de tareas/proyectos/notas/bloques | Scopes anunciados por el recurso protegido |
 
 Después del despliegue el endpoint MCP queda en `https://<tu-host>/mcp`.
 
 ## Uso
 
-### 1. Crear un token de acceso (PAT)
+### 1. Crear un token de acceso (PAT) para OpenCode o Claude
 
 En la aplicación web de Nisky: **Ajustes → Seguridad → Tokens de acceso → Crear token**.
 
@@ -123,7 +141,11 @@ Copia el token (`nisky_pat_...`). Solo se muestra una vez. Puedes revocarlo en c
 
 Configurar la URL del endpoint y el header `Authorization: Bearer <PAT>` como credencial/personalización de cada servidor.
 
-### 3. Probar (opcional)
+### 3. Conectar ChatGPT (OAuth)
+
+En ChatGPT activa Developer Mode, crea una conexión a `https://<tu-host>/mcp` y completa el login/consentimiento en Nisky. La URL del Authorization Server debe coincidir con `OAUTH_ISSUER_URL` del backend y el frontend.
+
+### 4. Probar (opcional)
 
 ```bash
 curl -X POST https://<tu-host>/mcp \
@@ -145,10 +167,10 @@ curl -X POST https://<tu-host>/mcp \
 
 ## Seguridad
 
-- El servidor no almacena ningún token ni dato de usuario: el PAT viaja de cliente → servidor → backend y se descarta.
-- Cada usuario usa su propio PAT; el backend solo devuelve sus datos (`userId` isolation).
+- El servidor no almacena ningún token ni dato de usuario: la credencial viaja de cliente → servidor → backend y se descarta.
+- Cada usuario usa su propio PAT u OAuth token; el backend solo devuelve sus datos (`userId` isolation).
 - Rate limit por credencial y proceso: `RATE_LIMIT_PER_MIN` (default 60) con respuesta `429` y header `Retry-After`.
-- El endpoint requiere `Authorization: Bearer <PAT>` en cada petición; la validez del PAT la confirma el backend.
+- El endpoint requiere `Authorization: Bearer <PAT|OAuth access token>` en cada petición; la validez y los scopes los confirma el backend.
 - Validación de `Host` y `Origin` para reducir ataques de DNS rebinding y CSRF; en producción configura los hostnames públicos permitidos.
 - Revocar el PAT en la web invalida el acceso de inmediato, sin tocar el servidor MCP.
 - Cambiar la contraseña revoca todos los PATs del usuario.
@@ -171,8 +193,9 @@ apps/mcp/
 ├── Dockerfile          # multi-stage: deps → build → runtime
 ├── src/
 │   ├── index.ts        # entrypoint HTTP + transporte Streamable HTTP
-│   ├── client.ts       # forwarding de peticiones al backend con el PAT
-│   ├── ratelimit.ts    # rate limiting in-memory por huella de PAT
+│   ├── client.ts       # forwarding y comprobación de scopes OAuth
+│   ├── oauth.ts        # metadata del recurso protegido y challenge OAuth
+│   ├── ratelimit.ts    # rate limiting in-memory por huella de credencial
 │   └── tools/
 │       ├── index.ts    # registro de todas las tools
 │       ├── agenda.ts

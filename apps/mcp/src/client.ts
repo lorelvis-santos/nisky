@@ -11,6 +11,44 @@ interface UpstreamResult {
   error: { code: string; message: string } | null;
 }
 
+const OAUTH_ACCESS_PREFIX = "nisky_oat_";
+
+function tokenFromAuth(auth: string) {
+  return auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";
+}
+
+function requiredScope(path: string, method: string) {
+  const normalized = path.split("?", 1)[0] ?? path;
+  const read = method === "GET" || method === "HEAD";
+  if (normalized === "/home/overview" || normalized.startsWith("/tasks") || normalized.startsWith("/task-schedules")) return read ? "tasks:read" : "tasks:write";
+  if (normalized.startsWith("/projects")) return read ? "projects:read" : "projects:write";
+  if (normalized.startsWith("/quick-notes") || normalized.startsWith("/knowledge")) return read ? "notes:read" : "notes:write";
+  if (normalized.startsWith("/timeblocks")) return read ? "timeblocks:read" : "timeblocks:write";
+  return undefined;
+}
+
+async function hasOAuthScope(auth: string, scope: string) {
+  const response = await fetch(`${API_URL.replace(/\/+$/, "")}/oauth/introspect`, {
+    method: "POST",
+    headers: { authorization: auth, "content-type": "application/json" },
+    body: "{}",
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+  });
+  const body = (await response.json().catch(() => null)) as { active?: boolean; scope?: string } | null;
+  return response.ok && body?.active === true && body.scope?.split(/\s+/).includes(scope);
+}
+
+export async function validateOAuthAccessToken(auth: string) {
+  const response = await fetch(`${API_URL.replace(/\/+$/, "")}/oauth/introspect`, {
+    method: "POST",
+    headers: { authorization: auth, "content-type": "application/json" },
+    body: "{}",
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+  });
+  const body = (await response.json().catch(() => null)) as { active?: boolean } | null;
+  return response.ok && body?.active === true;
+}
+
 export async function nisky(auth: string, path: string, init: RequestInit = {}): Promise<UpstreamResult> {
   if (!auth.startsWith("Bearer ") || !auth.slice("Bearer ".length).trim()) {
     return { status: 401, ok: false, data: null, error: { code: "UNAUTHORIZED", message: "Falta el token de acceso" } };
@@ -19,6 +57,18 @@ export async function nisky(auth: string, path: string, init: RequestInit = {}):
   const headers = new Headers(init.headers);
   headers.set("authorization", auth);
   if (init.body) headers.set("content-type", "application/json");
+
+  const token = tokenFromAuth(auth);
+  const scope = requiredScope(path, init.method ?? "GET");
+  if (token.startsWith(OAUTH_ACCESS_PREFIX) && scope) {
+    try {
+      if (!(await hasOAuthScope(auth, scope))) {
+        return { status: 403, ok: false, data: null, error: { code: "FORBIDDEN", message: `El token no tiene el scope requerido: ${scope}` } };
+      }
+    } catch {
+      return { status: 503, ok: false, data: null, error: { code: "AUTH_UNAVAILABLE", message: "No se pudo validar el token OAuth" } };
+    }
+  }
 
   const signal = init.signal ?? AbortSignal.timeout(UPSTREAM_TIMEOUT_MS);
   let response: Response;

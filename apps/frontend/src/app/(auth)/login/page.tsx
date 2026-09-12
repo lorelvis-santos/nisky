@@ -22,7 +22,7 @@ export default function LoginPage() {
     setAuth(result);
     toast.success("¡Qué bueno verte de nuevo!");
     const requestedRedirect = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("redirect");
-    const redirect = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//") ? requestedRedirect : "/";
+    const redirect = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//") && !requestedRedirect.includes("\\") ? requestedRedirect : "/";
     // A full navigation makes the browser send the new refresh cookie and
     // forces the protected tree to restore the session on its first render.
     window.location.replace(redirect);

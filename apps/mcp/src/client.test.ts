@@ -63,4 +63,31 @@ describe("nisky client", () => {
     expect(result).toMatchObject({ status: 401, ok: false, error: { code: "UNAUTHORIZED" } });
     expect(called).toBe(false);
   });
+
+  test("checks the required scope before forwarding an OAuth request", async () => {
+    const calls: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      calls.push(String(input));
+      if (String(input).endsWith("/oauth/introspect")) return new Response(JSON.stringify({ active: true, scope: "tasks:read" }), { status: 200 });
+      return new Response(JSON.stringify({ ok: true, data: [] }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const result = await nisky("Bearer nisky_oat_test", "/tasks");
+
+    expect(result.ok).toBe(true);
+    expect(calls).toEqual(["http://localhost:4000/api/v1/oauth/introspect", "http://localhost:4000/api/v1/tasks"]);
+  });
+
+  test("does not forward an OAuth request without its scope", async () => {
+    const calls: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      calls.push(String(input));
+      return new Response(JSON.stringify({ active: true, scope: "projects:read" }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const result = await nisky("Bearer nisky_oat_test", "/tasks");
+
+    expect(result).toMatchObject({ status: 403, ok: false, error: { code: "FORBIDDEN" } });
+    expect(calls).toEqual(["http://localhost:4000/api/v1/oauth/introspect"]);
+  });
 });

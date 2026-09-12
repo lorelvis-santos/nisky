@@ -6,12 +6,12 @@ const MAX = Math.max(1, Number.parseInt(process.env.RATE_LIMIT_PER_MIN ?? "60", 
 const buckets = new Map<string, { count: number; resetAt: number }>();
 let lastPrunedAt = 0;
 
-function patKey(req: Request) {
+function credentialKey(req: Request) {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) return "anonymous";
   const token = header.slice("Bearer ".length).trim();
   if (!token) return "anonymous";
-  return `pat:${createHash("sha256").update(token).digest("hex").slice(0, 16)}`;
+  return `credential:${createHash("sha256").update(token).digest("hex").slice(0, 16)}`;
 }
 
 function pruneExpired(now: number) {
@@ -23,7 +23,7 @@ function pruneExpired(now: number) {
 }
 
 export function rateLimit(req: Request, res: Response, next: NextFunction) {
-  const key = patKey(req);
+  const key = credentialKey(req);
   const now = Date.now();
   pruneExpired(now);
   let bucket = buckets.get(key);

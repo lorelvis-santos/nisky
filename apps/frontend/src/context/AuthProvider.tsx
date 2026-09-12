@@ -57,7 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const onLogout = () => {
       clearSession();
       setIsLoading(false);
-      router.replace("/login?expired=1");
+      const oauthReturn = pathname === "/oauth/authorize" && typeof window !== "undefined"
+        ? `${pathname}${window.location.search}`
+        : null;
+      router.replace(oauthReturn ? `/login?redirect=${encodeURIComponent(oauthReturn)}` : "/login?expired=1");
     };
     window.addEventListener("auth:refreshed", onRefreshed);
     window.addEventListener("auth:logout", onLogout);
@@ -65,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("auth:refreshed", onRefreshed);
       window.removeEventListener("auth:logout", onLogout);
     };
-  }, [router, setAuth, clearSession]);
+  }, [router, pathname, setAuth, clearSession]);
 
   useEffect(() => {
     const isAuthPath = pathname === "/login" || pathname === "/register";

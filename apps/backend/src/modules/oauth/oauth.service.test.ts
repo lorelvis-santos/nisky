@@ -20,11 +20,12 @@ describe("OAuthService", () => {
     expect(isSafeClientMetadataUrl("https://client.example.test/metadata.json")).toBe(true);
   });
 
-  test("allows ChatGPT's legacy connector callback only for ChatGPT CIMD clients", async () => {
+  test("allows ChatGPT's stable connector callback only for ChatGPT CIMD clients", async () => {
     const { isRegisteredRedirectUri } = await import("./oauth.config");
-    const legacy = "https://chatgpt.com/connector_platform_oauth_redirect";
-    expect(isRegisteredRedirectUri("https://chatgpt.com/oauth/example/client.json", [], legacy)).toBe(true);
-    expect(isRegisteredRedirectUri("https://example.com/client.json", [], legacy)).toBe(false);
-    expect(isRegisteredRedirectUri("https://chatgpt.com/oauth/example/client.json", ["https://example.com/callback"], legacy)).toBe(true);
+    const stableCallback = "https://chatgpt.com/connector_platform_oauth_redirect";
+    expect(isRegisteredRedirectUri("https://chatgpt.com/oauth/client.json", [], stableCallback)).toBe(true);
+    expect(isRegisteredRedirectUri("https://chatgpt.com/oauth/example/client.json", [], stableCallback)).toBe(true);
+    expect(isRegisteredRedirectUri("https://example.com/client.json", [], stableCallback)).toBe(false);
+    expect(isRegisteredRedirectUri("https://chatgpt.com/oauth/example/client.json", ["https://example.com/callback"], stableCallback)).toBe(true);
   });
 });

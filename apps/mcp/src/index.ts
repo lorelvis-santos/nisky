@@ -2,10 +2,10 @@ import { createMcpExpressApp } from "@modelcontextprotocol/express";
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import type { NextFunction, Request, Response } from "express";
-import { validateOAuthAccessToken } from "./client";
+import { isSupportedBearerToken, validateOAuthAccessToken } from "./client";
 import { oauthChallenge, protectedResourceMetadata } from "./oauth";
 import { rateLimit } from "./ratelimit";
-import { registerAllTools } from "./tools";
+import { registerAllTools, toolDescriptor } from "./tools";
 
 const PORT = Number(process.env.MCP_PORT ?? 8787);
 const HOST = process.env.MCP_HOST ?? "0.0.0.0";
@@ -29,6 +29,13 @@ async function requireBearer(req: Request, res: Response, next: NextFunction) {
     return;
   }
   const token = authorization.slice("Bearer ".length).trim();
+  if (!isSupportedBearerToken(token)) {
+    res.status(401).header("WWW-Authenticate", `${oauthChallenge()}, error="invalid_token"`).json({
+      ok: false,
+      error: { code: "UNAUTHORIZED", message: "Tipo de token no soportado" },
+    });
+    return;
+  }
   if (token.startsWith("nisky_oat_")) {
     try {
       if (!(await validateOAuthAccessToken(authorization))) {
@@ -49,7 +56,14 @@ async function requireBearer(req: Request, res: Response, next: NextFunction) {
 const handler = createMcpHandler((ctx) => {
   const auth = ctx.requestInfo?.headers.get("authorization") ?? "";
   const server = new McpServer({ name: "nisky", version: "0.1.0" });
-  registerAllTools(server, auth);
+  const registeredTools = registerAllTools(server, auth);
+  server.server.removeRequestHandler("tools/list");
+  server.server.setRequestHandler("tools/list", () => ({
+    // securitySchemes is an Apps SDK extension absent from this SDK's Tool type.
+    tools: [...registeredTools.entries()]
+      .filter(([, tool]) => tool.enabled)
+      .map(([name, tool]) => toolDescriptor(server, name, tool)),
+  }));
   return server;
 });
 const nodeHandler = toNodeHandler(handler);

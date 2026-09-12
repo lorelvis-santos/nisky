@@ -46,6 +46,7 @@ export const registrationSchema = z.object({
   grant_types: z.array(z.enum(["authorization_code", "refresh_token"])).optional(),
   response_types: z.array(z.literal("code")).optional(),
   token_endpoint_auth_method: z.enum(["none", "private_key_jwt"]).optional(),
+  token_endpoint_auth_methods_supported: z.array(z.enum(["none", "private_key_jwt"])).min(1).max(2).optional(),
   token_endpoint_auth_signing_alg: z.literal("RS256").optional(),
   jwks_uri: z.url().max(2048).optional(),
 });

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { nisky, toolResult } from "./client";
+import { isSupportedBearerToken, nisky, toolResult } from "./client";
 
 const originalFetch = globalThis.fetch;
 
@@ -8,6 +8,13 @@ afterEach(() => {
 });
 
 describe("nisky client", () => {
+  test("accepts only Nisky OAuth and PAT bearer tokens", () => {
+    expect(isSupportedBearerToken("nisky_oat_test")).toBe(true);
+    expect(isSupportedBearerToken("nisky_pat_test")).toBe(true);
+    expect(isSupportedBearerToken("nisky_ort_test")).toBe(false);
+    expect(isSupportedBearerToken("web-jwt-token")).toBe(false);
+  });
+
   test("uses the backend default URL and forwards the bearer token", async () => {
     let requestUrl = "";
     let requestHeaders: Headers | undefined;
@@ -59,6 +66,19 @@ describe("nisky client", () => {
     }) as unknown as typeof fetch;
 
     const result = await nisky("", "/health");
+
+    expect(result).toMatchObject({ status: 401, ok: false, error: { code: "UNAUTHORIZED" } });
+    expect(called).toBe(false);
+  });
+
+  test("does not forward unsupported bearer tokens", async () => {
+    let called = false;
+    globalThis.fetch = (async () => {
+      called = true;
+      return new Response();
+    }) as unknown as typeof fetch;
+
+    const result = await nisky("Bearer web-jwt-token", "/health");
 
     expect(result).toMatchObject({ status: 401, ok: false, error: { code: "UNAUTHORIZED" } });
     expect(called).toBe(false);

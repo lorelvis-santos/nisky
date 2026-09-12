@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { McpServer } from "@modelcontextprotocol/server";
-import { registerAllTools } from "./index";
+import { registerAllTools, TOOL_SCOPES, toolDescriptor } from "./index";
 
 describe("MCP tool registry", () => {
   test("registers the supported safe surface", () => {
@@ -11,7 +11,7 @@ describe("MCP tool registry", () => {
       },
     } as unknown as McpServer;
 
-    registerAllTools(server, "Bearer nisky_pat_test");
+    const registeredTools = registerAllTools(server, "Bearer nisky_pat_test");
 
     expect([...registrations.keys()]).toEqual([
       "get-home-overview",
@@ -38,6 +38,7 @@ describe("MCP tool registry", () => {
       "update-knowledge-note",
     ]);
     expect(registrations.size).toBe(22);
+    expect([...registeredTools.keys()].sort()).toEqual(Object.keys(TOOL_SCOPES).sort());
     expect(registrations.get("schedule-task")?.inputSchema.safeParse({
       taskId: "00000000-0000-4000-8000-000000000001",
       date: "2026-09-15",
@@ -48,5 +49,20 @@ describe("MCP tool registry", () => {
       date: "2026-02-30",
       timeBlockId: "00000000-0000-4000-8000-000000000002",
     }).success).toBe(false);
+  });
+
+  test("advertises OAuth security schemes for ChatGPT", () => {
+    const server = { toolInputSchemaJson: () => ({ type: "object", properties: {} }) } as unknown as McpServer;
+    const descriptor = toolDescriptor(server, "create-task", {
+      title: "Crear tarea",
+      description: "Crea una tarea",
+      enabled: true,
+      handler: (() => ({})) as never,
+      executor: (async () => ({})) as never,
+    } as unknown as Parameters<typeof toolDescriptor>[2]);
+
+    expect(descriptor.securitySchemes).toEqual([{ type: "oauth2", scopes: ["tasks:write"] }]);
+    expect(descriptor.annotations).toEqual({ readOnlyHint: false, destructiveHint: false, openWorldHint: false });
+    expect(descriptor._meta).toEqual({ securitySchemes: [{ type: "oauth2", scopes: ["tasks:write"] }] });
   });
 });

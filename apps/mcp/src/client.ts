@@ -13,10 +13,15 @@ interface UpstreamResult {
   error: { code: string; message: string } | null;
 }
 
-const OAUTH_ACCESS_PREFIX = "nisky_oat_";
+export const OAUTH_ACCESS_PREFIX = "nisky_oat_";
+export const PAT_ACCESS_PREFIX = "nisky_pat_";
 
 function tokenFromAuth(auth: string) {
   return auth.startsWith("Bearer ") ? auth.slice("Bearer ".length).trim() : "";
+}
+
+export function isSupportedBearerToken(token: string) {
+  return token.startsWith(OAUTH_ACCESS_PREFIX) || token.startsWith(PAT_ACCESS_PREFIX);
 }
 
 function requiredScope(path: string, method: string) {
@@ -52,7 +57,8 @@ export async function validateOAuthAccessToken(auth: string) {
 }
 
 export async function nisky(auth: string, path: string, init: RequestInit = {}): Promise<UpstreamResult> {
-  if (!auth.startsWith("Bearer ") || !auth.slice("Bearer ".length).trim()) {
+  const token = tokenFromAuth(auth);
+  if (!token || !isSupportedBearerToken(token)) {
     return { status: 401, ok: false, data: null, error: { code: "UNAUTHORIZED", message: "Falta el token de acceso" } };
   }
 
@@ -60,7 +66,6 @@ export async function nisky(auth: string, path: string, init: RequestInit = {}):
   headers.set("authorization", auth);
   if (init.body) headers.set("content-type", "application/json");
 
-  const token = tokenFromAuth(auth);
   const scope = requiredScope(path, init.method ?? "GET");
   if (token.startsWith(OAUTH_ACCESS_PREFIX) && scope) {
     try {

@@ -85,6 +85,7 @@ export class OAuthService {
       grant_types: candidate.grant_types,
       response_types: candidate.response_types,
       token_endpoint_auth_method: candidate.token_endpoint_auth_method,
+      token_endpoint_auth_methods_supported: candidate.token_endpoint_auth_methods_supported,
       token_endpoint_auth_signing_alg: candidate.token_endpoint_auth_signing_alg,
       jwks_uri: candidate.jwks_uri,
     });
@@ -93,15 +94,27 @@ export class OAuthService {
     const config = oauthConfig();
     const scopes = splitScopes(parsed.data.scope || config.scopes.join(" "));
     if (scopes.length === 0 || scopes.some((scope) => !config.scopes.includes(scope))) return null;
+    const advertisedAuthMethods = parsed.data.token_endpoint_auth_methods_supported ?? [];
+    const preferredAuthMethod = parsed.data.token_endpoint_auth_method;
+    if (preferredAuthMethod && advertisedAuthMethods.length && !advertisedAuthMethods.includes(preferredAuthMethod)) return null;
+    const tokenEndpointAuthMethod = preferredAuthMethod
+      ?? (advertisedAuthMethods.includes("private_key_jwt") && parsed.data.jwks_uri
+        ? "private_key_jwt"
+        : advertisedAuthMethods.includes("none")
+          ? "none"
+          : advertisedAuthMethods[0] ?? "none");
+    if (tokenEndpointAuthMethod === "private_key_jwt" && !parsed.data.jwks_uri) return null;
     return prisma.oAuthClient.create({
       data: {
         clientId,
         name: parsed.data.client_name,
         redirectUris: parsed.data.redirect_uris,
         allowedScopes: scopes,
-        tokenEndpointAuthMethod: parsed.data.token_endpoint_auth_method ?? "none",
+        tokenEndpointAuthMethod,
         jwksUri: parsed.data.jwks_uri,
-        tokenEndpointAuthSigningAlg: parsed.data.token_endpoint_auth_signing_alg,
+        tokenEndpointAuthSigningAlg: tokenEndpointAuthMethod === "private_key_jwt"
+          ? parsed.data.token_endpoint_auth_signing_alg ?? "RS256"
+          : undefined,
       },
     });
   }
@@ -141,7 +154,16 @@ export class OAuthService {
     if (requestedScopes.length === 0 || requestedScopes.some((item) => !config.scopes.includes(item))) {
       throw new OAuthError("invalid_client_metadata", "scope contiene valores no soportados");
     }
-    const tokenEndpointAuthMethod = request.token_endpoint_auth_method ?? "none";
+    const advertisedAuthMethods = request.token_endpoint_auth_methods_supported ?? [];
+    if (request.token_endpoint_auth_method && advertisedAuthMethods.length && !advertisedAuthMethods.includes(request.token_endpoint_auth_method)) {
+      throw new OAuthError("invalid_client_metadata", "token_endpoint_auth_method no está incluido en token_endpoint_auth_methods_supported");
+    }
+    const tokenEndpointAuthMethod = request.token_endpoint_auth_method
+      ?? (advertisedAuthMethods.includes("private_key_jwt") && request.jwks_uri
+        ? "private_key_jwt"
+        : advertisedAuthMethods.includes("none")
+          ? "none"
+          : advertisedAuthMethods[0] ?? "none");
     if (tokenEndpointAuthMethod === "private_key_jwt" && !request.jwks_uri) {
       throw new OAuthError("invalid_client_metadata", "private_key_jwt requiere jwks_uri");
     }
@@ -157,7 +179,9 @@ export class OAuthService {
         allowedScopes: requestedScopes,
         tokenEndpointAuthMethod,
         jwksUri: request.jwks_uri,
-        tokenEndpointAuthSigningAlg: request.token_endpoint_auth_signing_alg,
+        tokenEndpointAuthSigningAlg: tokenEndpointAuthMethod === "private_key_jwt"
+          ? request.token_endpoint_auth_signing_alg ?? "RS256"
+          : undefined,
       },
     });
     return {

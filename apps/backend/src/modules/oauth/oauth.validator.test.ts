@@ -35,4 +35,16 @@ describe("OAuth validators", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  test("accepts the plural client authentication methods used by ChatGPT CIMD", () => {
+    const result = registrationSchema.safeParse({
+      client_name: "ChatGPT",
+      redirect_uris: ["https://chatgpt.com/connector_platform_oauth_redirect"],
+      token_endpoint_auth_method: "private_key_jwt",
+      token_endpoint_auth_methods_supported: ["none", "private_key_jwt"],
+      token_endpoint_auth_signing_alg: "RS256",
+      jwks_uri: "https://chatgpt.com/oauth/jwks.json",
+    });
+    expect(result.success).toBe(true);
+  });
 });

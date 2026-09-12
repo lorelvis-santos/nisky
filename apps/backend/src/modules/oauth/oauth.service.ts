@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, createPublicKey, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import jwt, { type JwtPayload } from "jsonwebtoken";
 import { prisma } from "../../infra/prisma/client";
 import { isSafeClientMetadataUrl, isSafeRegistrationRedirect, oauthConfig } from "./oauth.config";
 import { registrationSchema, type AuthorizeRequest, type RegistrationRequest, type RevocationRequest, type TokenRequest } from "./oauth.validator";
@@ -8,6 +9,7 @@ const CLIENT_PREFIX = "nisky_client_";
 const CODE_PREFIX = "nisky_oac_";
 const ACCESS_PREFIX = "nisky_oat_";
 const REFRESH_PREFIX = "nisky_ort_";
+type RsaJwk = { kty: "RSA"; n: string; e: string; [key: string]: unknown };
 
 export class OAuthError extends Error {
   constructor(
@@ -60,7 +62,7 @@ export class OAuthService {
       client = await this.importClientMetadata(clientId);
     }
     if (!client || !client.isActive) throw new OAuthError("invalid_client", "Cliente OAuth inválido", 401);
-    if (client.tokenEndpointAuthMethod !== "none") throw new OAuthError("invalid_client", "Método de autenticación de cliente no soportado", 401);
+    if (!["none", "private_key_jwt"].includes(client.tokenEndpointAuthMethod)) throw new OAuthError("invalid_client", "Método de autenticación de cliente no soportado", 401);
     return client;
   }
 
@@ -83,6 +85,8 @@ export class OAuthService {
       grant_types: candidate.grant_types,
       response_types: candidate.response_types,
       token_endpoint_auth_method: candidate.token_endpoint_auth_method,
+      token_endpoint_auth_signing_alg: candidate.token_endpoint_auth_signing_alg,
+      jwks_uri: candidate.jwks_uri,
     });
     if (!parsed.success || parsed.data.redirect_uris.some((uri) => !isSafeRegistrationRedirect(uri))) return null;
 
@@ -95,7 +99,9 @@ export class OAuthService {
         name: parsed.data.client_name,
         redirectUris: parsed.data.redirect_uris,
         allowedScopes: scopes,
-        tokenEndpointAuthMethod: "none",
+        tokenEndpointAuthMethod: parsed.data.token_endpoint_auth_method ?? "none",
+        jwksUri: parsed.data.jwks_uri,
+        tokenEndpointAuthSigningAlg: parsed.data.token_endpoint_auth_signing_alg,
       },
     });
   }
@@ -135,6 +141,13 @@ export class OAuthService {
     if (requestedScopes.length === 0 || requestedScopes.some((item) => !config.scopes.includes(item))) {
       throw new OAuthError("invalid_client_metadata", "scope contiene valores no soportados");
     }
+    const tokenEndpointAuthMethod = request.token_endpoint_auth_method ?? "none";
+    if (tokenEndpointAuthMethod === "private_key_jwt" && !request.jwks_uri) {
+      throw new OAuthError("invalid_client_metadata", "private_key_jwt requiere jwks_uri");
+    }
+    if (request.jwks_uri && !isSafeClientMetadataUrl(request.jwks_uri)) {
+      throw new OAuthError("invalid_client_metadata", "jwks_uri debe ser una URL HTTPS pública");
+    }
 
     const client = await prisma.oAuthClient.create({
       data: {
@@ -142,7 +155,9 @@ export class OAuthService {
         name: request.client_name,
         redirectUris: request.redirect_uris,
         allowedScopes: requestedScopes,
-        tokenEndpointAuthMethod: "none",
+        tokenEndpointAuthMethod,
+        jwksUri: request.jwks_uri,
+        tokenEndpointAuthSigningAlg: request.token_endpoint_auth_signing_alg,
       },
     });
     return {
@@ -152,7 +167,9 @@ export class OAuthService {
       redirect_uris: client.redirectUris,
        grant_types: ["authorization_code", "refresh_token"],
       response_types: ["code"],
-      token_endpoint_auth_method: "none",
+       token_endpoint_auth_method: client.tokenEndpointAuthMethod,
+       ...(client.jwksUri ? { jwks_uri: client.jwksUri } : {}),
+       ...(client.tokenEndpointAuthSigningAlg ? { token_endpoint_auth_signing_alg: client.tokenEndpointAuthSigningAlg } : {}),
       scope: client.allowedScopes.join(" "),
     };
   }
@@ -222,8 +239,66 @@ export class OAuthService {
     };
   }
 
+  private async authenticateClient(client: {
+    id: string;
+    clientId: string;
+    tokenEndpointAuthMethod: string;
+    jwksUri: string | null;
+    tokenEndpointAuthSigningAlg: string | null;
+  }, request: TokenRequest) {
+    if (client.tokenEndpointAuthMethod === "none") return;
+    if (client.tokenEndpointAuthMethod !== "private_key_jwt" || client.tokenEndpointAuthSigningAlg !== "RS256" || !client.jwksUri) {
+      throw new OAuthError("invalid_client", "Configuración de autenticación de cliente inválida", 401);
+    }
+    if (request.client_assertion_type !== "urn:ietf:params:oauth:client-assertion-type:jwt-bearer" || !request.client_assertion) {
+      throw new OAuthError("invalid_client", "Se requiere client_assertion para este cliente", 401);
+    }
+
+    const decoded = jwt.decode(request.client_assertion, { complete: true });
+    if (!decoded || typeof decoded === "string" || decoded.header.alg !== "RS256" || !decoded.header.kid) {
+      throw new OAuthError("invalid_client", "client_assertion inválido", 401);
+    }
+
+    let jwks: unknown;
+    try {
+      const response = await fetch(client.jwksUri, { redirect: "error", signal: AbortSignal.timeout(5_000) });
+      if (!response.ok) throw new Error("JWKS request failed");
+      jwks = await response.json();
+    } catch {
+      throw new OAuthError("invalid_client", "No se pudo obtener el JWKS del cliente", 401);
+    }
+    const keys = jwks && typeof jwks === "object" && Array.isArray((jwks as { keys?: unknown }).keys)
+      ? (jwks as { keys: Array<Record<string, unknown>> }).keys
+      : [];
+    const jwk = keys.find((key) => key.kid === decoded.header.kid && key.kty === "RSA" && key.use !== "enc");
+    if (!jwk) throw new OAuthError("invalid_client", "No se encontró la clave del cliente", 401);
+
+    let payload: JwtPayload;
+    try {
+      payload = jwt.verify(
+        request.client_assertion,
+        createPublicKey({ key: jwk as RsaJwk, format: "jwk" }),
+        { algorithms: ["RS256"], audience: `${oauthConfig().issuer}/oauth/token` },
+      ) as JwtPayload;
+    } catch {
+      throw new OAuthError("invalid_client", "Firma o claims de client_assertion inválidos", 401);
+    }
+    const now = Math.floor(Date.now() / 1000);
+    if (typeof payload !== "object" || payload.iss !== client.clientId || payload.sub !== client.clientId || typeof payload.exp !== "number" || payload.exp <= now || payload.exp > now + 300 || typeof payload.jti !== "string" || payload.jti.length > 200) {
+      throw new OAuthError("invalid_client", "Claims de client_assertion inválidos", 401);
+    }
+    const used = await prisma.oAuthClientAssertion.findUnique({ where: { jti: payload.jti } });
+    if (used) throw new OAuthError("invalid_client", "client_assertion ya utilizado", 401);
+    try {
+      await prisma.oAuthClientAssertion.create({ data: { clientId: client.id, jti: payload.jti, expiresAt: new Date(payload.exp * 1000) } });
+    } catch {
+      throw new OAuthError("invalid_client", "client_assertion ya utilizado", 401);
+    }
+  }
+
   async token(request: TokenRequest) {
     const client = await this.client(request.client_id);
+    await this.authenticateClient(client, request);
     if (request.grant_type === "authorization_code") {
       const codeId = opaqueId(request.code as string, CODE_PREFIX);
       if (!codeId) throw new OAuthError("invalid_grant", "Código de autorización inválido");

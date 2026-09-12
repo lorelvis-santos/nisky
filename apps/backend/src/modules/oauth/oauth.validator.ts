@@ -26,6 +26,8 @@ export const tokenSchema = z.object({
   redirect_uri: redirectUri.optional(),
   code_verifier: z.string().regex(/^[A-Za-z0-9._~-]{43,128}$/).optional(),
   refresh_token: z.string().trim().min(1).max(1000).optional(),
+  client_assertion_type: z.literal("urn:ietf:params:oauth:client-assertion-type:jwt-bearer").optional(),
+  client_assertion: z.string().trim().min(1).max(10000).optional(),
   scope,
 }).superRefine((data, ctx) => {
   if (data.grant_type === "authorization_code" && (!data.code || !data.redirect_uri || !data.code_verifier)) {
@@ -42,7 +44,9 @@ export const registrationSchema = z.object({
   scope,
   grant_types: z.array(z.enum(["authorization_code", "refresh_token"])).optional(),
   response_types: z.array(z.literal("code")).optional(),
-  token_endpoint_auth_method: z.literal("none").optional(),
+  token_endpoint_auth_method: z.enum(["none", "private_key_jwt"]).optional(),
+  token_endpoint_auth_signing_alg: z.literal("RS256").optional(),
+  jwks_uri: z.url().max(2048).optional(),
 });
 
 export const revocationSchema = z.object({

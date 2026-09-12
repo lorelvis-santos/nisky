@@ -628,10 +628,13 @@ model OAuthClient {
   redirectUris          String[]
   allowedScopes         String[]
   tokenEndpointAuthMethod String                 @default("none")
+  jwksUri               String?
+  tokenEndpointAuthSigningAlg String?
   isActive              Boolean                  @default(true)
   authorizationCodes    OAuthAuthorizationCode[]
   accessTokens          OAuthAccessToken[]
   refreshTokens         OAuthRefreshToken[]
+  clientAssertions      OAuthClientAssertion[]
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
 
@@ -699,6 +702,18 @@ model OAuthRefreshToken {
 
   @@index([userId, revokedAt])
   @@index([familyId, revokedAt])
+  @@index([expiresAt])
+}
+
+model OAuthClientAssertion {
+  id        String      @id @default(uuid())
+  clientId  String
+  client    OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  jti       String      @unique
+  expiresAt DateTime
+  createdAt DateTime    @default(now())
+
+  @@index([clientId, expiresAt])
   @@index([expiresAt])
 }
 

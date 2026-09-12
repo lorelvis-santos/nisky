@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/server";
-import { nisky, textResult } from "../client";
+import { nisky, toolResult } from "../client";
 
 const quickNoteStatus = z.enum(["INBOX", "ARCHIVED"]);
 
@@ -21,7 +21,7 @@ export function registerQuickNoteTools(server: McpServer, auth: string) {
         if (value !== undefined) query.set(key, String(value));
       }
       const result = await nisky(auth, `/quick-notes?${query.toString()}`);
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -34,7 +34,7 @@ export function registerQuickNoteTools(server: McpServer, auth: string) {
     },
     async (args) => {
       const result = await nisky(auth, "/quick-notes", { method: "POST", body: JSON.stringify(args) });
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -51,7 +51,7 @@ export function registerQuickNoteTools(server: McpServer, auth: string) {
     },
     async ({ id, ...body }) => {
       const result = await nisky(auth, `/quick-notes/${id}`, { method: "PATCH", body: JSON.stringify(body) });
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 }

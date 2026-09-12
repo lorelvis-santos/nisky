@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/server";
-import { nisky, textResult } from "../client";
+import { nisky, toolResult } from "../client";
 
 const taskStatus = z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"]);
 const taskStatuses = z.union([taskStatus, z.array(taskStatus).min(1).max(4)]);
@@ -52,7 +52,7 @@ export function registerTaskTools(server: McpServer, auth: string) {
         }
       }
       const result = await nisky(auth, `/tasks?${query.toString()}`);
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -65,7 +65,7 @@ export function registerTaskTools(server: McpServer, auth: string) {
     },
     async ({ id }) => {
       const result = await nisky(auth, `/tasks/${id}`);
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -94,7 +94,7 @@ export function registerTaskTools(server: McpServer, auth: string) {
     },
     async (args) => {
       const result = await nisky(auth, "/tasks", { method: "POST", body: JSON.stringify(args) });
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -119,7 +119,7 @@ export function registerTaskTools(server: McpServer, auth: string) {
     },
     async ({ id, ...body }) => {
       const result = await nisky(auth, `/tasks/${id}`, { method: "PATCH", body: JSON.stringify(body) });
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 }

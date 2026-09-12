@@ -17,7 +17,13 @@ export function protectedResourceMetadata(env: NodeJS.ProcessEnv = process.env) 
   };
 }
 
-export function oauthChallenge(env: NodeJS.ProcessEnv = process.env) {
+export function oauthChallenge(
+  env: NodeJS.ProcessEnv = process.env,
+  error?: { code?: string; description?: string },
+) {
   const settings = oauthSettings(env);
-  return `Bearer resource_metadata="${settings.publicUrl}/.well-known/oauth-protected-resource", scope="${settings.scopes.join(" ")}"`;
+  const details = error
+    ? `, error="${error.code ?? "invalid_token"}", error_description="${(error.description ?? "Se requiere autorización").replaceAll('"', "'")}"`
+    : "";
+  return `Bearer resource_metadata="${settings.publicUrl}/.well-known/oauth-protected-resource", scope="${settings.scopes.join(" ")}"${details}`;
 }

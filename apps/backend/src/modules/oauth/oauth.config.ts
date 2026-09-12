@@ -66,6 +66,15 @@ export function isSafeClientMetadataUrl(value: string) {
   return true;
 }
 
+export function isRegisteredRedirectUri(clientId: string, redirectUris: string[], redirectUri: string) {
+  if (redirectUris.includes(redirectUri)) return true;
+
+  // ChatGPT has used this stable callback with CIMD clients that advertise a
+  // client-specific connector callback. Keep the compatibility path narrow.
+  return redirectUri === "https://chatgpt.com/connector_platform_oauth_redirect"
+    && /^https:\/\/chatgpt\.com\/oauth\/[^/]+\/client\.json$/.test(clientId);
+}
+
 export function oauthMetadata() {
   const config = oauthConfig();
   return {

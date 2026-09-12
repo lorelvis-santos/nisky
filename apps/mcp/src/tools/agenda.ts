@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/server";
-import { nisky, textResult } from "../client";
+import { nisky, toolResult } from "../client";
 
 function isCalendarDate(value: string) {
   const date = new Date(`${value}T00:00:00.000Z`);
@@ -25,7 +25,7 @@ export function registerAgendaTools(server: McpServer, auth: string) {
     },
     async () => {
       const result = await nisky(auth, "/home/overview");
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -59,7 +59,7 @@ export function registerAgendaTools(server: McpServer, auth: string) {
         if (value !== undefined) query.set(key, String(value));
       }
       const result = await nisky(auth, `/task-schedules?${query.toString()}`);
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -80,7 +80,7 @@ export function registerAgendaTools(server: McpServer, auth: string) {
         method: "PUT",
         body: JSON.stringify(body),
       });
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 }

@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { createHash, createPublicKey, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { prisma } from "../../infra/prisma/client";
-import { isSafeClientMetadataUrl, isSafeRegistrationRedirect, oauthConfig } from "./oauth.config";
+import { isRegisteredRedirectUri, isSafeClientMetadataUrl, isSafeRegistrationRedirect, oauthConfig } from "./oauth.config";
 import { registrationSchema, type AuthorizeRequest, type RegistrationRequest, type RevocationRequest, type TokenRequest } from "./oauth.validator";
 
 const CLIENT_PREFIX = "nisky_client_";
@@ -122,7 +122,7 @@ export class OAuthService {
 
   private async authorizationContext(request: AuthorizeRequest) {
     const client = await this.client(request.client_id);
-    if (!client.redirectUris.includes(request.redirect_uri)) {
+    if (!isRegisteredRedirectUri(client.clientId, client.redirectUris, request.redirect_uri)) {
       throw new OAuthError("invalid_request", "redirect_uri no registrado");
     }
     return { client, scopes: this.scopesFor(client, request.scope), resource: this.resourceFor(request.resource) };

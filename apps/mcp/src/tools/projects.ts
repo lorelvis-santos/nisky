@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/server";
-import { nisky, textResult } from "../client";
+import { nisky, toolResult } from "../client";
 
 const dateValue = z.string().trim().refine((value) => !Number.isNaN(Date.parse(value)), "La fecha no es válida");
 const projectFields = {
@@ -20,7 +20,7 @@ export function registerProjectTools(server: McpServer, auth: string) {
     },
     async () => {
       const result = await nisky(auth, "/projects");
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -36,7 +36,7 @@ export function registerProjectTools(server: McpServer, auth: string) {
     },
     async (args) => {
       const result = await nisky(auth, "/projects", { method: "POST", body: JSON.stringify(args) });
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -53,7 +53,7 @@ export function registerProjectTools(server: McpServer, auth: string) {
     },
     async ({ id, ...body }) => {
       const result = await nisky(auth, `/projects/${id}`, { method: "PATCH", body: JSON.stringify(body) });
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 }

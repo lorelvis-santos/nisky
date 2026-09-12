@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/server";
-import { nisky, textResult } from "../client";
+import { nisky, toolResult } from "../client";
 
 const tagsSchema = z
   .array(z.string().trim().min(1).max(50))
@@ -46,7 +46,7 @@ export function registerKnowledgeTools(server: McpServer, auth: string) {
         if (value !== undefined) query.set(key, String(value));
       }
       const result = await nisky(auth, `/knowledge?${query.toString()}`);
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -59,7 +59,7 @@ export function registerKnowledgeTools(server: McpServer, auth: string) {
     },
     async ({ id }) => {
       const result = await nisky(auth, `/knowledge/${id}`);
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -76,7 +76,7 @@ export function registerKnowledgeTools(server: McpServer, auth: string) {
     },
     async (args) => {
       const result = await nisky(auth, "/knowledge", { method: "POST", body: JSON.stringify(args) });
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 
@@ -94,7 +94,7 @@ export function registerKnowledgeTools(server: McpServer, auth: string) {
     },
     async ({ id, ...body }) => {
       const result = await nisky(auth, `/knowledge/${id}`, { method: "PATCH", body: JSON.stringify(body) });
-      return { content: [{ type: "text", text: textResult(result) }] };
+      return toolResult(result);
     },
   );
 }

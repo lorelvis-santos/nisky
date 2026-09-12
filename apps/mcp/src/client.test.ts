@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { nisky } from "./client";
+import { nisky, toolResult } from "./client";
 
 const originalFetch = globalThis.fetch;
 
@@ -89,5 +89,18 @@ describe("nisky client", () => {
 
     expect(result).toMatchObject({ status: 403, ok: false, error: { code: "FORBIDDEN" } });
     expect(calls).toEqual(["http://localhost:4000/api/v1/oauth/introspect"]);
+  });
+
+  test("exposes a tool-level OAuth challenge for auth failures", () => {
+    const result = toolResult({
+      status: 401,
+      ok: false,
+      data: null,
+      error: { code: "UNAUTHORIZED", message: "Falta el token de acceso" },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result._meta?.["mcp/www_authenticate"][0]).toContain('error="invalid_token"');
+    expect(result._meta?.["mcp/www_authenticate"][0]).toContain("Falta el token de acceso");
   });
 });

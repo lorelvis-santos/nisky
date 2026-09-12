@@ -1,3 +1,5 @@
+import { oauthChallenge } from "./oauth";
+
 const API_URL = process.env.NISKY_API_URL ?? "http://localhost:4000/api/v1";
 const UPSTREAM_TIMEOUT_MS = Math.max(
   1_000,
@@ -98,6 +100,22 @@ export async function nisky(auth: string, path: string, init: RequestInit = {}):
   };
 }
 
-export function textResult(result: UpstreamResult) {
-  return JSON.stringify(result.ok ? result.data : result.error, null, 2);
+export function toolResult(result: UpstreamResult) {
+  const response: {
+    content: [{ type: "text"; text: string }];
+    isError?: boolean;
+    _meta?: { "mcp/www_authenticate": string[] };
+  } = {
+    content: [{ type: "text", text: JSON.stringify(result.ok ? result.data : result.error, null, 2) }],
+    isError: !result.ok,
+  };
+  if (result.status === 401 || result.status === 403) {
+    response._meta = {
+      "mcp/www_authenticate": [oauthChallenge(undefined, {
+        code: result.status === 403 ? "insufficient_scope" : "invalid_token",
+        description: result.error?.message,
+      })],
+    };
+  }
+  return response;
 }

@@ -278,13 +278,13 @@ export class OAuthService {
       payload = jwt.verify(
         request.client_assertion,
         createPublicKey({ key: jwk as RsaJwk, format: "jwk" }),
-        { algorithms: ["RS256"], audience: `${oauthConfig().issuer}/oauth/token` },
+        { algorithms: ["RS256"], audience: [`${oauthConfig().issuer}/oauth/token`, oauthConfig().issuer] },
       ) as JwtPayload;
     } catch {
       throw new OAuthError("invalid_client", "Firma o claims de client_assertion inválidos", 401);
     }
     const now = Math.floor(Date.now() / 1000);
-    if (typeof payload !== "object" || payload.iss !== client.clientId || payload.sub !== client.clientId || typeof payload.exp !== "number" || payload.exp <= now || payload.exp > now + 300 || typeof payload.jti !== "string" || payload.jti.length > 200) {
+    if (typeof payload !== "object" || payload.iss !== client.clientId || payload.sub !== client.clientId || typeof payload.exp !== "number" || payload.exp <= now || payload.exp > now + 600 || typeof payload.jti !== "string" || payload.jti.length > 200) {
       throw new OAuthError("invalid_client", "Claims de client_assertion inválidos", 401);
     }
     const used = await prisma.oAuthClientAssertion.findUnique({ where: { jti: payload.jti } });

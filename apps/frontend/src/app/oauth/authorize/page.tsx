@@ -84,7 +84,7 @@ export default function OAuthAuthorizePage() {
   return (
     <OAuthShell>
       <div className="rounded-lg border border-outline-variant bg-surface p-6 shadow-cadence-2 sm:p-8">
-        <div className="mb-7 flex size-12 items-center justify-center rounded-lg bg-primary-container text-primary">
+        <div className="mb-7 flex size-12 items-center justify-center rounded-lg bg-primary text-on-primary">
           <ShieldCheck aria-hidden="true" size={25} />
         </div>
         <p className="font-label-caps text-label-caps text-secondary">AUTORIZACIÓN NISKY</p>

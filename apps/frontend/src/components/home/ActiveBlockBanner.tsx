@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { localDateKey } from "@/lib/utils";
+import { formatRelativeDate, localDateKey } from "@/lib/utils";
 import { PriorityChip } from "@/features/tasks/components/PriorityChip";
 import { minToTime } from "@/features/timeblocks/lib/time";
 import type {
@@ -143,9 +143,11 @@ export function ActiveBlockBanner({
     if (nextBlock && nextBlockStart) {
       const diffMs = new Date(nextBlockStart).getTime() - nowTimestamp;
       const diffMin = Math.max(0, Math.round(diffMs / 60_000));
-      const dayDiff = Math.floor(diffMs / 86_400_000);
+      const referenceDate = new Date(nowTimestamp);
       const whenLabel =
-        dayDiff >= 1 ? "Mañana" : `En ${formatDuration(diffMin)}`;
+        localDateKey(nextBlockStart) === localDateKey(referenceDate)
+          ? `En ${formatDuration(diffMin)}`
+          : formatRelativeDate(nextBlockStart, false, referenceDate);
       const label =
         nextBlock.project?.name ?? nextBlock.name ?? "Bloque de enfoque";
       const color = nextBlock.project?.color ?? "#303e51";

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createProjectResource,
   deleteProjectResource,
@@ -18,6 +18,7 @@ export function useProjectSummary(projectId: string | null) {
 
 export function useProjectActivity(projectId: string | null, page = 1) {
   return useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["projects", projectId, "activity", page],
     queryFn: () => fetchProjectActivity(projectId as string, { page, limit: 30 }),
     enabled: Boolean(projectId),

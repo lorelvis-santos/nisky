@@ -18,6 +18,7 @@ import { useAuth } from "@/context/AuthProvider";
 import { CommentThread } from "@/features/comments/CommentThread";
 import { MembersPanel } from "@/features/projects/components/MembersPanel";
 import { ProjectActivityTimeline } from "@/features/projects/components/ProjectActivityTimeline";
+import { ProjectActivityPagination } from "@/features/projects/components/ProjectActivityPagination";
 import { ProjectContextPanel } from "@/features/projects/components/ProjectContextPanel";
 import { ProjectHeader } from "@/features/projects/components/ProjectHeader";
 import { ProjectNotes } from "@/features/projects/components/ProjectNotes";
@@ -263,7 +264,7 @@ function ProjectDetailPageContent() {
           </div>
         )}
         {activeTab === "notes" && <ProjectNotes project={project} />}
-        {activeTab === "activity" && <ProjectActivityContent projectId={project.id} />}
+        {activeTab === "activity" && <ProjectActivityContent key={project.id} projectId={project.id} />}
         {activeTab === "team" && <section className="min-w-0 max-w-3xl"><div className="mb-5"><p className="project-eyebrow">COLABORACIÓN</p><h2 className="mt-1 text-[19px] font-semibold text-[#131b2e]">Equipo del proyecto</h2><p className="mt-1 text-[13px] text-[#69758a]">Gestiona las personas que pueden trabajar con este proyecto.</p></div><div className="project-panel p-5 sm:p-6"><MembersPanel project={project} /></div></section>}
         {activeTab === "chat" && <section className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.42fr)]"><div className="project-panel flex h-[min(42rem,calc(100dvh-12rem))] min-h-[34rem] min-w-0 flex-col overflow-hidden p-5 sm:p-6"><div className="mb-5"><p className="project-eyebrow">COLABORACIÓN</p><h2 className="mt-1 text-[19px] font-semibold text-[#131b2e]">Conversación del proyecto</h2><p className="mt-1 text-[13px] text-[#69758a]">Comparte avances sin sacar la conversación del contexto.</p></div><CommentThread kind="project" id={project.id} /></div><ProjectContextPanel isError={summaryQuery.isError} onOpenTask={openTask} onRetry={() => void summaryQuery.refetch()} summary={summary ?? null} /></section>}
         {activeTab === "resources" && <ProjectResources project={project} />}
@@ -282,10 +283,11 @@ function ProjectDetailPageContent() {
 }
 
 function ProjectActivityContent({ projectId }: { projectId: string }) {
-  const query = useProjectActivity(projectId);
+  const [page, setPage] = useState(1);
+  const query = useProjectActivity(projectId, page);
   if (query.isLoading) return <div className="project-panel h-72 animate-pulse" />;
   if (query.isError) return <div className="project-panel flex min-h-56 items-center justify-center text-[13px] text-[#c73b52]">No pudimos cargar la actividad del proyecto.</div>;
-  return <section className="min-w-0 max-w-3xl"><div className="mb-5"><p className="project-eyebrow">HISTORIAL</p><h2 className="mt-1 text-[19px] font-semibold text-[#131b2e]">Actividad reciente</h2><p className="mt-1 text-[13px] text-[#69758a]">Cambios y conversaciones registrados en el proyecto.</p></div><ProjectActivityTimeline activities={query.data?.data ?? []} /></section>;
+  return <section className="min-w-0 max-w-3xl"><div className="mb-5"><p className="project-eyebrow">HISTORIAL</p><h2 className="mt-1 text-[19px] font-semibold text-[#131b2e]">Actividad reciente</h2><p className="mt-1 text-[13px] text-[#69758a]">Cambios y conversaciones registrados en el proyecto.</p></div><ProjectActivityTimeline activities={query.data?.data ?? []} /><ProjectActivityPagination isFetching={query.isFetching} meta={query.data?.meta} onPageChange={setPage} /></section>;
 }
 
 function EditProjectModal({ canRename, name, description, targetDate, color, targetHours, targetMinutes, onNameChange, onDescriptionChange, onTargetDateChange, onColorChange, onTargetHoursChange, onTargetMinutesChange, onSave, onClose }: { canRename: boolean; name: string; description: string; targetDate: string; color: string; targetHours: string; targetMinutes: string; onNameChange: (value: string) => void; onDescriptionChange: (value: string) => void; onTargetDateChange: (value: string) => void; onColorChange: (value: string) => void; onTargetHoursChange: (value: string) => void; onTargetMinutesChange: (value: string) => void; onSave: () => void; onClose: () => void }) {

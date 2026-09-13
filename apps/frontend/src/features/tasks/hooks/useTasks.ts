@@ -22,6 +22,15 @@ export function usePaginatedTasksQuery(params: PaginatedTaskParams = {}, options
   });
 }
 
+export function useTaskCountQuery(params: PaginatedTaskParams = {}, options?: PaginatedTaskOptions) {
+  const queryParams = { ...params, page: 1, limit: 1 };
+  return useQuery({
+    enabled: options?.enabled,
+    queryKey: ["tasks", "count", queryParams],
+    queryFn: async () => (await fetchTasks(queryParams)).meta.totalItems,
+  });
+}
+
 export function useActiveTasksQuery(params: Omit<PaginatedTaskParams, "status"> = {}, options?: { enabled?: boolean }) {
   return usePaginatedTasksQuery({ ...params, status: ["PENDING", "IN_PROGRESS"] }, options);
 }

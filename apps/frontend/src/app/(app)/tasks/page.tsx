@@ -38,6 +38,7 @@ import { TaskPagination } from "@/features/tasks/components/TaskPagination";
 import { TaskDetailsPanel } from "@/features/tasks/components/TaskDetailsPanel";
 import {
   usePaginatedTasksQuery,
+  useTaskCountQuery,
   useTaskMutations,
   useTaskQuery,
 } from "@/features/tasks/hooks/useTasks";
@@ -221,6 +222,10 @@ function TasksPageContent() {
     },
     { pageSize: view === "backlog" ? 25 : 1 },
   );
+  const backlogCountQuery = useTaskCountQuery({
+    ...commonQuery,
+    due: "UNSET",
+  });
   const query = view === "backlog" ? backlogQuery : listQuery;
   const urlTaskQuery = useTaskQuery(modalUrl.state.taskId);
   const mutations = useTaskMutations();
@@ -239,7 +244,8 @@ function TasksPageContent() {
     () => tasks.filter((task) => selection.selectedIds.has(task.id)),
     [tasks, selection.selectedIds],
   );
-  const backlogCount = backlogQuery.data?.meta.totalItems ?? 0;
+  const backlogCount =
+    backlogCountQuery.data ?? backlogQuery.data?.meta.totalItems ?? 0;
   const listCount = listQuery.data?.meta.totalItems ?? 0;
   const totalCount = backlogCount + listCount;
   const activeFilterCount =

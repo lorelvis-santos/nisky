@@ -11,6 +11,7 @@ import { InvitationsPanel } from "@/features/projects/components/InvitationsPane
 import { useTasksQuery } from "@/features/tasks/hooks/useTasks";
 import { useQuickNotesQuery } from "@/features/quicknotes/hooks/useQuickNotes";
 import { useProjectQuery } from "@/features/projects/hooks/useProjects";
+import { PomodoroHeader } from "@/components/ui/FloatingPomodoro";
 import type { QuickNote, Reminder, Task } from "@/types/entities";
 
 const OPEN_PENDING_EVENT = "nisky:open-pending-reminders";
@@ -56,8 +57,8 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
       </div>
       <div className="hidden flex-1 md:block" />
       <h2 className="absolute left-1/2 hidden -translate-x-1/2 font-headline-sm text-headline-sm font-bold text-on-surface lg:block">{title}</h2>
-      <div className="ml-auto flex items-center gap-element-gap-sm">
-        <button
+       <div className="ml-auto flex items-center gap-element-gap-sm">
+         <button
           aria-label="Nueva nota rápida"
            className="hidden items-center gap-1.5 rounded-md border border-outline-variant px-2.5 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary lg:flex"
           onClick={onOpenCapture}
@@ -66,8 +67,9 @@ export function TopAppBar({ onMenu, onOpenCapture }: { onMenu: () => void; onOpe
         >
           <StickyNote size={15} />
           Nota
-          <kbd className="font-data-mono text-data-mono text-[10px] text-on-surface-variant">Alt+N</kbd>
-        </button>
+           <kbd className="font-data-mono text-data-mono text-[10px] text-on-surface-variant">Alt+N</kbd>
+         </button>
+          <PomodoroHeader />
           <InvitationsPanel open={openPanel === "invitations"} onOpenChange={(open) => setOpenPanel(open ? "invitations" : null)} />
            <div className="relative">
               <button aria-expanded={openPanel === "notifications"} aria-label={`Notificaciones${notices.length > 0 ? ` (${notices.length})` : ""}`} className="relative rounded-md p-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary" onClick={() => setOpenPanel((panel) => panel === "notifications" ? null : "notifications")} type="button">

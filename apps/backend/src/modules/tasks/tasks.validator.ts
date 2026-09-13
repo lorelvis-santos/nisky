@@ -97,6 +97,29 @@ export const taskQuerySchema = z.object({
   dueTo: dateValue.optional(),
 });
 
+const referenceUrl = z
+  .url("La referencia no es una URL válida")
+  .refine((value) => /^https?:\/\//i.test(value), "La referencia debe usar http o https");
+
+export const taskReferenceParamsSchema = z.object({
+  id: z.uuid("El identificador de la tarea no es válido"),
+  referenceId: z.uuid("El identificador de la referencia no es válido"),
+});
+
+export const createTaskReferenceSchema = z.object({
+  title: z.string().trim().max(200, "El título es demasiado largo").nullable().optional(),
+  url: referenceUrl,
+});
+
+export const updateTaskReferenceSchema = createTaskReferenceSchema.partial();
+
+export const reorderTaskReferencesSchema = z.object({
+  items: z.array(z.object({
+    id: z.uuid("El identificador de la referencia no es válido"),
+    order: z.number().int().min(0),
+  })).min(1, "Debe enviar al menos una referencia"),
+});
+
 export type CreateTaskDto = z.infer<typeof createTaskSchema>;
 export type UpdateTaskDto = z.infer<typeof updateTaskSchema>;
 export type ReorderTasksDto = z.infer<typeof reorderTasksSchema>;
@@ -107,3 +130,6 @@ export type UpdateSubtaskDto = z.infer<typeof updateSubtaskSchema>;
 export type TaskQueryDto = z.infer<typeof taskQuerySchema>;
 export type ArchiveTaskDto = z.infer<typeof archiveTaskSchema>;
 export type TaskRecurrenceDto = z.infer<typeof taskRecurrenceSchema>;
+export type CreateTaskReferenceDto = z.infer<typeof createTaskReferenceSchema>;
+export type UpdateTaskReferenceDto = z.infer<typeof updateTaskReferenceSchema>;
+export type ReorderTaskReferencesDto = z.infer<typeof reorderTaskReferencesSchema>;

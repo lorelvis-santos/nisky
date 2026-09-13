@@ -74,7 +74,7 @@ export function IntegrationTasksList() {
           {tasks.map((task: Task) => {
             const due = task.dueDate ? new Date(task.dueDate) : null;
             const isOver = task.status === "PENDING" && due !== null && due < new Date();
-            const link = linkFromDescription(task.description);
+            const link = task.references?.find((reference) => reference.source === task.source)?.url ?? linkFromDescription(task.description);
             const course = courseFromDescription(task.description);
             const kind = kindFromSourceRef(task.source, task.sourceRef);
             return (

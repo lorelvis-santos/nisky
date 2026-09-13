@@ -5,6 +5,7 @@ export interface RemoteItem {
   key: string;
   title: string;
   description: string | null;
+  url?: string | null;
   dueDate?: string | null;
 }
 

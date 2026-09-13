@@ -75,7 +75,8 @@ export const canvasStrategy: IntegrationStrategy = {
       out.push({
         key: `${item.todo_type ?? "todo"}:${courseId}:${activityId}`,
         title,
-        description: [courseName, activityUrl ? `Link: ${activityUrl}` : ""].filter(Boolean).join("\n") || null,
+        description: courseName || null,
+        url: activityUrl,
         dueDate: (assignment?.due_at ?? quiz?.due_at ?? null) ?? null,
       });
     }

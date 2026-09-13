@@ -176,6 +176,7 @@ export class IntegrationService {
       },
       orderBy: { dueDate: "asc" },
       take: limit,
+      include: { references: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] } },
     });
   }
 
@@ -200,13 +201,14 @@ export class IntegrationService {
         if (existing?.status === "COMPLETED" || existing?.status === "CANCELLED") continue;
         if (existing?.archivedAt) continue;
         const dueDate = item.dueDate ? new Date(item.dueDate) : null;
+        let taskId = existing?.id;
         if (existing) {
           await prisma.task.update({
             where: { id: existing.id },
             data: { title: item.title, description: item.description, dueDate, priority: taskPriority(dueDate, now), projectId },
           });
         } else {
-          await prisma.task.create({
+          const createdTask = await prisma.task.create({
             data: {
               userId: account.userId,
               title: item.title,
@@ -218,7 +220,18 @@ export class IntegrationService {
               projectId,
             },
           });
+          taskId = createdTask.id;
           created += 1;
+        }
+        if (!taskId) throw new Error("La tarea sincronizada no tiene identificador");
+        if (item.url) {
+          await prisma.taskReference.upsert({
+            where: { taskId_source_sourceRef: { taskId, source: strategy.source, sourceRef } },
+            create: { taskId, userId: account.userId, title: item.title, url: item.url, source: strategy.source, sourceRef, order: 0 },
+            update: { title: item.title, url: item.url },
+          });
+        } else {
+          await prisma.taskReference.deleteMany({ where: { taskId, source: strategy.source, sourceRef } });
         }
         synced += 1;
       }

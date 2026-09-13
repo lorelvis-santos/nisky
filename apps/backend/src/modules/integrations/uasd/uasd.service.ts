@@ -325,10 +325,11 @@ export class UasdIntegrationService {
           projectId,
           ...(item.completed ? { status: "COMPLETED" as const } : {}),
         };
+        let taskId = existing?.id;
         if (existing) {
           await tx.task.update({ where: { id: existing.id }, data });
         } else {
-          await tx.task.create({
+          const createdTask = await tx.task.create({
             data: {
               userId: account.userId,
               source: "UASD",
@@ -337,7 +338,18 @@ export class UasdIntegrationService {
               ...data,
             },
           });
+          taskId = createdTask.id;
           created += 1;
+        }
+        if (!taskId) throw new UasdIntegrationError("PERSIST_FAILED", "La tarea UASD no tiene identificador", true);
+        if (item.url) {
+          await tx.taskReference.upsert({
+            where: { taskId_source_sourceRef: { taskId, source: "UASD", sourceRef } },
+            create: { taskId, userId: account.userId, title: item.title, url: item.url, source: "UASD", sourceRef, order: 0 },
+            update: { title: item.title, url: item.url },
+          });
+        } else {
+          await tx.taskReference.deleteMany({ where: { taskId, source: "UASD", sourceRef } });
         }
         synced += 1;
       }

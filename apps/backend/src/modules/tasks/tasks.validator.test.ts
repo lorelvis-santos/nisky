@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { taskQuerySchema, updateTaskSchema } from "./tasks.validator";
+import { createTaskReferenceSchema, reorderTaskReferencesSchema, taskQuerySchema, updateTaskSchema } from "./tasks.validator";
 
 const userId = "00000000-0000-4000-8000-000000000001";
 
@@ -25,5 +25,17 @@ describe("task query validator", () => {
         dueTo: "2026-09-07",
       }).success,
     ).toBe(true);
+  });
+});
+
+describe("task reference validator", () => {
+  test("accepts http and https references with an optional title", () => {
+    expect(createTaskReferenceSchema.safeParse({ title: "Guía", url: "https://example.com/guide" }).success).toBe(true);
+    expect(createTaskReferenceSchema.safeParse({ url: "http://example.com" }).success).toBe(true);
+  });
+
+  test("rejects non-web URLs and incomplete reorder payloads", () => {
+    expect(createTaskReferenceSchema.safeParse({ url: "javascript:alert(1)" }).success).toBe(false);
+    expect(reorderTaskReferencesSchema.safeParse({ items: [{ id: userId, order: -1 }] }).success).toBe(false);
   });
 });

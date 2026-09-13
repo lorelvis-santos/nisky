@@ -254,6 +254,19 @@ export interface UasdSyncJob {
 
 export type TaskRecurrenceType = "DAILY" | "WEEKLY" | "MONTHLY";
 
+export interface TaskReference {
+  id: string;
+  taskId: string;
+  userId: string;
+  title: string | null;
+  url: string;
+  order: number;
+  source: TaskSource;
+  sourceRef: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Task {
   id: string;
   userId: string;
@@ -270,6 +283,7 @@ export interface Task {
   order: number;
   pomodoroEstimate: number;
   pomodoroCount: number;
+  references?: TaskReference[];
   user?: { id: string; email: string; name: string | null; username: string | null; avatarUrl: string | null };
   assigneeId: string | null;
   assignee?: { id: string; email: string; name: string | null; avatarUrl: string | null } | null;

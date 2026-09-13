@@ -16,6 +16,7 @@ const TASK_CREATOR_SELECT = { id: true, email: true, name: true, username: true,
 
 const taskInclude = {
   subtasks: { orderBy: { order: "asc" } },
+  references: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] },
   user: { select: TASK_CREATOR_SELECT },
   assignee: { select: { id: true, email: true, name: true, avatarUrl: true } },
   project: { select: { id: true, name: true, color: true } },
@@ -194,7 +195,7 @@ export class TaskService {
         completedAt: data.status === "COMPLETED" ? new Date() : null,
         ...recurrenceData(data),
       },
-      include: { subtasks: true, user: { select: TASK_CREATOR_SELECT } },
+      include: { subtasks: true, references: true, user: { select: TASK_CREATOR_SELECT } },
     });
     await projectActivityService.record({
       projectId,
@@ -289,8 +290,9 @@ export class TaskService {
         } : {}),
       },
       include: {
-        subtasks: { orderBy: { order: "asc" } },
-        user: { select: TASK_CREATOR_SELECT },
+         subtasks: { orderBy: { order: "asc" } },
+         references: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] },
+         user: { select: TASK_CREATOR_SELECT },
       },
     });
 

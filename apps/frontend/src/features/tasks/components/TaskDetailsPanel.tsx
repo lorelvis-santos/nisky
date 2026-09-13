@@ -65,6 +65,7 @@ import {
 } from "@/features/projects/hooks/useProjects";
 import { useTaskQuery } from "@/features/tasks/hooks/useTasks";
 import { TaskReminderPanel } from "./TaskReminderPanel";
+import { TaskReferences } from "./TaskReferences";
 import {
   TaskAssigneeSelect,
   TaskDueDateEditor,
@@ -1365,6 +1366,11 @@ export function TaskDetailsPanel({
                 </button>
               )}
             </section>
+
+            <TaskReferences
+              initialReferences={current.references}
+              taskId={current.id}
+            />
 
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-3">

@@ -33,6 +33,7 @@ model User {
   oauthAccessTokens OAuthAccessToken[]
   oauthRefreshTokens OAuthRefreshToken[]
   tasks         Task[]
+  taskReferences TaskReference[]
   subtasks      Subtask[]
   habits        Habit[]
   habitEntries  HabitEntry[]
@@ -319,6 +320,7 @@ model Task {
   recurrenceParent      Task?               @relation("TaskRecurrence", fields: [recurrenceParentId], references: [id], onDelete: SetNull)
   recurrenceOccurrences Task[]              @relation("TaskRecurrence")
   subtasks           Subtask[]
+  references         TaskReference[]
   assigneeId         String?
   assignee           User?                  @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   comments           Comment[]
@@ -337,6 +339,25 @@ model Task {
   @@index([recurrenceParentId])
   @@index([assigneeId])
   @@unique([userId, source, sourceRef])
+}
+
+model TaskReference {
+  id        String     @id @default(uuid())
+  taskId    String
+  task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  url       String
+  order     Int        @default(0)
+  source    TaskSource @default(MANUAL)
+  sourceRef String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([taskId, source, sourceRef])
+  @@index([taskId, order])
+  @@index([userId])
 }
 
 enum TaskSource {

@@ -27,7 +27,8 @@ function eventToRemoteItem(ev: TaskEvent): RemoteItem {
   return {
     key: ev.task_key,
     title: ev.title ?? ev.name ?? "Tarea sin nombre",
-    description: [ev.course, ev.url ? `Link: ${ev.url}` : ""].filter(Boolean).join("\n") || null,
+    description: ev.course || null,
+    url: ev.url ?? ev.viewurl ?? null,
     dueDate: ev.due_utc ?? null,
   };
 }

@@ -1,10 +1,12 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../utils/errors/handler";
+import { taskReferenceService } from "./task-references.service";
 import { taskService } from "./tasks.service";
-import type { ArchiveTaskDto, BulkMoveTasksDto, BulkTaskIdsDto, CreateSubtaskDto, CreateTaskDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto } from "./tasks.validator";
+import type { ArchiveTaskDto, BulkMoveTasksDto, BulkTaskIdsDto, CreateSubtaskDto, CreateTaskDto, CreateTaskReferenceDto, ReorderTaskReferencesDto, ReorderTasksDto, TaskQueryDto, UpdateSubtaskDto, UpdateTaskDto, UpdateTaskReferenceDto } from "./tasks.validator";
 
 type IdParams = { id: string };
 type SubtaskParams = { id: string; subtaskId: string };
+type ReferenceParams = { id: string; referenceId: string };
 
 function userId(req: Request) {
   if (!req.user) throw new AppError("UNAUTHORIZED");
@@ -46,6 +48,26 @@ export class TaskController {
 
   bulkMove = async (req: Request<{}, {}, BulkMoveTasksDto>, res: Response, next: NextFunction) => {
     try { res.success(await taskService.bulkMove(userId(req), req.body.ids, req.body.projectId)); } catch (error) { next(error); }
+  };
+
+  listReferences = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
+    try { res.success(await taskReferenceService.list(userId(req), req.params.id)); } catch (error) { next(error); }
+  };
+
+  createReference = async (req: Request<IdParams, {}, CreateTaskReferenceDto>, res: Response, next: NextFunction) => {
+    try { res.success(await taskReferenceService.create(userId(req), req.params.id, req.body), 201); } catch (error) { next(error); }
+  };
+
+  reorderReferences = async (req: Request<IdParams, {}, ReorderTaskReferencesDto>, res: Response, next: NextFunction) => {
+    try { res.success(await taskReferenceService.reorder(userId(req), req.params.id, req.body)); } catch (error) { next(error); }
+  };
+
+  updateReference = async (req: Request<ReferenceParams, {}, UpdateTaskReferenceDto>, res: Response, next: NextFunction) => {
+    try { res.success(await taskReferenceService.update(userId(req), req.params.id, req.params.referenceId, req.body)); } catch (error) { next(error); }
+  };
+
+  deleteReference = async (req: Request<ReferenceParams>, res: Response, next: NextFunction) => {
+    try { res.success(await taskReferenceService.remove(userId(req), req.params.id, req.params.referenceId)); } catch (error) { next(error); }
   };
 
   listSubtasks = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
